@@ -311,9 +311,56 @@ class ApiImportRunner(Runnable):
         self.worker.should_run = False
 
 
-class DatabaseImportWorker(CardInfoWorkerBase):
+class ApiStreamWorker(CardInfoWorkerBase):
     """
-    This class implements the actual data download and import
+    This class implements reading the card data from the API as a CardStream.
+    """
+
+    def read_json_card_data_from_url(self, url: str = None, json_path: str = "item") -> CardStream:
+        """
+        Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
+        This function takes a URL pointing to the card data json array in the Scryfall API.
+
+        The all cards json document is quite large (> 2.1GiB in 2024-10) and requires about 8GiB RAM to parse in one go.
+        So use an iterative parser to generate and yield individual card objects, without having to store the whole
+        document in memory.
+        """
+        if url is None:
+            logger.debug("Request bulk data URL from the Scryfall API.")
+            url, _ = self.get_scryfall_bulk_card_data_url()
+            logger.debug(f"Obtained url: {url}")
+        else:
+            logger.debug(f"Reading from given URL {url}")
+        # Ignore the monitor, because progress reporting is done in the main import loop.
+        source, _ = self.read_from_url(url)
+        with source:
+            yield from ijson.items(source, json_path, use_float=True)
+
+    @functools.lru_cache(maxsize=1)
+    def get_available_card_count(self) -> int:
+        url_parameters = urllib.parse.urlencode({
+            "include_multilingual": "true",
+            "include_variations": "true",
+            "include_extras": "true",
+            "unique": "prints",
+            "q": "date>1970-01-01"
+        })
+        url = f"https://api.scryfall.com/cards/search?{url_parameters}"
+        logger.debug(f"Card data update query URL: {url}")
+        try:
+            total_cards_available = next(self.read_json_card_data_from_url(url, "total_cards"))
+        except (urllib.error.URLError, socket.timeout, StopIteration):
+            logger.warning("Reading total cards failed with a network error. Report zero available cards.")
+            # TODO: Perform better notification in any error case
+            total_cards_available = 0
+        logger.debug(f"Total cards currently available: {total_cards_available}")
+        return total_cards_available
+
+
+
+class DatabaseImportWorker(DownloaderBase):
+    """
+    This class implements importing a CardStream into the given CardDatabase instance
     """
     card_data_updated = Signal()
 
@@ -338,26 +385,6 @@ class DatabaseImportWorker(CardInfoWorkerBase):
             self._db = open_database(self.model.db_path, SCHEMA_NAME, self.model.MIN_SUPPORTED_SQLITE_VERSION)
         return self._db
 
-    @functools.lru_cache(maxsize=1)
-    def get_available_card_count(self) -> int:
-        url_parameters = urllib.parse.urlencode({
-            "include_multilingual": "true",
-            "include_variations": "true",
-            "include_extras": "true",
-            "unique": "prints",
-            "q": "date>1970-01-01"
-        })
-        url = f"https://api.scryfall.com/cards/search?{url_parameters}"
-        logger.debug(f"Card data update query URL: {url}")
-        try:
-            total_cards_available = next(self.read_json_card_data_from_url(url, "total_cards"))
-        except (urllib.error.URLError, socket.timeout, StopIteration):
-            logger.warning("Reading total cards failed with a network error. Report zero available cards.")
-            # TODO: Perform better notification in any error case
-            total_cards_available = 0
-        logger.debug(f"Total cards currently available: {total_cards_available}")
-        return total_cards_available
-
     @with_database_write_lock()
     def import_card_data_from_local_file(self, path: Path):
         try:
@@ -373,10 +400,10 @@ class DatabaseImportWorker(CardInfoWorkerBase):
     @with_database_write_lock()
     def import_card_data_from_online_api(self):
         logger.info("About to import card data from Scryfall")
+        aw = ApiStreamWorker()
         try:
-            url, _ = self.get_scryfall_bulk_card_data_url()
-            data = self.read_json_card_data_from_url(url)
-            estimated_total_card_count = self.get_available_card_count()
+            estimated_total_card_count = aw.get_available_card_count()
+            data = aw.read_json_card_data_from_url()
             self.download_begins.emit(
                 estimated_total_card_count,
                 self.tr("Updating card data from Scryfall:", "Progress bar label text"))
@@ -391,26 +418,6 @@ class DatabaseImportWorker(CardInfoWorkerBase):
             self.db.rollback()
         finally:
             self.download_finished.emit()
-
-    def read_json_card_data_from_url(self, url: str = None, json_path: str = "item") -> CardStream:
-        """
-        Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
-        This function takes a URL pointing to the card data json object in the Scryfall API.
-
-        The all cards json document is quite large (> 1GiB in 2020-11) and requires about 4GiB RAM to parse in one go.
-        So use an iterative parser to generate and yield individual card objects, without having to store the whole
-        document in memory.
-        """
-        if url is None:
-            logger.debug("Request bulk data URL from the Scryfall API.")
-            url, _ = self.get_scryfall_bulk_card_data_url()
-            logger.debug(f"Obtained url: {url}")
-        else:
-            logger.debug(f"Reading from given URL {url}")
-        # Ignore the monitor, because progress reporting is done in the main import loop.
-        source, _ = self.read_from_url(url)
-        with source:
-            yield from ijson.items(source, json_path, use_float=True)
 
     def read_json_card_data_from_file(self, file_path: Path, json_path: str = "item") -> CardStream:
         file_size = file_path.stat().st_size

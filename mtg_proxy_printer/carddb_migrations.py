@@ -82,7 +82,6 @@ class MigrationScript:
         return len(self.script)
 
 
-
 class Migrate_21_to_22(MigrationScript):
 
     def get_script(
@@ -96,9 +95,7 @@ class Migrate_21_to_22(MigrationScript):
         # Full edit procedure not needed here, because the table has no indices or foreign keys associated
         # Import locally to break a cyclic dependency
         import mtg_proxy_printer.card_info_downloader
-        from mtg_proxy_printer.model.carddb import CardDatabase
-        # TODO: Extract read_json_card_data_from_url into a base class that does not depend on a database connection
-        dw = mtg_proxy_printer.card_info_downloader.DatabaseImportWorker(CardDatabase(":memory:"))
+        aw = mtg_proxy_printer.card_info_downloader.ApiStreamWorker()
         updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate"+suffix)
         data = []
         for id_, timestamp in updates:
@@ -110,7 +107,7 @@ class Migrate_21_to_22(MigrationScript):
                 "q": f"date>1970-01-01 date<={datetime.datetime.fromisoformat(timestamp).date()}"
             })
             try:
-                card_count = next(dw.read_json_card_data_from_url(
+                card_count = next(aw.read_json_card_data_from_url(
                     f'https://api.scryfall.com/cards/search?{url_parameters}', 'total_cards'
                 ))
             except (urllib.error.URLError, socket.error):
