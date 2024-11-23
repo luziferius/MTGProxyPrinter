@@ -47,7 +47,7 @@ del get_logger
 __all__ = [
     "CardInfoDownloader",
     "CardInfoWorkerBase",
-    "CardInfoDatabaseImportWorker",
+    "DatabaseImportWorker",
     "SetWackinessScore",
 ]
 
@@ -134,7 +134,7 @@ class CardInfoDownloader(DownloadProgressSignalContainer):
 
     def download_to_file(self, download_path: Path):
         logger.debug(f"Called download_to_file({download_path}). About to fetch the card data")
-        runner = CardInfoFileDownloadRunner(download_path, self)
+        runner = FileDownloadRunner(download_path, self)
         signals = runner.signals
         signals.download_begins.connect(self.download_begins, QueuedConnection)
         signals.download_progress.connect(self.download_progress, QueuedConnection)
@@ -144,10 +144,10 @@ class CardInfoDownloader(DownloadProgressSignalContainer):
         QThreadPool.globalInstance().start(runner)
 
     def import_from_file(self, file_path: Path):
-        QThreadPool.globalInstance().start(CardInfoFileImportRunner(file_path, self))
+        QThreadPool.globalInstance().start(FileImportRunner(file_path, self))
 
     def import_from_api(self):
-        QThreadPool.globalInstance().start(CardInfoApiImportRunner(self))
+        QThreadPool.globalInstance().start(ApiImportRunner(self))
 
 
 class CardInfoWorkerBase(DownloaderBase):
@@ -164,7 +164,7 @@ class CardInfoWorkerBase(DownloaderBase):
         return uri, size
 
 
-class CardInfoFileDownloadWorker(CardInfoWorkerBase):
+class FileDownloadWorker(CardInfoWorkerBase):
     """
     This class implements downloading the raw card data to a file stored in the file system.
     """
@@ -222,21 +222,21 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
             pass
 
 
-class CardInfoFileDownloadRunner(Runnable):
+class FileDownloadRunner(Runnable):
     """This runner asynchronously downloads the card data and stores it in the given location"""
     def __init__(self, download_path: Path, parent: CardInfoDownloader):
         super().__init__()
         self.parent = parent
         self.signals = DownloadProgressSignalContainer()
         self.download_path = download_path
-        self.worker: typing.Optional[CardInfoFileDownloadWorker] = None
+        self.worker: typing.Optional[FileDownloadWorker] = None
 
     @with_database_write_lock()  # While it technically does not access the card db, it still shares the progress meter
     def run(self):
         signals = self.signals
         # Implementation note: The actual download worker uses Qt signals, and thus is encapsulated in a class
         # derived from QObject, and not this QRunnable.
-        self.worker = worker = CardInfoFileDownloadWorker(self.download_path)
+        self.worker = worker = FileDownloadWorker(self.download_path)
         worker.download_begins.connect(signals.download_begins)
         worker.download_progress.connect(signals.download_progress)
         worker.download_finished.connect(signals.download_finished)
@@ -256,7 +256,7 @@ class CardInfoFileDownloadRunner(Runnable):
             pass
 
 
-class CardInfoFileImportRunner(Runnable):
+class FileImportRunner(Runnable):
 
     def __init__(self, path: Path, parent: CardInfoDownloader):
         super().__init__()
@@ -266,7 +266,7 @@ class CardInfoFileImportRunner(Runnable):
 
     def run(self):
         parent = self.parent
-        self.worker = worker = CardInfoDatabaseImportWorker(parent.model)
+        self.worker = worker = DatabaseImportWorker(parent.model)
         worker.card_data_updated.connect(parent.card_data_updated, QueuedConnection)
         worker.download_begins.connect(parent.download_begins, QueuedConnection)
         worker.download_begins.connect(lambda: parent.working_state_changed.emit(True), QueuedConnection)
@@ -284,7 +284,7 @@ class CardInfoFileImportRunner(Runnable):
         self.worker.should_run = False
 
 
-class CardInfoApiImportRunner(Runnable):
+class ApiImportRunner(Runnable):
 
     def __init__(self, parent: CardInfoDownloader):
         super().__init__()
@@ -293,7 +293,7 @@ class CardInfoApiImportRunner(Runnable):
 
     def run(self):
         parent = self.parent
-        self.worker = worker = CardInfoDatabaseImportWorker(parent.model)
+        self.worker = worker = DatabaseImportWorker(parent.model)
         worker.card_data_updated.connect(parent.card_data_updated, QueuedConnection)
         worker.download_begins.connect(parent.download_begins, QueuedConnection)
         worker.download_begins.connect(lambda: parent.working_state_changed.emit(True), QueuedConnection)
@@ -311,7 +311,7 @@ class CardInfoApiImportRunner(Runnable):
         self.worker.should_run = False
 
 
-class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
+class DatabaseImportWorker(CardInfoWorkerBase):
     """
     This class implements the actual data download and import
     """

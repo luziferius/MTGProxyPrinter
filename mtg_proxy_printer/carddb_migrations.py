@@ -98,7 +98,7 @@ class Migrate_21_to_22(MigrationScript):
         import mtg_proxy_printer.card_info_downloader
         from mtg_proxy_printer.model.carddb import CardDatabase
         # TODO: Extract read_json_card_data_from_url into a base class that does not depend on a database connection
-        dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(CardDatabase(":memory:"))
+        dw = mtg_proxy_printer.card_info_downloader.DatabaseImportWorker(CardDatabase(":memory:"))
         updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate"+suffix)
         data = []
         for id_, timestamp in updates:
