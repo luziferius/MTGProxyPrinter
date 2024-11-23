@@ -195,7 +195,6 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
             logger.info(f"Content length estimated as {size} bytes")
         if monitor.content_length <= 0:
             monitor.content_length = size
-        monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
         download_file_path = self.download_path/file_name
         logger.debug(f"Opened URL '{url}' and target file at '{download_file_path}', about to download contents.")
         with download_file_path.open("wb") as download_file, monitor:
@@ -209,6 +208,7 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
             finally:
                 self.connection.close()
                 self.connection = None
+                self.download_finished.emit()
         if failure:
             logger.error("Download failed! Deleting incomplete download.")
             download_file_path.unlink(missing_ok=True)
