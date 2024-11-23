@@ -313,19 +313,25 @@ class ApiImportRunner(Runnable):
 
 
 class ApiStreamRunner(Runnable):
-    """A runner that streams the decoded card data from the API and batches the result"""
+    """
+    A runner that streams the decoded card data from the API and batches the result.
+    This encapsulates requesting data via HTTPS, decryption, gzip stream decompression and parsing into dicts via ijson.
+    It enqueues a single None as the last value after finishing the last batch.
+    """
     _queue_depth = 3
     _batch_size = 1000
 
     def __init__(self):
         super().__init__()
-        self.queue: collections.deque[typing.Tuple[CardDataType, ...]] = collections.deque(maxlen=self._queue_depth)
+        self.queue: collections.deque[
+            typing.Optional[typing.Tuple[CardDataType, ...]]] = collections.deque(maxlen=self._queue_depth)
 
     def run(self):
         stream = ApiStreamWorker()
         data = stream.read_json_card_data_from_url()
         for batch in itertools.batched(data, self._batch_size):
             self.queue.append(batch)
+        self.queue.append(None)
 
 
 class ApiStreamWorker(CardInfoWorkerBase):
