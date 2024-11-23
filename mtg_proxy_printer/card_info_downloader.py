@@ -322,6 +322,10 @@ class ApiStreamRunner(Runnable):
     _batch_size = 1000
 
     def __init__(self):
+        # TODO: Implement a FileStreamWorker, similar to ApiStreamWorker. Then introduce a parameter to pass in the
+        #  class to use, instead of hard-coding the ApiStreamWorker in run().
+        #  Then rename this class to StreamRunner or similar. The top-level API can then put together the logic
+        #  from modular blocks.
         super().__init__()
         self.queue: collections.deque[
             typing.Optional[typing.Tuple[CardDataType, ...]]] = collections.deque(maxlen=self._queue_depth)
