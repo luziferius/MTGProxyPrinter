@@ -12,10 +12,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import collections
 import enum
 import functools
 import gzip
+import itertools
 import math
 import shutil
 from pathlib import Path
@@ -309,6 +310,22 @@ class ApiImportRunner(Runnable):
 
     def cancel(self):
         self.worker.should_run = False
+
+
+class ApiStreamRunner(Runnable):
+    """A runner that streams the decoded card data from the API and batches the result"""
+    _queue_depth = 3
+    _batch_size = 1000
+
+    def __init__(self):
+        super().__init__()
+        self.queue: collections.deque[typing.Tuple[CardDataType, ...]] = collections.deque(maxlen=self._queue_depth)
+
+    def run(self):
+        stream = ApiStreamWorker()
+        data = stream.read_json_card_data_from_url()
+        for batch in itertools.batched(data, self._batch_size):
+            self.queue.append(batch)
 
 
 class ApiStreamWorker(CardInfoWorkerBase):
