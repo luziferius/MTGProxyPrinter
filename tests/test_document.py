@@ -464,8 +464,8 @@ def test_subsequent_save_updates_settings(tmp_path: pathlib.Path, qtbot: QtBot, 
     layout.page_height = 1000*mm
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     # Prevent network access when re-loading the document
-    document_custom_layout.image_db.loaded_images[
-        ImageKey(card.scryfall_id, card.is_front, card.highres_image)] = document_custom_layout.image_db.blank_image
+    blank = document_custom_layout.image_db.get_blank(CardSizes.REGULAR)
+    document_custom_layout.image_db.loaded_images[ImageKey(card.scryfall_id, card.is_front, card.highres_image)] = blank
     cards_per_page = document_custom_layout.page_layout.compute_page_card_capacity(card.requested_page_type())
     document_custom_layout.apply(ActionAddCard(card, cards_per_page))
 
@@ -595,7 +595,7 @@ def test_get_missing_image_cards(document_light: Document, size: CardSize):
 
 @pytest.mark.parametrize("result", [True, False])
 def test_has_missing_images(document_light: Document, result: bool):
-    blank_image = document_light.image_db.blank_image
+    blank_image = document_light.image_db.get_blank(CardSizes.REGULAR)
     blank_image_card = create_card("Placeholder Image")
     blank_image_card.image_file = blank_image
     other_card = create_card("Other Image")

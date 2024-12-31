@@ -59,17 +59,18 @@ def empty_save_database(request) -> sqlite3.Connection:
 @pytest.fixture
 def image_db(tmp_path: Path):
     image_db = ImageDatabase(tmp_path)
-    regular_width, regular_height = image_db.blank_image.width(), image_db.blank_image.height()
+    regular = image_db.get_blank(CardSizes.REGULAR)
+    large = image_db.get_blank(CardSizes.OVERSIZED)
     for scryfall_id, is_front in itertools.product(
             ["0000579f-7b35-4ed3-b44c-db2a538066fe", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d"], [True, False]):
         # Regular card images
         key = ImageKey(scryfall_id, is_front, True)
-        image_db.loaded_images[key] = image_db.blank_image.copy(0, 0, regular_width, regular_height)
+        image_db.loaded_images[key] = regular.copy()
         image_db.images_on_disk.add(key)
     for scryfall_id in ["650722b4-d72b-4745-a1a5-00a34836282b"]:
         # Oversized card images
         key = ImageKey(scryfall_id, True, True)
-        image_db.loaded_images[key] = image_db.blank_image.scaled(regular_height, regular_width*2)
+        image_db.loaded_images[key] = large.copy()
         image_db.images_on_disk.add(key)
 
     yield image_db
@@ -94,7 +95,6 @@ def mock_imagedb():
     }
     blanks[CardSizes.REGULAR].fill(QColorConstants.Transparent)
     blanks[CardSizes.OVERSIZED].fill(QColorConstants.Transparent)
-    mock_image_db.blank_image = blanks[CardSizes.REGULAR]
     mock_image_db.get_blank = blanks.get
     return mock_image_db
 

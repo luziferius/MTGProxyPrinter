@@ -21,6 +21,7 @@ from hamcrest import *
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
 from mtg_proxy_printer.model.document_page import PageType
+from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
@@ -41,8 +42,8 @@ def oversized_card():
 
 
 @pytest.fixture()
-def check_card(card, image_db):
-    card.image_file = image_db.blank_image
+def check_card(card, image_db: ImageDatabase):
+    card.image_file = image_db.get_blank()
     card.is_dfc = True
     other = copy.copy(card)
     other.is_front = False

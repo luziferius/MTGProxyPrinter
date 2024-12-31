@@ -49,8 +49,8 @@ def environment(tmp_path: pathlib.Path, qtbot, card_db: CardDatabase):
     back_image = image_db.db_path/"lowres_back"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
     front_image.parent.mkdir(parents=True)
     back_image.parent.mkdir(parents=True)
-    image_db.blank_image.save(str(front_image), "PNG")
-    image_db.blank_image.save(str(back_image), "PNG")
+    image_db.get_blank().save(str(front_image), "PNG")
+    image_db.get_blank().save(str(back_image), "PNG")
     yield Environment(card_db, image_db, front_image, back_image)
     image_db.__dict__.clear()
 
