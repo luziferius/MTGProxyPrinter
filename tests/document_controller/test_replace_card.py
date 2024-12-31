@@ -20,19 +20,23 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, Ac
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.model.document_page import CardContainer
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
 
 from .helpers import card_container_with, create_card, append_new_card_in_page, append_new_pages
+
+
+REGULAR = CardSizes.REGULAR
+OVERSIZED = CardSizes.OVERSIZED
 
 
 def test_replacing_regular_with_oversized_on_otherwise_filled_card_moves_oversized_away(
         qtbot, document_light: Document):
     append_new_pages(document_light, 1)
     pages = document_light.pages
-    to_replace = append_new_card_in_page(pages[0], "Normal 1", False)
-    stay_on_0 = append_new_card_in_page(pages[0], "Normal 2", False)
-    stay_on_1 = append_new_card_in_page(pages[1], "Oversized", True)
-    replacement = create_card("Replacement", True)
+    to_replace = append_new_card_in_page(pages[0], "Normal 1", REGULAR)
+    stay_on_0 = append_new_card_in_page(pages[0], "Normal 2", REGULAR)
+    stay_on_1 = append_new_card_in_page(pages[1], "Oversized", OVERSIZED)
+    replacement = create_card("Replacement", OVERSIZED)
     action = ActionReplaceCard(replacement, 0, 0)
     with qtbot.assert_not_emitted(document_light.page_type_changed):
         assert_that(action.apply(document_light), is_(same_instance(action)))
@@ -79,9 +83,9 @@ def test_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_card_on_
         qtbot, document_light: Document):
     append_new_pages(document_light, 1)
     pages = document_light.pages
-    to_replace = append_new_card_in_page(pages[0], "Normal 1", False)
-    stay_on_1 = append_new_card_in_page(pages[1], "Oversized", True)
-    replacement = create_card("Replacement", True)
+    to_replace = append_new_card_in_page(pages[0], "Normal 1", REGULAR)
+    stay_on_1 = append_new_card_in_page(pages[1], "Oversized", OVERSIZED)
+    replacement = create_card("Replacement", OVERSIZED)
     action = ActionReplaceCard(replacement, 0, 0)
     assert_that(pages[0].page_type(), is_(PageType.REGULAR), "Test setup failed")
     with qtbot.wait_signal(document_light.page_type_changed, timeout=1000,
@@ -109,10 +113,10 @@ def test_undo_replacing_regular_with_oversized_on_otherwise_filled_card_moves_ca
         qtbot, document_light: Document):
     append_new_pages(document_light, 1)
     pages = document_light.pages
-    original = create_card("Normal 1", False)
-    stay_on_0 = append_new_card_in_page(pages[0], "Normal 2", False)
-    stay_on_1 = append_new_card_in_page(pages[1], "Oversized", True)
-    replacement = append_new_card_in_page(pages[1], "Replacement", True)
+    original = create_card("Normal 1", REGULAR)
+    stay_on_0 = append_new_card_in_page(pages[0], "Normal 2", REGULAR)
+    stay_on_1 = append_new_card_in_page(pages[1], "Oversized", OVERSIZED)
+    replacement = append_new_card_in_page(pages[1], "Replacement", OVERSIZED)
     action = ActionReplaceCard(replacement, 0, 0)
     action.old_card = original
     remove_action = ActionRemoveCards([0], 0)
@@ -142,9 +146,9 @@ def test_undo_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_car
         qtbot, document_light: Document):
     append_new_pages(document_light, 1)
     pages = document_light.pages
-    original = create_card("Normal 1", False)
-    replacement = append_new_card_in_page(pages[0], "Replacement", True)
-    stay_on_1 = append_new_card_in_page(pages[1], "Oversized", True)
+    original = create_card("Normal 1", REGULAR)
+    replacement = append_new_card_in_page(pages[0], "Replacement", OVERSIZED)
+    stay_on_1 = append_new_card_in_page(pages[1], "Oversized", OVERSIZED)
     assert_that(pages[0].page_type(), is_(PageType.OVERSIZED), "Setup failed")
     assert_that(pages[1].page_type(), is_(PageType.OVERSIZED), "Setup failed")
 

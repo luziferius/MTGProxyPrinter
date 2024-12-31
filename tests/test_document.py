@@ -30,9 +30,8 @@ from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, CardSizes, CardSize
 from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
-from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings, CardType
 from mtg_proxy_printer.model.imagedb import ImageKey
@@ -44,10 +43,13 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
 from tests.helpers import close_to_
+from tests.document_controller.helpers import append_new_card_in_page
 from .document_controller.helpers import insert_card_in_page, create_card
 
 ItemDataRole = Qt.ItemDataRole
 mm: UnitT = unit_registry.mm
+REGULAR = CardSizes.REGULAR
+OVERSIZED = CardSizes.OVERSIZED
 
 
 class DummyAction(DocumentAction):
@@ -65,12 +67,6 @@ class DummyAction(DocumentAction):
     @property
     def as_str(self):
         return f"Value: {self.value}"
-
-
-def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
-    card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, False, None)
-    page.append(card)
-    return card
 
 
 @pytest.mark.parametrize("first, second, matcher", [
@@ -323,9 +319,8 @@ def test_rowCount_with_valid_index_returns_card_count_on_page_given_by_index(doc
     document_light.apply(ActionNewPage(count=3))
     for count in range(1, 4):
         document_light.set_currently_edited_page(document_light.pages[count])
-        document_light.apply(
-            ActionAddCard(Card("", MTGSet("", ""), "", "", "", True, "", "", True, False, 0, None), count=count)
-        )
+        card = Card("", MTGSet("", ""), "", "", "", True, "", "", True, REGULAR, 0, None)
+        document_light.apply(ActionAddCard(card, count=count))
         assert_that(document_light.currently_edited_page, has_length(count), "Test setup failed")
     for page in range(4):
         assert_that(
@@ -341,9 +336,9 @@ def test_rowCount_with_valid_index_returns_card_count_on_page_given_by_index(doc
 ])
 def test_get_card_indices_of_type(document_light, page_type: PageType, parent_row: int, child_rows: typing.List[int]):
     ActionNewPage(count=2).apply(document_light)
-    append_new_card_in_page(document_light.pages[0], "Normal", False)
-    append_new_card_in_page(document_light.pages[2], "Oversized", True)
-    append_new_card_in_page(document_light.pages[2], "Oversized", True)
+    append_new_card_in_page(document_light.pages[0], "Normal", REGULAR)
+    append_new_card_in_page(document_light.pages[2], "Oversized", OVERSIZED)
+    append_new_card_in_page(document_light.pages[2], "Oversized", OVERSIZED)
     indices = list(document_light.get_card_indices_of_type(page_type))
     assert_that(indices, has_length(len(child_rows)))
     for index, expected_row in zip(indices, child_rows):
@@ -581,11 +576,12 @@ def _validate_saved_document_settings(document: Document):
         )
 
 
-def test_get_missing_image_cards(document_light: Document):
-    blank_image = document_light.image_db.blank_image
-    expected = create_card("Placeholder Image")
+@pytest.mark.parametrize("size", [REGULAR, OVERSIZED])
+def test_get_missing_image_cards(document_light: Document, size: CardSize):
+    blank_image = document_light.image_db.get_blank(size)
+    expected = create_card("Placeholder Image", size)
     expected.image_file = blank_image
-    unexpected = create_card("Other Image")
+    unexpected = create_card("Other Image", size)
     unexpected.image_file = QPixmap(blank_image)  # Create a new, distinct image by copying the blank image
     document_light.apply(ActionAddCard(expected, 2))
     document_light.apply(ActionAddCard(unexpected, 2))
@@ -616,11 +612,11 @@ def test_has_missing_images(document_light: Document, result: bool):
 @pytest.mark.parametrize("pages_content, expected", [
     ([], 0),
     ([None, None], 1),
-    ([create_card("Regular", False)], 0),
-    ([create_card("Regular", False)]*2, 1),
-    ([create_card("Regular", False), create_card("Oversized", True)], 0),
-    ([create_card("Regular", False), create_card("Oversized", True)]*2, 2),
-    ([create_card("Regular", False), create_card("Oversized", True), None]*2, 4),
+    ([create_card("Regular", REGULAR)], 0),
+    ([create_card("Regular", REGULAR)]*2, 1),
+    ([create_card("Regular", REGULAR), create_card("Oversized", OVERSIZED)], 0),
+    ([create_card("Regular", REGULAR), create_card("Oversized", OVERSIZED)]*2, 2),
+    ([create_card("Regular", REGULAR), create_card("Oversized", OVERSIZED), None]*2, 4),
 ])
 def test_compute_pages_saved_by_compacting(
         document_light: Document, pages_content: typing.List[typing.Optional[Card]], expected: int):

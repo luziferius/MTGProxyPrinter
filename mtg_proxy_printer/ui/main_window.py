@@ -31,7 +31,7 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, Ac
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
-from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
+from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, CardSizes
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
@@ -487,7 +487,8 @@ class MainWindow(QMainWindow):
             logger.info(f"User dropped {len(images)} images onto the main window, adding them as custom cards")
             for image in images:
                 card = Card(
-                    "Custom card", MTGSet("CUS", "Custom"), "", "", "", True, "", "", True, False, 1, False, image)
+                    "Custom card", MTGSet("CUS", "Custom"), "", "", "", True, "", "", True,
+                    CardSizes.REGULAR, 1, False, image)
                 action = ActionAddCard(card)
                 self.document.apply(action)
 

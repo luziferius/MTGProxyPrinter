@@ -85,16 +85,25 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
     yield document
     document.__dict__.clear()
 
+@pytest.fixture
+def mock_imagedb():
+    mock_image_db = unittest.mock.NonCallableMagicMock(spec=ImageDatabase)
+    blanks = {
+        CardSizes.REGULAR: QPixmap(CardSizes.REGULAR.as_qsize_px()),
+        CardSizes.OVERSIZED: QPixmap(CardSizes.OVERSIZED.as_qsize_px()),
+    }
+    blanks[CardSizes.REGULAR].fill(QColorConstants.Transparent)
+    blanks[CardSizes.OVERSIZED].fill(QColorConstants.Transparent)
+    mock_image_db.blank_image = blanks[CardSizes.REGULAR]
+    mock_image_db.get_blank = blanks.get
+    return mock_image_db
 
 @pytest.fixture
-def document_light(qtbot) -> Document:
+def document_light(qtbot, mock_imagedb) -> Document:
     mock_card_db = unittest.mock.NonCallableMagicMock()
-    mock_image_db = unittest.mock.NonCallableMagicMock(spec=ImageDatabase)
-    mock_image_db.blank_image = QPixmap(CardSizes.REGULAR.as_qsize_px())
-    mock_image_db.blank_image.fill(QColorConstants.Transparent)
     mock_card_db.db = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
         "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION, check_same_thread=False)
-    document = Document(mock_card_db, mock_image_db)
+    document = Document(mock_card_db, mock_imagedb)
     document.loader.db = mock_card_db.db
     yield document
     document.__dict__.clear()

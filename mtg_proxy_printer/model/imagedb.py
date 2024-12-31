@@ -151,14 +151,11 @@ class ImageDatabase(QObject):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @property
-    @functools.lru_cache(maxsize=1)
     def blank_image(self):
         """Returns a static, empty QPixmap in the size of a regular magic card."""
-        pixmap = QPixmap(CardSizes.REGULAR.as_qsize_px())
-        pixmap.fill(QColorConstants.Transparent)
-        return pixmap
+        return self.get_blank()
 
-    @functools.lru_cache(2)
+    @functools.lru_cache()
     def get_blank(self, size: CardSize = CardSizes.REGULAR):
         """Returns a static, transparent QPixmap in the given size."""
         pixmap = QPixmap(size.as_qsize_px())
@@ -410,11 +407,12 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     def _fetch_and_set_image(self, card: Card):
         key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
         image_path = self.image_database.db_path / key.format_relative_path()
+        blank = self.image_database.get_blank()  # TODO: needs to be size-aware?
         pixmap = self._load_from_memory(key) \
             or self._load_from_disk(key, image_path) \
             or self._download_from_scryfall(card, image_path) \
-            or self.image_database.blank_image
-        if pixmap is not self.image_database.blank_image:
+            or blank
+        if pixmap is not blank:
             self._remove_outdated_low_resolution_image(card)
         card.set_image_file(pixmap)
 

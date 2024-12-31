@@ -24,6 +24,7 @@ from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
+from mtg_proxy_printer.units_and_sizes import CardSizes
 
 from .test_action_new_page import append_new_pages
 from .helpers import insert_card_in_page, card_container_with
@@ -31,12 +32,12 @@ from .helpers import insert_card_in_page, card_container_with
 
 @pytest.fixture()
 def card():
-    return Card("", MTGSet("", ""), "", "", "", True, "", "", True, False, 0, False, None)
+    return Card("", MTGSet("", ""), "", "", "", True, "", "", True, CardSizes.REGULAR, 0, False, None)
 
 
 @pytest.fixture()
 def oversized_card():
-    return Card("", MTGSet("", ""), "", "", "", True, "", "", True, True, 0, False, None)
+    return Card("", MTGSet("", ""), "", "", "", True, "", "", True, CardSizes.OVERSIZED, 0, False, None)
 
 
 @pytest.fixture()

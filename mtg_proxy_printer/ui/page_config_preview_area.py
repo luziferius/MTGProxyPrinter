@@ -94,7 +94,7 @@ class PageConfigPreviewArea(QWidget):
             data.border_width, data.border_width,
             card_width - 2 * data.border_width, card_height - 2 * data.border_width)
         painter.end()
-        return Card(name , MTGSet("", ""), "", "", "", True, "", "", True, size is CardSizes.OVERSIZED, 0, False, image)
+        return Card(name , MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, image)
 
 
     @Slot(PageLayoutSettings)

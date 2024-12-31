@@ -20,7 +20,7 @@ from unittest.mock import patch
 import pytest
 from hamcrest import *
 
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -84,13 +84,13 @@ def test_reflow_keeps_total_card_order(
     names = []
     for num in range(document_light.page_layout.compute_page_card_capacity(PageType.REGULAR)):
         names.append(name := f"A{num+1}")
-        append_new_card_in_page(document_light.pages[0], name)
+        append_new_card_in_page(document_light.pages[0], name, CardSizes.REGULAR)
     for num in range(document_light.page_layout.compute_page_card_capacity(PageType.OVERSIZED)):
         names.append(name := f"B{num+1}")
-        append_new_card_in_page(document_light.pages[1], name, True)
+        append_new_card_in_page(document_light.pages[1], name, CardSizes.OVERSIZED)
     for num in range(document_light.page_layout.compute_page_card_capacity(PageType.REGULAR)):
         names.append(name := f"C{num+1}")
-        append_new_card_in_page(document_light.pages[2], name)
+        append_new_card_in_page(document_light.pages[2], name, CardSizes.REGULAR)
     new_settings = copy.copy(document_light.page_layout)
     new_settings.row_spacing = new_row_spacing*unit_registry.mm
     action = ActionEditDocumentSettings(copy.copy(new_settings))

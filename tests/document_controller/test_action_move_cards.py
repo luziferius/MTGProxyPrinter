@@ -20,6 +20,7 @@ import pytest
 from hamcrest import *
 from PyQt5.QtCore import QModelIndex
 
+from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
@@ -57,8 +58,8 @@ def validate_qt_model_move_signal_parameter(
 
 def test_apply_raises_exception_when_trying_to_create_a_mixed_size_page(document_light):
     ActionNewPage().apply(document_light)
-    append_new_card_in_page(document_light.pages[0], "Normal")
-    append_new_card_in_page(document_light.pages[1], "Large", True)
+    append_new_card_in_page(document_light.pages[0], "Normal", CardSizes.REGULAR)
+    append_new_card_in_page(document_light.pages[1], "Large", CardSizes.OVERSIZED)
     assert_that(document_light.pages[0].page_type(), is_(PageType.REGULAR))
     assert_that(document_light.pages[1].page_type(), is_(PageType.OVERSIZED))
     assert_that(calling(ActionMoveCards(0, [0], 1).apply).with_args(document_light), raises(IllegalStateError))
