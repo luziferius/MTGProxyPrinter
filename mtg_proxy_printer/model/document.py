@@ -28,7 +28,7 @@ from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, 
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
 from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings, \
@@ -419,11 +419,11 @@ class Document(QAbstractItemModel):
 
     def get_missing_image_cards(self) -> typing.Generator[QModelIndex, None, None]:
         """Returns an iterable with indices to all cards that have missing images"""
-        blank = self.image_db.blank_image
+        blanks = {self.image_db.get_blank(CardSizes.REGULAR), self.image_db.get_blank(CardSizes.OVERSIZED)}
         for page_number, page in enumerate(self.pages):
             page_index = self.index(page_number, 0)
             for card_number, container in enumerate(page):
-                if container.card.image_file is blank:
+                if container.card.image_file in blanks:
                     yield self.index(card_number, 0, page_index)
 
     @staticmethod

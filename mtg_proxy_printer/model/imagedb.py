@@ -40,7 +40,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
-from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from mtg_proxy_printer.model.carddb import Card, CheckCard, AnyCardType
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
@@ -155,6 +155,13 @@ class ImageDatabase(QObject):
     def blank_image(self):
         """Returns a static, empty QPixmap in the size of a regular magic card."""
         pixmap = QPixmap(CardSizes.REGULAR.as_qsize_px())
+        pixmap.fill(QColorConstants.Transparent)
+        return pixmap
+
+    @functools.lru_cache(2)
+    def get_blank(self, size: CardSize = CardSizes.REGULAR):
+        """Returns a static, transparent QPixmap in the given size."""
+        pixmap = QPixmap(size.as_qsize_px())
         pixmap.fill(QColorConstants.Transparent)
         return pixmap
 
