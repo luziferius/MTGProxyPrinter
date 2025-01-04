@@ -14,6 +14,7 @@ from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.carddb import Card, CardCorner
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, RESOLUTION, CardSizes, CardSize, QuantityT
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -323,6 +324,11 @@ class PageScene(QGraphicsScene):
             item.setBrush(text_color)
 
     @property
+    def x_offset(self) -> int:
+        return 0 if RenderMode.ON_SCREEN in self.render_mode \
+            else self._distance_to_rounded_px(settings["printer"].get_quantity("horizontal-offset"))
+
+    @property
     def card_items(self) -> typing.List[CardItem]:
         return list(filter(is_card_item, self.items(Qt.AscendingOrder)))
 
@@ -378,7 +384,7 @@ class PageScene(QGraphicsScene):
         font_metrics = QFontMetrics(self.page_number_text.font())
         text_width = font_metrics.horizontalAdvance(self.page_number_text.text())
         page_number_x -= text_width + 2
-        self.page_number_text.setX(page_number_x)
+        self.page_number_text.setX(page_number_x + self.x_offset)
 
     def _update_page_number_text(self):
         if self.page_number_text not in self.text_items:
@@ -611,7 +617,7 @@ class PageScene(QGraphicsScene):
             left_border -= left_margin
             top_border -= top_margin
 
-        x = left_border + (image_width + column_spacing) * column
+        x = left_border + (image_width + column_spacing) * column + self.x_offset
         y = top_border + (image_height + row_spacing) * row
         return QPointF(
             x,
@@ -710,8 +716,9 @@ class PageScene(QGraphicsScene):
                 yield pixel_position + card_size
 
     def _draw_vertical_markers(self, line_color: QColor, page_type: PageType):
+        offset = self.x_offset
         for column_px in self.vertical_cut_line_locations[page_type]:
-            self._draw_vertical_line(column_px, line_color)
+            self._draw_vertical_line(column_px + offset, line_color)
         logger.debug(f"Vertical cut markers drawn")
 
     def _draw_horizontal_markers(self, line_color: QColor, page_type: PageType):
