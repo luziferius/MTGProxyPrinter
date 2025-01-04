@@ -45,7 +45,7 @@ class PageConfigWidget(QGroupBox):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigWidget()
         ui.setupUi(self)
-        self.hide_preview_button = ui.show_preview_button.hide()
+        self.hide_preview_button = ui.show_preview_button.hide
         self.page_layout = self._setup_page_layout(ui)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
