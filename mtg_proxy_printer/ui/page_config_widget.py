@@ -88,7 +88,7 @@ class PageConfigWidget(QGroupBox):
             layout_key = checkbox.objectName()
             checkbox.stateChanged.connect(
                 partial(self.set_boolean_page_layout_item, page_layout, layout_key))
-            checkbox.stateChanged.connect(partial(self.page_layout_changed.emit,page_layout))
+            checkbox.stateChanged.connect(partial(self.page_layout_changed.emit, page_layout))
         ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         ui.document_name.textChanged.connect(partial(self.page_layout_changed.emit, page_layout))
         return page_layout

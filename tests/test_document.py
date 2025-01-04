@@ -486,7 +486,7 @@ def test_subsequent_save_updates_settings(tmp_path: pathlib.Path, qtbot: QtBot, 
         document_custom_layout.loader.load_document(save_dir)
     assert_that(
         document_custom_layout.page_layout.page_height.to(mm).magnitude,
-        is_(close_to(1000, 0.001)))
+        is_(close_to_(1000)))
 
 
 def _create_save_file(temp_path: pathlib.Path, source_version: int):
@@ -547,7 +547,9 @@ def _validate_database_schema(db_path: pathlib.Path):
 
 
 def _validate_saved_document_settings(document: Document):
-    with open_database(document.save_file_path, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save:
+    with open_database(
+            document.save_file_path, "document-v6",
+            DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save:
         assert_that(
             save.execute("SELECT COUNT(*) FROM DocumentSettings").fetchone(),
             contains_exactly(len(dataclasses.astuple(document.page_layout)))
@@ -569,9 +571,9 @@ def _validate_saved_document_settings(document: Document):
                 close_to_(page_layout.custom_page_height.to(mm).magnitude),
                 close_to_(page_layout.custom_page_width.to(mm).magnitude),
                 page_layout.document_name,
-                bool(page_layout.draw_cut_markers),
-                bool(page_layout.draw_sharp_corners),
-                bool(page_layout.draw_page_numbers),
+                int(page_layout.draw_cut_markers),
+                int(page_layout.draw_sharp_corners),
+                int(page_layout.draw_page_numbers),
                 close_to_(page_layout.margin_bottom.to(mm).magnitude),
                 close_to_(page_layout.margin_left.to(mm).magnitude),
                 close_to_(page_layout.margin_right.to(mm).magnitude),

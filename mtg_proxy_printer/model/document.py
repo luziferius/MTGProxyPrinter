@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
-import dataclasses
 import enum
 import itertools
 import math
@@ -358,7 +357,7 @@ class Document(QAbstractItemModel):
                 flattened_data
             )
             logger.debug(f"Written {db.execute('SELECT count() FROM Card -- save_to_disk()').fetchone()[0]} cards.")
-            settings = self.page_layout.to_save_file_data()
+            settings =  self.page_layout.to_save_file_data()
             db.executemany(
                 textwrap.dedent("""\
                     INSERT OR REPLACE INTO DocumentSettings (key, value)

@@ -19,6 +19,8 @@ import json
 import numbers
 import os
 import typing
+from functools import partial
+from numbers import Real
 from unittest.mock import patch, MagicMock
 
 from hamcrest.core.base_matcher import BaseMatcher
@@ -38,6 +40,7 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import read_resource_text
 
 
+
 def _should_skip_network_tests() -> bool:
     result = os.getenv("MTGPROXYPRINTER_RUN_NETWORK_TESTS", "0")
     try:
@@ -50,6 +53,7 @@ def _should_skip_network_tests() -> bool:
 
 
 SHOULD_SKIP_NETWORK_TESTS = _should_skip_network_tests()
+close_to_: typing.Callable[[Real], Matcher] = functools.partial(close_to, delta=0.01)
 
 
 def setup_logging_for_testing():

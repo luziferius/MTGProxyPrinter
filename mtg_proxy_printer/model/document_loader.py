@@ -113,7 +113,8 @@ class PageLayoutSettings:
     def page_height(self) -> QuantityT:
         if self.paper_size == "Custom":
             return self.custom_page_height
-        size = QPageSize.size(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size], QPageSize.Unit.Millimeter)
+        page_size = mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size]
+        size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
         value = size.height() if self.paper_orientation == "Portrait" else size.width()
         return value*unit_registry.mm
 
@@ -126,7 +127,8 @@ class PageLayoutSettings:
     def page_width(self) -> QuantityT:
         if self.paper_size == "Custom":
             return self.custom_page_width
-        size = QPageSize.size(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size], QPageSize.Unit.Millimeter)
+        page_size = mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size]
+        size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
         value = size.width() if self.paper_orientation == "Portrait" else size.height()
         return value*unit_registry.mm
 
@@ -286,7 +288,9 @@ class DocumentLoader(LoaderSignals):
         super().__init__(None)
         self.document = document
         self.db = db
-        self.finished.connect(functools.partial(self.loading_state_changed.emit, False), Qt.ConnectionType.DirectConnection)
+        self.finished.connect(
+            functools.partial(self.loading_state_changed.emit, False),
+            Qt.ConnectionType.DirectConnection)
 
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")

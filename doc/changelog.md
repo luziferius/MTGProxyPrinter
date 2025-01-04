@@ -2,32 +2,49 @@
 
 # Next version (in development)
 
+## Changed features
+
+- Reworked paper size configuration: The document settings now provide a list of pre-defined paper sizes to choose from.
+    - For the pre-defined paper sizes, there is an additional toggle for the choice between Portrait and Landscape mode.
+    - Arbitrary page sizes are still supported by selecting the "Custom" paper size and entering the paper dimensions 
+      as in previous versions.
+
+# Version 0.29.1 (2024-09-14)  <a name="v0_29_1"></a>
+
+## Changed features
+
+- Include support for more image formats in the Windows build, increasing compatibility with custom card images
+
+## Fixed issues
+
+- Fixed broken PDF export option
+
+# Version 0.29.0 (2024-09-13)  <a name="v0_29_0"></a>
+
 ## New features
 
-- Localization support. Translations are managed on [Crowdin.com](https://crowdin.com/project/mtgproxyprinter).   
-  Join, if you want to contribute translations :)
+- Localization support. Translations are managed on [Crowdin.com](https://crowdin.com/project/mtgproxyprinter). 
+    - Join there, if you want to contribute translations :)
     - Interface language is chosen based on the system locale, but can be explicitly set in the application settings.
     - Currently, the app includes translations into US English and German.
     - Goal is translations into all languages in which Magic sets get printed.
 - The deck import wizard can now directly download Scryfall search queries as deck lists
     - Added a text field to enter a Scryfall card search query, a button to show the result on the Scryfall website,
       and a button that downloads the search result as a deck list.
+    - Downloaded search results are treated as a list of singleton cards.
 - Add option to fully automatically remove basic lands from all imported deck lists.
     - When enabled in the settings, basic lands are automatically stripped from deck lists.
       Otherwise, the previous behavior, offering removal via a button click, is retained.
     - The option honors the settings regarding inclusion of Wastes or Snow-Covered basic lands.
 - Add new card filter to hide Art Series cards, which can be enabled in the application settings.
     - When updating from previous versions, the filter becomes functional after the next card data update.
-- Add a live-updating preview to the document settings window. 
+- Add a live-updating preview to the document settings window.
+- The app now has an icon. Provided by [islanders2013](https://www.reddit.com/user/islanders2013/)
 
 ## Changed features
 
 - The deck list import wizard now supports downloading links from the Scryfall API card search at 
-  [https://api.scryfall.com/cards/search](https://scryfall.com/docs/api/cards/search) 
-- Reworked paper size configuration: The document settings now have a list of pre-defined paper sizes to choose from.
-    - For the pre-defined paper sizes, there is an additional toggle for the choice between Portrait and Landscape mode.
-    - Arbitrary page sizes are still supported by selecting the "Custom" paper size and entering the paper dimensions 
-      as in previous versions.
+  [https://api.scryfall.com/cards/search](https://scryfall.com/docs/api/cards/search)
 - Support decimal values in document settings, like margins, image spacings and the card bleed width.
 - As a safety measure against DoS-attacks via loading malicious documents, the app now limits
   numerical document settings to 10000mm. Limiting the paper size to 10m (~394in) in each direction prevents the creation
@@ -39,6 +56,9 @@
 
 ## Fixed issues
 
+- Prefer cards to tokens with the same name when selecting a printing during deck list imports.
+  This prevents the app from choosing the token for cards that can create token copies of themselves.
+  This started to be an issue with the release of the Bloomborrow set.
 - Improved performance of the image cleanup wizard, if there are many images of non-English cards stored on disk.
 - Reworded and clarified some texts in the user interface, fixed grammar and spelling mistakes
 - The main window no longer stays open unresponsive for multiple seconds when trying to exit the application

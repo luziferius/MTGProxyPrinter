@@ -27,7 +27,68 @@
        <string>About</string>
       </attribute>
       <layout class="QGridLayout" name="tab_about_layout">
-       <item row="4" column="1" colspan="2">
+       <item row="2" column="0">
+        <widget class="QLabel" name="mtg_proxy_printer_version_header_label">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Application Version:</string>
+         </property>
+         <property name="textInteractionFlags">
+          <set>Qt::NoTextInteraction</set>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="last_database_update_header_label">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Last card update:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1" colspan="2">
+        <widget class="QLabel" name="mtg_proxy_printer_version_label">
+         <property name="toolTip">
+          <string>Application version</string>
+         </property>
+         <property name="text">
+          <string notr="true"/>
+         </property>
+         <property name="textFormat">
+          <enum>Qt::PlainText</enum>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+         </property>
+         <property name="textInteractionFlags">
+          <set>Qt::TextSelectableByMouse</set>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="python_version_header_label">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Python Version:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1" colspan="2">
         <widget class="QLabel" name="last_database_update_label">
          <property name="toolTip">
           <string notr="true">Timestamp of the last card data update.&quot;</string>
@@ -40,10 +101,13 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="mtg_proxy_printer_icon">
-         <property name="text">
-          <string notr="true"/>
+       <item row="5" column="1" colspan="2">
+        <widget class="QLabel" name="python_version_label">
+         <property name="toolTip">
+          <string>Python runtime version</string>
+         </property>
+         <property name="textInteractionFlags">
+          <set>Qt::TextSelectableByMouse</set>
          </property>
         </widget>
        </item>
@@ -71,6 +135,7 @@ nor any documents created, both in digital and physical form.
 
 Project Website: [{application_name} home page]({application_home_page})
 
+Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
 </string>
          </property>
          <property name="openExternalLinks">
@@ -78,81 +143,57 @@ Project Website: [{application_name} home page]({application_home_page})
          </property>
         </widget>
        </item>
-       <item row="3" column="1" colspan="2">
-        <widget class="QLabel" name="python_version_label">
-         <property name="toolTip">
-          <string>Python runtime version</string>
-         </property>
-         <property name="textInteractionFlags">
-          <set>Qt::TextSelectableByMouse</set>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="0">
-        <widget class="QLabel" name="python_version_header_label">
-         <property name="text">
-          <string>Python Version:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="mtg_proxy_printer_version_header_label">
-         <property name="text">
-          <string>Application Version:</string>
-         </property>
-         <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QLabel" name="mtg_proxy_printer_name">
-         <property name="text">
-          <string notr="true">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:xx-large; font-weight:600;&quot;&gt;MTGProxyPrinter&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="2">
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="2" column="1" colspan="2">
-        <widget class="QLabel" name="mtg_proxy_printer_version_label">
-         <property name="toolTip">
-          <string>Application version</string>
-         </property>
-         <property name="text">
-          <string notr="true"/>
-         </property>
-         <property name="textFormat">
-          <enum>Qt::PlainText</enum>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-         </property>
-         <property name="textInteractionFlags">
-          <set>Qt::TextSelectableByMouse</set>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="last_database_update_header_label">
-         <property name="text">
-          <string>Last card update:</string>
-         </property>
-        </widget>
+       <item row="0" column="0" colspan="3">
+        <layout class="QHBoxLayout" name="about_header_layout">
+         <item>
+          <widget class="QLabel" name="mtg_proxy_printer_icon">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>64</width>
+             <height>64</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="mtg_proxy_printer_name">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>64</height>
+            </size>
+           </property>
+           <property name="text">
+            <string notr="true">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:xx-large; font-weight:600;&quot;&gt;MTGProxyPrinter&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="textInteractionFlags">
+            <set>Qt::NoTextInteraction</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="about_header_spacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
        </item>
       </layout>
      </widget>
@@ -221,8 +262,8 @@ Project Website: [{application_name} home page]({application_home_page})
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
+     <x>254</x>
+     <y>593</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -237,8 +278,8 @@ Project Website: [{application_name} home page]({application_home_page})
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
+     <x>322</x>
+     <y>593</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>

@@ -1,0 +1,135 @@
+{
+  "object": "card",
+  "id": "31c977b7-12cb-4e6f-8260-a7399b60940f",
+  "oracle_id": "62428d4a-beaa-4124-95ad-a7228e4450cc",
+  "multiverse_ids": [],
+  "name": "Flowerfoot Swordmaster",
+  "lang": "en",
+  "released_at": "2024-08-02",
+  "uri": "https://api.scryfall.com/cards/31c977b7-12cb-4e6f-8260-a7399b60940f",
+  "scryfall_uri": "https://scryfall.com/card/tblb/1/flowerfoot-swordmaster?utm_source=api",
+  "layout": "token",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/3/1/31c977b7-12cb-4e6f-8260-a7399b60940f.jpg?1721431117",
+    "normal": "https://cards.scryfall.io/normal/front/3/1/31c977b7-12cb-4e6f-8260-a7399b60940f.jpg?1721431117",
+    "large": "https://cards.scryfall.io/large/front/3/1/31c977b7-12cb-4e6f-8260-a7399b60940f.jpg?1721431117",
+    "png": "https://cards.scryfall.io/png/front/3/1/31c977b7-12cb-4e6f-8260-a7399b60940f.png?1721431117",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/3/1/31c977b7-12cb-4e6f-8260-a7399b60940f.jpg?1721431117",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/3/1/31c977b7-12cb-4e6f-8260-a7399b60940f.jpg?1721431117"
+  },
+  "mana_cost": "{W}",
+  "cmc": 1,
+  "type_line": "Token Creature — Mouse Soldier",
+  "oracle_text": "Valiant — Whenever this creature becomes the target of a spell or ability you control for the first time each turn, Mice you control get +1/+0 until end of turn.\n(This token's mana cost is {W}.)",
+  "power": "1",
+  "toughness": "1",
+  "colors": [
+    "W"
+  ],
+  "color_identity": [
+    "W"
+  ],
+  "keywords": [
+    "Valiant"
+  ],
+  "all_parts": [
+    {
+      "object": "related_card",
+      "id": "97ff118f-9c3c-43a2-8085-980c7fe7d227",
+      "component": "combo_piece",
+      "name": "Flowerfoot Swordmaster",
+      "type_line": "Creature — Mouse Soldier",
+      "uri": "https://api.scryfall.com/cards/97ff118f-9c3c-43a2-8085-980c7fe7d227"
+    },
+    {
+      "object": "related_card",
+      "id": "31c977b7-12cb-4e6f-8260-a7399b60940f",
+      "component": "token",
+      "name": "Flowerfoot Swordmaster",
+      "type_line": "Token Creature — Mouse Soldier",
+      "uri": "https://api.scryfall.com/cards/31c977b7-12cb-4e6f-8260-a7399b60940f"
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "timeless": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "explorer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "not_legal",
+    "pauper": "not_legal",
+    "vintage": "not_legal",
+    "penny": "not_legal",
+    "commander": "not_legal",
+    "oathbreaker": "not_legal",
+    "standardbrawl": "not_legal",
+    "brawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "not_legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "98ffb0ad-639e-4861-b81d-dd5ae734badf",
+  "set": "tblb",
+  "set_name": "Bloomburrow Tokens",
+  "set_type": "token",
+  "set_uri": "https://api.scryfall.com/sets/98ffb0ad-639e-4861-b81d-dd5ae734badf",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Atblb&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/tblb?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/31c977b7-12cb-4e6f-8260-a7399b60940f/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A62428d4a-beaa-4124-95ad-a7228e4450cc&unique=prints",
+  "collector_number": "1",
+  "digital": false,
+  "rarity": "common",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Vincent Christiaens",
+  "artist_ids": [
+    "31b01a73-d14f-4f9e-a5dc-9cee3b036124"
+  ],
+  "illustration_id": "4dd26100-f7c6-4698-b135-40c153469fb8",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": false,
+  "story_spotlight": false,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DFlowerfoot%2BSwordmaster",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DFlowerfoot%2BSwordmaster",
+    "edhrec": "https://edhrec.com/route/?cc=Flowerfoot+Swordmaster"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fmagic%2Fproduct%3FproductLineName%3Dmagic%26q%3DFlowerfoot%2BSwordmaster%26view%3Dgrid",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Flowerfoot+Swordmaster&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Flowerfoot+Swordmaster&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

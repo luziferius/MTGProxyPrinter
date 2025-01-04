@@ -18,7 +18,7 @@ import unittest.mock
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, QuantityT, UnitT, unit_registry
+from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, QuantityT, UnitT, unit_registry, StrDict
 from mtg_proxy_printer.ui.page_scene import RenderMode
 
 from PyQt5.QtGui import QPageLayout, QPageSize
@@ -146,8 +146,8 @@ def test_page_layout_lt():
     assert_that(layout, is_not(less_than(layout)))
 
 
-def test_create_from_settings():
-    values = {
+@pytest.mark.parametrize("values", [
+    {
         "paper-height": "200 mm",
         "paper-width": "100 mm",
         "margin-top": "9 mm",
@@ -162,15 +162,33 @@ def test_create_from_settings():
         "default-document-name": "Test",
         "paper-orientation": "Portrait",
         "paper-size": "Custom",
-    }
+    },
+    {
+        "paper-height": "200 millimeter",
+        "paper-width": "100 millimeter",
+        "margin-top": "9 millimeter",
+        "margin-bottom": "8 millimeter",
+        "margin-left": "7 millimeter",
+        "margin-right": "6 millimeter",
+        "row-spacing": "2 millimeter",
+        "column-spacing": "1 millimeter",
+        "print-cut-marker": "True",
+        "print-sharp-corners": "True",
+        "print-page-numbers": "True",
+        "default-document-name": "Test",
+        "paper-orientation": "Portrait",
+        "paper-size": "Custom",
+    },
+])
+def test_create_from_settings(values: StrDict):
     with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings["documents"], values):
         layout = PageLayoutSettings.create_from_settings()
     assert_that(
         layout, has_properties(
-            document_name="Test",
-            draw_cut_markers=True,
-            draw_page_numbers=True,
-            draw_sharp_corners=True,
+            document_name=equal_to("Test"),
+            draw_cut_markers=is_(True),
+            draw_page_numbers=is_(True),
+            draw_sharp_corners=is_(True),
             row_spacing=quantity_close_to(2*mm),
             column_spacing=quantity_close_to(1*mm),
             margin_bottom=quantity_close_to(8*mm),
@@ -179,8 +197,8 @@ def test_create_from_settings():
             margin_top=quantity_close_to(9*mm),
             custom_page_height=quantity_close_to(200*mm),
             custom_page_width=quantity_close_to(100*mm),
-            paper_orientation="Portrait",
-            paper_size="Custom",
+            paper_orientation=equal_to("Portrait"),
+            paper_size=equal_to("Custom"),
         )
     )
 
@@ -219,7 +237,7 @@ def test_to_page_layout(
             bottom=close_to_(margins.bottom()),
         ),
         isValid=True,
-        orientation=expected_orientation,
+        orientation=equal_to(expected_orientation),
     ))
     assert_that(q_page_layout.pageSize().size(QPageSize.Unit.Millimeter), has_getters(
         height=close_to(max(height.to(mm).magnitude, width.to(mm).magnitude), 0.01),

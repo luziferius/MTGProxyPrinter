@@ -27,7 +27,10 @@ except ImportError:  # Compatibility with Python < 3.11
 
 
 from PyQt5.QtGui import QPageSize, QPageLayout
-from pint.facets.plain.registry import QuantityT, UnitT
+try:
+    from pint.facets.plain.registry import QuantityT, UnitT
+except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
+    QuantityT = UnitT = typing.Any
 from PyQt5.QtCore import QSize, QObject, pyqtSignal as Signal
 import pint
 

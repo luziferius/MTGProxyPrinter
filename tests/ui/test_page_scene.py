@@ -34,6 +34,7 @@ from mtg_proxy_printer.document_controller.compact_document import ActionCompact
 from mtg_proxy_printer.model.document import Document
 
 from ..document_controller.helpers import create_card
+from tests.helpers import close_to_
 from tests.hasgetter import has_getters, has_getter
 from tests.helpers import close_to_
 

@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import contextlib
-import dataclasses
 import itertools
 from itertools import repeat
 import pathlib
@@ -30,7 +29,6 @@ import pytest
 from hamcrest import *
 
 
-import mtg_proxy_printer.model.document_loader
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from tests.helpers import quantity_close_to
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, QuantityT

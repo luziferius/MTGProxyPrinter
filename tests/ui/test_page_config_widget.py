@@ -13,13 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import functools
-import typing
 from unittest.mock import patch
 
-import hamcrest.core.matcher
 import pint
-from PyQt5.QtWidgets import QDoubleSpinBox, QCheckBox
+from PyQt5.QtWidgets import QDoubleSpinBox, QCheckBox, QLineEdit
 
 from hamcrest import *
 import pytest
@@ -31,15 +28,16 @@ from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT, QuantityT
 
 from tests.hasgetter import has_getter
-from tests.helpers import quantity_close_to, quantity_between, number_between
-close_to_: typing.Callable[[float], hamcrest.core.matcher.Matcher] = functools.partial(close_to, delta=0.01)
+from tests.helpers import quantity_close_to, quantity_between, number_between, close_to_
 mm: UnitT = unit_registry.mm
+
 
 @pytest.fixture()
 def widget(qtbot: QtBot) -> PageConfigWidget:
     widget = PageConfigWidget()
     qtbot.addWidget(widget)
     return widget
+
 
 
 @pytest.fixture()
@@ -76,7 +74,7 @@ def test_set_numerical_spin_boxes(qtbot: QtBot, widget: PageConfigWidget, attrib
     assert_that(ui, has_property(attribute_name, instance_of(QDoubleSpinBox)))
     assert_that(widget.page_layout, has_property(attribute_name, instance_of(pint.Quantity)))
     spinbox_widget: QDoubleSpinBox = getattr(ui, attribute_name)
-    with qtbot.waitSignal(spinbox_widget.valueChanged):
+    with qtbot.waitSignals([spinbox_widget.valueChanged, widget.page_layout_changed], timeout=100):
         previous = spinbox_widget.value()
         new_value = previous + 1
         spinbox_widget.setValue(new_value)
@@ -89,22 +87,50 @@ def test_set_numerical_spin_boxes(qtbot: QtBot, widget: PageConfigWidget, attrib
     "draw_sharp_corners",
     "draw_page_numbers",
 ])
-def test_boolean_check_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
+def test_set_boolean_check_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
     ui = widget.ui
     assert_that(ui, has_property(attribute_name, instance_of(QCheckBox)))
     assert_that(widget.page_layout, has_property(attribute_name, instance_of(bool)))
     checkbox_widget: QCheckBox = getattr(ui, attribute_name)
-    with qtbot.waitSignal(checkbox_widget.stateChanged):
+    with qtbot.waitSignals([checkbox_widget.stateChanged, widget.page_layout_changed], timeout=100):
         previous = checkbox_widget.isChecked()
         new_value = not previous
         checkbox_widget.setChecked(new_value)
     assert_that(checkbox_widget.isChecked(), is_(new_value))
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
     # Test second time to ensure both ways (enable & disable) work
-    with qtbot.waitSignal(checkbox_widget.stateChanged):
+    with qtbot.waitSignals([checkbox_widget.stateChanged, widget.page_layout_changed], timeout=100):
         previous = checkbox_widget.isChecked()
         new_value = not previous
         checkbox_widget.setChecked(new_value)
+    assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
+
+
+@pytest.mark.parametrize("attribute_name", [
+    "document_name",
+])
+def test_set_line_edits(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
+    ui = widget.ui
+    assert_that(ui, has_property(attribute_name, instance_of(QLineEdit)))
+    assert_that(widget.page_layout, has_property(attribute_name, instance_of(str)))
+    line_edit: QLineEdit = getattr(ui, attribute_name)
+    new_value = "Test"
+    with qtbot.waitSignals([line_edit.textChanged, widget.page_layout_changed], timeout=100):
+        line_edit.setText(new_value)
+    assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
+
+
+@pytest.mark.parametrize("attribute_name", [
+    "document_name",
+])
+def test_set_line_edits(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
+    ui = widget.ui
+    assert_that(ui, has_property(attribute_name, instance_of(QLineEdit)))
+    assert_that(widget.page_layout, has_property(attribute_name, instance_of(str)))
+    line_edit: QLineEdit = getattr(ui, attribute_name)
+    new_value = "Test"
+    with qtbot.waitSignals([line_edit.textChanged, widget.page_layout_changed], timeout=100):
+        line_edit.setText(new_value)
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
 
 
