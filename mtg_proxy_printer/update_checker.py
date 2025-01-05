@@ -27,7 +27,7 @@ from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.card_info_downloader import CardInfoDatabaseImportWorker, CardInfoWorkerBase
+from mtg_proxy_printer.card_info_downloader import ApiStreamWorker, CardInfoWorkerBase
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
 from mtg_proxy_printer.sqlite_helpers import cached_dedent
 from mtg_proxy_printer.runner import Runnable
@@ -48,7 +48,7 @@ KNOWN_APPLICATION_MIRRORS: StringList = [
 ]
 
 
-class CardDataUpdateCheckWorker(CardInfoDatabaseImportWorker):
+class CardDataUpdateCheckWorker(ApiStreamWorker):
     card_data_update_found = Signal(int)
 
     def __init__(self, card_db: CardDatabase, parent: QObject = None):
