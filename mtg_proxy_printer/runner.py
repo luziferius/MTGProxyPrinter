@@ -15,7 +15,7 @@
 
 import typing
 
-from PyQt5.QtCore import QRunnable
+from PyQt5.QtCore import QRunnable, QObject, pyqtSignal as Signal
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -23,7 +23,17 @@ del get_logger
 
 __all__ = [
     "Runnable",
+    "ProgressSignalContainer"
 ]
+
+
+class ProgressSignalContainer(QObject):
+    begin_update = Signal(int, str)
+    progress = Signal(int)
+    update_completed = Signal()
+    advance_progress = Signal()
+    ui_update_required = Signal()
+    error_occurred = Signal(str)
 
 
 class Runnable(QRunnable):

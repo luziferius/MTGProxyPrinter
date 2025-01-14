@@ -40,7 +40,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
-from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from mtg_proxy_printer.model.carddb import Card, CheckCard, AnyCardType
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
@@ -150,11 +150,10 @@ class ImageDatabase(QObject):
         self.download_worker = ImageDownloader(self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    @property
-    @functools.lru_cache(maxsize=1)
-    def blank_image(self):
-        """Returns a static, empty QPixmap in the size of a regular magic card."""
-        pixmap = QPixmap(CardSizes.REGULAR.as_qsize_px())
+    @functools.lru_cache()
+    def get_blank(self, size: CardSize = CardSizes.REGULAR):
+        """Returns a static, transparent QPixmap in the given size."""
+        pixmap = QPixmap(size.as_qsize_px())
         pixmap.fill(QColorConstants.Transparent)
         return pixmap
 
@@ -352,7 +351,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             return
         total_cards = len(card_indices)
         logger.debug(f"Requesting {total_cards} missing images")
-        blank = self.image_database.blank_image
+        blanks = {self.image_database.get_blank(CardSizes.REGULAR), self.image_database.get_blank(CardSizes.OVERSIZED)}
         document: "Document" = card_indices[0].model()
         self.update_batch_processing_state(True)
         self.batch_process_starting.emit(
@@ -361,7 +360,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         for index, card_index in enumerate(card_indices, start=1):
             card = card_index.data(ItemDataRole.UserRole)
             self.get_image_synchronous(card)
-            if card.image_file is not blank:
+            if card.image_file not in blanks:
                 self.missing_image_obtained.emit(card_index)
             document.on_missing_image_obtained(card_index)
             self.batch_process_progress.emit(index)
@@ -377,7 +376,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.batch_processing_state_changed.emit(value)
 
     def _handle_network_error_during_download(self, card: Card, reason_str: str):
-        card.set_image_file(self.image_database.blank_image)
+        card.set_image_file(self.image_database.get_blank(card.size))
         logger.warning(
             f"Image download failed for card {card}, reason is \"{reason_str}\". Using blank replacement image.")
         # Only return the error message for storage, if the queue currently processes a batch job.
@@ -403,11 +402,12 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     def _fetch_and_set_image(self, card: Card):
         key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
         image_path = self.image_database.db_path / key.format_relative_path()
+        blank = self.image_database.get_blank()  # TODO: needs to be size-aware?
         pixmap = self._load_from_memory(key) \
             or self._load_from_disk(key, image_path) \
             or self._download_from_scryfall(card, image_path) \
-            or self.image_database.blank_image
-        if pixmap is not self.image_database.blank_image:
+            or blank
+        if pixmap is not blank:
             self._remove_outdated_low_resolution_image(card)
         card.set_image_file(pixmap)
 

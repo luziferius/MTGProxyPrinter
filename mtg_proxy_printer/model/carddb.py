@@ -20,24 +20,23 @@ import enum
 import itertools
 import functools
 import pathlib
+import sqlite3
 import threading
 import typing
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter, QColorConstants
-from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal
+from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.imagedb import CacheContent
-    from mtg_proxy_printer.application import Application
 
 import mtg_proxy_printer.app_dirs
-from mtg_proxy_printer.model.carddb_migrations import migrate_card_database
 from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import PageType, StringList, OptStr
+from mtg_proxy_printer.units_and_sizes import PageType, StringList, OptStr, CardSizes, CardSize
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -124,7 +123,7 @@ class Card:
     oracle_id: str = dataclasses.field(compare=True)
     image_uri: str = dataclasses.field(compare=False)
     highres_image: bool = dataclasses.field(compare=False)
-    is_oversized: bool = dataclasses.field(compare=False)
+    size: CardSize = dataclasses.field(compare=False)
     face_number: int = dataclasses.field(compare=False)
     is_dfc: bool = dataclasses.field(compare=False)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
@@ -162,6 +161,10 @@ class Card:
     @property
     def set_code(self):
         return self.set.code
+
+    @property
+    def is_oversized(self) -> bool:
+        return self.size is CardSizes.OVERSIZED
 
 
 @dataclasses.dataclass(unsafe_hash=True)
@@ -288,17 +291,16 @@ def with_database_write_lock(semaphore: threading.BoundedSemaphore = write_semap
         @functools.wraps(func)
         def wrapped(*args, **kwargs):
             semaphore.acquire()
-            logger.debug(f"Obtained database write lock")
+            logger.debug(f"Obtained database write lock, about to run task {func}")
             try:
-                app: "Application" = QApplication.instance()
                 # The instance used by unit tests does not have the should_run attribute.
-                # Skip the second condition in that case
-                if app and (not hasattr(app, "should_run") or app.should_run):
+                # In that case, run tasks regardless
+                if getattr(QApplication.instance(), "should_run", True):
                     return func(*args, **kwargs)
                 else:
                     logger.warning(f"Not running enqueued task {func}, because the application is about to exit.")
             finally:
-                logger.debug("Releasing database write lock")
+                logger.debug(f"Releasing database write lock for task {func}")
                 semaphore.release()
         return wrapped
     return decorator
@@ -320,10 +322,28 @@ class CardDatabase(QObject):
         """
         super().__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
+        self._db_check_same_thread = check_same_thread
         self.db_path = db_path
-        self.db = db = open_database(
-            db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, check_same_thread=check_same_thread)
-        migrate_card_database(db)
+        self.db: sqlite3.Connection = None
+        self._db_is_temporary = False
+        self.reopen_database()
+        self._exit_hook = None
+        if db_path != ":memory:":
+            self._register_exit_hook()
+
+    @Slot()
+    def reopen_database(self) -> None:
+        logger.info(f"About to open card database from {self.db_path}")
+        db = open_database(
+            self.db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION,
+            check_same_thread=self._db_check_same_thread)
+        outdated_on_disk = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, SCHEMA_NAME) > 0
+        if outdated_on_disk:
+            logger.warning(
+                "Refusing to load outdated database schema. Use empty in-memory database until migrations complete.")
+            db = open_database(
+                ":memory:", SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION,
+                check_same_thread=self._db_check_same_thread)
         logger.debug("Validating schema of the opened database")
         try:
             validate_database_schema(
@@ -333,10 +353,14 @@ class CardDatabase(QObject):
             logger.exception("Card database schema validation failed. Trying to continue, but expect crashes")
         else:
             logger.debug("Card database schema valid")
-        self._exit_hook = None
-        if db_path != ":memory:":
-            self._register_exit_hook()
+        if reopened := (self.db is not None):
+            self.db.rollback()
+            self.db.close()
+        self.db = db
+        self._db_is_temporary = outdated_on_disk
         self.begin_transaction()
+        if reopened:
+            self.card_data_updated.emit()
 
     def _register_exit_hook(self):
         logger.debug("Registering cleanup hooks that close the database on exit.")
@@ -350,7 +374,7 @@ class CardDatabase(QObject):
             logger.debug("Running SQLite PRAGMA optimize.")
             # Running query planner optimization prior to closing the connection, as recommended by the SQLite devs.
             # See also: https://www.sqlite.org/lang_analyze.html
-            self.db.execute("PRAGMA optimize")
+            self.db.execute("PRAGMA optimize; -- close_db()\n")
             self.db.close()
             logger.info("Closed database.")
 
@@ -364,7 +388,7 @@ class CardDatabase(QObject):
 
     def begin_transaction(self):
         logger.info("Starting new read transaction")
-        self.db.execute("BEGIN DEFERRED TRANSACTION")
+        self.db.execute("BEGIN DEFERRED TRANSACTION; --begin_transaction()\n")
 
     def has_data(self) -> bool:
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
@@ -553,7 +577,7 @@ class CardDatabase(QObject):
             Card(
                 name, MTGSet(set_code, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
+                bool(highres_image), CardSizes.from_bool(is_oversized), face_number, bool(is_dfc),
             )
             for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
                 is_oversized, face_number, language, is_dfc in cursor
@@ -688,10 +712,11 @@ class CardDatabase(QObject):
         else:
             name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
                 is_oversized, face_number, is_dfc = result
+            size = CardSizes.from_bool(is_oversized)
             return Card(
                 name, MTGSet(set_abbr, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
+                bool(highres_image), size, face_number, bool(is_dfc),
             )
 
     def get_all_cards_from_image_cache(self, cache_content: typing.List["CacheContent"]) -> ImageDatabaseCards:
@@ -752,10 +777,11 @@ class CardDatabase(QObject):
                 is_oversized, face_number, is_dfc, is_hidden \
                 in db.execute(known_images_query):
             cache_item = CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), pathlib.Path(abs_path))
+            size = CardSizes.from_bool(is_oversized)
             card = Card(
                 name, MTGSet(set_code, set_name), collector_number,
                 language, cache_item.scryfall_id, cache_item.is_front, oracle_id, image_uri,
-                bool(highres_on_disk), bool(is_oversized), face_number, is_dfc
+                bool(highres_on_disk), size, face_number, is_dfc
             )
             if is_hidden:
                 cards.hidden.append((card, cache_item))
@@ -933,7 +959,7 @@ class CardDatabase(QObject):
         result = natural_sorted((number for number, in self.db.execute(query, parameters)))
         return result
 
-    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
+    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any] = None):
         if result := self.db.execute(query, parameters).fetchone():
             return result[0]
         else:
@@ -1043,8 +1069,9 @@ class CardDatabase(QObject):
         if similarity is None:
             logger.debug(f"Found no translations to {language_override} for card '{card.name}'.")
             return None
+        size = CardSizes.from_bool(is_oversized)
         return Card(
             name, MTGSet(set_code, set_name), collector_number,
             language_override, scryfall_id, card.is_front, card.oracle_id, image_uri,
-            bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
+            bool(highres_image), size, face_number, bool(is_dfc),
         )

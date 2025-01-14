@@ -50,10 +50,10 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Ma
             return_value=request.param), \
             unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker, "get_scryfall_bulk_card_data_url",
+                mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "get_scryfall_bulk_card_data_url",
                 return_value=(unittest.mock.MagicMock(), 10)), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker, "read_json_card_data_from_url",
+                mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "read_json_card_data_from_url",
                 return_value=iter([10])):
         cid = CardInfoDownloader(card_db)
         main_window = MainWindow(card_db, cid, document.image_db, document, QStringListModel(["en"]))
@@ -111,7 +111,7 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
 def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> pathlib.Path:
     mock_image_path = temp_path / 'temp' / "0000579f-7b35-4ed3-b44c-db2a538066fe.png"
     mock_image_path.parent.mkdir(parents=True, exist_ok=False)
-    image_db.blank_image.save(str(mock_image_path), "PNG", 100)
+    image_db.get_blank().save(str(mock_image_path), "PNG", 100)
     assert_that(mock_image_path.is_file(), is_(True))
     return mock_image_path
 
@@ -138,7 +138,7 @@ def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, mai
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No), \
         unittest.mock.patch(
-            "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
+            "mtg_proxy_printer.card_info_downloader.DatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
         unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start, \
             qtbot.assertNotEmitted(main_window.loading_state_changed):
         main_window.show_card_data_update_available_message_box(10000)
@@ -188,7 +188,7 @@ def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtB
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No) as message_box, \
         unittest.mock.patch(
-            "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
+            "mtg_proxy_printer.card_info_downloader.DatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
             unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start, \
             qtbot.assertNotEmitted(main_window.loading_state_changed):
         main_window.ask_user_about_empty_database()
@@ -306,7 +306,7 @@ def test_undo_import_deck_list_with_last_page_selected_works_without_raising_exc
     document = main_window.document
     card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     page_capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
-    card.image_file = main_window.image_db.blank_image
+    card.image_file = main_window.image_db.get_blank()
     action = ActionImportDeckList(
         [card]*page_capacity*2,
         False

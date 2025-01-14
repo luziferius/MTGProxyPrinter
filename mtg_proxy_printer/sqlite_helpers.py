@@ -124,7 +124,7 @@ def check_database_schema_version(db: sqlite3.Connection, schema_name: str) -> i
 
     """
     connected_database_schema_version: int = db.execute("PRAGMA user_version\n").fetchone()[0]
-    target_schema_version = _get_target_database_schema_version(schema_name)
+    target_schema_version = get_target_database_schema_version(schema_name)
     if connected_database_schema_version != target_schema_version:
         message = f"Schema version mismatch in the opened database. " \
                   f"Expected schema version {target_schema_version}, got {connected_database_schema_version}."
@@ -132,7 +132,7 @@ def check_database_schema_version(db: sqlite3.Connection, schema_name: str) -> i
     return target_schema_version - connected_database_schema_version
 
 
-def _get_target_database_schema_version(schema_name: str) -> int:
+def get_target_database_schema_version(schema_name: str) -> int:
     schema = read_resource_text("mtg_proxy_printer.model", f"{schema_name}.sql")
     latest_user_version = int(SCHEMA_PRAGMA_USER_VERSION_MATCHER.search(schema)["version"])
     return latest_user_version

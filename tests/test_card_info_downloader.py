@@ -24,7 +24,7 @@ import pytest
 import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.card_info_downloader import SetWackinessScore
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
-from mtg_proxy_printer.units_and_sizes import UUID
+from mtg_proxy_printer.units_and_sizes import UUID, CardSizes
 
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty, \
     fill_card_database_with_json_cards, CardDataType
@@ -174,6 +174,7 @@ class TestCaseData:
         card_set = MTGSet(cd["set"], cd["set_name"])
         oracle_id = cd.get("oracle_id") or cd["card_faces"][0]["oracle_id"]
         face_id -= 1
+        size = CardSizes.from_bool(cd["oversized"])
         if (faces := cd.get("card_faces")) is not None:
             face = faces[face_id]
             image_uris = cd.get("image_uris") or face["image_uris"]
@@ -182,13 +183,13 @@ class TestCaseData:
                 face.get("printed_name") or face["name"], card_set,
                 cd["collector_number"],  cd["lang"], cd["id"], "/front/" in image_uris["png"], oracle_id,
                 image_uris["png"], cd["highres_image"],
-                cd["oversized"], face_id, "/back/" in last_image_uris["png"], None
+                size, face_id, "/back/" in last_image_uris["png"], None
             )
         return Card(
             cd.get("printed_name") or cd["name"], card_set,
             cd["collector_number"],  cd["lang"], cd["id"], True, oracle_id,
             cd["image_uris"]["png"], cd["highres_image"],
-            cd["oversized"], 0, False, None
+            size, 0, False, None
         )
 
 
@@ -617,7 +618,7 @@ def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, 
 
 @pytest.mark.parametrize("exception", [sqlite3.Error, Exception])
 def test_import_works_after_network_error_during_first_try(qtbot, card_db, exception):
-    dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(card_db)
+    dw = mtg_proxy_printer.card_info_downloader.DatabaseImportWorker(card_db)
     data_raising_exception = unittest.mock.MagicMock().__iter__.side_effect = exception()
     with unittest.mock.patch("mtg_proxy_printer.card_info_downloader.logger.exception") as logger_mock:
         dw.populate_database(data_raising_exception)

@@ -16,8 +16,8 @@
 import pytest
 from hamcrest import *
 
-from mtg_proxy_printer.units_and_sizes import UUID
-
+from mtg_proxy_printer.units_and_sizes import UUID, CardSizes, CardSize
+from tests.hasgetter import has_getters
 
 @pytest.mark.parametrize("input_str", [
     "2c6e5b25-b721-45ee-894a-697de1310b8c",
@@ -49,4 +49,22 @@ def test_uuid_with_invalid_input_raises_valueerror(input_str: str):
     assert_that(
         calling(UUID).with_args(input_str),
         raises(ValueError)
+    )
+
+@pytest.mark.parametrize("input_, expected", [(True, CardSizes.OVERSIZED), (False, CardSizes.REGULAR)])
+def test_card_sizes_from_bool(input_: bool, expected: CardSize):
+    assert_that(CardSizes.from_bool(input_), is_(expected))
+
+
+@pytest.mark.parametrize("size, width, height", [
+    (CardSizes.REGULAR, 745, 1040),
+    (CardSizes.OVERSIZED, 1040, 1490),
+])
+def test_as_qsize_px(size: CardSize, width: int, height: int):
+    assert_that(
+        size.as_qsize_px(),
+        has_getters({
+            "width": equal_to(width),
+            "height": equal_to(height),
+        })
     )

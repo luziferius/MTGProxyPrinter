@@ -53,7 +53,7 @@ def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *, co
     Create a Card with the given size, and fill the pixmap with the given color.
     Each corner has a square transparent area, as a crude emulation of rounded corners.
     """
-    card = create_card(name, size is CardSizes.OVERSIZED)
+    card = create_card(name, size)
     q_size = size.as_qsize_px()
     image = QImage(q_size, QImage.Format.Format_ARGB32)
     image.fill(color)

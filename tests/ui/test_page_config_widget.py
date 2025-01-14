@@ -38,6 +38,9 @@ def widget(qtbot: QtBot) -> PageConfigWidget:
     qtbot.addWidget(widget)
     return widget
 
+@pytest.fixture()
+def default_settings() -> PageLayoutSettings:
+    return PageLayoutSettings.create_from_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
 
 
 @pytest.fixture()
@@ -68,8 +71,10 @@ def test_paper_size_spin_box_minimum_value(widget: PageConfigWidget, name: str, 
     "column_spacing",
     "card_bleed",
 ])
-def test_set_numerical_spin_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
-    widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
+def test_set_numerical_spin_boxes(
+        qtbot: QtBot, widget: PageConfigWidget, default_settings: PageLayoutSettings,
+        attribute_name: str):
+    widget.load_from_page_layout(default_settings)
     ui = widget.ui
     assert_that(ui, has_property(attribute_name, instance_of(QDoubleSpinBox)))
     assert_that(widget.page_layout, has_property(attribute_name, instance_of(pint.Quantity)))
@@ -270,13 +275,14 @@ def test_save_boolean_document_settings_to_config(
     ("column_spacing", 0*mm, 10000*mm),
 ])
 def test_load_numerical_values_from_page_layout(
-        widget: PageConfigWidget, attribute_name: str, min_value: QuantityT, max_value: QuantityT, value: QuantityT):
+        widget: PageConfigWidget, default_settings: PageLayoutSettings,
+        attribute_name: str, min_value: QuantityT, max_value: QuantityT, value: QuantityT):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
     """
     with patch.dict(mtg_proxy_printer.settings.settings["documents"], ZeroMarginsSettings):
-        other = PageLayoutSettings.create_from_settings()
+        other = default_settings
     setattr(other, attribute_name, value)
     widget.load_from_page_layout(other)
     assert_that(widget.page_layout, has_property(attribute_name, quantity_between(min_value, max_value)))
@@ -293,8 +299,10 @@ def test_load_numerical_values_from_page_layout(
     "draw_page_numbers",
     "draw_sharp_corners",
 ])
-def test_load_booleans_from_page_layout(widget: PageConfigWidget, attribute_name: str, value: bool):
-    other = PageLayoutSettings.create_from_settings()
+def test_load_booleans_from_page_layout(
+        widget: PageConfigWidget, default_settings: PageLayoutSettings,
+        attribute_name: str, value: bool):
+    other = default_settings
     setattr(other, attribute_name, value)
     widget.load_from_page_layout(other)
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(value)))
@@ -334,8 +342,8 @@ def test_flip_page_dimensions_updates_capacity(widget: PageConfigWidget, custom_
     )))
 
 
-def test_page_capacity_updates_correctly(widget: PageConfigWidget):
-    widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
+def test_page_capacity_updates_correctly(widget: PageConfigWidget, default_settings: PageLayoutSettings):
+    widget.load_from_page_layout(default_settings)
     page_layout = widget.page_layout
     row_spacing = widget.ui.row_spacing
     page_capacity = widget.ui.page_capacity

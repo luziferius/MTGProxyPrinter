@@ -49,6 +49,7 @@ class PageConfigWidget(QGroupBox):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigWidget()
         ui.setupUi(self)
+        self.hide_preview_button = ui.show_preview_button.hide
         self.page_layout = self._setup_page_layout(ui)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -58,6 +59,7 @@ class PageConfigWidget(QGroupBox):
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings.create_from_settings()
+
         for page_size_id in PageSizeManager.PageSize.values():
             ui.paper_size.addItem(QPageSize.name(page_size_id), page_size_id)
         for item, value in PageSizeManager.PageOrientation.items():
@@ -73,22 +75,19 @@ class PageConfigWidget(QGroupBox):
         ui.paper_orientation.currentIndexChanged.connect(self.on_page_layout_setting_changed)
         ui.paper_orientation.currentIndexChanged.connect(partial(self.page_layout_changed.emit, page_layout))
 
-        for spinbox in (
-                ui.card_bleed, ui.custom_page_height, ui.custom_page_width,
-                ui.margin_top, ui.margin_left, ui.margin_bottom, ui.margin_right,
-                ui.row_spacing, ui.column_spacing):
+        for spinbox, _ in self._get_decimal_settings_widgets():
             layout_key = spinbox.objectName()
             spinbox.valueChanged[float].connect(
                 partial(self.set_numerical_page_layout_item, page_layout, layout_key, "mm"))
             spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
             spinbox.valueChanged[float].connect(self.on_page_layout_setting_changed)
             spinbox.valueChanged[float].connect(partial(self.page_layout_changed.emit, page_layout))
-        for checkbox in (
-                ui.draw_cut_markers, ui.draw_sharp_corners, ui.draw_page_numbers):
+
+        for checkbox, _ in self._get_boolean_settings_widgets():
             layout_key = checkbox.objectName()
-            checkbox.stateChanged.connect(
-                partial(self.set_boolean_page_layout_item, page_layout, layout_key))
+            checkbox.stateChanged.connect(partial(self.set_boolean_page_layout_item, page_layout, layout_key))
             checkbox.stateChanged.connect(partial(self.page_layout_changed.emit, page_layout))
+
         ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         ui.document_name.textChanged.connect(partial(self.page_layout_changed.emit, page_layout))
         return page_layout
@@ -110,9 +109,6 @@ class PageConfigWidget(QGroupBox):
         # which can be connected to the stateChanged signal just fine.
         # Also, functools.partial does not exhibit the same issue as the lambda expression shows.
         setattr(page_layout, layout_key, value == CheckState.Checked)
-
-    def hide_preview_button(self):
-        self.ui.show_preview_button.hide()
 
     @Slot(int)
     def _on_paper_size_changed(self, index: int):
@@ -296,7 +292,7 @@ class PageConfigWidget(QGroupBox):
         return self.ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
 
     @functools.singledispatchmethod
-    def highlight_differing_settings(self, to_compare):
+    def highlight_differing_settings(self, to_compare: Union[ConfigParser, PageLayoutSettings]):
         pass
 
     @highlight_differing_settings.register

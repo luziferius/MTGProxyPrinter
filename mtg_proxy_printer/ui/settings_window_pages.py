@@ -21,14 +21,14 @@ from abc import abstractmethod
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
 from PyQt5.QtGui import QDesktopServices, QStandardItem, QIcon
-from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit
+from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.ui.common import highlight_widget
-from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser
+from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, QuantityT
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
 if typing.TYPE_CHECKING:
@@ -62,6 +62,7 @@ QueuedConnection = Qt.ConnectionType.QueuedConnection
 ItemDataRole = Qt.ItemDataRole
 logger = get_logger(__name__)
 del get_logger
+mm: QuantityT = unit_registry.mm
 
 
 class PageMetadata(typing.NamedTuple):
@@ -504,7 +505,7 @@ class PrinterSettingsPage(Page):
         self.ui = ui = Ui_PrinterSettingsPage()
         ui.setupUi(self)
 
-    def _get_printer_settings_widgets(self):
+    def _get_printer_settings_boolean_widgets(self):
         ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (ui.printer_use_borderless_printing, "borderless-printing"),
@@ -512,21 +513,38 @@ class PrinterSettingsPage(Page):
         ]
         return widgets_with_settings
 
+    def _get_printer_settings_length_widgets(self):
+        ui = self.ui
+        widgets_with_settings: typing.List[typing.Tuple[QDoubleSpinBox, str]] = [
+            (ui.horizontal_offset, "horizontal-offset"),
+        ]
+        return widgets_with_settings
+
     def load(self, settings: ConfigParser):
         section = settings["printer"]
-        for widget, setting in self._get_printer_settings_widgets():
-            widget.setChecked(section.getboolean(setting))
+        for checkbox, setting in self._get_printer_settings_boolean_widgets():
+            checkbox.setChecked(section.getboolean(setting))
+        for spinbox, setting in self._get_printer_settings_length_widgets():
+            # TODO: Not fully unit-aware. Spinbox assumed in mm
+            spinbox.setValue(section.get_quantity(setting).to("mm").magnitude)
 
     def save(self):
         section = mtg_proxy_printer.settings.settings["printer"]
-        for widget, setting in self._get_printer_settings_widgets():
-            section[setting] = str(widget.isChecked())
+        for checkbox, setting in self._get_printer_settings_boolean_widgets():
+            section[setting] = str(checkbox.isChecked())
+        for spinbox, setting in self._get_printer_settings_length_widgets():
+            # TODO: Not fully unit-aware. Spinbox assumed in mm
+            section[setting] = f"{spinbox.value()} mm"
 
     def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["printer"]
-        for widget, setting in self._get_printer_settings_widgets():
-            if section.getboolean(setting) != widget.isChecked():
-                highlight_widget(widget)
+        for checkbox, setting in self._get_printer_settings_boolean_widgets():
+            if section.getboolean(setting) != checkbox.isChecked():
+                highlight_widget(checkbox)
+        for spinbox, setting in self._get_printer_settings_length_widgets():
+            # TODO: Not fully unit-aware. Spinbox assumed in mm
+            if spinbox.value()*mm != section.get_quantity(setting).to("mm"):
+                highlight_widget(spinbox)
 
 
 class PDFSettingsPage(Page):

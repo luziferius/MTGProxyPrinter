@@ -29,7 +29,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import \
-    CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT, UnitT, PageSizeManager, is_acceptable_page_size
+    CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT, PageSizeManager, is_acceptable_page_size
 
 __all__ = [
     "settings",
@@ -54,6 +54,7 @@ def get_default_paper_size() -> str:
     return default
 
 
+mm: QuantityT = unit_registry.mm
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = ConfigParser()
 DEFAULT_SETTINGS = ConfigParser()
@@ -163,6 +164,7 @@ DEFAULT_SETTINGS["update-checks"] = {
 DEFAULT_SETTINGS["printer"] = {
     "borderless-printing": "True",
     "landscape-compatibility-workaround": "False",
+    "horizontal-offset": "0 mm",
 }
 DEFAULT_SETTINGS["pdf-export"] = {
     "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
@@ -170,9 +172,9 @@ DEFAULT_SETTINGS["pdf-export"] = {
     "landscape-compatibility-workaround": "False",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
-MIN_SIZE: QuantityT = 0 * unit_registry.mm
-MAX_SIZE: QuantityT = 10000 * unit_registry.mm
-ALLOWED_LENGTH_UNITS: typing.Set[UnitT] = {unit_registry.mm}
+MIN_SIZE = 0 * mm
+MAX_SIZE = 10000 * mm
+ALLOWED_LENGTH_UNITS: typing.Set[QuantityT] = {mm}
 
 
 def round_to_nearest_multiple(value: T, multiple: T) -> T:
@@ -180,9 +182,9 @@ def round_to_nearest_multiple(value: T, multiple: T) -> T:
     return round(value/multiple)*multiple
 
 
-def clamp_to_supported_range(value: QuantityT) -> QuantityT:
+def clamp_to_supported_range(value: QuantityT, minimum: QuantityT, maximum: QuantityT) -> QuantityT:
     """Clamps numerical document settings to the supported value range"""
-    return min(max(value, MIN_SIZE),  MAX_SIZE)
+    return min(max(value, minimum),  maximum)
 
 
 def get_boolean_card_filter_keys():
@@ -303,7 +305,7 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
         elif key in string_settings:
             pass
         else:
-            _validate_document_spacing_distance(section, defaults, key)
+            _validate_length(section, defaults, key, MIN_SIZE, MAX_SIZE)
 
     if section["paper-size"] not in PageSizeManager.PageSize:
         _restore_default(section, defaults, "paper-size")
@@ -383,8 +385,11 @@ def _validate_default_filesystem_paths_section(
 def _validate_printer_section(to_validate: ConfigParser, section_name: str = "printer"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
-    for item in defaults.keys():
-        _validate_boolean(section, defaults, item)
+    for key, default in defaults.items():
+        if default in {"True", "False"}:
+            _validate_boolean(section, defaults, key)
+        else:
+            _validate_length(section, defaults, key, -100*mm, 100*mm)
 
 
 def _validate_pdf_export_section(to_validate: ConfigParser, section_name: str = "pdf-export"):
@@ -426,12 +431,12 @@ def _validate_non_negative_int(section: SectionProxy, defaults: SectionProxy, ke
         _restore_default(section, defaults, key)
 
 
-def _validate_document_spacing_distance(section: SectionProxy, defaults: SectionProxy, key: str):
+def _validate_length(section: SectionProxy, defaults: SectionProxy, key: str, minimum: QuantityT, maximum: QuantityT):
     try:
         value = section.get_quantity(key)
         if unit_conversion_required := (value.units not in ALLOWED_LENGTH_UNITS):
             value = value.to("mm", "print")
-        rounded = clamp_to_supported_range(value)
+        rounded = clamp_to_supported_range(value, minimum, maximum)
         if unit_conversion_required or not math.isclose(value.magnitude, rounded.magnitude):
             section[key] = str(rounded)
     # Unit-less values raise AttributeError, non-length values, like grams or seconds, raise DimensionalityError
@@ -512,7 +517,7 @@ def _migrate_print_guessing_settings(to_migrate: ConfigParser):
     # be disabled by default.
     target["enable-print-guessing-by-default"] = "True"
     target["prefer-already-downloaded-images"] = source["prefer-already-downloaded"]
-    target["always-translate-deck-lists"] = source["always-translate-deck-lists"]
+    target["always-translate-deck-lists"] = source.get("always-translate-deck-lists", "False")
 
 
 def _migrate_image_spacing_settings(to_migrate: ConfigParser):
@@ -531,10 +536,14 @@ def _migrate_to_pdf_export_section(to_migrate: ConfigParser):
         return
     to_migrate.add_section(section_name)
     target = to_migrate[section_name]
-    target["pdf-page-count-limit"] = to_migrate["documents"]["pdf-page-count-limit"]
-    target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
-    del to_migrate["documents"]["pdf-page-count-limit"]
-    del to_migrate["default-filesystem-paths"]["pdf-export-path"]
+    target["pdf-page-count-limit"] = to_migrate["documents"].get("pdf-page-count-limit", "0")
+    try:
+        del to_migrate["documents"]["pdf-page-count-limit"]
+    except KeyError:
+        pass
+    if to_migrate.has_section("default-filesystem-paths"):
+        target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
+        del to_migrate["default-filesystem-paths"]["pdf-export-path"]
 
 
 def _migrate_document_settings_to_pint(to_migrate: ConfigParser):
@@ -545,8 +554,11 @@ def _migrate_document_settings_to_pint(to_migrate: ConfigParser):
             "margin-top", "margin-bottom", "margin-left", "margin-right",
             "row-spacing", "column-spacing"):
         old_key = f"{key}-mm"
-        section[key] = f"{section[old_key]} mm"
-        del section[old_key]
+        if old_key in section:
+            section[key] = f"{section[old_key]} mm"
+            del section[old_key]
+        else:
+            section[key] = "0 mm"
 
 
 def _migrate_images_to_cards_section(to_migrate: ConfigParser):

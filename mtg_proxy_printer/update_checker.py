@@ -16,6 +16,7 @@
 import random
 import re
 import socket
+import sqlite3
 import typing
 import urllib.parse
 import urllib.error
@@ -26,13 +27,14 @@ from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer import settings
-from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.card_info_downloader import CardInfoDatabaseImportWorker, CardInfoWorkerBase
+from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME
+from mtg_proxy_printer.card_info_downloader import ApiStreamWorker, CardInfoWorkerBase
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
-from mtg_proxy_printer.sqlite_helpers import cached_dedent
+from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import StringList, OptStr
+
 logger = get_logger(__name__)
 del get_logger
 
@@ -48,12 +50,25 @@ KNOWN_APPLICATION_MIRRORS: StringList = [
 ]
 
 
-class CardDataUpdateCheckWorker(CardInfoDatabaseImportWorker):
+class CardDataUpdateCheckWorker(ApiStreamWorker):
     card_data_update_found = Signal(int)
 
-    def __init__(self, card_db: CardDatabase, parent: QObject = None):
-        super().__init__(card_db, parent=parent)
-        self.card_db = card_db
+    def __init__(self, parent: CardDatabase):
+        super().__init__(parent)
+        self.card_db = parent
+        self._db = None
+
+    @property
+    def db(self) -> sqlite3.Connection:
+        # Delay connection creation until first access.
+        # Avoids opening connections that aren't actually used and opens the connection
+        # in the thread that actually uses it.
+        if self._db is None:
+            logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
+            self._db = open_database(
+                self.card_db.db_path, SCHEMA_NAME, CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+        return self._db
+
 
     def perform_card_data_update_check(self):
         if not self.card_database_has_data():
@@ -191,6 +206,7 @@ class UpdateChecker(QObject):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
         self.card_db = card_db
+        # Don’t do the card data update check, if the user imports card data via command line arguments
         self.card_data_parameter_passed = bool(args.card_data and args.card_data.is_file())
         logger.info(f"Created {self.__class__.__name__} instance.")
 

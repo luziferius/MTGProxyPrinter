@@ -79,7 +79,7 @@ def setup_settings_for_testing():
 
 
 def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict):
-    dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(card_db)
+    dw = mtg_proxy_printer.card_info_downloader.DatabaseImportWorker(card_db)
     dw._db = card_db.db  # Explicitly share the in-memory database connection
     section = mtg_proxy_printer.settings.settings["card-filter"]
     with qtbot.assertNotEmitted(dw.other_error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):

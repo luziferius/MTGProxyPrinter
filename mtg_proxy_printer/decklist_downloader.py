@@ -233,7 +233,7 @@ class TappedOutDownloader(DecklistDownloader):
 
 class MoxfieldDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://www\.moxfield\.com/decks/(?P<moxfield_id>[-\w_]+)/?"
+        r"https://(www\.)?moxfield\.com/decks/(?P<moxfield_id>[-\w_]+)/?"
     )
     PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "Moxfield (moxfield.com)"
@@ -261,6 +261,7 @@ class MoxfieldDownloader(DecklistDownloader):
     def map_to_download_url(self, decklist_url: str) -> str:
         match = self.DECKLIST_PATH_RE.match(decklist_url)
         moxfield_id = match.group("moxfield_id")
+        # TODO: Update to API version 3
         return f"https://api.moxfield.com/v2/decks/all/{moxfield_id}"
 
 
@@ -301,7 +302,7 @@ class ArchidektHTMLParser(html.parser.HTMLParser):
 
 class ArchidektDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://archidekt\.com/decks/(?P<deck_id>\d+).*?"
+        r"https://(www\.)?archidekt\.com/decks/(?P<deck_id>\d+).*?"
     )
     PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "Archidekt (archidekt.com)"
@@ -401,7 +402,7 @@ class TCGPlayerDownloader(DecklistDownloader):
 
 class CubeCobraDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://cubecobra\.com/cube/[a-z]+/(?P<cube_name>[0-9A-Za-z-_]+).*?"
+        r"https://(www\.)?cubecobra\.com/cube/[a-z]+/(?P<cube_name>[0-9A-Za-z-_]+).*?"
     )
     PARSER_CLASS = XMageParser
     APPLICABLE_WEBSITES = "CubeCobra (cubecobra.com)"
@@ -414,7 +415,7 @@ class CubeCobraDownloader(DecklistDownloader):
 
 class ManaboxDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://manabox\.app/decks/(?P<deck_id>[a-zA-Z0-9_-]{22})/?.*"
+        r"https://(www\.)?manabox\.app/decks/(?P<deck_id>[a-zA-Z0-9_-]{22})/?.*"
     )
     PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "ManaBox (manabox.app)"
