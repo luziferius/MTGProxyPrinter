@@ -18,6 +18,7 @@ from unittest.mock import MagicMock
 
 from PyQt5.QtCore import pyqtSlot as Slot, QPersistentModelIndex
 from PyQt5.QtGui import QColorConstants, QPainter, QPixmap
+from PyQt5.QtWidgets import QWidget
 
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
@@ -28,8 +29,6 @@ from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.carddb import Card, MTGSet
 from mtg_proxy_printer.ui.common import load_ui_from_file
 from mtg_proxy_printer.logger import get_logger
-
-from PyQt5.QtWidgets import QWidget
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_preview_area import Ui_PageConfigPreviewArea

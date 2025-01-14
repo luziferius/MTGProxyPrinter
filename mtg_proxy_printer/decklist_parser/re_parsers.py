@@ -174,9 +174,9 @@ class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
     @staticmethod
     def supported_file_types() -> typing.Dict[str, typing.List[str]]:
         return {
-        QCoreApplication.translate(
-            "MagicWorkstationDeckDataFormatParser", "Magic Workstation Deck Data Format"): ["mwDeck"],
-    }
+            QCoreApplication.translate(
+                "MagicWorkstationDeckDataFormatParser", "Magic Workstation Deck Data Format"): ["mwDeck"],
+        }
     PREFIXES_TO_SKIP = frozenset({"//"})
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
@@ -254,6 +254,7 @@ class XMageParser(GenericRegularExpressionDeckParser):
         return {
             QCoreApplication.translate("XMageParser", "XMage Deck file"): ["dck"],
         }
+
     PREFIXES_TO_SKIP = frozenset(("NAME", "LAYOUT"))
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
