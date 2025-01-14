@@ -60,6 +60,9 @@ bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
 check_state_to_bool_str: typing.Dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 ItemDataRole = Qt.ItemDataRole
+StandardLocation = QStandardPaths.StandardLocation
+LocateOption = QStandardPaths.LocateOption
+StandardButton = QMessageBox.StandardButton
 logger = get_logger(__name__)
 del get_logger
 mm: QuantityT = unit_registry.mm
@@ -173,7 +176,7 @@ class DebugSettingsPage(Page):
         logger.debug("User about to download the card data from Scryfall to a file.")
         location = QFileDialog.getExistingDirectory(
             self, self.tr("Select download location"),
-            QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory))
+            QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory))
         if not location:
             logger.debug("User cancelled location selection. Not downloading.")
             return
@@ -194,7 +197,7 @@ class DebugSettingsPage(Page):
         logger.debug("User about to import card tata from a previously downloaded file.")
         location, _ = QFileDialog.getOpenFileName(
             self, self.tr("Import previously downloaded card data obtained from Scryfall"),
-            QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
+            QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory),
             self.tr("Scryfall card data (*.json, *.json.gz)"))
         logger.info(f"{location=}")
         if not location:
@@ -333,7 +336,8 @@ class GeneralSettingsPage(Page):
         section = settings["cards"]
         preferred_language_combo_box = self.ui.preferred_language_combo_box
         preferred_language = section.get("preferred-language")
-        if not (known := preferred_language_combo_box.model().stringList()) or preferred_language not in known:
+        list_model: QStringListModel = preferred_language_combo_box.model()
+        if not (known := list_model.stringList()) or preferred_language not in known:
             preferred_language_combo_box.addItem(preferred_language)
         preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(preferred_language))
         self.ui.automatically_add_opposing_faces.setChecked(
