@@ -18,11 +18,14 @@ This module contains an assortment of small helper functions used in the tests f
 """
 import itertools
 
+from PyQt5.QtGui import QPixmap
+
 import hamcrest.core.base_matcher
 from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to, has_property
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet, AnyCardType
 from mtg_proxy_printer.model.document_page import CardContainer, Page
+from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 
 __all__ = [
     "append_new_pages",
@@ -51,9 +54,9 @@ def verify_page_index_cache_is_valid(document):
     )
 
 
-def create_card(name: str, oversized: bool = False) -> Card:
+def create_card(name: str, size: CardSize = CardSizes.REGULAR, image_uri: str = "", pixmap: QPixmap = None) -> Card:
     """Creates a Card with given name and size. Most properties are empty."""
-    return Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, False, None)
+    return Card(name, MTGSet("", ""), "", "", "", True, "", image_uri, True, size, 0, False, pixmap)
 
 
 def card_container_with(card: AnyCardType, parent: Page):
@@ -79,11 +82,11 @@ def card_container_with_name(name: str, parent: Page):
     )
 
 
-def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
+def append_new_card_in_page(page: Page, name: str, size: CardSize = CardSizes.REGULAR) -> Card:
     """Appends a new card with the given name and size to the given page, returning the Card"""
-    new_card = create_card(name, oversized)
-    page.append(new_card)
-    return new_card
+    card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, None)
+    page.append(card)
+    return card
 
 
 def insert_card_in_page(page: Page, card: Card, count: int = 1):

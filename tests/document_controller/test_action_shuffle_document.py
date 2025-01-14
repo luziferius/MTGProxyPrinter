@@ -16,7 +16,7 @@
 import pytest
 from hamcrest import *
 
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
 from mtg_proxy_printer.model.carddb import CardList
 from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.document_controller import IllegalStateError
@@ -24,6 +24,9 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
 
 from .helpers import append_new_card_in_page
+
+REGULAR = CardSizes.REGULAR
+OVERSIZED = CardSizes.OVERSIZED
 
 
 def cards_on_page(page: Page) -> CardList:
@@ -85,11 +88,11 @@ def test_apply_does_not_create_mixed_pages(document_light):
             *map(lambda name: has_property("card", has_property("name", name)), names))
 
     ActionNewPage().apply(document_light)
-    append_new_card_in_page(document_light.pages[0], "Card 1", False)
-    append_new_card_in_page(document_light.pages[0], "Card 2", False)
-    append_new_card_in_page(document_light.pages[0], "Card 3", False)
-    append_new_card_in_page(document_light.pages[1], "Oversized 1", True)
-    append_new_card_in_page(document_light.pages[1], "Oversized 2", True)
+    append_new_card_in_page(document_light.pages[0], "Card 1", REGULAR)
+    append_new_card_in_page(document_light.pages[0], "Card 2", REGULAR)
+    append_new_card_in_page(document_light.pages[0], "Card 3", REGULAR)
+    append_new_card_in_page(document_light.pages[1], "Oversized 1", OVERSIZED)
+    append_new_card_in_page(document_light.pages[1], "Oversized 2", OVERSIZED)
 
     regular_card_names = ["Card 1", "Card 2", "Card 3"]
     oversized_card_names = ["Oversized 1", "Oversized 2"]

@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
-import dataclasses
 import enum
 import itertools
 import math
@@ -28,8 +27,8 @@ from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, 
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
-from mtg_proxy_printer.units_and_sizes import PageType
-from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
+from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData, Card, MTGSet
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings, \
     CardType, migrate_database
@@ -400,6 +399,14 @@ class Document(QAbstractItemModel):
         position = self.find_page_list_index(self.currently_edited_page)
         return QPersistentModelIndex(self.index(position, 0))
 
+    def get_empty_card_for_current_page(self) -> Card:
+        size = CardSizes.for_page_type(self.currently_edited_page.page_type())
+        pixmap = self.image_db.get_blank(size)
+        card = Card(
+            self.tr("Empty Placeholder"), MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, pixmap
+        )
+        return card
+
     def get_card_indices_of_type(self, page_type: PageType):
         for page_number, page in enumerate(self.pages):
             if page.page_type() is not page_type:
@@ -421,11 +428,13 @@ class Document(QAbstractItemModel):
 
     def get_missing_image_cards(self) -> typing.Generator[QModelIndex, None, None]:
         """Returns an iterable with indices to all cards that have missing images"""
-        blank = self.image_db.blank_image
+        blanks = {self.image_db.get_blank(CardSizes.REGULAR), self.image_db.get_blank(CardSizes.OVERSIZED)}
         for page_number, page in enumerate(self.pages):
             page_index = self.index(page_number, 0)
             for card_number, container in enumerate(page):
-                if container.card.image_file is blank:
+                card = container.card
+                # Skip explicitly added empty placeholders, which have an empty image_uri
+                if card.image_file in blanks and card.image_uri:
                     yield self.index(card_number, 0, page_index)
 
     @staticmethod

@@ -17,7 +17,7 @@ from itertools import repeat
 
 from hamcrest import *
 
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
@@ -26,6 +26,8 @@ from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
 
 from .helpers import append_new_card_in_page, card_container_with, create_card
 
+OVERSIZED = CardSizes.OVERSIZED
+REGULAR = CardSizes.REGULAR
 
 def test_apply_does_nothing_on_single_page_empty_document(document_light):
     action = ActionCompactDocument().apply(document_light)
@@ -41,8 +43,8 @@ def test_apply_raises_exception_if_called_twice(document_light):
 def test_apply_does_not_create_mixed_size_pages(document_light):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
-    normal = append_new_card_in_page(pages[0], "Normal", False)
-    oversized = append_new_card_in_page(pages[1], "Oversized", True)
+    normal = append_new_card_in_page(pages[0], "Normal", REGULAR)
+    oversized = append_new_card_in_page(pages[1], "Oversized", OVERSIZED)
     action = ActionCompactDocument().apply(document_light)
     assert_that(
         pages,
@@ -76,7 +78,7 @@ def test_apply_removes_trailing_empty_pages(document_light):
 
 def test_compacting_document(document_light):
     pages = document_light.pages
-    card = create_card("Card", False)
+    card = create_card("Card", REGULAR)
     # Can be compacted to 4 pages, with the last having one free slot
     target_cards_per_page = document_light.page_layout.compute_page_card_capacity(PageType.REGULAR)
     pages_to_fill = 5
@@ -119,10 +121,10 @@ def test_compacting_document(document_light):
 def test_compacting_document_with_regular_and_oversized_pages(document_light):
     pages = document_light.pages
     ActionNewPage(count=3).apply(document_light)
-    regular1 = append_new_card_in_page(pages[0], "Regular", False)
-    oversized1 = append_new_card_in_page(pages[1], "Oversized", True)
-    regular2 = append_new_card_in_page(pages[2], "Regular", False)
-    oversized2 = append_new_card_in_page(pages[3], "Oversized", True)
+    regular1 = append_new_card_in_page(pages[0], "Regular", REGULAR)
+    oversized1 = append_new_card_in_page(pages[1], "Oversized", OVERSIZED)
+    regular2 = append_new_card_in_page(pages[2], "Regular", REGULAR)
+    oversized2 = append_new_card_in_page(pages[3], "Oversized", OVERSIZED)
 
     assert_that(document_light.rowCount(), is_(4))
     action = ActionCompactDocument().apply(document_light)

@@ -4,6 +4,7 @@
 
 ## New features
 
+- Add empty placeholders to pages via the Edit menu. This can be used, if a slot on a page should be left free.
 - Added a configurable, horizontal printing offset to the printer settings.
   - Positive values shift the printing area to the right, negative values shift to the left.
   - This allows compensating offsets in the page centering of the used printer for more accuracy when printing duplex

@@ -111,7 +111,7 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
 def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> pathlib.Path:
     mock_image_path = temp_path / 'temp' / "0000579f-7b35-4ed3-b44c-db2a538066fe.png"
     mock_image_path.parent.mkdir(parents=True, exist_ok=False)
-    image_db.blank_image.save(str(mock_image_path), "PNG", 100)
+    image_db.get_blank().save(str(mock_image_path), "PNG", 100)
     assert_that(mock_image_path.is_file(), is_(True))
     return mock_image_path
 
@@ -306,7 +306,7 @@ def test_undo_import_deck_list_with_last_page_selected_works_without_raising_exc
     document = main_window.document
     card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     page_capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
-    card.image_file = main_window.image_db.blank_image
+    card.image_file = main_window.image_db.get_blank()
     action = ActionImportDeckList(
         [card]*page_capacity*2,
         False

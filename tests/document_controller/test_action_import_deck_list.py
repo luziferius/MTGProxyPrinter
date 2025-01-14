@@ -17,7 +17,7 @@ import itertools
 import math
 import typing
 
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -59,7 +59,7 @@ def test_apply_appends_cards(document_light, card_count: int):
 def test_apply_does_not_create_mixed_size_page(document_light):
     pages = document_light.pages
     existing_card = append_new_card_in_page(pages[0], "Card")
-    new_card = create_card("New", True)
+    new_card = create_card("New", CardSizes.OVERSIZED)
     action = ActionImportDeckList([new_card], False)
     action.apply(document_light)
     assert_that(

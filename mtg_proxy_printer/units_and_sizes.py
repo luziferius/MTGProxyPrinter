@@ -98,6 +98,10 @@ class CardSizes(CardSize, enum.Enum):
     def for_page_type(cls, page_type: "PageType") -> CardSize:
         return cls.OVERSIZED if page_type == PageType.OVERSIZED else cls.REGULAR
 
+    @classmethod
+    def from_bool(cls, value: bool) -> CardSize:
+        return cls.OVERSIZED if value else cls.REGULAR
+
 
 @enum.unique
 class PageType(enum.Enum):
