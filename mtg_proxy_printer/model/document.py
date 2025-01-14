@@ -232,12 +232,12 @@ class Document(QAbstractItemModel):
     def setData(self, index: AnyIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
         index = self._to_index(index)
         data = index.internalPointer()
+        column = index.column()
         if isinstance(data, CardContainer) \
                 and role == ItemDataRole.EditRole \
-                and index.column() in self.EDITABLE_COLUMNS:
-            logger.debug(f"Setting model data for column {index.column()} to {value}")
+                and column in self.EDITABLE_COLUMNS:
+            logger.debug(f"Setting model data for {column=} to {value}")
             card = data.card
-            column = index.column()
             if column == PageColumns.CollectorNumber:
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
@@ -272,14 +272,15 @@ class Document(QAbstractItemModel):
 
     def _data_page(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a page of Cards."""
-        if index.row() >= self.rowCount():
-            logger.error(f"Invalid index: {index.row()=}, {index.column()=}, {self.rowCount()=}, {index.isValid()=}")
+        row = index.row()
+        if row >= self.rowCount():
+            logger.error(f"Invalid index: {row=}, {index.column()=}, {self.rowCount()=}, {index.isValid()=}")
             return None
-        item = self.pages[index.row()]
+        item = self.pages[row]
         if role == ItemDataRole.DisplayRole:
             return self._get_page_preview(item)
         elif role == ItemDataRole.ToolTipRole:
-            return self.tr("Page {current}/{total}").format(current=index.row()+1, total=self.rowCount())
+            return self.tr("Page {current}/{total}").format(current=row + 1, total=self.rowCount())
         elif role == ItemDataRole.EditRole:
             return item
         elif role == ItemDataRole.UserRole:
@@ -288,26 +289,27 @@ class Document(QAbstractItemModel):
     def _data_card(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a single Card."""
         parent = index.parent()
-        if index.row() >= self.rowCount(parent) or index.column() >= self.columnCount(parent):
+        column = index.column()
+        if index.row() >= self.rowCount(parent) or column >= self.columnCount(parent):
             logger.error(
-                f"Invalid index: {index.row()=}, {index.column()=}, "
-                f"{self.rowCount(index.parent())=}, {index.isValid()=}")
+                f"Invalid index: {index.row()=}, { column=}, "
+                f"{self.rowCount(parent)=}, {index.isValid()=}")
             return None
         card: AnyCardType = index.internalPointer().card
         if role == ItemDataRole.UserRole:
             return card
         if role in {ItemDataRole.DisplayRole, ItemDataRole.EditRole}:
-            if index.column() == PageColumns.CardName:
+            if column == PageColumns.CardName:
                 return card.name
-            elif index.column() == PageColumns.Set:
+            elif column == PageColumns.Set:
                 return card.set.data(role)
-            elif index.column() == PageColumns.CollectorNumber:
+            elif column == PageColumns.CollectorNumber:
                 return card.collector_number
-            elif index.column() == PageColumns.Language:
+            elif column == PageColumns.Language:
                 return card.language
-            elif index.column() == PageColumns.Image:
+            elif column == PageColumns.Image:
                 return card.image_file
-            elif index.column() == PageColumns.IsFront:
+            elif column == PageColumns.IsFront:
                 return card.is_front if role == ItemDataRole.EditRole else (
                     self.tr("Front") if card.is_front else self.tr("Back"))
 
