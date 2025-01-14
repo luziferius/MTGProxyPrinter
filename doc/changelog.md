@@ -2,6 +2,14 @@
 
 # Next version (in development)
 
+## New features
+
+- Added a configurable, horizontal printing offset to the printer settings.
+  - Positive values shift the printing area to the right, negative values shift to the left.
+  - This allows compensating offsets in the page centering of the used printer for more accuracy when printing duplex
+  documents.
+  - For now, the setting affects both direct printing and PDF exports
+
 ## Fixed issues
 
 - Fix crash at application start when upgrading from version 0.26.1 or older
@@ -10,6 +18,9 @@
   The app no longer appears hanging when starting for the first time after installing updates.
 - Fixed deck list downloader for Archidekt, CubeCobra and Manabox.app 
   falsely rejecting valid URLs starting with `https://www.`. These are now accepted and work as intended.
+- Fixed deck list downloader for Moxfield.com. Moxfield removed the "www." part in their URLS, 
+  and now the internal validator now handles that
+- Fixed a missing button in the "Default document settings" page in the application settings
 
 # Version 0.29.1 (2024-09-14)  <a name="v0_29_1"></a>
 

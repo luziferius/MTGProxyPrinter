@@ -23,18 +23,22 @@ import mtg_proxy_printer
 from mtg_proxy_printer import meta_data
 
 
+def _skip_if_not_release_version(changelog_first_entry):
+    if re.match(r'# Next version.+', changelog_first_entry):
+        pytest.skip("Not on a release check-in.")
+
+
 def test_application_version_in_sync_with_changelog():
     """
     This test verifies that the version mentioned in the top-most changelog entry matches the version in the metadata.
-    It automatically passes, if the top-most changelog entry is not that of a released version
+    It automatically skips, if the top-most changelog entry is not that of a released version
     """
     changelog_file = Path(mtg_proxy_printer.__file__).parent.parent/"doc"/"changelog.md"
     assert_that(changelog_file.is_file(), is_(True), "Setup failed. Changelog not found.")
     changelog_text = changelog_file.read_text("utf-8")
     changelog_first_entry = changelog_text.splitlines()[2]
     is_released = re.match(r"# Version (?P<version>(\d+\.){2}\d+).+", changelog_first_entry)
-    if re.match(r'# Next version.+', changelog_first_entry):
-        pytest.skip("Not on a release check-in.")
+    _skip_if_not_release_version(changelog_first_entry)
     if not is_released:
         pytest.fail("Changelog header malformed.")
     version_prefix = meta_data.__version__.split("+")[0]
@@ -44,17 +48,17 @@ def test_application_version_in_sync_with_changelog():
         "Version in metadata.py does not match the latest changelog entry header"
     )
 
+
 def test_changelog_versions_match_header_name_reference():
     """
-    This test verifies that the version mentioned in the top-most changelog entry matches the version in the metadata.
-    It automatically passes, if the top-most changelog entry is not that of a released version
+    This test verifies that the version mentioned in the top-most changelog entry matches the version anchor.
+    It automatically skips, if the top-most changelog entry is not that of a released version
     """
     changelog_file = Path(mtg_proxy_printer.__file__).parent.parent/"doc"/"changelog.md"
     assert_that(changelog_file.is_file(), is_(True), "Setup failed. Changelog not found.")
     changelog_text = changelog_file.read_text("utf-8")
     changelog_first_entry = changelog_text.splitlines()[2]
-    if re.match(r'# Next version.+', changelog_first_entry):
-        pytest.skip("Not on a release check-in.")
+    _skip_if_not_release_version(changelog_first_entry)
 
     section_re = re.match(
         r'^# Version (?P<version>(\d+\.){2}\d+) (\(\d{4}-\d{2}-\d{2}\)) {2}'

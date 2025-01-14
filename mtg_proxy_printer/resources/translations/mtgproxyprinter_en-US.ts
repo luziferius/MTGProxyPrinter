@@ -14,24 +14,9 @@
       <translation>About</translation>
     </message>
     <message>
-      <location filename="../ui/about_dialog.ui" line="107"/>
-      <source>Python runtime version</source>
-      <translation>Python runtime version</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="87"/>
-      <source>Python Version:</source>
-      <translation>Python Version:</translation>
-    </message>
-    <message>
       <location filename="../ui/about_dialog.ui" line="39"/>
       <source>Application Version:</source>
       <translation>Application Version:</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="62"/>
-      <source>Application version</source>
-      <translation>Application version</translation>
     </message>
     <message>
       <location filename="../ui/about_dialog.ui" line="55"/>
@@ -39,19 +24,19 @@
       <translation>Last card update:</translation>
     </message>
     <message>
-      <location filename="../ui/about_dialog.ui" line="214"/>
-      <source>Changelog</source>
-      <translation>Changelog</translation>
+      <location filename="../ui/about_dialog.ui" line="62"/>
+      <source>Application version</source>
+      <translation>Application version</translation>
     </message>
     <message>
-      <location filename="../ui/about_dialog.ui" line="228"/>
-      <source>License</source>
-      <translation>License</translation>
+      <location filename="../ui/about_dialog.ui" line="87"/>
+      <source>Python Version:</source>
+      <translation>Python Version:</translation>
     </message>
     <message>
-      <location filename="../ui/about_dialog.ui" line="239"/>
-      <source>Third party licenses</source>
-      <translation>Third Party licenses</translation>
+      <location filename="../ui/about_dialog.ui" line="107"/>
+      <source>Python runtime version</source>
+      <translation>Python runtime version</translation>
     </message>
     <message>
       <location filename="../ui/about_dialog.ui" line="123"/>
@@ -89,6 +74,21 @@ Project Website: [{application_name} home page]({application_home_page})
 
 Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
 </translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="214"/>
+      <source>Changelog</source>
+      <translation>Changelog</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="228"/>
+      <source>License</source>
+      <translation>License</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="239"/>
+      <source>Third party licenses</source>
+      <translation>Third Party licenses</translation>
     </message>
   </context>
   <context>
@@ -294,52 +294,6 @@ containing %n pages {cards_total}</numerusform>
     </message>
   </context>
   <context>
-    <name>CardInfoDatabaseImportWorker</name>
-    <message>
-      <location filename="../../card_info_downloader.py" line="369"/>
-      <source>Error during import from file:
-{path}</source>
-      <translation>Error during import from file:
-{path}</translation>
-    </message>
-    <message>
-      <location filename="../../card_info_downloader.py" line="380"/>
-      <source>Updating card data from Scryfall:</source>
-      <comment>Progress bar label text</comment>
-      <translation>Updating card data from Scryfall:</translation>
-    </message>
-    <message>
-      <location filename="../../card_info_downloader.py" line="390"/>
-      <source>Reading from socket failed: {error}</source>
-      <translation>Reading from socket failed: {error}</translation>
-    </message>
-    <message>
-      <location filename="../../card_info_downloader.py" line="426"/>
-      <source>Importing card data from disk:</source>
-      <comment>Progress bar label text</comment>
-      <translation>Importing card data from disk:</translation>
-    </message>
-    <message>
-      <location filename="../../card_info_downloader.py" line="446"/>
-      <source>Failed to parse data from Scryfall. Reported error: {error}</source>
-      <translation>Failed to parse data from Scryfall. Reported error: {error}</translation>
-    </message>
-    <message>
-      <location filename="../../card_info_downloader.py" line="490"/>
-      <source>Post-processing card data:</source>
-      <translation>Post-processing card data:</translation>
-    </message>
-  </context>
-  <context>
-    <name>CardInfoFileDownloadWorker</name>
-    <message>
-      <location filename="../../card_info_downloader.py" line="186"/>
-      <source>Downloading card data:</source>
-      <comment>Progress bar label text</comment>
-      <translation>Downloading card data:</translation>
-    </message>
-  </context>
-  <context>
     <name>CardListModel</name>
     <message>
       <location filename="../../model/card_list.py" line="59"/>
@@ -469,51 +423,105 @@ switch the selected printing.</translation>
     </message>
   </context>
   <context>
+    <name>DatabaseImportWorker</name>
+    <message>
+      <location filename="../../card_info_downloader.py" line="423"/>
+      <source>Error during import from file:
+{path}</source>
+      <translation>Error during import from file:
+{path}</translation>
+    </message>
+    <message>
+      <location filename="../../card_info_downloader.py" line="434"/>
+      <source>Updating card data from Scryfall:</source>
+      <comment>Progress bar label text</comment>
+      <translation>Updating card data from Scryfall:</translation>
+    </message>
+    <message>
+      <location filename="../../card_info_downloader.py" line="444"/>
+      <source>Reading from socket failed: {error}</source>
+      <translation>Reading from socket failed: {error}</translation>
+    </message>
+    <message>
+      <location filename="../../card_info_downloader.py" line="460"/>
+      <source>Importing card data from disk:</source>
+      <comment>Progress bar label text</comment>
+      <translation>Importing card data from disk:</translation>
+    </message>
+    <message>
+      <location filename="../../card_info_downloader.py" line="480"/>
+      <source>Failed to parse data from Scryfall. Reported error: {error}</source>
+      <translation>Failed to parse data from Scryfall. Reported error: {error}</translation>
+    </message>
+    <message>
+      <location filename="../../card_info_downloader.py" line="524"/>
+      <source>Post-processing card data:</source>
+      <translation>Post-processing card data:</translation>
+    </message>
+  </context>
+  <context>
+    <name>DatabaseMigrationRunner</name>
+    <message>
+      <location filename="../../carddb_migrations.py" line="789"/>
+      <source>Running database migrations:</source>
+      <translation>Running database migrations:</translation>
+    </message>
+    <message numerus="yes">
+      <location filename="../../carddb_migrations.py" line="805"/>
+      <source>Migrate to version %n:</source>
+      <comment>The numeric parameter is a version number, and not countable.</comment>
+      <translation>
+        <numerusform>Migrate to version %n:</numerusform>
+        <numerusform>Migrate to version %n:</numerusform>
+      </translation>
+    </message>
+  </context>
+  <context>
     <name>DebugSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="118"/>
+      <location filename="../../ui/settings_window_pages.py" line="119"/>
       <source>Debug settings</source>
       <translation>Debug settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="118"/>
+      <location filename="../../ui/settings_window_pages.py" line="119"/>
       <source>Things useful for investigating bugs in the application</source>
       <translation>Things useful for investigating bugs in the application</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="173"/>
+      <location filename="../../ui/settings_window_pages.py" line="174"/>
       <source>Select download location</source>
       <translation>Select download location</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="181"/>
+      <location filename="../../ui/settings_window_pages.py" line="182"/>
       <source>Selected location is not a directory</source>
       <translation>Selected location is not a directory</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="181"/>
+      <location filename="../../ui/settings_window_pages.py" line="182"/>
       <source>Cannot write the card data at the given location, because it is not a directory:
 {location}</source>
       <translation>Cannot write the card data at the given location, because it is not a directory:
 {location}</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="194"/>
+      <location filename="../../ui/settings_window_pages.py" line="195"/>
       <source>Import previously downloaded card data obtained from Scryfall</source>
       <translation>Import previously downloaded card data obtained from Scryfall</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="194"/>
+      <location filename="../../ui/settings_window_pages.py" line="195"/>
       <source>Scryfall card data (*.json, *.json.gz)</source>
       <translation>Scryfall card data (*.json, *.json.gz)</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="204"/>
+      <location filename="../../ui/settings_window_pages.py" line="205"/>
       <source>Selected location is not a file</source>
       <translation>Selected location is not a file</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="204"/>
+      <location filename="../../ui/settings_window_pages.py" line="205"/>
       <source>Cannot find the selected file:
 {location}</source>
       <translation>Cannot find the selected file:
@@ -617,17 +625,17 @@ Maybe you selected the wrong deck list type?</translation>
   <context>
     <name>DecklistImportSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="217"/>
+      <location filename="../../ui/settings_window_pages.py" line="218"/>
       <source>Deck list import</source>
       <translation>Deck list import</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="217"/>
+      <location filename="../../ui/settings_window_pages.py" line="218"/>
       <source>Configure the deck list importer</source>
       <translation>Configure the deck list importer</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="227"/>
+      <location filename="../../ui/settings_window_pages.py" line="228"/>
       <source>Select default deck list search path</source>
       <translation>Select default deck list search path</translation>
     </message>
@@ -754,19 +762,19 @@ With some deck list formats, this option is always enabled.</translation>
   <context>
     <name>DefaultDocumentLayoutSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="474"/>
+      <location filename="../../ui/settings_window_pages.py" line="475"/>
       <source>Default document settings</source>
       <translation>Default document settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="474"/>
+      <location filename="../../ui/settings_window_pages.py" line="475"/>
       <source>Set the default document settings used for new documents,
 like page size, margins, spacings, etc.</source>
       <translation>Set the default document settings used for new documents,
 like page size, margins, spacings, etc.</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="482"/>
+      <location filename="../../ui/settings_window_pages.py" line="483"/>
       <source>Default settings for new documents</source>
       <translation>Default settings for new documents</translation>
     </message>
@@ -855,6 +863,15 @@ switch the selected printing.</translation>
       <location filename="../ui/document_settings_dialog.ui" line="14"/>
       <source>Set Document settings</source>
       <translation>Set Document settings</translation>
+    </message>
+  </context>
+  <context>
+    <name>FileDownloadWorker</name>
+    <message>
+      <location filename="../../card_info_downloader.py" line="187"/>
+      <source>Downloading card data:</source>
+      <comment>Progress bar label text</comment>
+      <translation>Downloading card data:</translation>
     </message>
   </context>
   <context>
@@ -1143,42 +1160,42 @@ Similar to borderless cards, these require higher precision during the cutting p
   <context>
     <name>GeneralSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="284"/>
+      <location filename="../../ui/settings_window_pages.py" line="285"/>
       <source>General settings</source>
       <translation>General settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="291"/>
+      <location filename="../../ui/settings_window_pages.py" line="292"/>
       <source>Horizontal layout</source>
       <translation>Horizontal layout</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="292"/>
+      <location filename="../../ui/settings_window_pages.py" line="293"/>
       <source>Columnar layout</source>
       <translation>Columnar layout</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="293"/>
+      <location filename="../../ui/settings_window_pages.py" line="294"/>
       <source>Tabbed layout</source>
       <translation>Tabbed layout</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="295"/>
+      <location filename="../../ui/settings_window_pages.py" line="296"/>
       <source>System default</source>
       <translation>System default</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="296"/>
+      <location filename="../../ui/settings_window_pages.py" line="297"/>
       <source>English (US)</source>
       <translation>English (US)</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="297"/>
+      <location filename="../../ui/settings_window_pages.py" line="298"/>
       <source>German</source>
       <translation>German</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="308"/>
+      <location filename="../../ui/settings_window_pages.py" line="309"/>
       <source>Select default save location</source>
       <translation>Select default save location</translation>
     </message>
@@ -1209,19 +1226,21 @@ Tabbed uses tabs to only show parts of the main window at a time. Best used with
     <message>
       <location filename="../ui/settings_window/general_settings_page.ui" line="67"/>
       <source>Language choices will default to the chosen language here.
+Entries use the language codes as listed on Scryfall.
 
-Entries use the language codes as listed on Scryfall.</source>
+Note: Cards in deck lists use the language as given by the deck list. To overwrite, use the deck list translation option.</source>
       <translation>Language choices will default to the chosen language here.
+Entries use the language codes as listed on Scryfall.
 
-Entries use the language codes as listed on Scryfall.</translation>
+Note: Cards in deck lists use the language as given by the deck list. To overwrite, use the deck list translation option.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="76"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="77"/>
       <source>Double-faced cards</source>
       <translation>Double-faced cards</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="82"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="83"/>
       <source>When adding double-faced cards, automatically add the same number of copies of the other side.
 Uses the appropriate, matching other card side.
 Uncheck to disable this automatism.</source>
@@ -1230,72 +1249,77 @@ Uses the appropriate, matching other card side.
 Uncheck to disable this automatism.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="87"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="88"/>
       <source>Automatically add the other side of double-faced cards</source>
       <translation>Automatically add the other side of double-faced cards</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="97"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="98"/>
+      <source>Card language selected at application start and default language when enabling deck list translations</source>
+      <translation>Card language selected at application start and default language when enabling deck list translations</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="101"/>
       <source>Preferred card language:</source>
       <translation>Preferred card language:</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="110"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="114"/>
       <source>Automatic update checks</source>
       <translation>Automatic update checks</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="116"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="120"/>
       <source>Update checks are performed at application start, if enabled.</source>
       <translation>Update checks are performed at application start, if enabled.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="123"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="127"/>
       <source>If enabled, check for application updates, and notify if new updates are available for installation.</source>
       <translation>If enabled, check for application updates, and notify if new updates are available for installation.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="126"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="130"/>
       <source>Check for application updates</source>
       <translation>Check for application updates</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="136"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="140"/>
       <source>If enabled, query the Scryfall API if new cards are available. If so, offer to update the local card data.</source>
       <translation>If enabled, query the Scryfall API if new cards are available. If so, offer to update the local card data.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="139"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="143"/>
       <source>Check for new card data</source>
       <translation>Check for new card data</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="152"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="156"/>
       <source>These paths are selected by default when browsing the file system for files</source>
       <translation>These paths are selected by default when browsing the file system for files</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="155"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="159"/>
       <source>Default save paths</source>
       <translation>Default save paths</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="161"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="165"/>
       <source>Browse…</source>
       <translation>Browse…</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="175"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="179"/>
       <source>Document save path</source>
       <translation>Document save path</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="185"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="189"/>
       <source>If set, use this as the default location for saving documents.</source>
       <translation>If set, use this as the default location for saving documents.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="191"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="195"/>
       <source>Path to a directory</source>
       <translation>Path to a directory</translation>
     </message>
@@ -1321,12 +1345,12 @@ Uncheck to disable this automatism.</translation>
   <context>
     <name>HidePrintingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="431"/>
+      <location filename="../../ui/settings_window_pages.py" line="432"/>
       <source>Hide printings</source>
       <translation>Hide printings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="431"/>
+      <location filename="../../ui/settings_window_pages.py" line="432"/>
       <source>Hide unwanted printings</source>
       <translation>Hide unwanted printings</translation>
     </message>
@@ -1885,21 +1909,21 @@ Open the {program_name} website in your web browser to download the new version?
     </message>
     <message>
       <location filename="../../ui/main_window.py" line="440"/>
-      <source>Automatically check for application updates whenever you start {name}?</source>
-      <translation>Automatically check for application updates whenever you start {name}?</translation>
+      <source>Automatically check for application updates whenever you start {program_name}?</source>
+      <translation>Automatically check for application updates whenever you start {program_name}?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="450"/>
+      <location filename="../../ui/main_window.py" line="452"/>
       <source>Check for card data updates?</source>
       <translation>Check for card data updates?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="450"/>
+      <location filename="../../ui/main_window.py" line="452"/>
       <source>Automatically check for card data updates on Scryfall whenever you start {program_name}?</source>
       <translation>Automatically check for card data updates on Scryfall whenever you start {program_name}?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="460"/>
+      <location filename="../../ui/main_window.py" line="462"/>
       <source>{question}
 You can change this later in the settings.</source>
       <translation>{question}
@@ -2123,17 +2147,17 @@ use this to reduce the initial deck shuffling required</translation>
   <context>
     <name>PDFSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="534"/>
+      <location filename="../../ui/settings_window_pages.py" line="552"/>
       <source>PDF export settings</source>
       <translation>PDF export settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="534"/>
+      <location filename="../../ui/settings_window_pages.py" line="552"/>
       <source>Configure the PDF export</source>
       <translation>Configure the PDF export</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="568"/>
+      <location filename="../../ui/settings_window_pages.py" line="586"/>
       <source>Select default PDF export location</source>
       <translation>Select default PDF export location</translation>
     </message>
@@ -2228,7 +2252,7 @@ So only enable this, if actually required.</translation>
   <context>
     <name>PageConfigWidget</name>
     <message numerus="yes">
-      <location filename="../../ui/page_config_widget.py" line="105"/>
+      <location filename="../../ui/page_config_widget.py" line="101"/>
       <source>%n regular card(s)</source>
       <comment>Display of the resulting page capacity for regular-sized cards</comment>
       <translation>
@@ -2237,7 +2261,7 @@ So only enable this, if actually required.</translation>
       </translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/page_config_widget.py" line="109"/>
+      <location filename="../../ui/page_config_widget.py" line="105"/>
       <source>%n oversized card(s)</source>
       <comment>Display of the resulting page capacity for oversized cards</comment>
       <translation>
@@ -2246,7 +2270,7 @@ So only enable this, if actually required.</translation>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/page_config_widget.py" line="114"/>
+      <location filename="../../ui/page_config_widget.py" line="110"/>
       <source>{regular_text}, {oversized_text}</source>
       <comment>Combination of the page capacities for regular, and oversized cards</comment>
       <translation>{regular_text}, {oversized_text}</translation>
@@ -2475,17 +2499,48 @@ Zoom out: {zoom_out_shortcuts}</translation>
   <context>
     <name>PrinterSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="500"/>
+      <location filename="../../ui/settings_window_pages.py" line="501"/>
       <source>Printer settings</source>
       <translation>Printer settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="500"/>
+      <location filename="../../ui/settings_window_pages.py" line="501"/>
       <source>Configure the printer</source>
       <translation>Configure the printer</translation>
     </message>
     <message>
       <location filename="../ui/settings_window/printer_settings_page.ui" line="17"/>
+      <source>Horizontal printing offset</source>
+      <translation>Horizontal printing offset</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/printer_settings_page.ui" line="24"/>
+      <source>Globally shifts the printing area to correct physical offsets in the printer.
+Positive values shift to the right.
+Negative offsets shift to the left.</source>
+      <translation>Globally shifts the printing area to correct physical offsets in the printer.
+Positive values shift to the right.
+Negative offsets shift to the left.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/printer_settings_page.ui" line="32"/>
+      <source> mm</source>
+      <translation> mm</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/printer_settings_page.ui" line="48"/>
+      <source>If enabled, print landscape documents in portrait mode with all content rotated by 90°.
+Enable this, if printing landscape documents results in portrait printouts with cropped-off sides.</source>
+      <translation>If enabled, print landscape documents in portrait mode with all content rotated by 90°.
+Enable this, if printing landscape documents results in portrait printouts with cropped-off sides.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/printer_settings_page.ui" line="52"/>
+      <source>Enable landscape workaround: Rotate prints by 90°</source>
+      <translation>Enable landscape workaround: Rotate prints by 90°</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/printer_settings_page.ui" line="62"/>
       <source>When enabled, instruct the printer to use borderless mode and let MTGProxyPrinter manage the printing margins.
 Disable this, if your printer keeps scaling print-outs up or down.
 
@@ -2498,27 +2553,15 @@ When disabled, managing the page margins is delegated to the printer driver,
 which should increase compatibility, at the expense of drawing shorter cut helper lines.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/printer_settings_page.ui" line="24"/>
+      <location filename="../ui/settings_window/printer_settings_page.ui" line="69"/>
       <source>Configure printer for borderless printing</source>
       <translation>Configure printer for borderless printing</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/printer_settings_page.ui" line="31"/>
-      <source>If enabled, print landscape documents in portrait mode with all content rotated by 90°.
-Enable this, if printing landscape documents results in portrait printouts with cropped-off sides.</source>
-      <translation>If enabled, print landscape documents in portrait mode with all content rotated by 90°.
-Enable this, if printing landscape documents results in portrait printouts with cropped-off sides.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/printer_settings_page.ui" line="35"/>
-      <source>Enable landscape workaround: Rotate prints by 90°</source>
-      <translation>Enable landscape workaround: Rotate prints by 90°</translation>
     </message>
   </context>
   <context>
     <name>PrintingFilterUpdater.store_current_printing_filters()</name>
     <message>
-      <location filename="../../printing_filter_updater.py" line="126"/>
+      <location filename="../../printing_filter_updater.py" line="118"/>
       <source>Processing updated card filters:</source>
       <translation>Processing updated card filters:</translation>
     </message>

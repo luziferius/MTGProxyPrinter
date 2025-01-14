@@ -6,26 +6,43 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
+    <width>336</width>
     <height>304</height>
    </rect>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <widget class="QCheckBox" name="printer_use_borderless_printing">
-     <property name="toolTip">
-      <string>When enabled, instruct the printer to use borderless mode and let MTGProxyPrinter manage the printing margins.
-Disable this, if your printer keeps scaling print-outs up or down.
-
-When disabled, managing the page margins is delegated to the printer driver,
-which should increase compatibility, at the expense of drawing shorter cut helper lines.</string>
-     </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="2" column="0">
+    <widget class="QLabel" name="horizontal_offset_label">
      <property name="text">
-      <string>Configure printer for borderless printing</string>
+      <string>Horizontal printing offset</string>
      </property>
     </widget>
    </item>
-   <item>
+   <item row="2" column="1">
+    <widget class="QDoubleSpinBox" name="horizontal_offset">
+     <property name="toolTip">
+      <string>Globally shifts the printing area to correct physical offsets in the printer.
+Positive values shift to the right.
+Negative offsets shift to the left.</string>
+     </property>
+     <property name="prefix">
+      <string/>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="minimum">
+      <double>-100.000000000000000</double>
+     </property>
+     <property name="maximum">
+      <double>100.000000000000000</double>
+     </property>
+     <property name="singleStep">
+      <double>0.100000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
     <widget class="QCheckBox" name="landscape_workaround">
      <property name="toolTip">
       <string>If enabled, print landscape documents in portrait mode with all content rotated by 90°.
@@ -39,7 +56,21 @@ Enable this, if printing landscape documents results in portrait printouts with 
      </property>
     </widget>
    </item>
-   <item>
+   <item row="0" column="0" colspan="2">
+    <widget class="QCheckBox" name="printer_use_borderless_printing">
+     <property name="toolTip">
+      <string>When enabled, instruct the printer to use borderless mode and let MTGProxyPrinter manage the printing margins.
+Disable this, if your printer keeps scaling print-outs up or down.
+
+When disabled, managing the page margins is delegated to the printer driver,
+which should increase compatibility, at the expense of drawing shorter cut helper lines.</string>
+     </property>
+     <property name="text">
+      <string>Configure printer for borderless printing</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
     <spacer name="vertical_spacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
