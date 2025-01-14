@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
-import dataclasses
 import enum
 import itertools
 import math
@@ -29,7 +28,7 @@ from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
-from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData, Card, MTGSet
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings, \
     CardType, migrate_database
@@ -397,6 +396,14 @@ class Document(QAbstractItemModel):
     def get_current_page_index(self) -> QPersistentModelIndex:
         position = self.find_page_list_index(self.currently_edited_page)
         return QPersistentModelIndex(self.index(position, 0))
+
+    def get_empty_card_for_current_page(self) -> Card:
+        size = CardSizes.for_page_type(self.currently_edited_page.page_type())
+        pixmap = self.image_db.get_blank(size)
+        card = Card(
+            self.tr("Empty Placeholder"), MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, pixmap
+        )
+        return card
 
     def get_card_indices_of_type(self, page_type: PageType):
         for page_number, page in enumerate(self.pages):

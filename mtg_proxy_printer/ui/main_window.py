@@ -183,6 +183,7 @@ class MainWindow(QMainWindow):
             ui.action_load_document,
             ui.action_import_deck_list,
             ui.action_new_page,
+            ui.action_add_empty_card,
             ui.action_discard_page,
             ui.central_widget,
             ui.action_cleanup_local_image_cache,
@@ -291,6 +292,12 @@ class MainWindow(QMainWindow):
         self.current_dialog = SavePDFDialog(self, self.document)
         self.current_dialog.finished.connect(self.on_dialog_finished)
         self.missing_images_manager.obtain_missing_images(self.current_dialog.open)
+
+    @Slot()
+    def on_action_add_empty_card_triggered(self):
+        empty_card = self.document.get_empty_card_for_current_page()
+        action = ActionAddCard(empty_card)
+        self.document.apply(action)
 
     def on_network_error_occurred(self, message: str):
         QMessageBox.warning(
