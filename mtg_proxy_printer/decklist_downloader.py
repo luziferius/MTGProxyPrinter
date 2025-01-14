@@ -233,7 +233,7 @@ class TappedOutDownloader(DecklistDownloader):
 
 class MoxfieldDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://www\.moxfield\.com/decks/(?P<moxfield_id>[-\w_]+)/?"
+        r"https://(www\.)?moxfield\.com/decks/(?P<moxfield_id>[-\w_]+)/?"
     )
     PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "Moxfield (moxfield.com)"
@@ -261,6 +261,7 @@ class MoxfieldDownloader(DecklistDownloader):
     def map_to_download_url(self, decklist_url: str) -> str:
         match = self.DECKLIST_PATH_RE.match(decklist_url)
         moxfield_id = match.group("moxfield_id")
+        # TODO: Update to API version 3
         return f"https://api.moxfield.com/v2/decks/all/{moxfield_id}"
 
 

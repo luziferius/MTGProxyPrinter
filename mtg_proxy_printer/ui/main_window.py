@@ -32,7 +32,7 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, Ac
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
-from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
+from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, CardSizes
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
@@ -183,6 +183,7 @@ class MainWindow(QMainWindow):
             ui.action_load_document,
             ui.action_import_deck_list,
             ui.action_new_page,
+            ui.action_add_empty_card,
             ui.action_discard_page,
             ui.central_widget,
             ui.action_cleanup_local_image_cache,
@@ -292,6 +293,12 @@ class MainWindow(QMainWindow):
         self.current_dialog = SavePDFDialog(self, self.document)
         self.current_dialog.finished.connect(self.on_dialog_finished)
         self.missing_images_manager.obtain_missing_images(self.current_dialog.open)
+
+    @Slot()
+    def on_action_add_empty_card_triggered(self):
+        empty_card = self.document.get_empty_card_for_current_page()
+        action = ActionAddCard(empty_card)
+        self.document.apply(action)
 
     def on_network_error_occurred(self, message: str):
         QMessageBox.warning(
@@ -488,7 +495,8 @@ class MainWindow(QMainWindow):
             logger.info(f"User dropped {len(images)} images onto the main window, adding them as custom cards")
             for image in images:
                 card = Card(
-                    "Custom card", MTGSet("CUS", "Custom"), "", "", "", True, "", "", True, False, 1, False, image)
+                    "Custom card", MTGSet("CUS", "Custom"), "", "", "", True, "", "", True,
+                    CardSizes.REGULAR, 1, False, image)
                 action = ActionAddCard(card)
                 self.document.apply(action)
 

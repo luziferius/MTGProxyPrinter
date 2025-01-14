@@ -22,9 +22,12 @@ from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.model.document_page import CardContainer, Page
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
+from mtg_proxy_printer.units_and_sizes import CardSizes
 
 from .helpers import append_new_card_in_page, card_container_with, append_new_pages, verify_page_index_cache_is_valid, \
     create_card
+
+OVERSIZED = CardSizes.OVERSIZED
 
 
 def insert_mock_in_page(page: Page, count: int = 1):
@@ -62,8 +65,8 @@ def test_init_initializes_length_content_to_count_if_not_given(count: int):
 
 
 @pytest.mark.parametrize("content", [
-    [[create_card("P1")], [], [create_card("P3-1", True), create_card("P3-2")]],
-    [[create_card("P1", True)], [], [create_card("P3-1"), create_card("P3-2", True)]],
+    [[create_card("P1")], [], [create_card("P3-1", OVERSIZED), create_card("P3-2")]],
+    [[create_card("P1", OVERSIZED)], [], [create_card("P3-1"), create_card("P3-2", OVERSIZED)]],
 ])
 def test_init_with_content_rejects_creating_mixed_size_pages(content):
     assert_that(calling(ActionNewPage).with_args(count=len(content), content=content), raises(ValueError))
@@ -146,8 +149,8 @@ def test_apply_with_position_inserts_count_new_pages_at_the_given_position(qtbot
 
 @pytest.mark.parametrize("content", [
     [[create_card("P1")], [], [create_card("P3-1"), create_card("P3-2")]],
-    [[create_card("P1", True)], [], [create_card("P3-1"), create_card("P3-2")]],
-    [[create_card("P1")], [], [create_card("P3-1", True), create_card("P3-2", True)]],
+    [[create_card("P1", OVERSIZED)], [], [create_card("P3-1"), create_card("P3-2")]],
+    [[create_card("P1")], [], [create_card("P3-1", OVERSIZED), create_card("P3-2", OVERSIZED)]],
 ])
 def test_apply_with_content_populates_created_pages(qtbot, document_light, content):
     action = ActionNewPage(count=len(content), content=content)

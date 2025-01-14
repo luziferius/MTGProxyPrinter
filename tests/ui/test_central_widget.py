@@ -73,9 +73,9 @@ def test__get_default_image_save_path(qtbot, main_window, name: str, expected: s
 @pytest.mark.parametrize("count", [1, 3])
 def test__add_copies_directly_adds_card_with_image(qtbot, main_window, image_db, card, count):
     if isinstance(card, Card):
-        card.image_file = image_db.blank_image
+        card.image_file = image_db.get_blank()
     else:
-        card.front.image_file = card.back.image_file = image_db.blank_image
+        card.front.image_file = card.back.image_file = image_db.get_blank()
     assert_that(card.image_file, is_(not_none()), "Test setup failed. Card image is None")
     cw = main_window.ui.central_widget
     with patch.object(cw, "request_action", spec=True) as request_action, \

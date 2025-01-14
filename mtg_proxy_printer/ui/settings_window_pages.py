@@ -21,14 +21,14 @@ from abc import abstractmethod
 
 from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
 from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon
-from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit
+from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.ui.common import highlight_widget
-from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser
+from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, QuantityT
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
 if typing.TYPE_CHECKING:
@@ -60,8 +60,12 @@ bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
 check_state_to_bool_str: typing.Dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 ItemDataRole = Qt.ItemDataRole
+StandardLocation = QStandardPaths.StandardLocation
+LocateOption = QStandardPaths.LocateOption
+StandardButton = QMessageBox.StandardButton
 logger = get_logger(__name__)
 del get_logger
+mm: QuantityT = unit_registry.mm
 
 
 class PageMetadata(typing.NamedTuple):
@@ -171,7 +175,7 @@ class DebugSettingsPage(Page):
         logger.debug("User about to download the card data from Scryfall to a file.")
         location = QFileDialog.getExistingDirectory(
             self, self.tr("Select download location"),
-            QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory))
+            QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory))
         if not location:
             logger.debug("User cancelled location selection. Not downloading.")
             return
@@ -192,7 +196,7 @@ class DebugSettingsPage(Page):
         logger.debug("User about to import card tata from a previously downloaded file.")
         location, _ = QFileDialog.getOpenFileName(
             self, self.tr("Import previously downloaded card data obtained from Scryfall"),
-            QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
+            QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory),
             self.tr("Scryfall card data (*.json, *.json.gz)"))
         logger.info(f"{location=}")
         if not location:
@@ -331,7 +335,8 @@ class GeneralSettingsPage(Page):
         section = settings["cards"]
         preferred_language_combo_box = self.ui.preferred_language_combo_box
         preferred_language = section.get("preferred-language")
-        if not (known := preferred_language_combo_box.model().stringList()) or preferred_language not in known:
+        list_model: QStringListModel = preferred_language_combo_box.model()
+        if not (known := list_model.stringList()) or preferred_language not in known:
             preferred_language_combo_box.addItem(preferred_language)
         preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(preferred_language))
         self.ui.automatically_add_opposing_faces.setChecked(
@@ -503,7 +508,7 @@ class PrinterSettingsPage(Page):
         self.ui = ui = Ui_PrinterSettingsPage()
         ui.setupUi(self)
 
-    def _get_printer_settings_widgets(self):
+    def _get_printer_settings_boolean_widgets(self):
         ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (ui.printer_use_borderless_printing, "borderless-printing"),
@@ -511,21 +516,38 @@ class PrinterSettingsPage(Page):
         ]
         return widgets_with_settings
 
+    def _get_printer_settings_length_widgets(self):
+        ui = self.ui
+        widgets_with_settings: typing.List[typing.Tuple[QDoubleSpinBox, str]] = [
+            (ui.horizontal_offset, "horizontal-offset"),
+        ]
+        return widgets_with_settings
+
     def load(self, settings: ConfigParser):
         section = settings["printer"]
-        for widget, setting in self._get_printer_settings_widgets():
-            widget.setChecked(section.getboolean(setting))
+        for checkbox, setting in self._get_printer_settings_boolean_widgets():
+            checkbox.setChecked(section.getboolean(setting))
+        for spinbox, setting in self._get_printer_settings_length_widgets():
+            # TODO: Not fully unit-aware. Spinbox assumed in mm
+            spinbox.setValue(section.get_quantity(setting).to("mm").magnitude)
 
     def save(self):
         section = mtg_proxy_printer.settings.settings["printer"]
-        for widget, setting in self._get_printer_settings_widgets():
-            section[setting] = str(widget.isChecked())
+        for checkbox, setting in self._get_printer_settings_boolean_widgets():
+            section[setting] = str(checkbox.isChecked())
+        for spinbox, setting in self._get_printer_settings_length_widgets():
+            # TODO: Not fully unit-aware. Spinbox assumed in mm
+            section[setting] = f"{spinbox.value()} mm"
 
     def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["printer"]
-        for widget, setting in self._get_printer_settings_widgets():
-            if section.getboolean(setting) != widget.isChecked():
-                highlight_widget(widget)
+        for checkbox, setting in self._get_printer_settings_boolean_widgets():
+            if section.getboolean(setting) != checkbox.isChecked():
+                highlight_widget(checkbox)
+        for spinbox, setting in self._get_printer_settings_length_widgets():
+            # TODO: Not fully unit-aware. Spinbox assumed in mm
+            if spinbox.value()*mm != section.get_quantity(setting).to("mm"):
+                highlight_widget(spinbox)
 
 
 class PDFSettingsPage(Page):

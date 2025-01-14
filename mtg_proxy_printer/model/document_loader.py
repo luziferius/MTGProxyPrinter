@@ -573,7 +573,8 @@ class Worker(LoaderSignals):
             elif annotated_type is QuantityT and not isinstance(value, pint.Quantity):
                 # TODO: Currently implicitly interpreting values as millimeters. Replace this with save version 7.
                 # Ensure all floats are within the allowed bounds.
-                value = mtg_proxy_printer.settings.clamp_to_supported_range(value*unit_registry.mm)
+                value = mtg_proxy_printer.settings.clamp_to_supported_range(
+                    value*unit_registry.mm, mtg_proxy_printer.settings.MIN_SIZE, mtg_proxy_printer.settings.MAX_SIZE)
             elif annotated_type is str:
                  value = annotated_type(value)
             setattr(default_settings, key, value)

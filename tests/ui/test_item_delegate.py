@@ -27,6 +27,7 @@ from mtg_proxy_printer.model.card_list import CardListModel
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
+from mtg_proxy_printer.units_and_sizes import CardSizes
 
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 
@@ -34,7 +35,7 @@ from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 @pytest.fixture(params=itertools.product(range(3), ["", "language"]))
 def card_list_empty_carddb(card_db: CardDatabase, request):
     proxy_level, language = request.param  # type: int, str
-    card = Card("", MTGSet("", ""), "", language, "", True, "", "", True, False, 1, False, None)
+    card = Card("", MTGSet("", ""), "", language, "", True, "", "", True, CardSizes.REGULAR, 1, False, None)
     source_model = CardListModel(card_db)
     source_model.add_cards(Counter({card: 1}))
     # Having this list keeps the references alive. Without keeping them here, access in test code raises
@@ -49,7 +50,7 @@ def card_list_empty_carddb(card_db: CardDatabase, request):
 
 @pytest.fixture(params=["", "language"])
 def document_empty_carddb(card_db: CardDatabase, request):
-    card = Card("", MTGSet("", ""), "", request.param, "", True, "", "", True, False, 1, False, None)
+    card = Card("", MTGSet("", ""), "", request.param, "", True, "", "", True, CardSizes.REGULAR, 1, False, None)
     source_model = Document(card_db, NonCallableMagicMock(spec=ImageDatabase))
     ActionAddCard(card).apply(source_model)
     yield source_model

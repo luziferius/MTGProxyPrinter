@@ -36,7 +36,7 @@ from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import PageType, StringList, OptStr
+from mtg_proxy_printer.units_and_sizes import PageType, StringList, OptStr, CardSizes, CardSize
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -123,7 +123,7 @@ class Card:
     oracle_id: str = dataclasses.field(compare=True)
     image_uri: str = dataclasses.field(compare=False)
     highres_image: bool = dataclasses.field(compare=False)
-    is_oversized: bool = dataclasses.field(compare=False)
+    size: CardSize = dataclasses.field(compare=False)
     face_number: int = dataclasses.field(compare=False)
     is_dfc: bool = dataclasses.field(compare=False)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
@@ -161,6 +161,10 @@ class Card:
     @property
     def set_code(self):
         return self.set.code
+
+    @property
+    def is_oversized(self) -> bool:
+        return self.size is CardSizes.OVERSIZED
 
 
 @dataclasses.dataclass(unsafe_hash=True)
@@ -573,7 +577,7 @@ class CardDatabase(QObject):
             Card(
                 name, MTGSet(set_code, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
+                bool(highres_image), CardSizes.from_bool(is_oversized), face_number, bool(is_dfc),
             )
             for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
                 is_oversized, face_number, language, is_dfc in cursor
@@ -708,10 +712,11 @@ class CardDatabase(QObject):
         else:
             name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
                 is_oversized, face_number, is_dfc = result
+            size = CardSizes.from_bool(is_oversized)
             return Card(
                 name, MTGSet(set_abbr, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
+                bool(highres_image), size, face_number, bool(is_dfc),
             )
 
     def get_all_cards_from_image_cache(self, cache_content: typing.List["CacheContent"]) -> ImageDatabaseCards:
@@ -772,10 +777,11 @@ class CardDatabase(QObject):
                 is_oversized, face_number, is_dfc, is_hidden \
                 in db.execute(known_images_query):
             cache_item = CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), pathlib.Path(abs_path))
+            size = CardSizes.from_bool(is_oversized)
             card = Card(
                 name, MTGSet(set_code, set_name), collector_number,
                 language, cache_item.scryfall_id, cache_item.is_front, oracle_id, image_uri,
-                bool(highres_on_disk), bool(is_oversized), face_number, is_dfc
+                bool(highres_on_disk), size, face_number, is_dfc
             )
             if is_hidden:
                 cards.hidden.append((card, cache_item))
@@ -1063,8 +1069,9 @@ class CardDatabase(QObject):
         if similarity is None:
             logger.debug(f"Found no translations to {language_override} for card '{card.name}'.")
             return None
+        size = CardSizes.from_bool(is_oversized)
         return Card(
             name, MTGSet(set_code, set_name), collector_number,
             language_override, scryfall_id, card.is_front, card.oracle_id, image_uri,
-            bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
+            bool(highres_image), size, face_number, bool(is_dfc),
         )

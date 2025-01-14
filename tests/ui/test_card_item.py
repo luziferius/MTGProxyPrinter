@@ -19,6 +19,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QColorConstants, QPixmap, QImage, QPainter, QColor
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene
 
+from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.ui.page_scene import CardItem
 
 from tests.document_controller.helpers import append_new_card_in_page
@@ -27,7 +28,7 @@ from tests.hasgetter import has_getter
 
 def test_pixmap_set_in_init(qtbot, document_light):
     card = append_new_card_in_page(document_light.pages[0], "Card")
-    card.set_image_file(document_light.image_db.blank_image)
+    card.set_image_file(document_light.image_db.get_blank(CardSizes.REGULAR))
     card_item = CardItem(card, document_light)
 
     # Cannot compare QPixmap, have to convert both to QImage, which has operator eq (==) defined
@@ -66,8 +67,7 @@ def paint_to_new_image(item: QGraphicsItem, size: QSize) -> QImage:
 def test_corners_render_correctly_after_creation(qtbot, document_light, new_state: bool, expected_color: QColor):
     document_light.page_layout.draw_sharp_corners = new_state
     card = append_new_card_in_page(document_light.pages[0], "Card")
-    card.set_image_file(create_pixmap_with_transparent_corners(
-        document_light.image_db.blank_image.size()))
+    card.set_image_file(create_pixmap_with_transparent_corners(CardSizes.REGULAR.as_qsize_px()))
     item = CardItem(card, document_light)
     painted_item = paint_to_new_image(item, card.image_file.size())
     expected = f"{expected_color.red(), expected_color.green(), expected_color.blue()}"
@@ -86,7 +86,7 @@ def test_corner_renders_correctly_after_changing_draw_sharp_corners_option(
         qtbot, document_light, old_state: bool, new_state: bool, expected_color: QColor):
     document_light.page_layout.draw_sharp_corners = old_state
     card = append_new_card_in_page(document_light.pages[0], "Card")
-    card_size = document_light.image_db.blank_image.size()
+    card_size = CardSizes.REGULAR.as_qsize_px()
     card.set_image_file(create_pixmap_with_transparent_corners(card_size))
     item = CardItem(card, document_light)
 
