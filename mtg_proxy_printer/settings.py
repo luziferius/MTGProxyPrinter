@@ -26,7 +26,7 @@ from PyQt5.QtCore import QStandardPaths
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
-from mtg_proxy_printer.units_and_sizes import CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT, UnitT
+from mtg_proxy_printer.units_and_sizes import CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT
 
 __all__ = [
     "settings",
@@ -40,6 +40,7 @@ __all__ = [
 ]
 
 
+mm: QuantityT = unit_registry.mm
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = ConfigParser()
 DEFAULT_SETTINGS = ConfigParser()
@@ -147,6 +148,7 @@ DEFAULT_SETTINGS["update-checks"] = {
 DEFAULT_SETTINGS["printer"] = {
     "borderless-printing": "True",
     "landscape-compatibility-workaround": "False",
+    "horizontal-offset": "0 mm",
 }
 DEFAULT_SETTINGS["pdf-export"] = {
     "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
@@ -154,9 +156,9 @@ DEFAULT_SETTINGS["pdf-export"] = {
     "landscape-compatibility-workaround": "False",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
-MIN_SIZE: QuantityT = 0 * unit_registry.mm
-MAX_SIZE: QuantityT = 10000 * unit_registry.mm
-ALLOWED_LENGTH_UNITS: typing.Set[UnitT] = {unit_registry.mm}
+MIN_SIZE = 0 * mm
+MAX_SIZE = 10000 * mm
+ALLOWED_LENGTH_UNITS: typing.Set[QuantityT] = {mm}
 
 
 def round_to_nearest_multiple(value: T, multiple: T) -> T:
@@ -164,9 +166,9 @@ def round_to_nearest_multiple(value: T, multiple: T) -> T:
     return round(value/multiple)*multiple
 
 
-def clamp_to_supported_range(value: QuantityT) -> QuantityT:
+def clamp_to_supported_range(value: QuantityT, minimum: QuantityT, maximum: QuantityT) -> QuantityT:
     """Clamps numerical document settings to the supported value range"""
-    return min(max(value, MIN_SIZE),  MAX_SIZE)
+    return min(max(value, minimum),  maximum)
 
 
 def get_boolean_card_filter_keys():
@@ -287,7 +289,7 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
         elif key in string_settings:
             pass
         else:
-            _validate_document_spacing_distance(section, defaults, key)
+            _validate_length(section, defaults, key, MIN_SIZE, MAX_SIZE)
 
     # Check some semantic properties
     available_height = section.get_quantity("paper-height") - \
@@ -363,8 +365,11 @@ def _validate_default_filesystem_paths_section(
 def _validate_printer_section(to_validate: ConfigParser, section_name: str = "printer"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
-    for item in defaults.keys():
-        _validate_boolean(section, defaults, item)
+    for key, default in defaults.items():
+        if default in {"True", "False"}:
+            _validate_boolean(section, defaults, key)
+        else:
+            _validate_length(section, defaults, key, -100*mm, 100*mm)
 
 
 def _validate_pdf_export_section(to_validate: ConfigParser, section_name: str = "pdf-export"):
@@ -406,12 +411,12 @@ def _validate_non_negative_int(section: SectionProxy, defaults: SectionProxy, ke
         _restore_default(section, defaults, key)
 
 
-def _validate_document_spacing_distance(section: SectionProxy, defaults: SectionProxy, key: str):
+def _validate_length(section: SectionProxy, defaults: SectionProxy, key: str, minimum: QuantityT, maximum: QuantityT):
     try:
         value = section.get_quantity(key)
         if unit_conversion_required := (value.units not in ALLOWED_LENGTH_UNITS):
             value = value.to("mm", "print")
-        rounded = clamp_to_supported_range(value)
+        rounded = clamp_to_supported_range(value, minimum, maximum)
         if unit_conversion_required or not math.isclose(value.magnitude, rounded.magnitude):
             section[key] = str(rounded)
     # Unit-less values raise AttributeError, non-length values, like grams or seconds, raise DimensionalityError
