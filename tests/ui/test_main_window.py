@@ -50,10 +50,10 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Ma
             return_value=request.param), \
             unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.DatabaseImportWorker, "get_scryfall_bulk_card_data_url",
+                mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "get_scryfall_bulk_card_data_url",
                 return_value=(unittest.mock.MagicMock(), 10)), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.DatabaseImportWorker, "read_json_card_data_from_url",
+                mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "read_json_card_data_from_url",
                 return_value=iter([10])):
         cid = CardInfoDownloader(card_db)
         main_window = MainWindow(card_db, cid, document.image_db, document, QStringListModel(["en"]))
@@ -138,7 +138,7 @@ def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, mai
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No), \
         unittest.mock.patch(
-            "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
+            "mtg_proxy_printer.card_info_downloader.DatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
         unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start, \
             qtbot.assertNotEmitted(main_window.loading_state_changed):
         main_window.show_card_data_update_available_message_box(10000)
@@ -188,7 +188,7 @@ def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtB
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No) as message_box, \
         unittest.mock.patch(
-            "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
+            "mtg_proxy_printer.card_info_downloader.DatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
             unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start, \
             qtbot.assertNotEmitted(main_window.loading_state_changed):
         main_window.ask_user_about_empty_database()
