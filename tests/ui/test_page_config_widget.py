@@ -129,7 +129,6 @@ def test_set_line_edits(qtbot: QtBot, widget: PageConfigWidget, attribute_name: 
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
 
 
-
 ZeroMarginsSettings = {
     "paper-height": "297 mm",
     "paper-width": "210 mm",

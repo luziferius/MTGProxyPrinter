@@ -254,7 +254,7 @@ class XMageParser(GenericRegularExpressionDeckParser):
     def supported_file_types() -> typing.Dict[str, typing.List[str]]:
         return {
             QCoreApplication.translate("XMageParser", "XMage Deck file"): ["dck"],
-            }
+        }
 
     PREFIXES_TO_SKIP = frozenset(("NAME", "LAYOUT"))
 
