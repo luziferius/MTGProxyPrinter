@@ -430,7 +430,8 @@ class Document(QAbstractItemModel):
         for page_number, page in enumerate(self.pages):
             page_index = self.index(page_number, 0)
             for card_number, container in enumerate(page):
-                if container.card.image_file in blanks:
+                card = container.card
+                if card.image_file in blanks and card.image_uri:
                     yield self.index(card_number, 0, page_index)
 
     @staticmethod
