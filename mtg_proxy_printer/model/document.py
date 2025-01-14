@@ -431,6 +431,7 @@ class Document(QAbstractItemModel):
             page_index = self.index(page_number, 0)
             for card_number, container in enumerate(page):
                 card = container.card
+                # Skip explicitly added empty placeholders, which have an empty image_uri
                 if card.image_file in blanks and card.image_uri:
                     yield self.index(card_number, 0, page_index)
 
