@@ -23,7 +23,7 @@
      <x>0</x>
      <y>0</y>
      <width>1050</width>
-     <height>28</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
@@ -67,6 +67,7 @@
     <addaction name="action_download_missing_card_images"/>
     <addaction name="separator"/>
     <addaction name="action_new_page"/>
+    <addaction name="action_add_empty_card"/>
     <addaction name="action_discard_page"/>
    </widget>
    <addaction name="menu_file"/>
@@ -344,6 +345,17 @@ use this to reduce the initial deck shuffling required</string>
    </property>
    <property name="text">
     <string>Redo</string>
+   </property>
+  </action>
+  <action name="action_add_empty_card">
+   <property name="icon">
+    <iconset theme="list-add"/>
+   </property>
+   <property name="text">
+    <string>Add empty card to page</string>
+   </property>
+   <property name="toolTip">
+    <string>Add an empty spacer filling a card slot</string>
    </property>
   </action>
  </widget>
