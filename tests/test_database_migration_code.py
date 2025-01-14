@@ -171,7 +171,7 @@ def test_patch_21_to_22_applies_correctly_without_network_access_using_dummy_val
         card_db_at_version_21: pathlib.Path, possible_error: BaseException):
     card_db = CardDatabase(card_db_at_version_21)
     with unittest.mock.patch(
-            "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.read_json_card_data_from_url") as mock:
+            "mtg_proxy_printer.card_info_downloader.ApiStreamWorker.read_json_card_data_from_url") as mock:
         mock.side_effect = possible_error
         runner = DatabaseMigrationRunner(card_db, {21: MIGRATION_SCRIPTS[21]})
         runner.run()
@@ -190,7 +190,7 @@ def test_patch_21_to_22_applies_with_network_access_and_requests_card_count_from
         card_db_at_version_21: pathlib.Path, expected):
     card_db = CardDatabase(card_db_at_version_21)
     with unittest.mock.patch(
-            "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.read_json_card_data_from_url") as mock:
+            "mtg_proxy_printer.card_info_downloader.ApiStreamWorker.read_json_card_data_from_url") as mock:
         mock.return_value = iter((expected,))
         runner = DatabaseMigrationRunner(card_db, {21: MIGRATION_SCRIPTS[21]})
         runner.run()

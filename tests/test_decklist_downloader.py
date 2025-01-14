@@ -85,6 +85,8 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582/"
 
     # Moxfield
+    yield MoxfieldDownloader, "https://moxfield.com/decks/70auYSm75E-Iwf4Oc0g7Lg"
+    yield MoxfieldDownloader, "https://moxfield.com/decks/70auYSm75E-Iwf4Oc0g7Lg/"
     yield MoxfieldDownloader, "https://www.moxfield.com/decks/70auYSm75E-Iwf4Oc0g7Lg"
     yield MoxfieldDownloader, "https://www.moxfield.com/decks/70auYSm75E-Iwf4Oc0g7Lg/"
 
@@ -205,8 +207,11 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern"
 
     # Moxfield
+    yield MoxfieldDownloader, "https://moxfield.com/decks"
+    yield MoxfieldDownloader, "https://moxfield.com/"
     yield MoxfieldDownloader, "https://www.moxfield.com/decks"
     yield MoxfieldDownloader, "https://www.moxfield.com/"
+    yield MoxfieldDownloader, "https://ww.moxfield.com/decks/70auYSm75E-Iwf4Oc0g7Lg"
 
     # TappedOut
     yield TappedOutDownloader, "https://tappedout.net/mtg-decks"

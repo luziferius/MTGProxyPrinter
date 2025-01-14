@@ -10,6 +10,9 @@
   The app no longer appears hanging when starting for the first time after installing updates.
 - Fixed deck list downloader for Archidekt, CubeCobra and Manabox.app 
   falsely rejecting valid URLs starting with `https://www.`. These are now accepted and work as intended.
+- Fixed deck list downloader for Moxfield.com. Moxfield removed the "www." part in their URLS, 
+  and now the internal validator now handles that
+- Fixed a missing button in the "Default document settings" page in the application settings
 
 # Version 0.29.1 (2024-09-14)  <a name="v0_29_1"></a>
 
