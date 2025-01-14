@@ -2,6 +2,14 @@
 
 # Next version (in development)
 
+## New features
+
+- Added a configurable, horizontal printing offset to the printer settings.
+  - Positive values shift the printing area to the right, negative values shift to the left.
+  - This allows compensating offsets in the page centering of the used printer for more accuracy when printing duplex
+  documents.
+  - For now, the setting affects both direct printing and PDF exports
+
 ## Fixed issues
 
 - Fix crash at application start when upgrading from version 0.26.1 or older
