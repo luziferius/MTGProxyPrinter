@@ -18,6 +18,8 @@ This module contains an assortment of small helper functions used in the tests f
 """
 import itertools
 
+from PyQt5.QtGui import QPixmap
+
 import hamcrest.core.base_matcher
 from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to, has_property
 
@@ -52,9 +54,9 @@ def verify_page_index_cache_is_valid(document):
     )
 
 
-def create_card(name: str, size: CardSize = CardSizes.REGULAR) -> Card:
+def create_card(name: str, size: CardSize = CardSizes.REGULAR, image_uri: str = "", pixmap: QPixmap = None) -> Card:
     """Creates a Card with given name and size. Most properties are empty."""
-    return Card(name, MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, None)
+    return Card(name, MTGSet("", ""), "", "", "", True, "", image_uri, True, size, 0, False, pixmap)
 
 
 def card_container_with(card: AnyCardType, parent: Page):

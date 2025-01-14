@@ -579,10 +579,9 @@ def _validate_saved_document_settings(document: Document):
 @pytest.mark.parametrize("size", [REGULAR, OVERSIZED])
 def test_get_missing_image_cards(document_light: Document, size: CardSize):
     blank_image = document_light.image_db.get_blank(size)
-    expected = create_card("Placeholder Image", size)
-    expected.image_file = blank_image
-    unexpected = create_card("Other Image", size)
-    unexpected.image_file = QPixmap(blank_image)  # Create a new, distinct image by copying the blank image
+    expected = create_card("Placeholder Image", size, "https://someurl", blank_image)
+    # Create a new, distinct image by copying the blank image
+    unexpected = create_card("Other Image", size, "", QPixmap(blank_image))
     document_light.apply(ActionAddCard(expected, 2))
     document_light.apply(ActionAddCard(unexpected, 2))
     assert_that(
@@ -592,14 +591,13 @@ def test_get_missing_image_cards(document_light: Document, size: CardSize):
     cards = [i.data(ItemDataRole.UserRole) for i in result]
     assert_that(cards, only_contains(expected))
 
-
+@pytest.mark.parametrize("size", [REGULAR, OVERSIZED])
 @pytest.mark.parametrize("result", [True, False])
-def test_has_missing_images(document_light: Document, result: bool):
+def test_has_missing_images(document_light: Document, result: bool, size: CardSize):
     blank_image = document_light.image_db.get_blank(CardSizes.REGULAR)
-    blank_image_card = create_card("Placeholder Image")
-    blank_image_card.image_file = blank_image
-    other_card = create_card("Other Image")
-    other_card.image_file = QPixmap(blank_image)  # Create a new, distinct image by copying the blank image
+    blank_image_card = create_card("Placeholder Image", size, "https://someurl", blank_image)
+    # Create a new, distinct image by copying the blank image
+    other_card = create_card("Other Image", size, "", QPixmap(blank_image))
     if result:
         document_light.apply(ActionAddCard(blank_image_card, 2))
     document_light.apply(ActionAddCard(other_card, 2))
