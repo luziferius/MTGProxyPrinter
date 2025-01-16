@@ -830,7 +830,7 @@ class CardDatabase(QObject):
         ''')
         return bool(self._read_optional_scalar_from_db(query, (scryfall_id,)))
 
-    def translate_card_name(self, card_data: CardIdentificationData, target_language: str,
+    def translate_card_name(self, card_data: typing.Union[CardIdentificationData, Card], target_language: str,
                             include_hidden_names: bool = False) -> OptStr:
         """
         Translates a card into the target_language. Uses the language in the card data as the source language, if given.
