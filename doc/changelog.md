@@ -11,6 +11,12 @@
   documents.
   - For now, the setting affects both direct printing and PDF exports
 
+## Changed features
+
+- Updated the Moxfield.com downloader to use the new Moxfield API version. Downloaded decks now include additional
+  deck parts if present, including Companions, Signature Spells (Oathbreaker), Planes or Schemes,
+  used attractions, contraptions or sticker sheets. Not included is the maybe-board. 
+
 ## Fixed issues
 
 - Fix crash at application start when upgrading from version 0.26.1 or older

@@ -240,9 +240,11 @@ class MoxfieldDownloader(DecklistDownloader):
 
     @staticmethod
     def post_process(data: bytes) -> str:
-        cards = MoxfieldDownloader._read_board(data, "mainboard")
-        cards += MoxfieldDownloader._read_board(data, "sideboard")
-        cards += MoxfieldDownloader._read_board(data, "commanders")
+        cards = []
+        for board in (
+                "mainboard", "sideboard", "commanders", "companions", "signatureSpells",
+                "attractions", "stickers", "contraptions", "planes", "schemes"):
+            cards += MoxfieldDownloader._read_board(data, f"boards.{board}.cards")
         buffer = StringIO(newline="")
         writer = csv.writer(buffer, MoxfieldDownloader.PARSER_CLASS.Dialect)
         writer.writerow(("count", "scryfall_id", "lang", "name", "set_code", "collector_number"))
@@ -261,8 +263,7 @@ class MoxfieldDownloader(DecklistDownloader):
     def map_to_download_url(self, decklist_url: str) -> str:
         match = self.DECKLIST_PATH_RE.match(decklist_url)
         moxfield_id = match.group("moxfield_id")
-        # TODO: Update to API version 3
-        return f"https://api.moxfield.com/v2/decks/all/{moxfield_id}"
+        return f"https://api.moxfield.com/v3/decks/all/{moxfield_id}"
 
 
 class DeckstatsDownloader(DecklistDownloader):
