@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 #  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
