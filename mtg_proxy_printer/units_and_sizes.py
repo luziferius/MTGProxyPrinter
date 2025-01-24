@@ -32,7 +32,7 @@ from PyQt5.QtCore import QSize
 
 
 def _setup_units() -> typing.Tuple[pint.UnitRegistry, QuantityT]:
-    registry = pint.UnitRegistry()
+    registry = pint.UnitRegistry(cache_folder=":auto:")
     resolution = registry.parse_expression("300dots/inch")
     print_context = pint.Context("print")
     print_context.add_transformation("[length]", "[printing_unit]", lambda _, x: x*RESOLUTION)
