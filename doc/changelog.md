@@ -11,6 +11,12 @@
   documents.
   - For now, the setting affects both direct printing and PDF exports
 
+## Changed features
+
+- Updated the Moxfield.com downloader to use the new Moxfield API version. Downloaded decks now include additional
+  deck parts if present, including Companions, Signature Spells (Oathbreaker), Planes or Schemes,
+  used attractions, contraptions or sticker sheets. Not included is the maybe-board. 
+
 ## Fixed issues
 
 - Fix crash at application start when upgrading from version 0.26.1 or older
@@ -19,8 +25,8 @@
   The app no longer appears hanging when starting for the first time after installing updates.
 - Fixed deck list downloader for Archidekt, CubeCobra and Manabox.app 
   falsely rejecting valid URLs starting with `https://www.`. These are now accepted and work as intended.
-- Fixed deck list downloader for Moxfield.com. Moxfield removed the "www." part in their URLS, 
-  and now the internal validator now handles that
+- Fixed deck list downloader for Moxfield.com rejecting URLs not containing `www.`,
+  which Moxfield recently removed from their website URLs.
 - Fixed a missing button in the "Default document settings" page in the application settings
 
 # Version 0.29.1 (2024-09-14)  <a name="v0_29_1"></a>

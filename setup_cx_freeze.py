@@ -1,17 +1,18 @@
-# Copyright (C) 2021-2023 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """
 This module provides support for freezing the application using cx_Freeze.
@@ -23,8 +24,8 @@ import sys
 from cx_Freeze import setup, Executable
 
 ROOT_DIR = pathlib.Path(__file__).parent
+resource_path = ROOT_DIR / "resources.bak"
 main_package = "mtg_proxy_printer"
-resources_path = ROOT_DIR/main_package/"resources"
 meta_data = (ROOT_DIR/main_package/"meta_data.py").read_text()
 version = re.search(
     r"""^__version__\s*=\s*"(.*)"\s*""",
@@ -89,16 +90,16 @@ if sys.platform == "win32":
     ]
 
 def get_icon() -> str:
-    source_path = ROOT_DIR/"resources.bak"/"icons"/"MTGPP.png"
+    icon_path = resource_path / "icons" / "MTGPP.png"
     if sys.platform == "win32":
         dest = ROOT_DIR/"MTGPP.ico"
         if not dest.exists():
             from PIL import Image
-            with Image.open(source_path) as src:
+            with Image.open(icon_path) as src:
                 src.save(dest, "ICO")
         return str(dest)
     else:
-        return str(source_path)
+        return str(icon_path)
 
 icon = get_icon()
 
@@ -111,7 +112,7 @@ setup_parameters = {
             shortcut_name=project_name,
             shortcut_dir='StartMenuFolder',
             icon=icon,
-            copyright="© 2020-2024 Thomas Hess <thomas.hess@udo.edu>"
+            copyright="© 2020-2024 Thomas Hess <thomas.hess@udo.edu>",
         ),
     ],
     "options": {
@@ -123,6 +124,7 @@ setup_parameters = {
             "target_name": project_name,
             "skip_build": True,
             "install_icon": icon,
+            "license_file": resource_path / "gpl-3.0.rtf"
         },
         "build_exe": {
             "packages": [
