@@ -37,7 +37,7 @@ from PyQt5.QtCore import QCoreApplication, Qt
 
 try:
     from typing import LiteralString
-except AttributeError:
+except ImportError:
     from typing_extensions import LiteralString
 
 from mtg_proxy_printer.progress_meter import ProgressMeter
