@@ -15,8 +15,8 @@
 
 
 PROGRAMNAME = "MTGProxyPrinter"
-__version__ = "0.29.1+PySide6"
-COPYRIGHT = "(C) 2020-2024 Thomas Hess"
+__version__ = "0.30.0+PySide6"
+COPYRIGHT = "(C) 2020-2025 Thomas Hess"
 HOME_PAGE = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter"
 
 DOWNLOAD_WEB_PAGE = f"{HOME_PAGE}/uv/download.html"
