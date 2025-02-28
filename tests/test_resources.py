@@ -68,6 +68,6 @@ def test_all_resource_files_are_listed_in_resources_qrc(resource_path: Path):
     existing_files = list_dir(base_dir)
     for file in existing_files:
         suffix = file.suffix.casefold()
-        if file.name == "resources.qrc" or suffix in {".ui", ".ts"}:
+        if file.name == "resources.qrc" or suffix in {".ui", ".ts", ".rtf"}:
             continue
         assert_that(file, is_in(listed_paths), "File not listed in resources.qrc")

@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.30.0 (2025-02-28)  <a name="v0_30_0"></a>
 
 ## New features
 
