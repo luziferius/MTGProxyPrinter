@@ -85,8 +85,8 @@ def test_excluded_printing_is_replaced_with_an_available_printing(
     )
 
 def generate_test_cases_for_translation_and_replacement():
-    yield (
-        ["german_Back_to_Basics", "english_Back_to_Basics"],
+    # DE to EN
+    yield (["german_Back_to_Basics", "english_Back_to_Basics"],
         append_to_header(
             DECK_LIST_CSV_HEADER,
             "nonlands,1,Back to Basics,{2}{U},Enchantment,Urza's Saga,usg,62,de,rare,Andrew Robinson,,13.27,7.9,"
@@ -99,12 +99,43 @@ def generate_test_cases_for_translation_and_replacement():
             "https://cards.scryfall.io/large/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127,"
             "https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
         CardIdentificationData("en", "Back to Basics", is_front=True,))
+    # DE to DE
+    yield (
+        ["german_Back_to_Basics", "english_Back_to_Basics"],
+        append_to_header(
+            DECK_LIST_CSV_HEADER,
+            "nonlands,1,Back to Basics,{2}{U},Enchantment,Urza's Saga,usg,62,de,rare,Andrew Robinson,,13.27,7.9,"
+            "2.92,https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
+        CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
+    yield (["german_Back_to_Basics", "english_Back_to_Basics"],
+        append_to_header(
+            SEARCH_CSV_HEADER,
+            ",,USG,62,de,R,Back to Basics,{2}{U},3.0,Enchantment,Andrew Robinson,,,,,"
+            "https://cards.scryfall.io/large/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127,"
+            "https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
+        CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
+    # EN TO DE
+    yield (
+        ["german_Back_to_Basics", "english_Back_to_Basics"],
+        append_to_header(
+            DECK_LIST_CSV_HEADER,
+            "columna,1,Back to Basics,{2}{U},Enchantment,Urza's Saga,usg,62,en,rare,Andrew Robinson,nonfoil,"
+            "13.52,9.77,5.12,https://scryfall.com/card/usg/62/back-to-basics,fab4cd7e-b56f-4408-a0e9-c07e040cc38f"),
+        CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
+    yield (["german_Back_to_Basics", "english_Back_to_Basics"],
+        append_to_header(
+            SEARCH_CSV_HEADER,
+            "5711,12287,USG,62,en,R,Back to Basics,{2}{U},3.0,Enchantment,Andrew Robinson,13.52,,9.77,5.12,"
+            "https://cards.scryfall.io/large/front/f/a/fab4cd7e-b56f-4408-a0e9-c07e040cc38f.jpg?1562948100,"
+            "https://scryfall.com/card/usg/62/back-to-basics,fab4cd7e-b56f-4408-a0e9-c07e040cc38f"),
+        CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
+
 
 @pytest.mark.parametrize(
     "cards_to_import, deck_list, target_card", generate_test_cases_for_translation_and_replacement())
 def test_deck_list_translation_works(
         qtbot, card_db, image_db, cards_to_import: StringList,  deck_list: str, target_card: CardIdentificationData):
-    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import)
+    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {"hide-cards-without-images": "False"})
     card = _get_expected_card_from_database(card_db, target_card)
     parser = ScryfallCSVParser(card_db, image_db)
     assert_that(
@@ -122,13 +153,15 @@ def test_deck_list_translation_works(
 
 def _get_expected_card_from_database(card_db: CardDatabase, expected_card: CardIdentificationData) -> Card:
     matches = card_db.get_cards_from_data(expected_card)
-    assert_that(matches, has_length(1))
+    assert_that(matches, has_length(1), "Setup failed.")
     card, = matches
-    assert_that(card, has_properties(
-        name=equal_to(expected_card.name),
-        language=equal_to(expected_card.language),
-        is_front=is_(expected_card.is_front),
-    ))
+    assert_that(
+        card, has_properties(
+            name=equal_to(expected_card.name),
+            language=equal_to(expected_card.language),
+            is_front=is_(expected_card.is_front),
+        ),
+        "Setup failed.")
     return card
 
 
