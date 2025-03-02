@@ -183,10 +183,10 @@ def test_create_from_settings(values: StrDict):
         layout = PageLayoutSettings.create_from_settings()
     assert_that(
         layout, has_properties(
-            document_name="Test",
-            draw_cut_markers=True,
-            draw_page_numbers=True,
-            draw_sharp_corners=True,
+            document_name=equal_to("Test"),
+            draw_cut_markers=is_(True),
+            draw_page_numbers=is_(True),
+            draw_sharp_corners=is_(True),
             row_spacing=quantity_close_to(2*mm),
             column_spacing=quantity_close_to(1*mm),
             margin_bottom=quantity_close_to(8*mm),
