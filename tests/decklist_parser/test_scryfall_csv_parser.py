@@ -119,15 +119,15 @@ def generate_test_cases_for_translation_and_replacement():
         ["german_Back_to_Basics", "english_Back_to_Basics"],
         append_to_header(
             DECK_LIST_CSV_HEADER,
-            "columna,1,Back to Basics,{2}{U},Enchantment,Urza's Saga,usg,62,en,rare,Andrew Robinson,nonfoil,"
-            "13.52,9.77,5.12,https://scryfall.com/card/usg/62/back-to-basics,fab4cd7e-b56f-4408-a0e9-c07e040cc38f"),
+            "columna,1,Back to Basics,{2}{U},Enchantment,Ultimate Masters,uma,46,en,rare,Terese Nielsen,nonfoil,"
+            "6.14,6.85,6.66,https://scryfall.com/card/uma/46/back-to-basics,0600d6c2-0f72-4e79-a55d-1f06dffa48c2"),
         CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
     yield (["german_Back_to_Basics", "english_Back_to_Basics"],
         append_to_header(
             SEARCH_CSV_HEADER,
-            "5711,12287,USG,62,en,R,Back to Basics,{2}{U},3.0,Enchantment,Andrew Robinson,13.52,,9.77,5.12,"
-            "https://cards.scryfall.io/large/front/f/a/fab4cd7e-b56f-4408-a0e9-c07e040cc38f.jpg?1562948100,"
-            "https://scryfall.com/card/usg/62/back-to-basics,fab4cd7e-b56f-4408-a0e9-c07e040cc38f"),
+            "456642,70165,UMA,46,en,R,Back to Basics,{2}{U},3.0,Enchantment,Terese Nielsen,6.14,15.5,6.85,6.66,"
+            "https://cards.scryfall.io/large/front/0/6/0600d6c2-0f72-4e79-a55d-1f06dffa48c2.jpg?1654805483,"
+            "https://scryfall.com/card/uma/46/back-to-basics,0600d6c2-0f72-4e79-a55d-1f06dffa48c2"),
         CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
 
 
