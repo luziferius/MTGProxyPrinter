@@ -121,11 +121,15 @@ def test_deck_list_translation_works(
 
 
 def _get_expected_card_from_database(card_db: CardDatabase, expected_card: CardIdentificationData) -> Card:
-    assert_that(
-        (card_list := card_db.get_cards_from_data(expected_card)),
-        has_length(1)
-    )
-    return card_list[0]
+    matches = card_db.get_cards_from_data(expected_card)
+    assert_that(matches, has_length(1))
+    card, = matches
+    assert_that(card, has_properties(
+        name=equal_to(expected_card.name),
+        language=equal_to(expected_card.language),
+        is_front=is_(expected_card.is_front),
+    ))
+    return card
 
 
 def generate_test_cases_for_test_card_identification_works_in_simple_cases():
