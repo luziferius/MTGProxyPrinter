@@ -105,29 +105,33 @@ class Application(QApplication):
             settings.write_settings_to_file()
             QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
         logger.debug("Enqueueing update check")
-        start = QThreadPool.globalInstance().start
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
 
         card_db_migration_runner = DatabaseMigrationRunner(self.card_db)
         card_db_migration_runner.connect_main_window_signals(self.main_window)
+        card_db_migration_runner.total_update_signals.update_completed.connect(self._on_carddb_migrations_completed)
+        QThreadPool.globalInstance().start(card_db_migration_runner)
+
+    @Slot()
+    def _on_carddb_migrations_completed(self):
+        self.card_db.reopen_database()
+        logger.debug(
+            "Card database migrations completed. Database re-opened. Checking if the printing filters need updates.")
         printing_filter_updater_runner = PrintingFilterUpdater(self.card_db)
         printing_filter_updater_runner.connect_main_window_signals(self.main_window)
+        printing_filter_updater_runner.signals.update_completed.connect(self._on_printing_filter_updater_completed)
+        QThreadPool.globalInstance().start(printing_filter_updater_runner)
 
-        card_db_migration_runner.total_update_signals.update_completed.connect(self.card_db.reopen_database)
-        card_db_migration_runner.total_update_signals.update_completed.connect(
-            partial(start, printing_filter_updater_runner)
-        )
+    @Slot()
+    def _on_printing_filter_updater_completed(self):
+        logger.debug("Printing filters synchronized with settings.")
+        self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
+        self.main_window.update_language_model()
+        self.update_checker.check_for_updates()
+        self._handle_command_line_argument_files()
 
-        printing_filter_updater_runner.signals.update_completed.connect(
-            lambda: self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
-        )
-        printing_filter_updater_runner.signals.update_completed.connect(self.main_window.update_language_model)
-        printing_filter_updater_runner.signals.update_completed.connect(self.update_checker.check_for_updates)
-        printing_filter_updater_runner.signals.update_completed.connect(partial(self._handle_command_line_argument_files, args))
-        
-        start(card_db_migration_runner)
-
-    def _handle_command_line_argument_files(self, args: Namespace):
+    def _handle_command_line_argument_files(self):
+        args = self.args
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
             self.card_info_downloader.import_from_file(args.card_data)
