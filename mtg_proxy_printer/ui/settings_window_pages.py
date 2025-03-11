@@ -79,6 +79,7 @@ class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
 
     def display_item(self) -> typing.Sequence[QStandardItem]:
+        """Returns a list model item for this page, used to represent the page in the settings page selection UI."""
         data = self.display_metadata()
         item = QStandardItem(data.text)
         if data.icon_name:
@@ -92,6 +93,10 @@ class Page(QWidget):
 
     @abstractmethod
     def display_metadata(self) -> PageMetadata:
+        """
+        Returns the data shown by the page selection UI for this page. Must be overridden by subclasses.
+        This is a method, and not a class attribute to allow runtime translation of UI strings.
+        """
         return PageMetadata("FIXME: FILL DATA", None, "FIXME: FILL DATA")
 
     @abstractmethod
