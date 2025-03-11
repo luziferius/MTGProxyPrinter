@@ -1,5 +1,13 @@
 # Changelog
 
+# Version 0.30.1 (2025-03-11)  <a name="v0_30_1"></a>
+
+## Fixed issues
+
+- Fixed that some start-up tasks were not run on the Windows 10+ build. Fixes that the deck list translation and 
+  default card language setting in the application settings did not offer any language choices.
+  - The pure Python package distributed via PyPI and the Windows 7+ build were not affected.
+
 # Version 0.30.0 (2025-02-28)  <a name="v0_30_0"></a>
 
 ## New features
