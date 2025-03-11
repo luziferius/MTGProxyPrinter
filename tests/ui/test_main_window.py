@@ -16,6 +16,7 @@
 
 import dataclasses
 import pathlib
+import typing
 import unittest.mock
 
 from PySide6.QtCore import QStringListModel, QThreadPool
@@ -43,7 +44,7 @@ StandardButton = QMessageBox.StandardButton
 
 
 @pytest.fixture(params=[Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, Ui_TabbedCentralWidget])
-def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> MainWindow:
+def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> typing.Generator[MainWindow, None, None]:
     fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
     with unittest.mock.patch(
             "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",

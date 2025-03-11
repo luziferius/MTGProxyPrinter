@@ -192,7 +192,8 @@ class Application(QApplication):
 
     def _create_language_model(self):
         preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
-        return QStringListModel([preferred_language], self)
+        available = sorted({preferred_language, "en"})
+        return QStringListModel(available, self)
 
     def _create_update_checker(self, args: Namespace) -> UpdateChecker:
         update_checker = UpdateChecker(self.card_db, args, self)

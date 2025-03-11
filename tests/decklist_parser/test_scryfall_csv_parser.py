@@ -51,28 +51,22 @@ def test_local_header_conforms_to_current_scryfall_return_data(url: str, header:
 
 
 
-def generate_test_cases_for_translation_and_replacement():
-    yield (
-        ["german_Back_to_Basics", "english_Back_to_Basics"],
+@pytest.mark.parametrize(
+    "cards_to_import, deck_list, expected_card", [
+        (["german_Back_to_Basics", "english_Back_to_Basics"],
         append_to_header(
             DECK_LIST_CSV_HEADER,
             "nonlands,1,Back to Basics,{2}{U},Enchantment,Urza's Saga,usg,62,de,rare,Andrew Robinson,,13.27,7.9,"
             "2.92,https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
-        CardIdentificationData("en", "Back to Basics", is_front=True,)
-    )
-    yield (
-        ["german_Back_to_Basics", "english_Back_to_Basics"],
+        CardIdentificationData("en", "Back to Basics", is_front=True,)),
+        (["german_Back_to_Basics", "english_Back_to_Basics"],
         append_to_header(
             SEARCH_CSV_HEADER,
             ",,USG,62,de,R,Back to Basics,{2}{U},3.0,Enchantment,Andrew Robinson,,,,,"
             "https://cards.scryfall.io/large/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127,"
             "https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
-        CardIdentificationData("en", "Back to Basics", is_front=True,)
-    )
-
-
-@pytest.mark.parametrize(
-    "cards_to_import, deck_list, expected_card", generate_test_cases_for_translation_and_replacement())
+        CardIdentificationData("en", "Back to Basics", is_front=True,)),
+    ])
 def test_excluded_printing_is_replaced_with_an_available_printing(
         qtbot, card_db, image_db, cards_to_import: StringList,  deck_list: str, expected_card: CardIdentificationData):
     fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {"hide-cards-without-images": "True"})
@@ -90,16 +84,62 @@ def test_excluded_printing_is_replaced_with_an_available_printing(
         )
     )
 
+def generate_test_cases_for_translation_and_replacement():
+    # DE to EN
+    yield (["german_Back_to_Basics", "english_Back_to_Basics"],
+        append_to_header(
+            DECK_LIST_CSV_HEADER,
+            "nonlands,1,Back to Basics,{2}{U},Enchantment,Urza's Saga,usg,62,de,rare,Andrew Robinson,,13.27,7.9,"
+            "2.92,https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
+        CardIdentificationData("en", "Back to Basics", is_front=True,))
+    yield (["german_Back_to_Basics", "english_Back_to_Basics"],
+        append_to_header(
+            SEARCH_CSV_HEADER,
+            ",,USG,62,de,R,Back to Basics,{2}{U},3.0,Enchantment,Andrew Robinson,,,,,"
+            "https://cards.scryfall.io/large/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127,"
+            "https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
+        CardIdentificationData("en", "Back to Basics", is_front=True,))
+    # DE to DE
+    yield (
+        ["german_Back_to_Basics", "english_Back_to_Basics"],
+        append_to_header(
+            DECK_LIST_CSV_HEADER,
+            "nonlands,1,Back to Basics,{2}{U},Enchantment,Urza's Saga,usg,62,de,rare,Andrew Robinson,,13.27,7.9,"
+            "2.92,https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
+        CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
+    yield (["german_Back_to_Basics", "english_Back_to_Basics"],
+        append_to_header(
+            SEARCH_CSV_HEADER,
+            ",,USG,62,de,R,Back to Basics,{2}{U},3.0,Enchantment,Andrew Robinson,,,,,"
+            "https://cards.scryfall.io/large/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127,"
+            "https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
+        CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
+    # EN TO DE
+    yield (
+        ["german_Back_to_Basics", "english_Back_to_Basics"],
+        append_to_header(
+            DECK_LIST_CSV_HEADER,
+            "columna,1,Back to Basics,{2}{U},Enchantment,Ultimate Masters,uma,46,en,rare,Terese Nielsen,nonfoil,"
+            "6.14,6.85,6.66,https://scryfall.com/card/uma/46/back-to-basics,0600d6c2-0f72-4e79-a55d-1f06dffa48c2"),
+        CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
+    yield (["german_Back_to_Basics", "english_Back_to_Basics"],
+        append_to_header(
+            SEARCH_CSV_HEADER,
+            "456642,70165,UMA,46,en,R,Back to Basics,{2}{U},3.0,Enchantment,Terese Nielsen,6.14,15.5,6.85,6.66,"
+            "https://cards.scryfall.io/large/front/0/6/0600d6c2-0f72-4e79-a55d-1f06dffa48c2.jpg?1654805483,"
+            "https://scryfall.com/card/uma/46/back-to-basics,0600d6c2-0f72-4e79-a55d-1f06dffa48c2"),
+        CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
+
 
 @pytest.mark.parametrize(
-    "cards_to_import, deck_list, expected_card", generate_test_cases_for_translation_and_replacement())
+    "cards_to_import, deck_list, target_card", generate_test_cases_for_translation_and_replacement())
 def test_deck_list_translation_works(
-        qtbot, card_db, image_db, cards_to_import: StringList,  deck_list: str, expected_card: CardIdentificationData):
-    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import)
-    card = _get_expected_card_from_database(card_db, expected_card)
+        qtbot, card_db, image_db, cards_to_import: StringList,  deck_list: str, target_card: CardIdentificationData):
+    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {"hide-cards-without-images": "False"})
+    card = _get_expected_card_from_database(card_db, target_card)
     parser = ScryfallCSVParser(card_db, image_db)
     assert_that(
-        parser.parse_deck(deck_list, False, False, "en"),
+        parser.parse_deck(deck_list, False, False, target_card.language),
         contains_exactly(
             all_of(
                 has_key(card),
@@ -112,11 +152,17 @@ def test_deck_list_translation_works(
 
 
 def _get_expected_card_from_database(card_db: CardDatabase, expected_card: CardIdentificationData) -> Card:
+    matches = card_db.get_cards_from_data(expected_card)
+    assert_that(matches, has_length(1), "Setup failed.")
+    card, = matches
     assert_that(
-        (card_list := card_db.get_cards_from_data(expected_card)),
-        has_length(1)
-    )
-    return card_list[0]
+        card, has_properties(
+            name=equal_to(expected_card.name),
+            language=equal_to(expected_card.language),
+            is_front=is_(expected_card.is_front),
+        ),
+        "Setup failed.")
+    return card
 
 
 def generate_test_cases_for_test_card_identification_works_in_simple_cases():

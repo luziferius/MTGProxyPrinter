@@ -777,6 +777,6 @@ def test_card_bleed_with_two_cards(page_scene: PageScene, column_spacing: Quanti
     assert_that(rendered.pixelColor(right_center + h_12 - h_1), has_right_color)
     assert_that(rendered.pixelColor(bottom_right + h_12 - h_1), has_right_color)
     # Outside bleed
-    assert_that(rendered.pixelColor(top_right + h_13 - h_1), has_background_color)
-    assert_that(rendered.pixelColor(right_center + h_13 - h_1), has_background_color)
-    assert_that(rendered.pixelColor(bottom_right + h_13 - h_1), has_background_color)
+    assert_that(rendered.pixelColor(top_right + h_13), has_background_color)
+    assert_that(rendered.pixelColor(right_center + h_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_right + h_13), has_background_color)

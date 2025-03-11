@@ -77,6 +77,15 @@ class ParserBase(QObject):
                    print_guessing: bool,
                    print_guessing_prefer_already_downloaded: bool,
                    language_override: str = None) -> ParsedDeck:
+        """
+        Parses the deck list
+        :param deck: The input deck list as a multi-line string
+        :param print_guessing: Enable guessing a printing, if a line doesn’t identify a unique printing
+        :param print_guessing_prefer_already_downloaded: Enable preferring printings with downloaded images when choosing
+        :param language_override: Optional two-letter language code. If given, translate all cards into the given
+          language.
+        :return: A Counter that contains the parsed cards and a list of strings with unmatched lines
+        """
         logger.info("About to parse deck")
         # Implementation note: If a language is given, force print_guessing_prefer_already_downloaded to False,
         # Because it would operate on the cards in the source language. The card choice gets overwritten by the
@@ -96,9 +105,9 @@ class ParserBase(QObject):
         :param print_guessing: Enable guessing a printing, if a line doesn’t identify a unique printing
         :param language_override: Optional two-letter language code. If given, translate all cards into the given
           language.
-        :returns: A Counter that contains the parsed cards and a list of strings with unmatched lines
+        :return: A Counter that contains the parsed cards and a list of strings with unmatched lines
         """
-        pass
+        raise NotImplementedError("BUG: Deck list parser did not implement parse_deck_internal()")
 
     @property
     def requires_automatic_print_selection(self) -> bool:
