@@ -87,7 +87,6 @@ class Application(QApplication):
             self.language_model, self.document, self.main_window, self.card_info_downloader)
         self.main_window.show()
 
-
     def enqueue_startup_tasks(self, args: Namespace):
         """
         Enqueues all tasks that should run in the Qt event loop at application start.
@@ -123,9 +122,7 @@ class Application(QApplication):
         printing_filter_updater_runner.signals.update_completed.connect(
             lambda: self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         )
-        printing_filter_updater_runner.signals.update_completed.connect(
-            self.main_window.should_update_languages
-        )
+        printing_filter_updater_runner.signals.update_completed.connect(self.main_window.update_language_model)
         printing_filter_updater_runner.signals.update_completed.connect(self.update_checker.check_for_updates)
         printing_filter_updater_runner.signals.update_completed.connect(partial(self._handle_command_line_argument_files, args))
         

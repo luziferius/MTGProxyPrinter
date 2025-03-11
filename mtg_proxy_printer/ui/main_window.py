@@ -63,7 +63,6 @@ UiElements = typing.List[typing.Union[QWidget, QAction]]
 
 class MainWindow(QMainWindow):
 
-    should_update_languages = Signal()
     loading_state_changed = Signal(bool)
 
     def __init__(self,
@@ -97,13 +96,15 @@ class MainWindow(QMainWindow):
         self._setup_central_widget()
         self._setup_loading_state_connections()
         self._setup_undo_redo_actions(document)
-        self.should_update_languages.connect(
-            lambda: self.language_model.setStringList(self.card_database.get_all_languages())
-        )
         self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
         self.current_dialog: typing.Optional[QDialog] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def update_language_model(self):
+        available_languages = self.card_database.get_all_languages()
+        logger.debug(f"Setting the list of available languages to {available_languages}")
+        self.language_model.setStringList(available_languages)
 
     def _create_about_dialog(self, card_database: CardDatabase) -> AboutDialog:
         about_dialog = AboutDialog(card_database, self)
@@ -163,7 +164,7 @@ class MainWindow(QMainWindow):
         ui.action_download_card_data.triggered.connect(lambda: ui.action_download_card_data.setDisabled(True))
         downloader.download_begins.connect(lambda: ui.action_download_card_data.setDisabled(True))
         ui.action_download_card_data.triggered.connect(downloader.import_from_api)
-        downloader.card_data_updated.connect(self.should_update_languages)
+        downloader.card_data_updated.connect(self.update_language_model)
         downloader.download_begins.connect(self.progress_bars.begin_independent_progress)
         downloader.download_progress.connect(self.progress_bars.set_independent_progress)
         downloader.download_finished.connect(self.progress_bars.end_independent_progress)
