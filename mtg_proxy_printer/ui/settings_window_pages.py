@@ -296,8 +296,8 @@ class GeneralSettingsPage(Page):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.ui = ui = Ui_GeneralSettingsPage()
-        self.language_model = QStringListModel([], self)
         ui.setupUi(self)
+        self.set_language_model = ui.preferred_language_combo_box.setModel
         ui.add_card_widget_style_combo_box.addItem(self.tr("Horizontal layout"), "horizontal")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Columnar layout"), "columnar")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Tabbed layout"), "tabbed")
@@ -307,10 +307,6 @@ class GeneralSettingsPage(Page):
             (self.tr("German"), "de"),
         ]:
             ui.application_language_combo_box.addItem(display_text, language_code)
-
-    def set_language_model(self, model: QStringListModel):
-        self.language_model = model
-        self.ui.preferred_language_combo_box.setModel(model)
 
     @Slot()
     def on_document_save_path_browse_button_clicked(self):
@@ -365,7 +361,7 @@ class GeneralSettingsPage(Page):
         return widgets_with_settings
 
     def get_index_for_language_code(self, language: str) -> int:
-        languages = self.language_model.stringList()
+        languages = self.ui.preferred_language_combo_box.model().stringList()
         if language in languages:
             return languages.index(language)
         else:
