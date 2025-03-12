@@ -109,8 +109,8 @@ class AddCardWidget(QWidget):
 
     def _setup_collector_number_box(self) -> QStringListModel:
         model = QStringListModel([], self.ui.collector_number_list)
-        self.set_name_model.rowsRemoved.connect(lambda: self.ui.collector_number_box.setEnabled(False))
-        self.set_name_model.rowsRemoved.connect(lambda: model.setStringList([]))
+        self.set_name_model.modelReset.connect(lambda: self.ui.collector_number_box.setEnabled(False))
+        self.set_name_model.modelReset.connect(lambda: model.setStringList([]))
 
         self.ui.collector_number_list.setModel(model)
         self.ui.collector_number_list.selectionModel().selectionChanged.connect(
