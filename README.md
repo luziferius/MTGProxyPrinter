@@ -2,6 +2,8 @@
 
 Print Magic: The Gathering cards for play-testing purposes.
 
+(If you are reading this on GitHub, then you are looking at a Git mirror of the [fossil](https://fossil-scm.org)-based source repository located at [https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter](https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter))
+
 ## Feature overview
 
 The application supports importing deck lists from locally stored files or various deck list building websites, automatically fetches high-quality card images from [Scryfall](https://scryfall.com), and arranges the fetched images
