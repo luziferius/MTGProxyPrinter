@@ -75,22 +75,23 @@ class CardListModel(QAbstractTableModel):
         return 0 if parent.isValid() else len(self.header)
 
     def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
-        card = self.cards[index.row()]
+        row, column = index.row(), index.column()
+        card = self.cards[row]
         if role == ItemDataRole.UserRole:
             return card
         if role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
-            if index.column() == PageColumns.CardName:
+            if column == PageColumns.CardName:
                 return card.name
-            elif index.column() == PageColumns.Set:
+            elif column == PageColumns.Set:
                 if role == ItemDataRole.EditRole:
                     return card.set.code
                 else:
                     return f"{card.set.name} ({card.set.code.upper()})"
-            elif index.column() == PageColumns.CollectorNumber:
+            elif column == PageColumns.CollectorNumber:
                 return card.collector_number
-            elif index.column() == PageColumns.Language:
+            elif column == PageColumns.Language:
                 return card.language
-            elif index.column() == PageColumns.IsFront:
+            elif column == PageColumns.IsFront:
                 if role == ItemDataRole.EditRole:
                     return card.is_front
                 return self.tr("Front") if card.is_front else self.tr("Back")
@@ -107,10 +108,10 @@ class CardListModel(QAbstractTableModel):
         return flags
 
     def setData(self, index: QModelIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
-        column = index.column()
+        row, column = index.row(), index.column()
         if role == ItemDataRole.EditRole and column in self.EDITABLE_COLUMNS:
             logger.debug(f"Setting card list model data for column {column} to {value}")
-            card = self.cards[index.row()]
+            card = self.cards[row]
             if column == PageColumns.CollectorNumber:
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
@@ -127,6 +128,7 @@ class CardListModel(QAbstractTableModel):
 
     def _request_replacement_card(
             self, index: QModelIndex, card_data: typing.Union[CardIdentificationData, AnyCardType]):
+        row, column = index.row(), index.column()
         if isinstance(card_data, CardIdentificationData):
             logger.debug(f"Requesting replacement for {card_data}")
             result = self.card_db.get_cards_from_data(card_data)
@@ -137,10 +139,10 @@ class CardListModel(QAbstractTableModel):
             # the results.
             new_card = result[0]
             logger.debug(f"Replacing with {new_card}")
-            top_left = index.sibling(index.row(), index.column())
+            top_left = index.sibling(row, column)
             bottom_right = top_left.siblingAtColumn(len(PageColumns)-2)
-            old_card = self.cards[index.row()]
-            self.cards[index.row()] = new_card
+            old_card = self.cards[row]
+            self.cards[row] = new_card
             self.dataChanged.emit(
                 top_left, bottom_right,
                 (ItemDataRole.DisplayRole, ItemDataRole.EditRole, ItemDataRole.ToolTipRole)

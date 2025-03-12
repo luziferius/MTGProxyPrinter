@@ -36,7 +36,6 @@ class PrettySetListModel(QAbstractListModel):
         self.header = {
             0: self.tr("Set", "MTG set name"),
         }
-        # Store both the set abbreviations and set names in dicts for fast index-based lookup via the data() method
         self.set_data: typing.List[MTGSet] = []
 
     def headerData(self, section: int, orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) \
