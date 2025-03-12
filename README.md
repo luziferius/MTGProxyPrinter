@@ -2,10 +2,9 @@
 
 Print Magic: The Gathering cards for play-testing purposes.
 
-
 ## Feature overview
 
-The application supports importing deck lists from locally stored files or various deck list building websites, automatically fetches high-quality card images from [Scryfall](https://scryfall.com), and aranges the fetched images
+The application supports importing deck lists from locally stored files or various deck list building websites, automatically fetches high-quality card images from [Scryfall](https://scryfall.com), and arranges the fetched images
 in a paged document suitable for printing or PDF export.
 
 - The standard document editing features:
