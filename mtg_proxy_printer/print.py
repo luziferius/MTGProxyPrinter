@@ -72,20 +72,35 @@ def create_printer(renderer: "Renderer") -> QPrinter:
     return printer
 
 
-
-
 class PDFPrinter(QPdfWriter):
+    """
+    Exports the given document to PDF.
+    Can be given an optional index and length parameter to only export a chunk of the document for splitting purposes.
+    """
 
     def __init__(self, document: Document, file_path: str, parent: QObject = None,
                  document_index: int = 0, pages_to_print: int = None):
+        """
+        Constructs a new PDFPrinter.
+        :param document: Document to export
+        :param file_path: file path for the PDF output. If pages_to_print is set and less than the total page count,
+          the output file will be numbered, by appending a dash-separated numerical suffix to the file name stem.
+        :param parent: Qt object parent
+        :param document_index: Document sequence number. Used to compute the range of pages to be exported
+        :param pages_to_print: Number of pages to export. Default value None means "all pages"
+        """
         self.document = document
         self.document_index = document_index
         self.pages_to_print = pages_to_print = pages_to_print or document.rowCount()
         self.landscape_workaround_enabled = settings["pdf-export"].getboolean("landscape-compatibility-workaround")
         if pages_to_print < document.rowCount():
+            # Determine the number of digits required to properly sort all documents, without having to rely on
+            # external support for natural sorting
+            suffix_length = len(str(math.ceil(document.rowCount() / pages_to_print)))
+            # Add one to the document_index for human-readable counting starting at 1
+            suffix = str(document_index+1).zfill(suffix_length)
             path = Path(file_path)
-            # Add one to the document_index for human-readable counting starting at 1. suffix includes the separator
-            file_path = str(path.with_stem(f"{path.stem}-{document_index+1}"))
+            file_path = str(path.with_stem(f"{path.stem}-{suffix}"))
         super().__init__(file_path)
         self.setParent(parent)
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
@@ -99,6 +114,7 @@ class PDFPrinter(QPdfWriter):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _to_page_size(self, layout: PageLayoutSettings) -> QPageSize:
+        """Converts PageLayoutSettings to QPageSize"""
         size = QSizeF(layout.page_width.magnitude, layout.page_height.magnitude)
         if layout.page_width > layout.page_height and self.landscape_workaround_enabled:
             size.transpose()
@@ -121,14 +137,20 @@ class PDFPrinter(QPdfWriter):
         first_index = self.document_index * self.pages_to_print
         last_index = min((self.document_index + 1) * self.pages_to_print, self.document.rowCount())
 
-        for index in range(first_index, last_index):
-            logger.debug(f"Rendering page {index+1}/{self.document.rowCount()}")
-            self.scene.on_current_page_changed(QPersistentModelIndex(self.document.index(index, 0)))
+        for page_number in range(first_index, last_index):
+            logger.debug(f"Rendering page {page_number+1}/{self.document.rowCount()}")
+            self._switch_to_page(page_number)
             self.scene.render(self.painter)
-            if index + 1 < last_index:  # Avoid including a trailing, empty page
+            if page_number + 1 < last_index:  # Avoid including a trailing, empty page
                 self.newPage()
         self.painter.end()
         logger.info("Writing document finished.")
+
+    def _switch_to_page(self, page_number: int):
+        """Render the given page on the internal scene"""
+        index = QPersistentModelIndex(self.document.index(page_number, 0))
+        self.scene.on_current_page_changed(index)
+
 
 
 class Renderer(QObject):

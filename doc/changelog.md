@@ -1,5 +1,13 @@
 # Changelog
 
+# Next version (in development)
+
+## Changed features
+
+- When splitting exported PDFs, zero-pad the sequence numbers appended to the file name 
+  so that all have the same length. This gives a more consistent sorting of output files.
+  - This avoids having output files sorted like "1.pdf", "11.pdf", "12.pdf", …, "2.pdf", "21.pdf", …
+
 # Version 0.30.1 (2025-03-11)  <a name="v0_30_1"></a>
 
 ## Fixed issues
