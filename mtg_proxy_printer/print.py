@@ -16,10 +16,13 @@
 
 import math
 from pathlib import Path
+import tempfile
 
 from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex
 from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize
 from PyQt5.QtPrintSupport import QPrinter
+
+from pypdf import PdfWriter
 
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
@@ -101,7 +104,10 @@ class PDFPrinter(QPdfWriter):
             suffix = str(document_index+1).zfill(suffix_length)
             path = Path(file_path)
             file_path = str(path.with_stem(f"{path.stem}-{suffix}"))
-        super().__init__(file_path)
+        self.target_path = file_path
+        _, temp_path = tempfile.mkstemp(suffix=".pdf")
+        self.temp_path = Path(temp_path)
+        super().__init__(temp_path)
         self.setParent(parent)
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
@@ -144,6 +150,7 @@ class PDFPrinter(QPdfWriter):
             if page_number + 1 < last_index:  # Avoid including a trailing, empty page
                 self.newPage()
         self.painter.end()
+        self._set_viewer_preferences()
         logger.info("Writing document finished.")
 
     def _switch_to_page(self, page_number: int):
@@ -151,7 +158,13 @@ class PDFPrinter(QPdfWriter):
         index = QPersistentModelIndex(self.document.index(page_number, 0))
         self.scene.on_current_page_changed(index)
 
-
+    def _set_viewer_preferences(self):
+        pdf = PdfWriter(clone_from=self.temp_path)
+        pdf.create_viewer_preferences()
+        pdf.viewer_preferences.print_scaling = "/None"
+        with open(self.target_path, "wb") as output_file:
+            pdf.write(output_file)
+        self.temp_path.unlink()
 
 class Renderer(QObject):
 
