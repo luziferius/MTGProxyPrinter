@@ -29,11 +29,10 @@ from hamcrest import contains_exactly
 import pytest
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, CardSizes, CardSize
 from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
-from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document import Document, PageColumns
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings, CardType
 from mtg_proxy_printer.model.imagedb import ImageKey
 

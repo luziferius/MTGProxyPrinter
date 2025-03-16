@@ -30,7 +30,7 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
-from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
+from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, DocumentComboBoxItemDelegate
 
 
 @pytest.fixture(params=itertools.product(range(3), ["", "language"]))
@@ -60,16 +60,16 @@ def document_empty_carddb(card_db: CardDatabase, request):
 @pytest.mark.parametrize("column", CardListModel.EDITABLE_COLUMNS)
 def test_setEditorData_on_card_list_empty_model(qtbot, card_db: CardDatabase, card_list_empty_carddb, column):
     editor_widget = QComboBox()
-    delegate = ComboBoxItemDelegate()
+    delegate = CardListComboBoxItemDelegate()
     index = card_list_empty_carddb.index(0, column)
     delegate.setEditorData(editor_widget, index)
     assert_that(editor_widget.model().rowCount(), is_(1))  # Data from the source card must round-trip
 
 
-@pytest.mark.parametrize("column", CardListModel.EDITABLE_COLUMNS)
+@pytest.mark.parametrize("column", Document.EDITABLE_COLUMNS)
 def test_setEditorData_on_document_empty_model(qtbot, card_db: CardDatabase, document_empty_carddb, column):
     editor_widget = QComboBox()
-    delegate = ComboBoxItemDelegate()
+    delegate = DocumentComboBoxItemDelegate()
     page_index = document_empty_carddb.index(0, 0)
     index = document_empty_carddb.index(0, column, page_index)
     delegate.setEditorData(editor_widget, index)

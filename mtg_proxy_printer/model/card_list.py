@@ -31,18 +31,10 @@ ItemDataRole = Qt.ItemDataRole
 ItemFlag = Qt.ItemFlag
 
 __all__ = [
+    "CardListColumns",
     "CardListModel",
 ]
 INVALID_INDEX = QModelIndex()
-
-
-class PageColumns(enum.IntEnum):
-    CardName = 0
-    Set = enum.auto()
-    CollectorNumber = enum.auto()
-    Language = enum.auto()
-    IsFront = enum.auto()
-    Image = enum.auto()
 
 
 class CardListColumns(enum.IntEnum):

@@ -32,7 +32,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData,
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGOnlineParser, MTGArenaParser, \
     GenericRegularExpressionDeckParser
-from mtg_proxy_printer.model.card_list import PageColumns
+from mtg_proxy_printer.model.card_list import CardListColumns
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
 from tests.helpers import fill_card_database_with_json_cards
@@ -97,7 +97,7 @@ def test_remove_basic_lands_button_works(
         is_(False)
     )
     card_names_in_model: StringList = [
-        list_model.data(list_model.index(row, PageColumns.CardName))
+        list_model.data(list_model.index(row, CardListColumns.CardName))
         for row in range(list_model.rowCount())
     ]
     assert_that(card_names_in_model, contains_exactly(*expected_cards))
@@ -123,7 +123,7 @@ def test_remove_selected_cards_works(qtbot: QtBot, card_db: CardDatabase):
     # Verify effects: Button is disabled and the Forest is no longer present in the parsed cards
     assert_that(wizard.button(wizard.WizardButton.CustomButton2).isEnabled(), is_(False))
     card_names_in_model: StringList = [
-        list_model.data(list_model.index(row, PageColumns.CardName))
+        list_model.data(list_model.index(row, CardListColumns.CardName))
         for row in range(list_model.rowCount())
     ]
     assert_that(card_names_in_model, contains_exactly("Snow-Covered Forest", "Wastes"))
@@ -235,7 +235,7 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
     _move_wizard_forward(qtbot, wizard)
     table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     cell_position = QPoint(
-        table_view.columnViewportPosition(PageColumns.Set) + 5,
+        table_view.columnViewportPosition(CardListColumns.Set) + 5,
         table_view.rowViewportPosition(0) + 5
     )
     # Select cell

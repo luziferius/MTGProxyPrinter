@@ -19,14 +19,16 @@ from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyMo
 from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox
 
 from mtg_proxy_printer.model.carddb import Card
-from mtg_proxy_printer.model.card_list import PageColumns
-from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.card_list import CardListColumns
+from mtg_proxy_printer.model.document import Document, PageColumns
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
 __all__ = [
     "ComboBoxItemDelegate",
+    "DocumentComboBoxItemDelegate",
+    "CardListComboBoxItemDelegate",
 ]
 ItemDataRole = Qt.ItemDataRole
 
@@ -35,6 +37,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
     """
     Editor widget allowing the user to switch a card printing by offering a choice among valid alternatives.
     """
+    COLUMNS: typing.Union[PageColumns, CardListColumns] = None
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
         editor = QComboBox(parent)
@@ -47,8 +50,9 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
             model = model.sourceModel()
         source_model: Document = model
         card: Card = index.data(ItemDataRole.UserRole)
-
-        if column == PageColumns.Set:
+        if hasattr(self.COLUMNS, "Copies") and column == self.COLUMNS.Copies:
+            pass
+        elif column == self.COLUMNS.Set:
             matching_sets = source_model.card_db.get_available_sets_for_card(card)
             current_set_code = card.set.code
             current_set_position = 0
@@ -58,14 +62,14 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
                     current_set_position = position
             editor.setCurrentIndex(current_set_position)
 
-        elif column == PageColumns.CollectorNumber:
+        elif column == self.COLUMNS.CollectorNumber:
             matching_collector_numbers = source_model.card_db.get_available_collector_numbers_for_card_in_set(card)
             for collector_number in matching_collector_numbers:
                 editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
             if matching_collector_numbers:
                 editor.setCurrentIndex(matching_collector_numbers.index(index.data(ItemDataRole.EditRole)))
 
-        elif column == PageColumns.Language:
+        elif column == self.COLUMNS.Language:
             card = index.data(ItemDataRole.UserRole)
             matching_languages = source_model.card_db.get_available_languages_for_card(card)
             for language in matching_languages:
@@ -79,3 +83,10 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
         if new_value != previous_value:
             logger.debug(f"Setting data for column {index.column()} to {new_value}")
             model.setData(index, new_value, ItemDataRole.EditRole)
+
+
+class DocumentComboBoxItemDelegate(ComboBoxItemDelegate):
+    COLUMNS = PageColumns
+
+class CardListComboBoxItemDelegate(ComboBoxItemDelegate):
+    COLUMNS = CardListColumns

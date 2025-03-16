@@ -35,10 +35,10 @@ from mtg_proxy_printer.decklist_downloader import IsIdentifyingDeckUrlValidator,
     get_downloader_class, ParserBase
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
+from mtg_proxy_printer.model.card_list import CardListModel, CardListColumns
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase, markdown_to_html
-from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
+from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
 try:
@@ -492,17 +492,18 @@ class SummaryPage(QWizardPage):
             accept_button.setIcon(QIcon.fromTheme("dialog-ok"))
             accept_button.setToolTip(self.tr("Append identified cards to the document"))
 
-    def _setup_parsed_cards_table(self) -> ComboBoxItemDelegate:
+    def _setup_parsed_cards_table(self) -> CardListComboBoxItemDelegate:
         self.ui.parsed_cards_table.selectionModel().selectionChanged.connect(self.parsed_cards_table_selection_changed)
-        delegate = ComboBoxItemDelegate(self.ui.parsed_cards_table)
-        self.ui.parsed_cards_table.setItemDelegateForColumn(PageColumns.Set, delegate)
-        self.ui.parsed_cards_table.setItemDelegateForColumn(PageColumns.CollectorNumber, delegate)
-        self.ui.parsed_cards_table.setItemDelegateForColumn(PageColumns.Language, delegate)
+        delegate = CardListComboBoxItemDelegate(self.ui.parsed_cards_table)
+        self.ui.parsed_cards_table.setItemDelegateForColumn(CardListColumns.Set, delegate)
+        self.ui.parsed_cards_table.setItemDelegateForColumn(CardListColumns.CollectorNumber, delegate)
+        self.ui.parsed_cards_table.setItemDelegateForColumn(CardListColumns.Language, delegate)
         for column, scaling_factor in (  # These factors are empirically determined to give reasonable column sizes
-                (PageColumns.CardName, 2),
-                (PageColumns.Set, 2.75),
-                (PageColumns.CollectorNumber, 0.95),
-                (PageColumns.Language, 0.9)):
+                (CardListColumns.Copies, 0.9),
+                (CardListColumns.CardName, 2),
+                (CardListColumns.Set, 2.75),
+                (CardListColumns.CollectorNumber, 0.95),
+                (CardListColumns.Language, 0.9)):
             new_size = math.floor(self.ui.parsed_cards_table.columnWidth(column) * scaling_factor)
             self.ui.parsed_cards_table.setColumnWidth(column, new_size)
         return delegate

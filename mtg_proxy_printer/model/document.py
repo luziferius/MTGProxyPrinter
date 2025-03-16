@@ -30,7 +30,6 @@ import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
 from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData, Card, MTGSet
-from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings, \
     CardType, migrate_database
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -49,11 +48,21 @@ else:
 
 __all__ = [
     "Document",
+    "PageColumns",
 ]
 
 
 class DocumentColumns(enum.IntEnum):
     Page = 0
+
+
+class PageColumns(enum.IntEnum):
+    CardName = 0
+    Set = enum.auto()
+    CollectorNumber = enum.auto()
+    Language = enum.auto()
+    IsFront = enum.auto()
+    Image = enum.auto()
 
 
 INVALID_INDEX = QModelIndex()
