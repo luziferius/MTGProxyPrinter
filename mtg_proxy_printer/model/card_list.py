@@ -32,7 +32,6 @@ ItemFlag = Qt.ItemFlag
 
 __all__ = [
     "CardListModel",
-    "PageColumns",
 ]
 INVALID_INDEX = QModelIndex()
 
@@ -46,22 +45,31 @@ class PageColumns(enum.IntEnum):
     Image = enum.auto()
 
 
+class CardListColumns(enum.IntEnum):
+    Copies = 0
+    CardName = enum.auto()
+    Set = enum.auto()
+    CollectorNumber = enum.auto()
+    Language = enum.auto()
+    IsFront = enum.auto()
+
 class CardListModel(QAbstractTableModel):
     """
     This is a model for holding a simple list of cards.
     """
-    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber, PageColumns.Language}
+    EDITABLE_COLUMNS = {CardListColumns.Set, CardListColumns.CollectorNumber, CardListColumns.Language}
 
     oversized_card_count_changed = Signal(int)
 
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.header = {
-            PageColumns.CardName: self.tr("Card name"),
-            PageColumns.Set: self.tr("Set"),
-            PageColumns.CollectorNumber: self.tr("Collector #"),
-            PageColumns.Language: self.tr("Language"),
-            PageColumns.IsFront: self.tr("Side"),
+            CardListColumns.Copies: self.tr("Copies"),
+            CardListColumns.CardName: self.tr("Card name"),
+            CardListColumns.Set: self.tr("Set"),
+            CardListColumns.CollectorNumber: self.tr("Collector #"),
+            CardListColumns.Language: self.tr("Language"),
+            CardListColumns.IsFront: self.tr("Side"),
         }
         self.card_db = card_db
         self.cards: CardList = []
@@ -80,18 +88,20 @@ class CardListModel(QAbstractTableModel):
         if role == ItemDataRole.UserRole:
             return card
         if role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
-            if column == PageColumns.CardName:
+            if column == CardListColumns.Copies:
+                return 1
+            elif column == CardListColumns.CardName:
                 return card.name
-            elif column == PageColumns.Set:
+            elif column == CardListColumns.Set:
                 if role == ItemDataRole.EditRole:
                     return card.set.code
                 else:
                     return f"{card.set.name} ({card.set.code.upper()})"
-            elif column == PageColumns.CollectorNumber:
+            elif column == CardListColumns.CollectorNumber:
                 return card.collector_number
-            elif column == PageColumns.Language:
+            elif column == CardListColumns.Language:
                 return card.language
-            elif column == PageColumns.IsFront:
+            elif column == CardListColumns.IsFront:
                 if role == ItemDataRole.EditRole:
                     return card.is_front
                 return self.tr("Front") if card.is_front else self.tr("Back")
@@ -112,10 +122,10 @@ class CardListModel(QAbstractTableModel):
         if role == ItemDataRole.EditRole and column in self.EDITABLE_COLUMNS:
             logger.debug(f"Setting card list model data for column {column} to {value}")
             card = self.cards[row]
-            if column == PageColumns.CollectorNumber:
+            if column == CardListColumns.CollectorNumber:
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
-            elif column == PageColumns.Set:
+            elif column == CardListColumns.Set:
                 card_data = CardIdentificationData(
                     card.language, card.name, value, is_front=card.is_front
                 )
@@ -140,7 +150,7 @@ class CardListModel(QAbstractTableModel):
             new_card = result[0]
             logger.debug(f"Replacing with {new_card}")
             top_left = index.sibling(row, column)
-            bottom_right = top_left.siblingAtColumn(len(PageColumns)-2)
+            bottom_right = top_left.siblingAtColumn(len(CardListColumns)-1)
             old_card = self.cards[row]
             self.cards[row] = new_card
             self.dataChanged.emit(
@@ -230,7 +240,7 @@ class CardListModel(QAbstractTableModel):
         return last_row - top
 
     def headerData(
-            self, section: typing.Union[int, PageColumns],
+            self, section: typing.Union[int, CardListColumns],
             orientation: Qt.Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
         if orientation == Qt.Orientation.Horizontal:
             if role == ItemDataRole.DisplayRole:
