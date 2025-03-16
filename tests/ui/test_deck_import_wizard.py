@@ -32,7 +32,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData,
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGOnlineParser, MTGArenaParser, \
     GenericRegularExpressionDeckParser
-from mtg_proxy_printer.model.card_list import CardListColumns
+from mtg_proxy_printer.model.card_list import CardListColumns, CardListModel
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
 from tests.helpers import fill_card_database_with_json_cards
@@ -197,10 +197,10 @@ def _input_deck_list(qtbot: QtBot, wizard: DeckImportWizard, deck_list: str, *, 
         assert_that(cb.isChecked())
 
 
-def _validate_model_content(list_model):
+def _validate_model_content(list_model: CardListModel):
     assert_that(list_model.rowCount(), is_(equal_to(1)))
-    assert_that(list_model.cards, has_length(1))
-    assert_that(list_model.cards[0], has_properties({
+    assert_that(list_model.rows, has_length(1))
+    assert_that(list_model.rows[0], has_properties(copies=1, card=has_properties({
         "name": equal_to("Fury Sliver"),
         "set": has_properties({
             "name": equal_to("Time Spiral"),
@@ -214,7 +214,7 @@ def _validate_model_content(list_model):
             "https://cards.scryfall.io/png/front/0/0/"
             "0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
         "image_file": is_(none()),
-    }))
+    })))
 
 
 class CardListReceiver(QObject):
@@ -228,7 +228,7 @@ class CardListReceiver(QObject):
 
 def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase):
     wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card", "regular_english_card_reprint"])
-    deck_list = "2 Fury Sliver (TSP) 157"
+    deck_list = "1 Fury Sliver (TSP) 157\n1 Fury Sliver (TSP) 157"
     _input_deck_list(qtbot, wizard, deck_list)
     _move_wizard_forward(qtbot, wizard)
     _select_magic_arena_parser(qtbot, wizard)
