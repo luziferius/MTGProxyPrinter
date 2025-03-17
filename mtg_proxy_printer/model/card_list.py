@@ -13,6 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections import Counter
 import dataclasses
 import enum
 import itertools
@@ -21,6 +22,7 @@ import typing
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, QItemSelection
 from PyQt5.QtGui import QIcon
 
+from mtg_proxy_printer.decklist_parser.common import CardCounter
 from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase, AnyCardType
 from mtg_proxy_printer.logger import get_logger
 
@@ -51,7 +53,6 @@ class CardListColumns(enum.IntEnum):
 
 
 CardList = typing.List[CardListModelRow]
-
 
 class CardListModel(QAbstractTableModel):
     """
@@ -174,9 +175,9 @@ class CardListModel(QAbstractTableModel):
         logger.debug(f"No replacement card found for {card_data}.")
         return False
 
-    def add_cards(self, cards: typing.Counter[Card]):
+    def add_cards(self, cards: CardCounter):
         for card, count in cards.items():
-            first_index, last_index = self.rowCount(), self.rowCount() + count - 1
+            first_index = last_index = self.rowCount()
             self.beginInsertRows(INVALID_INDEX, first_index, last_index)
             self.rows.append(row := CardListModelRow(card, count))
             self.endInsertRows()
@@ -268,15 +269,17 @@ class CardListModel(QAbstractTableModel):
             self.oversized_card_count = 0
             self.oversized_card_count_changed.emit(self.oversized_card_count)
 
-    def as_cards(self, row_order: typing.List[int] = None) -> CardList:
+    def as_cards(self, row_order: typing.List[int] = None) -> CardCounter:
         """
-        Returns the internal card list. If a custom row order is given, return the cards in that order.
+        Returns the internal card data. If a custom row order is given, return the cards in that order.
         The row_order is used when the user sorted the table by any column. The imported cards then inherit the order
         as shown in the table.
         """
-        if row_order is None:
-            return self.rows
-        return [self.rows[row] for row in row_order]
+        result = Counter()
+        rows = self.rows if row_order is None else (self.rows[row] for row in row_order)
+        for row in rows:
+            result[row.card] += row.copies
+        return result
 
     def has_basic_lands(self, include_wastes: bool = False, include_snow_basics: bool = False) -> bool:
         basic_land_oracle_ids = self.card_db.get_basic_land_oracle_ids(include_wastes, include_snow_basics)

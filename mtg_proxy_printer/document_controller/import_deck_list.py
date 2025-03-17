@@ -15,11 +15,13 @@
 
 
 import functools
+import itertools
 import typing
 
 if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.model.carddb import CardList
+    from mtg_proxy_printer.decklist_parser.common import CardCounter
     from mtg_proxy_printer.model.document import Document
+
 
 from ._interface import ActionList, DocumentAction, Self, IllegalStateError
 from .page_actions import ActionRemovePage
@@ -37,7 +39,7 @@ class ActionImportDeckList(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["cards", "clear_document", "actions"]
 
-    def __init__(self, cards: "CardList", clear_document: bool):
+    def __init__(self, cards: "CardCounter", clear_document: bool):
         self.cards = cards
         self.clear_document = clear_document
         self.actions: ActionList = []
@@ -47,9 +49,11 @@ class ActionImportDeckList(DocumentAction):
         if self.actions:
             raise IllegalStateError("Cannot apply action twice")
         if self.clear_document:
-            self.actions.append(ActionRemovePage(0, document.rowCount()).apply(document))
+            self.actions.append(
+                ActionRemovePage(0, document.rowCount()).apply(document)
+            )
         active_page = document.find_page_list_index(document.currently_edited_page)
-        for action in map(ActionAddCard, self.cards):
+        for action in itertools.starmap(ActionAddCard, self.cards.items()):
             action.target_page = active_page
             self.actions.append(action.apply(document))
             if action.first_added_page is not None:
@@ -64,11 +68,11 @@ class ActionImportDeckList(DocumentAction):
 
     def card_count(self) -> int:
         """Returns the number of cards added by this action"""
-        return len(self.cards)
+        return sum(self.cards.values())
 
     @functools.cached_property
     def as_str(self):
-        count = len(self.cards)
+        count = self.card_count()
         if self.clear_document:
             return self.translate(
                 "ActionImportDeckList",
