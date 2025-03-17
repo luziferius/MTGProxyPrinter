@@ -72,7 +72,7 @@ class ActionImportDeckList(DocumentAction):
         if self.clear_document:
             return self.translate(
                 "ActionImportDeckList",
-                "Wipe document and import a deck list containing %n card(s)",
+                "Replace document with imported deck list containing %n card(s)",
                 "Undo/redo tooltip text. Option to delete the current document enabled.", count)
         else:
             return self.translate(
