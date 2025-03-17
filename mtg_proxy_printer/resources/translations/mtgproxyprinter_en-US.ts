@@ -127,21 +127,21 @@ Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
   <context>
     <name>ActionImportDeckList</name>
     <message numerus="yes">
-      <location filename="../../document_controller/import_deck_list.py" line="73"/>
-      <source>Wipe document and import a deck list containing %n card(s)</source>
-      <comment>Undo/redo tooltip text. Option to delete the current document enabled.</comment>
-      <translation>
-        <numerusform>Wipe document and import a deck list containing %n card</numerusform>
-        <numerusform>Wipe document and import a deck list containing %n cards</numerusform>
-      </translation>
-    </message>
-    <message numerus="yes">
-      <location filename="../../document_controller/import_deck_list.py" line="78"/>
+      <location filename="../../document_controller/import_deck_list.py" line="82"/>
       <source>Import a deck list containing %n card(s)</source>
       <comment>Undo/redo tooltip text. Option to delete the current document disabled.</comment>
       <translation>
         <numerusform>Import a deck list containing %n card</numerusform>
         <numerusform>Import a deck list containing %n cards</numerusform>
+      </translation>
+    </message>
+    <message numerus="yes">
+      <location filename="../../document_controller/import_deck_list.py" line="77"/>
+      <source>Replace document with imported deck list containing %n card(s)</source>
+      <comment>Undo/redo tooltip text. Option to delete the current document enabled.</comment>
+      <translation>
+        <numerusform>Replace document with imported deck list containing %n card</numerusform>
+        <numerusform>Replace document with imported deck list containing %n cards</numerusform>
       </translation>
     </message>
   </context>
@@ -241,7 +241,7 @@ containing %n pages {cards_total}</numerusform>
   <context>
     <name>ActionReplaceCard</name>
     <message>
-      <location filename="../../document_controller/replace_card.py" line="99"/>
+      <location filename="../../document_controller/replace_card.py" line="98"/>
       <source>Replace card {old_card} on page {page_number} with {new_card}</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>Replace card {old_card} on page {page_number} with {new_card}</translation>
@@ -296,49 +296,54 @@ containing %n pages {cards_total}</numerusform>
   <context>
     <name>CardListModel</name>
     <message>
-      <location filename="../../model/card_list.py" line="60"/>
+      <location filename="../../model/card_list.py" line="69"/>
+      <source>Copies</source>
+      <translation>Copies</translation>
+    </message>
+    <message>
+      <location filename="../../model/card_list.py" line="70"/>
       <source>Card name</source>
       <translation>Card name</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="61"/>
+      <location filename="../../model/card_list.py" line="71"/>
       <source>Set</source>
       <translation>Set</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="62"/>
+      <location filename="../../model/card_list.py" line="72"/>
       <source>Collector #</source>
       <translation>Collector #</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="63"/>
+      <location filename="../../model/card_list.py" line="73"/>
       <source>Language</source>
       <translation>Language</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="64"/>
+      <location filename="../../model/card_list.py" line="74"/>
       <source>Side</source>
       <translation>Side</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="96"/>
+      <location filename="../../model/card_list.py" line="109"/>
       <source>Front</source>
       <translation>Front</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="96"/>
+      <location filename="../../model/card_list.py" line="109"/>
       <source>Back</source>
       <translation>Back</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="99"/>
+      <location filename="../../model/card_list.py" line="112"/>
       <source>Beware: Potentially oversized card!
 This card may not fit in your deck.</source>
       <translation>Beware: Potentially oversized card!
 This card may not fit in your deck.</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="237"/>
+      <location filename="../../model/card_list.py" line="259"/>
       <source>Double-click on entries to
 switch the selected printing.</source>
       <translation>Double-click on entries to
@@ -348,7 +353,7 @@ switch the selected printing.</translation>
   <context>
     <name>CentralWidget</name>
     <message numerus="yes">
-      <location filename="../../ui/central_widget.py" line="155"/>
+      <location filename="../../ui/central_widget.py" line="154"/>
       <source>Add %n copies</source>
       <comment>Context menu action: Add additional card copies to the document</comment>
       <translation>
@@ -357,44 +362,44 @@ switch the selected printing.</translation>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/central_widget.py" line="161"/>
+      <location filename="../../ui/central_widget.py" line="160"/>
       <source>Add copies …</source>
       <comment>Context menu action: Add additional card copies to the document. User will be asked for a number</comment>
       <translation>Add copies …</translation>
     </message>
     <message>
-      <location filename="../../ui/central_widget.py" line="167"/>
+      <location filename="../../ui/central_widget.py" line="166"/>
       <source>Generate DFC check card</source>
       <translation>Generate DFC check card</translation>
     </message>
     <message>
-      <location filename="../../ui/central_widget.py" line="171"/>
+      <location filename="../../ui/central_widget.py" line="170"/>
       <source>All related cards</source>
       <translation>All related cards</translation>
     </message>
     <message>
-      <location filename="../../ui/central_widget.py" line="179"/>
+      <location filename="../../ui/central_widget.py" line="178"/>
       <source>Add copies</source>
       <translation>Add copies</translation>
     </message>
     <message>
-      <location filename="../../ui/central_widget.py" line="179"/>
+      <location filename="../../ui/central_widget.py" line="178"/>
       <source>Add copies of {card_name}</source>
       <comment>Asks the user for a number. Does not need plural forms</comment>
       <translation>Add copies of {card_name}</translation>
     </message>
     <message>
-      <location filename="../../ui/central_widget.py" line="205"/>
+      <location filename="../../ui/central_widget.py" line="204"/>
       <source>Export image</source>
       <translation>Export image</translation>
     </message>
     <message>
-      <location filename="../../ui/central_widget.py" line="220"/>
+      <location filename="../../ui/central_widget.py" line="219"/>
       <source>Save card image</source>
       <translation>Save card image</translation>
     </message>
     <message>
-      <location filename="../../ui/central_widget.py" line="220"/>
+      <location filename="../../ui/central_widget.py" line="219"/>
       <source>Images (*.png *.bmp *.jpg)</source>
       <translation>Images (*.png *.bmp *.jpg)</translation>
     </message>
@@ -586,17 +591,17 @@ switch the selected printing.</translation>
   <context>
     <name>DeckImportWizard</name>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="619"/>
+      <location filename="../../ui/deck_import_wizard.py" line="620"/>
       <source>Import a deck list</source>
       <translation>Import a deck list</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="640"/>
+      <location filename="../../ui/deck_import_wizard.py" line="641"/>
       <source>Oversized cards present</source>
       <translation>Oversized cards present</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/deck_import_wizard.py" line="640"/>
+      <location filename="../../ui/deck_import_wizard.py" line="641"/>
       <source>There are %n possibly oversized cards in the deck list that may not fit into a deck, when printed out.
 
 Continue and use these cards as-is?</source>
@@ -610,12 +615,12 @@ Continue and use these cards as-is?</numerusform>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="651"/>
+      <location filename="../../ui/deck_import_wizard.py" line="652"/>
       <source>Incompatible file selected</source>
       <translation>Incompatible file selected</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="651"/>
+      <location filename="../../ui/deck_import_wizard.py" line="652"/>
       <source>Unable to parse the given deck list, no results were obtained.
 Maybe you selected the wrong deck list type?</source>
       <translation>Unable to parse the given deck list, no results were obtained.
@@ -782,59 +787,59 @@ like page size, margins, spacings, etc.</translation>
   <context>
     <name>Document</name>
     <message>
-      <location filename="../../model/document.py" line="90"/>
+      <location filename="../../model/document.py" line="99"/>
       <source>Card name</source>
       <translation>Card name</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="91"/>
+      <location filename="../../model/document.py" line="100"/>
       <source>Set</source>
       <translation>Set</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="92"/>
+      <location filename="../../model/document.py" line="101"/>
       <source>Collector #</source>
       <translation>Collector #</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="93"/>
+      <location filename="../../model/document.py" line="102"/>
       <source>Language</source>
       <translation>Language</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="94"/>
+      <location filename="../../model/document.py" line="103"/>
       <source>Image</source>
       <translation>Image</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="95"/>
+      <location filename="../../model/document.py" line="104"/>
       <source>Side</source>
       <translation>Side</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="173"/>
+      <location filename="../../model/document.py" line="182"/>
       <source>Double-click on entries to
 switch the selected printing.</source>
       <translation>Double-click on entries to
 switch the selected printing.</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="283"/>
+      <location filename="../../model/document.py" line="292"/>
       <source>Page {current}/{total}</source>
       <translation>Page {current}/{total}</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="313"/>
+      <location filename="../../model/document.py" line="322"/>
       <source>Front</source>
       <translation>Front</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="313"/>
+      <location filename="../../model/document.py" line="322"/>
       <source>Back</source>
       <translation>Back</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../model/document.py" line="318"/>
+      <location filename="../../model/document.py" line="327"/>
       <source>%n× {name}</source>
       <comment>Used to display a card name and amount of copies in the page overview. Only needs translation for RTL language support</comment>
       <translation>
@@ -843,7 +848,7 @@ switch the selected printing.</translation>
       </translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="406"/>
+      <location filename="../../model/document.py" line="415"/>
       <source>Empty Placeholder</source>
       <translation>Empty Placeholder</translation>
     </message>
@@ -2497,7 +2502,7 @@ Zoom out: {zoom_out_shortcuts}</translation>
   <context>
     <name>ParserBase</name>
     <message>
-      <location filename="../../decklist_parser/common.py" line="68"/>
+      <location filename="../../decklist_parser/common.py" line="70"/>
       <source>All files (*)</source>
       <translation>All files (*)</translation>
     </message>
@@ -2930,22 +2935,22 @@ Apply the new settings to the current document?</translation>
       <translation>Append identified cards to the document</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="544"/>
+      <location filename="../../ui/deck_import_wizard.py" line="545"/>
       <source>Remove basic lands</source>
       <translation>Remove basic lands</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="545"/>
+      <location filename="../../ui/deck_import_wizard.py" line="546"/>
       <source>Remove all basic lands in the deck list above</source>
       <translation>Remove all basic lands in the deck list above</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="550"/>
+      <location filename="../../ui/deck_import_wizard.py" line="551"/>
       <source>Remove selected</source>
       <translation>Remove selected</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="551"/>
+      <location filename="../../ui/deck_import_wizard.py" line="552"/>
       <source>Remove all selected cards in the deck list above</source>
       <translation>Remove all selected cards in the deck list above</translation>
     </message>
