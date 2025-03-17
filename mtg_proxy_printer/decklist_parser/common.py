@@ -29,6 +29,7 @@ del get_logger
 __all__ = [
     "ParsedDeck",
     "ParserBase",
+    "CardCounter",
 ]
 
 try:
@@ -41,7 +42,8 @@ except NameError:
     def profile(func):
         return func
 
-ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
+CardCounter = typing.Counter[Card]
+ParsedDeck = typing.Tuple[CardCounter, typing.List[str]]
 
 
 class ParserBase(QObject):
