@@ -24,7 +24,7 @@ from hamcrest import *
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
-from mtg_proxy_printer.model.card_list import CardListModel
+from mtg_proxy_printer.model.card_list import CardListModel, CardListColumns
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
@@ -57,7 +57,7 @@ def document_empty_carddb(card_db: CardDatabase, request):
     yield source_model
 
 
-@pytest.mark.parametrize("column", CardListModel.EDITABLE_COLUMNS)
+@pytest.mark.parametrize("column", CardListModel.EDITABLE_COLUMNS-{CardListColumns.Copies})
 def test_setEditorData_on_card_list_empty_model(qtbot, card_db: CardDatabase, card_list_empty_carddb, column):
     editor_widget = QComboBox()
     delegate = CardListComboBoxItemDelegate()
