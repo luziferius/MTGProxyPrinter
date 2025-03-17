@@ -2,7 +2,7 @@
 
 Print Magic: The Gathering cards for play-testing purposes.
 
-(If you are reading this on GitHub, then you are looking at a Git mirror of the [fossil](https://fossil-scm.org)-based source repository located at [https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter](https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter))
+(If you are reading this on [GitHub](https://github.com/luziferius/MTGProxyPrinter), then you are looking at a Git mirror of the [fossil](https://fossil-scm.org)-based source repository located at [https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter](https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter))
 
 ## Feature overview
 
