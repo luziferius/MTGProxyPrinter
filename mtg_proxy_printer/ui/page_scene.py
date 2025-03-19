@@ -25,9 +25,8 @@ from PyQt5.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMe
 from PyQt5.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene, QGraphicsPolygonItem
 
-from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.carddb import Card, CardCorner
-from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document import Document, PageColumns
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, RESOLUTION, CardSizes, CardSize, QuantityT

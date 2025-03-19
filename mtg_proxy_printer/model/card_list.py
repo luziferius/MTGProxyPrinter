@@ -13,7 +13,8 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+from collections import Counter
+import dataclasses
 import enum
 import itertools
 import typing
@@ -21,77 +22,88 @@ import typing
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, QItemSelection
 from PyQt5.QtGui import QIcon
 
+from mtg_proxy_printer.decklist_parser.common import CardCounter
 from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase, AnyCardType
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
-CardList = typing.List[Card]
 ItemDataRole = Qt.ItemDataRole
 ItemFlag = Qt.ItemFlag
 
 __all__ = [
+    "CardListColumns",
     "CardListModel",
-    "PageColumns",
 ]
 INVALID_INDEX = QModelIndex()
 
+@dataclasses.dataclass
+class CardListModelRow:
+    card: Card
+    copies: int
 
-class PageColumns(enum.IntEnum):
-    CardName = 0
+
+class CardListColumns(enum.IntEnum):
+    Copies = 0
+    CardName = enum.auto()
     Set = enum.auto()
     CollectorNumber = enum.auto()
     Language = enum.auto()
     IsFront = enum.auto()
-    Image = enum.auto()
 
+
+CardList = typing.List[CardListModelRow]
 
 class CardListModel(QAbstractTableModel):
     """
-    This is a model for holding a simple list of cards.
+    This is a model for holding a list of cards.
     """
-    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber, PageColumns.Language}
-
+    EDITABLE_COLUMNS = {
+        CardListColumns.Copies, CardListColumns.Set, CardListColumns.CollectorNumber, CardListColumns.Language,
+    }
     oversized_card_count_changed = Signal(int)
 
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.header = {
-            PageColumns.CardName: self.tr("Card name"),
-            PageColumns.Set: self.tr("Set"),
-            PageColumns.CollectorNumber: self.tr("Collector #"),
-            PageColumns.Language: self.tr("Language"),
-            PageColumns.IsFront: self.tr("Side"),
+            CardListColumns.Copies: self.tr("Copies"),
+            CardListColumns.CardName: self.tr("Card name"),
+            CardListColumns.Set: self.tr("Set"),
+            CardListColumns.CollectorNumber: self.tr("Collector #"),
+            CardListColumns.Language: self.tr("Language"),
+            CardListColumns.IsFront: self.tr("Side"),
         }
         self.card_db = card_db
-        self.cards: CardList = []
+        self.rows: CardList = []
         self.oversized_card_count = 0
         self._oversized_icon = QIcon.fromTheme("data-warning")
 
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
-        return 0 if parent.isValid() else len(self.cards)
+        return 0 if parent.isValid() else len(self.rows)
 
     def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.header)
 
     def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         row, column = index.row(), index.column()
-        card = self.cards[row]
+        card = self.rows[row].card
         if role == ItemDataRole.UserRole:
             return card
         if role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
-            if column == PageColumns.CardName:
+            if column == CardListColumns.Copies:
+                return self.rows[row].copies
+            elif column == CardListColumns.CardName:
                 return card.name
-            elif column == PageColumns.Set:
+            elif column == CardListColumns.Set:
                 if role == ItemDataRole.EditRole:
                     return card.set.code
                 else:
                     return f"{card.set.name} ({card.set.code.upper()})"
-            elif column == PageColumns.CollectorNumber:
+            elif column == CardListColumns.CollectorNumber:
                 return card.collector_number
-            elif column == PageColumns.Language:
+            elif column == CardListColumns.Language:
                 return card.language
-            elif column == PageColumns.IsFront:
+            elif column == CardListColumns.IsFront:
                 if role == ItemDataRole.EditRole:
                     return card.is_front
                 return self.tr("Front") if card.is_front else self.tr("Back")
@@ -111,11 +123,18 @@ class CardListModel(QAbstractTableModel):
         row, column = index.row(), index.column()
         if role == ItemDataRole.EditRole and column in self.EDITABLE_COLUMNS:
             logger.debug(f"Setting card list model data for column {column} to {value}")
-            card = self.cards[row]
-            if column == PageColumns.CollectorNumber:
+            container = self.rows[row]
+            card = container.card
+            if column == CardListColumns.Copies:
+                old_value, container.copies = container.copies, value
+                if card.is_oversized and (difference := value-old_value):
+                    self.oversized_card_count += difference
+                    self.oversized_card_count_changed.emit(self.oversized_card_count)
+                return True
+            elif column == CardListColumns.CollectorNumber:
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
-            elif column == PageColumns.Set:
+            elif column == CardListColumns.Set:
                 card_data = CardIdentificationData(
                     card.language, card.name, value, is_front=card.is_front
                 )
@@ -140,38 +159,39 @@ class CardListModel(QAbstractTableModel):
             new_card = result[0]
             logger.debug(f"Replacing with {new_card}")
             top_left = index.sibling(row, column)
-            bottom_right = top_left.siblingAtColumn(len(PageColumns)-2)
-            old_card = self.cards[row]
-            self.cards[row] = new_card
+            bottom_right = top_left.siblingAtColumn(len(CardListColumns)-1)
+            old_row = self.rows[row]
+            self.rows[row] = new_row = CardListModelRow(new_card, old_row.copies)
             self.dataChanged.emit(
                 top_left, bottom_right,
                 (ItemDataRole.DisplayRole, ItemDataRole.EditRole, ItemDataRole.ToolTipRole)
             )
             # Oversized card count changes, iff the flags differ
-            if old_card.is_oversized and not new_card.is_oversized:
-                self._remove_card_handle_oversized_flag(old_card)
-            elif new_card.is_oversized and not old_card.is_oversized:
-                self._add_card_handle_oversized_flag(new_card)
+            if old_row.card.is_oversized and not new_card.is_oversized:
+                self._remove_card_handle_oversized_flag(old_row)
+            elif new_card.is_oversized and not old_row.card.is_oversized:
+                self._add_card_handle_oversized_flag(new_row)
             return True
         logger.debug(f"No replacement card found for {card_data}.")
         return False
 
-    def add_cards(self, cards: typing.Counter[Card]):
+    def add_cards(self, cards: CardCounter):
         for card, count in cards.items():
-            first_index, last_index = self.rowCount(), self.rowCount() + count - 1
+            count = min(100, max(1, count))
+            first_index = last_index = self.rowCount()
             self.beginInsertRows(INVALID_INDEX, first_index, last_index)
-            self.cards += list(itertools.repeat(card, count))
+            self.rows.append(row := CardListModelRow(card, count))
             self.endInsertRows()
-            self._add_card_handle_oversized_flag(card, count)
+            self._add_card_handle_oversized_flag(row)
 
-    def _add_card_handle_oversized_flag(self, card: Card, count: int = 1):
-        if card.is_oversized:
-            self.oversized_card_count += count
+    def _add_card_handle_oversized_flag(self, row: CardListModelRow):
+        if row.card.is_oversized:
+            self.oversized_card_count += row.copies
             self.oversized_card_count_changed.emit(self.oversized_card_count)
 
-    def _remove_card_handle_oversized_flag(self, card: Card):
-        if card.is_oversized:
-            self.oversized_card_count -= 1
+    def _remove_card_handle_oversized_flag(self, row: CardListModelRow):
+        if row.card.is_oversized:
+            self.oversized_card_count -= row.copies
             self.oversized_card_count_changed.emit(self.oversized_card_count)
 
     @Slot(list)
@@ -222,15 +242,16 @@ class CardListModel(QAbstractTableModel):
         logger.debug(f"Removing range {top, bottom}")
         self.beginRemoveRows(INVALID_INDEX, top, bottom)
         last_row = bottom + 1
-        removed_cards = self.cards[top:last_row]
-        del self.cards[top:last_row]
+        removed_rows = self.rows[top:last_row]
+        total_count = sum(row.copies for row in removed_rows)
+        del self.rows[top:last_row]
         self.endRemoveRows()
-        for card in removed_cards:
-            self._remove_card_handle_oversized_flag(card)
-        return last_row - top
+        for row in removed_rows:
+            self._remove_card_handle_oversized_flag(row)
+        return total_count
 
     def headerData(
-            self, section: typing.Union[int, PageColumns],
+            self, section: typing.Union[int, CardListColumns],
             orientation: Qt.Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
         if orientation == Qt.Orientation.Horizontal:
             if role == ItemDataRole.DisplayRole:
@@ -240,34 +261,37 @@ class CardListModel(QAbstractTableModel):
         return super().headerData(section, orientation, role)
 
     def clear(self):
-        logger.debug(f"About to clear {self.__class__.__name__} instance. Removing {self.rowCount()} entries.")
-        self.beginRemoveRows(INVALID_INDEX, 0, self.rowCount()-1)
-        self.cards.clear()
+        count = self.rowCount()
+        logger.debug(f"About to clear {self.__class__.__name__} instance. Removing {count} entries.")
+        self.beginRemoveRows(INVALID_INDEX, 0, count-1)
+        self.rows.clear()
         self.endRemoveRows()
         if self.oversized_card_count:
             self.oversized_card_count = 0
             self.oversized_card_count_changed.emit(self.oversized_card_count)
 
-    def as_cards(self, row_order: typing.List[int] = None) -> CardList:
+    def as_cards(self, row_order: typing.List[int] = None) -> CardCounter:
         """
-        Returns the internal card list. If a custom row order is given, return the cards in that order.
+        Returns the internal card data. If a custom row order is given, return the cards in that order.
         The row_order is used when the user sorted the table by any column. The imported cards then inherit the order
         as shown in the table.
         """
-        if row_order is None:
-            return self.cards
-        return [self.cards[row] for row in row_order]
+        result = Counter()
+        rows = self.rows if row_order is None else (self.rows[row] for row in row_order)
+        for row in rows:
+            result[row.card] += row.copies
+        return result
 
     def has_basic_lands(self, include_wastes: bool = False, include_snow_basics: bool = False) -> bool:
         basic_land_oracle_ids = self.card_db.get_basic_land_oracle_ids(include_wastes, include_snow_basics)
-        return any(filter(lambda card: card.oracle_id in basic_land_oracle_ids, self.cards))
+        return any(filter(lambda row: row.card.oracle_id in basic_land_oracle_ids, self.rows))
 
     def remove_all_basic_lands(self, remove_wastes: bool = False, remove_snow_basics: bool = False):
         basic_land_oracle_ids = self.card_db.get_basic_land_oracle_ids(remove_wastes, remove_snow_basics)
         to_remove_rows = list(
             (index, index)
-            for index, card in enumerate(self.cards)
-            if card.oracle_id in basic_land_oracle_ids
+            for index, row in enumerate(self.rows)
+            if row.card.oracle_id in basic_land_oracle_ids
         )
         merged = reversed(self._merge_ranges(to_remove_rows))
         removed_cards = sum(itertools.starmap(self.remove_cards, merged))

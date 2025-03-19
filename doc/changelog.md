@@ -4,6 +4,8 @@
 
 ## Changed features
 
+- The card table in the deck import wizard now has an editable Copies column to state the number of copies per card,
+  instead of duplicating the card for that many rows. This makes it possible to edit the number of copies per card
 - When splitting exported PDFs, zero-pad the sequence numbers appended to the file name 
   so that all have the same length. This gives a more consistent sorting of output files.
   - This avoids having output files sorted like "1.pdf", "11.pdf", "12.pdf", …, "2.pdf", "21.pdf", …

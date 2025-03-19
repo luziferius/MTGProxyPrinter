@@ -23,7 +23,7 @@ from pytestqt.qtbot import QtBot
 from PyQt5.QtCore import QItemSelectionModel
 
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
-from mtg_proxy_printer.model.card_list import CardListModel
+from mtg_proxy_printer.model.card_list import CardListModel, CardListModelRow, CardListColumns
 
 from tests.helpers import fill_card_database_with_json_cards
 
@@ -51,15 +51,41 @@ def test_add_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardD
     assert_that(model.oversized_card_count, is_(equal_to(count)))
 
 
+@pytest.mark.parametrize("count, expected", [
+    (-1, 1), (0, 1), (1, 1), (99, 99), (100, 100), (101, 100),
+])
+def test_add_cards_with_invalid_count_clamped_to_valid_range(
+        qtbot: QtBot, card_db: CardDatabase, count: int, expected: int):
+    model = _populate_card_db_and_create_model(qtbot, card_db)
+    card = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
+    model.add_cards(Counter({card: count}))
+    assert_that(model.rowCount(), is_(1))
+    index = model.index(0, CardListColumns.Copies)
+    assert_that(model.data(index), is_(expected))
+
+
+@pytest.mark.parametrize("new_count", [5, 15])
+def test_update_oversized_card_count_updates_oversized_count(qtbot: QtBot, card_db: CardDatabase, new_count: int):
+    model = _populate_card_db_and_create_model(qtbot, card_db)
+    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+    model.add_cards(Counter({oversized: 10}))
+    assert_that(model.oversized_card_count, is_(equal_to(10)))
+
+    index = model.index(0, CardListColumns.Copies)
+    with qtbot.wait_signal(model.oversized_card_count_changed, check_params_cb=(lambda value: value == new_count)):
+        model.setData(index, new_count)
+    assert_that(model.oversized_card_count, is_(equal_to(new_count)))
+
+
 def test_remove_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardDatabase):
     model = _populate_card_db_and_create_model(qtbot, card_db)
     oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     model.add_cards(Counter({oversized: 10}))
     assert_that(model.oversized_card_count, is_(equal_to(10)))
 
-    with qtbot.wait_signal(model.oversized_card_count_changed, check_params_cb=(lambda value: value == 8)):
+    with qtbot.wait_signal(model.oversized_card_count_changed, check_params_cb=(lambda value: value == 0)):
         model.remove_cards(0, 1)
-    assert_that(model.oversized_card_count, is_(equal_to(8)))
+    assert_that(model.oversized_card_count, is_(equal_to(0)))
 
 
 def test_replace_oversized_with_regular_card_decrements_oversized_count(qtbot: QtBot, card_db: CardDatabase):
@@ -73,16 +99,16 @@ def test_replace_oversized_with_regular_card_decrements_oversized_count(qtbot: Q
         model.add_cards(Counter({oversized: 1, regular: 1}))
     oversized_index = model.index(0, 0)
     regular_index = model.index(1, 0)
-    assert_that(model.cards[0].is_oversized, is_(True))
-    assert_that(model.cards[oversized_index.row()].is_oversized, is_(True))
-    assert_that(model.cards[1].is_oversized, is_(False))
-    assert_that(model.cards[regular_index.row()].is_oversized, is_(False))
+    assert_that(model.rows[0].card.is_oversized, is_(True))
+    assert_that(model.rows[oversized_index.row()].card.is_oversized, is_(True))
+    assert_that(model.rows[1].card.is_oversized, is_(False))
+    assert_that(model.rows[regular_index.row()].card.is_oversized, is_(False))
     assert_that(model.oversized_card_count, is_(1))
 
     with qtbot.wait_signal(model.oversized_card_count_changed, timeout=1000):
         assert_that(model._request_replacement_card(oversized_index, regular_data), is_(True))
-    assert_that(model.cards[0].is_oversized, is_(False))
-    assert_that(model.cards[1].is_oversized, is_(False))
+    assert_that(model.rows[0].card.is_oversized, is_(False))
+    assert_that(model.rows[1].card.is_oversized, is_(False))
     assert_that(model.oversized_card_count, is_(0))
 
 
@@ -98,16 +124,16 @@ def test_replace_regular_with_oversized_card_increments_oversized_count(qtbot: Q
 
     oversized_index = model.index(0, 0)
     regular_index = model.index(1, 0)
-    assert_that(model.cards[0].is_oversized, is_(True))
-    assert_that(model.cards[oversized_index.row()].is_oversized, is_(True))
-    assert_that(model.cards[1].is_oversized, is_(False))
-    assert_that(model.cards[regular_index.row()].is_oversized, is_(False))
+    assert_that(model.rows[0].card.is_oversized, is_(True))
+    assert_that(model.rows[oversized_index.row()].card.is_oversized, is_(True))
+    assert_that(model.rows[1].card.is_oversized, is_(False))
+    assert_that(model.rows[regular_index.row()].card.is_oversized, is_(False))
     assert_that(model.oversized_card_count, is_(1))
 
     with qtbot.wait_signal(model.oversized_card_count_changed, timeout=1000):
         assert_that(model._request_replacement_card(regular_index, oversized_data), is_(True))
-    assert_that(model.cards[0].is_oversized, is_(True))
-    assert_that(model.cards[1].is_oversized, is_(True))
+    assert_that(model.rows[0].card.is_oversized, is_(True))
+    assert_that(model.rows[1].card.is_oversized, is_(True))
     assert_that(model.oversized_card_count, is_(2))
 
 
@@ -129,14 +155,14 @@ def test__merge_ranges(ranges: typing.List[typing.Tuple[int, int]], merged: typi
 
 def test_remove_multi_selection(qtbot: QtBot, card_db: CardDatabase):
     model = _populate_card_db_and_create_model(qtbot, card_db)
-    regular = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
-    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+    regular = CardListModelRow(card_db.get_card_with_scryfall_id(REGULAR_ID, True), 1)
+    oversized = CardListModelRow(card_db.get_card_with_scryfall_id(OVERSIZED_ID, True), 1)
     model.add_cards(Counter({
-        oversized: 1,
-        regular: 1,
+        oversized.card: 1,
+        regular.card: 1,
     }))
     model.add_cards(Counter({
-        oversized: 1,
+        oversized.card: 1,
     }))
     selection_model = QItemSelectionModel(model)
     selection_model.select(model.index(0, 0), QItemSelectionModel.Select)
@@ -145,7 +171,7 @@ def test_remove_multi_selection(qtbot: QtBot, card_db: CardDatabase):
         model.remove_multi_selection(selection_model.selection()),
         is_(equal_to(2))
     )
-    assert_that(model.cards, contains_exactly(regular))
+    assert_that(model.rows, contains_exactly(regular))
     assert_that(model.rowCount(), is_(equal_to(1)))
 
 
@@ -229,7 +255,7 @@ def test_remove_all_basic_lands(
         {card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_cards}
     ))
     model.remove_all_basic_lands(remove_wastes, remove_snow_basics)
-    remaining = [card.scryfall_id for card in model.cards]
+    remaining = [row.card.scryfall_id for row in model.rows]
     assert_that(
         remaining,
         contains_exactly(*expected_remaining)
