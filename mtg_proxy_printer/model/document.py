@@ -20,23 +20,21 @@ import itertools
 import math
 import pathlib
 import sys
-import textwrap
 import typing
 
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, \
     QPersistentModelIndex
 
-import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
 from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData, Card, MTGSet
-from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings, \
-    CardType, migrate_database
+from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
+from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 
 logger = get_logger(__name__)
 del get_logger
@@ -338,47 +336,13 @@ class Document(QAbstractItemModel):
     def save_as(self, path: pathlib.Path):
         """Save the document at the given path, overwriting any previously stored save path."""
         self.save_file_path = path
-        self.save_to_disk()
+        ActionSaveDocument(path).apply(self)
 
     def save_to_disk(self):
         """Save the document at the internally remembered save path. Raises a RuntimeError, if no such path is set."""
         if self.save_file_path is None:
             raise RuntimeError("Cannot save without a file path!")
-        pages = enumerate(self.pages, start=1)
-        cards = (
-            zip(itertools.repeat(page_index), enumerate((
-                container.card for container in page), start=1))
-            for page_index, page in pages
-        )
-        flattened_data: DocumentSaveFormat = [
-            (page, slot, card.scryfall_id, card.is_front, CardType.from_card(card))
-            for (page, (slot, card))
-            in itertools.chain.from_iterable(cards)
-            # TODO: For now, custom cards have an empty id. Until saving them is implemented, skip custom cards
-            #   so that the document can still be loaded
-            if card.scryfall_id
-        ]
-        with mtg_proxy_printer.sqlite_helpers.open_database(
-                self.save_file_path, "document-v6", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
-            db.execute("BEGIN TRANSACTION")
-            migrate_database(db, self.page_layout)
-            db.execute("DELETE FROM Card")
-            db.executemany(
-                "INSERT INTO Card (page, slot, scryfall_id, is_front, type) VALUES (?, ?, ?, ?, ?)",
-                flattened_data
-            )
-            logger.debug(f"Written {db.execute('SELECT count() FROM Card').fetchone()[0]} cards.")
-            settings =  self.page_layout.to_save_file_data()
-            db.executemany(
-                textwrap.dedent("""\
-                    INSERT OR REPLACE INTO DocumentSettings (key, value)
-                      VALUES (?, ?)
-                    """),
-                settings)
-            logger.debug("Written document settings")
-            db.commit()
-            db.execute("VACUUM")
-        logger.debug("Database saved and closed.")
+        ActionSaveDocument(self.save_file_path).apply(self)
 
     def compute_pages_saved_by_compacting(self) -> int:
         """
