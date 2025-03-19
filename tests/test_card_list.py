@@ -51,6 +51,19 @@ def test_add_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardD
     assert_that(model.oversized_card_count, is_(equal_to(count)))
 
 
+@pytest.mark.parametrize("count, expected", [
+    (-1, 1), (0, 1), (1, 1), (99, 99), (100, 100), (101, 100),
+])
+def test_add_cards_with_invalid_count_clamped_to_valid_range(
+        qtbot: QtBot, card_db: CardDatabase, count: int, expected: int):
+    model = _populate_card_db_and_create_model(qtbot, card_db)
+    card = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
+    model.add_cards(Counter({card: count}))
+    assert_that(model.rowCount(), is_(1))
+    index = model.index(0, CardListColumns.Copies)
+    assert_that(model.data(index), is_(expected))
+
+
 @pytest.mark.parametrize("new_count", [5, 15])
 def test_update_oversized_card_count_updates_oversized_count(qtbot: QtBot, card_db: CardDatabase, new_count: int):
     model = _populate_card_db_and_create_model(qtbot, card_db)

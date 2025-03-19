@@ -16,7 +16,7 @@
 import typing
 
 from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel
-from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox
+from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox
 
 from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.model.card_list import CardListColumns
@@ -29,8 +29,17 @@ __all__ = [
     "ComboBoxItemDelegate",
     "DocumentComboBoxItemDelegate",
     "CardListComboBoxItemDelegate",
+    "SpinboxItemDelegate",
 ]
 ItemDataRole = Qt.ItemDataRole
+
+
+class SpinboxItemDelegate(QStyledItemDelegate):
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QSpinBox:
+        editor = QSpinBox(parent)
+        editor.setMinimum(1)
+        editor.setMaximum(100)
+        return editor
 
 
 class ComboBoxItemDelegate(QStyledItemDelegate):

@@ -177,6 +177,7 @@ class CardListModel(QAbstractTableModel):
 
     def add_cards(self, cards: CardCounter):
         for card, count in cards.items():
+            count = min(100, max(1, count))
             first_index = last_index = self.rowCount()
             self.beginInsertRows(INVALID_INDEX, first_index, last_index)
             self.rows.append(row := CardListModelRow(card, count))
