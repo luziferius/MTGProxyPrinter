@@ -25,7 +25,7 @@ from .page_actions import ActionNewPage
 from mtg_proxy_printer.logger import get_logger
 
 from mtg_proxy_printer.units_and_sizes import PageType
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document_page import Page

@@ -23,7 +23,7 @@ from PySide6.QtWidgets import QWidget
 
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.model.document import Document

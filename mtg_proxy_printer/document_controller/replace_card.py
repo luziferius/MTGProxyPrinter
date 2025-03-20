@@ -20,7 +20,6 @@ import typing
 from PySide6.QtCore import Qt
 
 from mtg_proxy_printer.model.carddb import Card
-from mtg_proxy_printer.model.card_list import PageColumns
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document_page import CardContainer
     from mtg_proxy_printer.model.document import Document
@@ -73,8 +72,8 @@ class ActionReplaceCard(DocumentAction):
         return self
 
     def _replace_card_in_document_with(self, document: "Document", replacement: Card):
-        rightmost_column = len(PageColumns)-1
         page_index = document.index(self.page, 0)
+        rightmost_column = document.columnCount(page_index) - 1
         top_left = document.index(self.slot, 0, page_index)
         bottom_right = top_left.siblingAtColumn(rightmost_column)
         container: "CardContainer" = top_left.internalPointer()

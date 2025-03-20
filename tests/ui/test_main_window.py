@@ -14,7 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import dataclasses
+from collections import Counter
 import pathlib
 import typing
 import unittest.mock
@@ -32,7 +32,8 @@ from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.ui.central_widget import Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, \
     Ui_TabbedCentralWidget
@@ -305,7 +306,7 @@ def test_undo_import_deck_list_with_last_page_selected_works_without_raising_exc
     page_capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
     card.image_file = main_window.image_db.get_blank()
     action = ActionImportDeckList(
-        [card]*page_capacity*2,
+        Counter({card: page_capacity*2}),
         False
     )
     document.apply(action)

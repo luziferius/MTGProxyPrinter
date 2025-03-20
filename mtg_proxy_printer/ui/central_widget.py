@@ -27,13 +27,12 @@ from PySide6.QtWidgets import QWidget, QMenu, QInputDialog, QFileDialog
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.model.card_list import PageColumns
-from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document import Document, PageColumns
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardList, CheckCard, AnyCardType, AnyCardTypeForTypeCheck
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards, ActionAddCard
-from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
+from mtg_proxy_printer.ui.item_delegates import DocumentComboBoxItemDelegate
 
 try:
     from mtg_proxy_printer.ui.generated.central_widget.columnar import Ui_ColumnarCentralWidget
@@ -75,9 +74,9 @@ class CentralWidget(QWidget):
         self.combo_box_delegate = self._setup_page_card_table_view()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _setup_page_card_table_view(self) -> ComboBoxItemDelegate:
+    def _setup_page_card_table_view(self) -> DocumentComboBoxItemDelegate:
         self.ui.page_card_table_view.customContextMenuRequested.connect(self.page_table_context_menu_requested)
-        combo_box_delegate = ComboBoxItemDelegate(self.ui.page_card_table_view)
+        combo_box_delegate = DocumentComboBoxItemDelegate(self.ui.page_card_table_view)
         self.ui.page_card_table_view.setItemDelegateForColumn(PageColumns.CollectorNumber, combo_box_delegate)
         self.ui.page_card_table_view.setItemDelegateForColumn(PageColumns.Set, combo_box_delegate)
         self.ui.page_card_table_view.setItemDelegateForColumn(PageColumns.Language, combo_box_delegate)

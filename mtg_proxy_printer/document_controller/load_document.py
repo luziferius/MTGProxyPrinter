@@ -19,7 +19,7 @@ import pathlib
 import typing
 
 if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+    from mtg_proxy_printer.model.page_layout import PageLayoutSettings
     from mtg_proxy_printer.model.document import Document
 
 from mtg_proxy_printer.model.carddb import CardList

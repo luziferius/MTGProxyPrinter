@@ -2,10 +2,14 @@
 
 Print Magic: The Gathering cards for play-testing purposes.
 
+(If you are reading this on [GitHub](https://github.com/luziferius/MTGProxyPrinter), 
+then you are looking at a Git mirror of the [fossil](https://fossil-scm.org)-based source repository
+located at [https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter](https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter))
 
 ## Feature overview
 
-The application supports importing deck lists from locally stored files or various deck list building websites, automatically fetches high-quality card images from [Scryfall](https://scryfall.com), and aranges the fetched images
+The application supports importing deck lists from locally stored files or various deck list building websites, 
+automatically fetches high-quality card images from [Scryfall](https://scryfall.com), and arranges the fetched images
 in a paged document suitable for printing or PDF export.
 
 - The standard document editing features:
@@ -75,7 +79,11 @@ MTGProxyPrinter can directly fetch public deck lists from these websites:
 - [mtg.wtf](https://mtg.wtf/)
 - [MTGDecks](https://mtgdecks.net)
 
-If you want to print your own lists, ensure that deck lists are accessible without any login, i.e. set to be "public". MTGProxyPrinter does not support logging into an account on those sites, thus cannot fetch any decks behind a login-wall. When setting a deck list to public, it may take a few minutes for the site to update the availability, so give it a few minutes. Alternatively, if the website offers to download or export the deck list, export it in one of the supported formats and manually load or paste it into the deck import wizard.
+If you want to print your own lists, ensure that deck lists are accessible without any login, i.e. set to be "public".
+MTGProxyPrinter does not support logging into an account on those sites, thus cannot fetch any decks behind a login-wall.
+When setting a deck list to public, it may take a few minutes for the site to update the availability, 
+so give it a few minutes. Alternatively, if the website offers to download or export the deck list, 
+export it in one of the supported formats and manually load or paste it into the deck import wizard.
 
 Except for Scryfall, these websites do not offer a stable, public Web API. Support is offered on a
 “best effort” base and may break at any time, if a website decides to re-design their code.
@@ -94,6 +102,8 @@ These external libraries are used in the code. They can be installed from PyPI.
 - `delegateto`
 - `PyHamcrest`
 - `cx_Freeze` (Stand-alone bundles only. Used by the installer for Windows®-based platforms.)
+- Either `truststore` (Py >= 3.10) or `certifi` (Py < 3.10)
+- `typing_extensions` (Py < 3.11)
 
 ### System libraries
 
@@ -108,10 +118,19 @@ These libraries are required to run the unit tests.
 - `pytest-qt`
 - `pytest-cov` (Optional, for code coverage reports).
 
-## Install
+### Development/Packaging environment creation
 
-To install from a fossil checkout or a downloaded and unpacked source code archive, execute `pip install .` 
-from the repository root directory (where `pyproject.toml` is located).
+These two packages must be installed on the host system. They are used to create a virtual environment, 
+in which all other dependencies will be installed.
+
+- The `venv` Python module to create environments
+- `pip` to install dependencies
+
+## Installation
+
+To install from a fossil checkout or a downloaded and unpacked source code archive, 
+execute `pipx install .` or `pip install .` from the repository root directory 
+(where `pyproject.toml` is located).
 
 
 ## Usage

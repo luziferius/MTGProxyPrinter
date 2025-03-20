@@ -36,7 +36,6 @@ class PrettySetListModel(QAbstractListModel):
         self.header = {
             0: self.tr("Set", "MTG set name"),
         }
-        # Store both the set abbreviations and set names in dicts for fast index-based lookup via the data() method
         self.set_data: typing.List[MTGSet] = []
 
     def headerData(self, section: int, orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) \
@@ -53,14 +52,9 @@ class PrettySetListModel(QAbstractListModel):
         return 0 if parent.isValid() else len(self.set_data)
 
     def set_set_data(self, data: typing.List[MTGSet]) -> None:
-        if self.set_data:
-            self.beginRemoveRows(INVALID_INDEX, 0, self.rowCount())
-            self.set_data.clear()
-            self.endRemoveRows()
-        if data:
-            self.beginInsertRows(INVALID_INDEX, 0, len(data))
-            self.set_data[:] = data
-            self.endInsertRows()
+        self.beginResetModel()
+        self.set_data[:] = data
+        self.endResetModel()
 
     def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Optional[str]:
         if index.isValid():

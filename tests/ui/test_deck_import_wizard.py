@@ -13,7 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+from collections import Counter
 import itertools
 import typing
 import unittest.mock
@@ -28,11 +28,11 @@ from PySide6.QtWidgets import QCheckBox, QWizard, QTableView, QComboBox, QLineEd
 from PySide6.QtTest import QTest
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGOnlineParser, MTGArenaParser, \
     GenericRegularExpressionDeckParser
-from mtg_proxy_printer.model.card_list import PageColumns
+from mtg_proxy_printer.model.card_list import CardListColumns, CardListModel, CardCounter
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
 from tests.helpers import fill_card_database_with_json_cards
@@ -97,7 +97,7 @@ def test_remove_basic_lands_button_works(
         is_(False)
     )
     card_names_in_model: StringList = [
-        list_model.data(list_model.index(row, PageColumns.CardName))
+        list_model.data(list_model.index(row, CardListColumns.CardName))
         for row in range(list_model.rowCount())
     ]
     assert_that(card_names_in_model, contains_exactly(*expected_cards))
@@ -123,7 +123,7 @@ def test_remove_selected_cards_works(qtbot: QtBot, card_db: CardDatabase):
     # Verify effects: Button is disabled and the Forest is no longer present in the parsed cards
     assert_that(wizard.button(wizard.WizardButton.CustomButton2).isEnabled(), is_(False))
     card_names_in_model: StringList = [
-        list_model.data(list_model.index(row, PageColumns.CardName))
+        list_model.data(list_model.index(row, CardListColumns.CardName))
         for row in range(list_model.rowCount())
     ]
     assert_that(card_names_in_model, contains_exactly("Snow-Covered Forest", "Wastes"))
@@ -197,10 +197,10 @@ def _input_deck_list(qtbot: QtBot, wizard: DeckImportWizard, deck_list: str, *, 
         assert_that(cb.isChecked())
 
 
-def _validate_model_content(list_model):
+def _validate_model_content(list_model: CardListModel):
     assert_that(list_model.rowCount(), is_(equal_to(1)))
-    assert_that(list_model.cards, has_length(1))
-    assert_that(list_model.cards[0], has_properties({
+    assert_that(list_model.rows, has_length(1))
+    assert_that(list_model.rows[0], has_properties(copies=1, card=has_properties({
         "name": equal_to("Fury Sliver"),
         "set": has_properties({
             "name": equal_to("Time Spiral"),
@@ -214,13 +214,13 @@ def _validate_model_content(list_model):
             "https://cards.scryfall.io/png/front/0/0/"
             "0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
         "image_file": is_(none()),
-    }))
+    })))
 
 
 class CardListReceiver(QObject):
     def __init__(self, parent: QObject = None):
         super(CardListReceiver, self).__init__(parent)
-        self.deck: CardList = []
+        self.deck: CardCounter = Counter()
 
     def on_import_action_received(self, action: ActionImportDeckList):
         self.deck = action.cards
@@ -235,7 +235,7 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
     _move_wizard_forward(qtbot, wizard)
     table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     cell_position = QPoint(
-        table_view.columnViewportPosition(PageColumns.Set) + 5,
+        table_view.columnViewportPosition(CardListColumns.Set) + 5,
         table_view.rowViewportPosition(0) + 5
     )
     # Select cell
@@ -255,27 +255,9 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
     wizard.request_action.connect(deck_receiver.on_import_action_received)
     with qtbot.wait_signal(wizard.request_action, timeout=1000):
         QTest.keyClick(wizard, Key.Key_Enter)
-    assert_that(deck_receiver.deck, all_of(
-        is_(not_none()),
-        has_length(2),
-    ))
-    assert_that(deck_receiver.deck, contains_inanyorder(
-        has_properties({
-            "name": equal_to("Fury Sliver"),
-            "set": has_properties({
-                "name": equal_to("Time Spiral"),
-                "code": equal_to("tsp"),
-            }),
-            "scryfall_id": equal_to("0000579f-7b35-4ed3-b44c-db2a538066fe"),
-            "collector_number": equal_to("157"),
-            "language": equal_to("en"),
-            "is_front": is_(True),
-            "image_uri": equal_to(
-                "https://cards.scryfall.io/png/front/0/0/"
-                "0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
-            "image_file": is_(none()),
-        }),
-        has_properties({
+    assert_that(deck_receiver.deck, has_length(1))
+    assert_that(
+        deck_receiver.deck, has_entry(has_properties({
             "name": equal_to("Fury Sliver"),
             "set": has_properties({
                 "name": equal_to("Time Spiral Remastered"),
@@ -289,8 +271,8 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
                 "https://cards.scryfall.io/png/front/a/8/"
                 "a8a64329-09fc-4e0d-b7d1-378635f2801a.png?1619396979"),
             "image_file": is_(none()),
-        }),
-    ))
+        }), 2)
+    )
 
 
 def test_complete_button_disabled_if_zero_cards_identified(qtbot: QtBot, card_db: CardDatabase):
