@@ -28,7 +28,8 @@ from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, 
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
 from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData, Card, MTGSet
-from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 

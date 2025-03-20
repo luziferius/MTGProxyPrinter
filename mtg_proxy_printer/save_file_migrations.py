@@ -24,7 +24,7 @@ except ImportError:
     from hamcrest import contains as contains_exactly
 
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 logger = get_logger(__name__)
 del get_logger

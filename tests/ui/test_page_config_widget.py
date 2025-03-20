@@ -23,7 +23,7 @@ from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT, QuantityT
