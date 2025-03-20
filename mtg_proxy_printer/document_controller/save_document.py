@@ -25,7 +25,8 @@ if typing.TYPE_CHECKING:
 
 from ._interface import DocumentAction, Self
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.document_loader import DocumentSaveFormat, CardType, migrate_database
+from mtg_proxy_printer.model.document_loader import DocumentSaveFormat, CardType
+from mtg_proxy_printer.save_file_migrations import migrate_database
 
 from mtg_proxy_printer.logger import get_logger
 
@@ -62,9 +63,10 @@ class ActionSaveDocument(DocumentAction):
             #   so that the document can still be loaded
             if card.scryfall_id
         ]
+        logger.debug(f"About to save document to {self.file_path}")
         with mtg_proxy_printer.sqlite_helpers.open_database(
                 self.file_path, "document-v6", document.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
-            db.execute("BEGIN TRANSACTION")
+            db.execute("BEGIN IMMEDIATE TRANSACTION")
             migrate_database(db, layout)
             db.execute("DELETE FROM Card")
             db.executemany(
