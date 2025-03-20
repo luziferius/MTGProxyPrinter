@@ -20,7 +20,7 @@ import typing
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from ._interface import DocumentAction, Self
 from .page_actions import ActionRemovePage
 from .edit_document_settings import ActionEditDocumentSettings

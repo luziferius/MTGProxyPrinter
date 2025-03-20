@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapIt
 
 from mtg_proxy_printer.model.carddb import Card, CardCorner
 from mtg_proxy_printer.model.document import Document, PageColumns
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, RESOLUTION, CardSizes, CardSize, QuantityT
 from mtg_proxy_printer.logger import get_logger

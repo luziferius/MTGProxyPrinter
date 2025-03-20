@@ -22,7 +22,7 @@ import pytest
 from hamcrest import *
 
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
