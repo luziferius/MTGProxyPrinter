@@ -29,9 +29,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter, QColorConstants
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
-if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.model.imagedb import CacheContent
-
+from mtg_proxy_printer.model.imagedb_files import CacheContent
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
@@ -272,9 +270,9 @@ class CheckCard:
 
 
 class ImageDatabaseCards(typing.NamedTuple):
-    visible: typing.List[typing.Tuple[Card, "CacheContent"]] = []
-    hidden: typing.List[typing.Tuple[Card, "CacheContent"]] = []
-    unknown: typing.List["CacheContent"] = []
+    visible: typing.List[typing.Tuple[Card, CacheContent]] = []
+    hidden: typing.List[typing.Tuple[Card, CacheContent]] = []
+    unknown: typing.List[CacheContent] = []
 
 
 OptionalCard = typing.Optional[Card]
@@ -720,7 +718,7 @@ class CardDatabase(QObject):
                 bool(highres_image), size, face_number, bool(is_dfc),
             )
 
-    def get_all_cards_from_image_cache(self, cache_content: typing.List["CacheContent"]) -> ImageDatabaseCards:
+    def get_all_cards_from_image_cache(self, cache_content: typing.List[CacheContent]) -> ImageDatabaseCards:
         """
         Partitions the content of the ImageDatabase disk cache into three lists:
         - All visible card printings
@@ -730,7 +728,6 @@ class CardDatabase(QObject):
         Visible and invisible printings are returned as lists containing tuples (Card, CacheContent),
         unknown images are returned as a list with plain CacheContent instances.
         """
-        from mtg_proxy_printer.model.imagedb import CacheContent
         db = self.db
         db.execute("SAVEPOINT 'partition_image_cache' -- get_all_cards_from_image_cache()")
         db.execute(cached_dedent('''\

@@ -29,7 +29,8 @@ from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
-from mtg_proxy_printer.model.imagedb import ImageDatabase, CacheContent as ImageCacheContent, ImageKey
+from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.model.imagedb_files import CacheContent as ImageCacheContent, ImageKey
 from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase
 from mtg_proxy_printer.units_and_sizes import OptStr
 from mtg_proxy_printer.logger import get_logger

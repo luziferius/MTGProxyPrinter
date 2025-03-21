@@ -32,7 +32,8 @@ from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import CardSizes
-from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
+from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.model.imagedb_files import ImageKey
 from tests.helpers import fill_card_database_with_json_cards
 
 

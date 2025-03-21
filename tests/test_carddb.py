@@ -28,7 +28,7 @@ import pytest
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, \
     Card, MTGSet
-from mtg_proxy_printer.model.imagedb import CacheContent
+from mtg_proxy_printer.model.imagedb_files import CacheContent
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard

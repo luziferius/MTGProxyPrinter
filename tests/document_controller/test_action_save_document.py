@@ -28,7 +28,7 @@ from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT, CardSizes
 from mtg_proxy_printer.model.carddb import CheckCard
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader, CardType
-from mtg_proxy_printer.model.imagedb import ImageKey
+from mtg_proxy_printer.model.imagedb_files import ImageKey
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument

@@ -14,7 +14,6 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import dataclasses
 import errno
 import functools
 import io
@@ -38,6 +37,7 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 from mtg_proxy_printer.document_controller import DocumentAction
+from .imagedb_files import ImageKey, CacheContent
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
@@ -53,36 +53,7 @@ DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cac
 __all__ = [
     "ImageDatabase",
     "ImageDownloader",
-    "CacheContent",
-    "ImageKey",
 ]
-
-
-@dataclasses.dataclass(frozen=True)
-class ImageKey:
-    scryfall_id: str
-    is_front: bool
-    is_high_resolution: bool
-
-    def format_relative_path(self) -> pathlib.Path:
-        """Returns the file system path of the associated image relative to the image database root path."""
-        level1 = self.format_level_1_directory_name(self.is_front, self.is_high_resolution)
-        return pathlib.Path(level1, self.scryfall_id[:2], f"{self.scryfall_id}.png")
-
-    @staticmethod
-    def format_level_1_directory_name(is_front: bool, is_high_resolution: bool) -> str:
-        side = "front" if is_front else "back"
-        res = "highres" if is_high_resolution else "lowres"
-        return f"{res}_{side}"
-
-
-@dataclasses.dataclass(frozen=True)
-class CacheContent(ImageKey):
-    absolute_path: pathlib.Path
-
-    def as_key(self):
-        return ImageKey(self.scryfall_id, self.is_front, self.is_high_resolution)
-
 
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
 ImageKeySet = typing.Set[ImageKey]
