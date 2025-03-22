@@ -47,7 +47,7 @@ CREATE TABLE Card (
 CREATE TABLE DocumentSettings (
   -- Non-numerical document settings
   "key" TEXT NOT NULL PRIMARY KEY CHECK (typeof("key") == 'text' and "key" <> ''),
-  value TEXT NOT NULL CHECK (typeof(value) == 'text' and value <> '')
+  value TEXT NOT NULL CHECK (typeof(value) == 'text')
 ) WITHOUT ROWID;
 
 CREATE TABLE DocumentDimensions (
