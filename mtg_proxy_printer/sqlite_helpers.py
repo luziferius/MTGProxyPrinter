@@ -44,6 +44,7 @@ SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?
 sqlite3.register_adapter(pathlib.PosixPath, str)
 sqlite3.register_adapter(pathlib.WindowsPath, str)
 sqlite3.register_adapter(type(1*unit_registry.mm), str)
+sqlite3.register_converter("TEXT_QUANTITY", lambda b: unit_registry.parse_expression(b.decode("utf-8")))
 
 
 def read_resource_text(package: str, resource: str, encoding: str = "utf-8") -> str:
@@ -66,7 +67,7 @@ def create_in_memory_database(
             f"of the SQLite3 library."
         )
     logger.info(f"Creating in-memory database using schema {schema_name}.")
-    db = sqlite3.connect(":memory:", check_same_thread=check_same_thread)
+    db = sqlite3.connect(":memory:", check_same_thread=check_same_thread, detect_types=sqlite3.PARSE_DECLTYPES)
     # These settings are volatile, thus have to be set for each opened connection
     db.executescript("PRAGMA foreign_keys = ON; PRAGMA analysis_limit=1000; PRAGMA trusted_schema = OFF;")
     populate_database_schema(db, schema_name)
@@ -93,7 +94,7 @@ def open_database(
     logger.debug(f"Opening Database {location}.")
     # This has to be determined before the connection is opened and the file is created on disk.
     should_create_schema = db_path == ":memory:" or not db_path.exists()
-    db = sqlite3.connect(db_path, check_same_thread=check_same_thread)
+    db = sqlite3.connect(db_path, check_same_thread=check_same_thread, detect_types=sqlite3.PARSE_DECLTYPES)
     logger.debug(f"Connected SQLite database {location}.")
     # These settings are volatile, thus have to be set for each opened connection
     db.executescript("PRAGMA foreign_keys = ON; PRAGMA trusted_schema = OFF;\n")
