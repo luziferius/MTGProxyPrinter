@@ -40,11 +40,11 @@ def migrate_database(db: sqlite3.Connection, settings: PageLayoutSettings):
     _migrate_3_to_4(db, settings)
     _migrate_4_to_5(db, settings)
     _migrate_5_to_6(db, settings)
-    migrate_image_spacing_settings(db)
+    _migrate_image_spacing_settings(db)
     logger.debug("Finished running migration tasks")
 
 
-def _migrate_2_to_3(db: sqlite3.Connection):
+def _migrate_2_to_3(db: sqlite3.Connection, _=None):
     if db.execute("PRAGMA user_version\n").fetchone()[0] != 2:
         return
     logger.debug("Migrating save file from version 2 to 3")
@@ -176,7 +176,7 @@ def _migrate_5_to_6(db: sqlite3.Connection, settings: PageLayoutSettings):
         ])
 
 
-def migrate_image_spacing_settings(db: sqlite3.Connection):
+def _migrate_image_spacing_settings(db: sqlite3.Connection):
     if db.execute("PRAGMA user_version").fetchone()[0] != 6:
         return
     logger.debug("Migrating save file version 6 image spacing settings")

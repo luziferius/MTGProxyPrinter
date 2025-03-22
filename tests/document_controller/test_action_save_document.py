@@ -45,10 +45,6 @@ def validate_qt_model_signal_parameter(
     return not parent.isValid() and first == expected_first and last == expected_last
 
 
-def test_apply(qtbot, document_light):
-    pass
-
-
 @pytest.mark.parametrize("source_version", [2, 3, 4, 5])
 def test_save_migration(tmp_path: Path, document: Document, source_version: int):
     """Tests migration of existing saves to the newest schema revision on save."""
