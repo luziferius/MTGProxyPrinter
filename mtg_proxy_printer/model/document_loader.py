@@ -27,7 +27,7 @@ from unittest.mock import patch
 import pint
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
-    has_properties, is_, any_of
+    has_properties, is_
 
 try:
     from hamcrest import contains_exactly
@@ -41,7 +41,7 @@ from mtg_proxy_printer.model.carddb import CardIdentificationData, CardList, Car
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, QuantityT
+from mtg_proxy_printer.units_and_sizes import PageType, QuantityT
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.save_file_migrations import migrate_database
@@ -248,11 +248,11 @@ class Worker(LoaderSignals):
     def _load_document(self):
         # Imported here to break a circular import. TODO: Investigate a better fix
         from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
-        card_data, page_settings = self._read_data_from_save_path(self.save_path, self.document.page_layout)
+        card_data, page_layout = self._read_data_from_save_path(self.save_path, self.document.page_layout)
         with patch.object(self.card_db, "db", self.db):
             pages, self.migrated_ids, self.unknown_ids = self._parse_into_cards(card_data)
-        self._fix_mixed_pages(pages, page_settings)
-        action = ActionLoadDocument(self.save_path, pages, page_settings)
+        self._fix_mixed_pages(pages, page_layout)
+        action = ActionLoadDocument(self.save_path, pages, page_layout)
         self.load_requested.emit(action)
         self._complete_loading()
 
@@ -365,9 +365,9 @@ class Worker(LoaderSignals):
         logger.info(f"Reading data from save file {save_file_path}")
 
         with mtg_proxy_printer.sqlite_helpers.open_database(
-                save_file_path, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as db:
+                save_file_path, "document-v7", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as db:
             user_version = Worker._validate_database_schema(db)
-            if user_version not in range(2, 7):
+            if user_version not in range(2, 8):
                 raise AssertionError(f"Unknown database schema version: {user_version}")
             logger.info(f"Save file version is {user_version}")
             migrate_database(db, settings)
@@ -378,9 +378,11 @@ class Worker(LoaderSignals):
     @staticmethod
     def _read_card_data_from_database(db: sqlite3.Connection) -> DocumentSaveFormat:
         card_data: DocumentSaveFormat = []
+        # TODO: Ignore custom cards for now
         query = textwrap.dedent("""\
             SELECT page, slot, scryfall_id, is_front, type
                 FROM Card
+                WHERE scryfall_id IS NOT NULL
                 ORDER BY page ASC, slot ASC""")
         supported_card_types: typing.List[str] = list(item.value for item in CardType)
         for row_number, row_data in enumerate(db.execute(query)):
@@ -411,13 +413,18 @@ class Worker(LoaderSignals):
         logger.debug("Reading document settings …")
         keys = ", ".join(map("'{}'".format, default_settings.__annotations__.keys()))
         document_settings_query = textwrap.dedent(f"""\
-            SELECT key, value
+            SELECT "key", value
                 FROM DocumentSettings
-                WHERE key in ({keys})
-                ORDER BY key ASC
+                WHERE "key" in ({keys})
             """)
         default_settings.update(db.execute(document_settings_query))
-        is_number = any_of(instance_of(float), instance_of(int), instance_of(pint.Quantity))
+        document_dimensions_query = textwrap.dedent(f"""\
+            SELECT "key", value
+                FROM DocumentDimensions
+                WHERE "key" in ({keys})
+            """)
+        default_settings.update(db.execute(document_dimensions_query))
+        is_number = instance_of(pint.Quantity)
         assert_that(
             default_settings,
             has_properties(
@@ -433,25 +440,22 @@ class Worker(LoaderSignals):
                 draw_cut_markers=is_in((0, 1)),
                 draw_sharp_corners=is_in((0, 1)),
                 draw_page_numbers=is_in((0, 1)),
-                # TODO: Values column should have TEXT affinity, in order to preserve numerical-looking titles as-is
-                document_name=(any_of(instance_of(str), instance_of(int))),
+                document_name=instance_of(str),
             ),
             "Document settings contain invalid data or data types"
         )
-        # Numerical column affinity coerces document titles like "1" to integers, so convert to str in those cases.
-        # This does lose leading zeros and zero decimals (e.g. "1.000", however.
-        # Also coerce integer values into the annotated float or boolean types
+
         for key, annotated_type in PageLayoutSettings.__annotations__.items():
             value = getattr(default_settings, key)
             if annotated_type is bool:
-                value = annotated_type(value)
-            elif annotated_type is QuantityT and not isinstance(value, pint.Quantity):
-                # TODO: Currently implicitly interpreting values as millimeters. Replace this with save version 7.
+                value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
+            elif annotated_type is QuantityT:
+                # TODO: Handle invalid, non-length units
                 # Ensure all floats are within the allowed bounds.
                 value = mtg_proxy_printer.settings.clamp_to_supported_range(
-                    value*unit_registry.mm, mtg_proxy_printer.settings.MIN_SIZE, mtg_proxy_printer.settings.MAX_SIZE)
+                    value, mtg_proxy_printer.settings.MIN_SIZE, mtg_proxy_printer.settings.MAX_SIZE)
             elif annotated_type is str:
-                 value = annotated_type(value)
+                 pass
             setattr(default_settings, key, value)
         assert_that(
             default_settings.compute_page_card_capacity(),
