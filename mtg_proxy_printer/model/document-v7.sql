@@ -20,8 +20,8 @@ VACUUM;  -- Required to apply setting PRAGMA page_size
 
 
 CREATE TABLE CustomCardData (
-  -- Holds custom cards. The original file path is not retained,
-  -- as I consider paths as containing potentially private information.
+  -- Holds custom cards. The original file path is not retained.
+  -- The path may contain sensitive information and is not portable.
   card_id TEXT NOT NULL PRIMARY KEY CHECK (card_id GLOB '[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]'),
   image BLOB NOT NULL,  -- The raw image content
   name TEXT NOT NULL DEFAULT '',
@@ -30,7 +30,7 @@ CREATE TABLE CustomCardData (
   collector_number TEXT NOT NULL DEFAULT '',
   is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)) DEFAULT TRUE,
   oversized INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)) DEFAULT FALSE,
-  other_face TEXT NULL REFERENCES CustomCardData(card_id)  -- If this is a DFC, this references the other side
+  other_face TEXT REFERENCES CustomCardData(card_id)  -- If this is a DFC, this references the other side
 );
 
 CREATE TABLE Card (
@@ -38,9 +38,9 @@ CREATE TABLE Card (
   slot INTEGER NOT NULL CHECK (slot > 0),
   is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
   scryfall_id TEXT CHECK (scryfall_id GLOB '[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]'),
-  custom_card_id TEXT NULL REFERENCES CustomCardData(card_id) DEFAULT NULL,
+  custom_card_id TEXT REFERENCES CustomCardData(card_id) DEFAULT NULL,
   PRIMARY KEY(page, slot),
-  CONSTRAINT "one of scryfall_id or custom_card_id must be NOT NULL" CHECK ((scryfall_id IS NULL) <> (custom_card_id IS NULL))
+  CONSTRAINT "Card slot must refer to either an official or custom card" CHECK ((scryfall_id IS NULL) <> (custom_card_id IS NULL))
 ) WITHOUT ROWID;
 
 CREATE TABLE DocumentSettings (
