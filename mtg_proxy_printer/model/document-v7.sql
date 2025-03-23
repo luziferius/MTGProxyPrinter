@@ -33,8 +33,13 @@ CREATE TABLE CustomCardData (
   other_face TEXT REFERENCES CustomCardData(card_id)  -- If this is a DFC, this references the other side
 );
 
+CREATE TABLE Page (
+  page INTEGER NOT NULL PRIMARY KEY CHECK (page > 0),
+  image_size TEXT NOT NULL CHECK(image_size <> '')
+);
+
 CREATE TABLE Card (
-  page INTEGER NOT NULL CHECK (page > 0),
+  page INTEGER NOT NULL CHECK (page > 0) REFERENCES Page(page),
   slot INTEGER NOT NULL CHECK (slot > 0),
   is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
   type TEXT NOT NULL CHECK (type <> ''),

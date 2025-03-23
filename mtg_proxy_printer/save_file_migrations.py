@@ -229,8 +229,14 @@ def _migrate_6_to_7(db: sqlite3.Connection, _: PageLayoutSettings = None):
         )"""),
         "ALTER TABLE Card RENAME TO Card_old",
         textwrap.dedent("""\
+        CREATE TABLE Page (
+          page INTEGER NOT NULL PRIMARY KEY CHECK (page > 0),
+          image_size TEXT NOT NULL CHECK(image_size <> '')
+        )"""),
+        "INSERT INTO Page (page, image_size) SELECT DISTINCT page, '745x1040' FROM Card_old",
+        textwrap.dedent("""\
         CREATE TABLE Card (
-          page INTEGER NOT NULL CHECK (page > 0),
+          page INTEGER NOT NULL CHECK (page > 0) REFERENCES Page(page),
           slot INTEGER NOT NULL CHECK (slot > 0),
           is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
           type TEXT NOT NULL CHECK (type <> ''),
