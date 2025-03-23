@@ -29,6 +29,7 @@ from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, is_
 
+
 try:
     from hamcrest import contains_exactly
 except ImportError:
@@ -41,7 +42,7 @@ from mtg_proxy_printer.model.carddb import CardIdentificationData, CardList, Car
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, QuantityT
+from mtg_proxy_printer.units_and_sizes import PageType, QuantityT, UUID
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.save_file_migrations import migrate_database
@@ -75,7 +76,21 @@ class CardType(str, enum.Enum):
             raise NotImplementedError()
 
 
-DocumentSaveFormat = typing.List[typing.Tuple[int, int, str, bool, CardType]]
+class DatabaseLoadResult(typing.NamedTuple):
+    card: AnyCardType
+    was_migrated: bool
+
+
+class DocumentSaveRow(typing.NamedTuple):
+    page: int
+    slot: int
+    is_front: bool
+    card_type: CardType
+    scryfall_id: UUID
+    custom_card_id: UUID
+
+
+DocumentSaveFormat = typing.List[DocumentSaveRow]
 T = typing.TypeVar("T")
 
 
@@ -118,7 +133,8 @@ class DocumentLoader(LoaderSignals):
         super().__init__(None)
         self.document = document
         self.db = db
-        self.finished.connect(functools.partial(self.loading_state_changed.emit, False), Qt.ConnectionType.DirectConnection)
+        disable_loading_state_on_completion = functools.partial(self.loading_state_changed.emit, False)
+        self.finished.connect(disable_loading_state_on_completion, Qt.ConnectionType.DirectConnection)
 
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")
@@ -199,6 +215,9 @@ class Worker(LoaderSignals):
         self.should_run: bool = True
         self.unknown_ids = 0
         self.migrated_ids = 0
+        self.current_progress = 0
+        self.prefer_already_downloaded = mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
+            "prefer-already-downloaded-images")
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -248,58 +267,138 @@ class Worker(LoaderSignals):
     def _load_document(self):
         # Imported here to break a circular import. TODO: Investigate a better fix
         from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
-        card_data, page_layout = self._read_data_from_save_path(self.save_path, self.document.page_layout)
         with patch.object(self.card_db, "db", self.db):
-            pages, self.migrated_ids, self.unknown_ids = self._parse_into_cards(card_data)
-        self._fix_mixed_pages(pages, page_layout)
+            save_db = self._open_validate_and_migrate_save_file(self.save_path)
+            total_cards = save_db.execute("SELECT count(1) FROM Card").fetchone()[0] + 2
+            self.begin_loading_loop.emit(total_cards, "Loading document:")
+            page_layout = self._load_document_settings(save_db)
+            self.advance_progress()
+            pages = self._load_cards(save_db)
+            self._fix_mixed_pages(pages, page_layout)
+            self.advance_progress()
         action = ActionLoadDocument(self.save_path, pages, page_layout)
         self.load_requested.emit(action)
         self._complete_loading()
 
-    def _parse_into_cards(self, card_data: DocumentSaveFormat) -> (typing.List[CardList], int, int):
-        prefer_already_downloaded = mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
-            "prefer-already-downloaded-images")
+    def advance_progress(self):
+        self.current_progress += 1
+        self.progress_loading_loop.emit(self.current_progress)
 
-        current_page_index = 1
-        unknown_ids = 0
-        migrated_ids = 0
-        pages: typing.List[CardList] = [[]]
-        current_page = pages[-1]
-        self.begin_loading_loop.emit(len(card_data), "Loading document:")
-        for item_number, (page_number, slot, scryfall_id, is_front, card_type) in enumerate(card_data):
-            self.progress_loading_loop.emit(item_number)  # Emit at loop begin, so that each item advances the progress
-            if not self.should_run:
-                logger.info("Cancel request received, stop processing the card list.")
-                return pages, unknown_ids, migrated_ids
-            if current_page_index != page_number:
-                current_page_index = page_number
-                current_page: CardList = []
-                pages.append(current_page)
-            if card_type == CardType.CHECK_CARD:
-                if not self.card_db.is_dfc(scryfall_id):
-                    logger.warning("Requested loading check card for non-DFC card, skipping it.")
-                    self.unknown_ids += 1
-                    continue
-                card = CheckCard(
-                    self.card_db.get_card_with_scryfall_id(scryfall_id, True),
-                    self.card_db.get_card_with_scryfall_id(scryfall_id, False)
-                )
-            else:
-                card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
-            if card is None:
-                card = self._find_replacement_card(scryfall_id, is_front, prefer_already_downloaded)
-                if card:
-                    migrated_ids += 1
+    @staticmethod
+    def _open_validate_and_migrate_save_file(save_path: pathlib.Path) -> sqlite3.Connection:
+        """
+        Opens the save database, validates the schema and migrates the content to the newest
+        save file version.
+
+        :param save_path: File system path to open
+        :return: The opened database connection."""
+        db = mtg_proxy_printer.sqlite_helpers.open_database(
+            save_path, f"document-v7", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION
+        )
+        user_version = Worker._validate_database_schema(db)
+        if user_version not in range(2, 8):
+            raise AssertionError(f"Unknown database schema version: {user_version}")
+        logger.info(f"Save file version is {user_version}")
+        migrate_database(db, PageLayoutSettings.create_from_settings())
+        return db
+
+
+    def _load_cards(self, save_db: sqlite3.Connection) -> typing.List[CardList]:
+        custom_cards: typing.Dict[str, Card] = {}
+        total_cards = save_db.execute("SELECT count(1) FROM Card").fetchone()[0]
+        self.begin_loading_loop.emit(total_cards, "Loading document:")
+        rows = self._load_rows(save_db)
+        pages = self._split_into_pages(rows)
+        return list(map(self._load_cards_on_page, pages, itertools.repeat(custom_cards)))
+
+    @staticmethod
+    def _load_rows(save_db: sqlite3.Connection) -> typing.Generator[DocumentSaveRow, None, None]:
+        query = textwrap.dedent("""\
+            SELECT page, slot, is_front, type, scryfall_id, custom_card_id -- _load_rows()
+                FROM Card
+                ORDER BY page ASC, slot ASC""")
+        return (
+            DocumentSaveRow(page, slot, bool(is_front), CardType(card_type), scryfall_id, custom_card_id)
+            for page, slot, is_front, card_type, scryfall_id, custom_card_id
+            in save_db.execute(query))
+
+    @staticmethod
+    def _split_into_pages(rows: typing.Iterable[DocumentSaveRow]) -> typing.Generator[typing.List[DocumentSaveRow], None, None]:
+        page = []
+        previous = -1
+        for row in rows:
+            if row.page != previous:
+                if page:
+                    yield page
+                page = []
+            page.append(row)
+        yield page
+
+    def _load_cards_on_page(self, page: typing.List[DocumentSaveRow], custom_cards: typing.Dict[str, Card]) -> CardList:
+        card_db = self.card_db
+        result: CardList = []
+        for item in page:
+            if card_id := item.custom_card_id:
+                if card_id in custom_cards:
+                    result.append(custom_cards[card_id])
                 else:
-                    # If the save file was tampered with or the database used to save contained more cards than the
-                    # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
-                    unknown_ids += 1
-                    logger.info("Unable to find suitable replacement card. Skipping it.")
-                    continue
-            self.image_loader.get_image_synchronous(card)
-            current_page.append(card)
-        self.progress_loading_loop.emit(len(card_data))
-        return pages, migrated_ids, unknown_ids
+                    card = self._load_custom_card_from_save(item)
+                    if card.image_file:
+                        result.append(card)
+                        custom_cards[card_id] = card
+            elif card_id := item.scryfall_id:
+                result.append(self._load_official_card_from_card_db(item, self.prefer_already_downloaded))
+            else:
+                # Empty slot.
+
+                pass
+            self.advance_progress()
+        return result
+
+    def _load_official_card_from_card_db(self, data: DocumentSaveRow, prefer_already_downloaded: bool) -> typing.Optional[DatabaseLoadResult]:
+        if data.card_type == CardType.CHECK_CARD:
+            return self._load_check_card(data, prefer_already_downloaded)
+        else:
+            return self._load_official_card(data, prefer_already_downloaded)
+
+    def _load_check_card(self, data: DocumentSaveRow, prefer_already_downloaded: bool) -> typing.Optional[DatabaseLoadResult]:
+        """
+        Loads a check card. Retuns None if the given scryfall id does not belong to a DFC.
+        If the front is unavailable, try to find a replacement.
+        Returns None, if the back of the found replacement is unavailable.
+        """
+        migrated = False
+        scryfall_id = data.data.scryfall_id
+        if not self.card_db.is_dfc(scryfall_id):
+            logger.warning("Requested loading check card for non-DFC card, skipping it.")
+            return None
+        front = self.card_db.get_card_with_scryfall_id(scryfall_id, True)
+        if front is None:
+            front = self._find_replacement_card(scryfall_id, True, prefer_already_downloaded)
+            if front is None:
+                logger.info("Unable to find suitable replacement card. Skipping it.")
+                return None
+            migrated = True
+        back = self.card_db.get_card_with_scryfall_id(front.scryfall_id, False)
+        if back is None:
+            logger.info("Unable to find suitable replacement card. Skipping it.")
+            return None
+        card = CheckCard(front, back)
+        self.image_loader.get_image_synchronous(card)
+        return DatabaseLoadResult(card, migrated)
+
+    def _load_official_card(self, data: DocumentSaveRow, prefer_already_downloaded: bool) -> typing.Optional[DatabaseLoadResult]:
+        migrated = False
+        scryfall_id = data.data.scryfall_id
+        is_front = data.data.is_front
+        if (card := self.card_db.get_card_with_scryfall_id(data.data.scryfall_id, is_front)) is None:
+            card = self._find_replacement_card(scryfall_id, is_front, prefer_already_downloaded)
+            migrated = True
+        if card is None:
+            logger.info("Unable to find suitable replacement card. Skipping it.")
+            return None
+        self.image_loader.get_image_synchronous(card)
+        return DatabaseLoadResult(card, migrated)
 
     def _find_replacement_card(self, scryfall_id: str, is_front: bool, prefer_already_downloaded: bool):
         logger.info(f"Unknown card scryfall ID found in document:  {scryfall_id=}, {is_front=}")
@@ -377,56 +476,58 @@ class Worker(LoaderSignals):
 
     @staticmethod
     def _read_card_data_from_database(db: sqlite3.Connection) -> DocumentSaveFormat:
-        card_data: DocumentSaveFormat = []
+        result: DocumentSaveFormat = []
         # TODO: Ignore custom cards for now
         query = textwrap.dedent("""\
-            SELECT page, slot, scryfall_id, is_front, type
+            SELECT page, slot, scryfall_id, is_front, type, custom_card_id
                 FROM Card
                 WHERE scryfall_id IS NOT NULL
                 ORDER BY page ASC, slot ASC""")
         supported_card_types: typing.List[str] = list(item.value for item in CardType)
         for row_number, row_data in enumerate(db.execute(query)):
-            assert_that(row_data, contains_exactly(
-                all_of(instance_of(int), greater_than_or_equal_to(0)),
-                all_of(instance_of(int), greater_than_or_equal_to(0)),
-                all_of(instance_of(str), matches_regexp(r"[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
-                is_in((0, 1)),
-                is_in(supported_card_types)
-            ), f"Invalid data found in the save data at row {row_number}. Aborting")
-            page, slot, scryfall_id, is_front, card_type = row_data
-            card_data.append((page, slot, scryfall_id, bool(is_front), CardType(card_type)))
-        return card_data
+            if row_data[2] is not None:
+                result.append(Worker._append_official_card(row_data, row_number, supported_card_types))
+            else:
+                pass
+        return result
 
     @staticmethod
-    def _read_page_layout_data_from_database(db, user_version):
-        default_settings = PageLayoutSettings.create_from_settings()
-        if user_version >= 4:
-            settings = Worker._read_document_settings(db, default_settings)
-        else:
-            settings = default_settings
-        logger.debug(f"Loaded document settings: {settings}")
-        return settings
+    def _append_official_card(row_data, row_number, supported_card_types) -> DocumentSaveRow:
+        assert_that(row_data, contains_exactly(
+            all_of(instance_of(int), greater_than_or_equal_to(0)),
+            all_of(instance_of(int), greater_than_or_equal_to(0)),
+            matches_regexp(r"[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"),
+            is_in((0, 1)),
+            is_in(supported_card_types)
+        ), f"Invalid data found in the save data at row {row_number}. Aborting")
+        page, slot, scryfall_id, is_front, card_type = row_data
+        return DocumentSaveRow(
+            page, slot, CardType(card_type),
+            CardIdentificationData(scryfall_id=scryfall_id, is_front=is_front))
 
     @staticmethod
-    def _read_document_settings(
-            db: sqlite3.Connection, default_settings: PageLayoutSettings) -> PageLayoutSettings:
+    def _load_document_settings(db: sqlite3.Connection) -> PageLayoutSettings:
+        settings = PageLayoutSettings.create_from_settings()
         logger.debug("Reading document settings …")
-        keys = ", ".join(map("'{}'".format, default_settings.__annotations__.keys()))
+        keys =  ", ".join(
+            f"'{key}'" for key, value in settings.__annotations__.items() if value is not QuantityT)
         document_settings_query = textwrap.dedent(f"""\
             SELECT "key", value
                 FROM DocumentSettings
                 WHERE "key" in ({keys})
             """)
-        default_settings.update(db.execute(document_settings_query))
+        settings.update(db.execute(document_settings_query))
+        keys = ", ".join(
+            f"'{key}'" for key, value in settings.__annotations__.items() if value is QuantityT)
         document_dimensions_query = textwrap.dedent(f"""\
             SELECT "key", value
                 FROM DocumentDimensions
                 WHERE "key" in ({keys})
             """)
-        default_settings.update(db.execute(document_dimensions_query))
+        settings.update(db.execute(document_dimensions_query))
         is_number = instance_of(pint.Quantity)
         assert_that(
-            default_settings,
+            settings,
             has_properties(
                 card_bleed=is_number,
                 page_height=is_number,
@@ -437,16 +538,16 @@ class Worker(LoaderSignals):
                 margin_right=is_number,
                 row_spacing=is_number,
                 column_spacing=is_number,
-                draw_cut_markers=is_in((0, 1)),
-                draw_sharp_corners=is_in((0, 1)),
-                draw_page_numbers=is_in((0, 1)),
+                draw_cut_markers=is_in(("True", "False")),
+                draw_sharp_corners=is_in(("True", "False")),
+                draw_page_numbers=is_in(("True", "False")),
                 document_name=instance_of(str),
             ),
             "Document settings contain invalid data or data types"
         )
 
         for key, annotated_type in PageLayoutSettings.__annotations__.items():
-            value = getattr(default_settings, key)
+            value = getattr(settings, key)
             if annotated_type is bool:
                 value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
             elif annotated_type is QuantityT:
@@ -456,13 +557,13 @@ class Worker(LoaderSignals):
                     value, mtg_proxy_printer.settings.MIN_SIZE, mtg_proxy_printer.settings.MAX_SIZE)
             elif annotated_type is str:
                  pass
-            setattr(default_settings, key, value)
+            setattr(settings, key, value)
         assert_that(
-            default_settings.compute_page_card_capacity(),
+            settings.compute_page_card_capacity(),
             is_(greater_than_or_equal_to(1)),
             "Document settings invalid: At least one card has to fit on a page."
         )
-        return default_settings
+        return settings
 
     @staticmethod
     def _validate_database_schema(db_unsafe: sqlite3.Connection) -> int:
