@@ -183,7 +183,7 @@ class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super().__init__(
             card_db, image_db,
-            re.compile(r"(SB: {2})?(?P<copies>\d+) \[(?P<set_code>\w+)?] (?P<name>.+)"), parent
+            re.compile(r"(SB: {1,2})?(?P<copies>\d+) \[(?P<set_code>\w+)?] (?P<name>.+)"), parent
         )
 
 
