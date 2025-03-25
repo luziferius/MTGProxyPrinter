@@ -286,5 +286,6 @@ def _migrate_6_to_7(db: sqlite3.Connection, _: PageLayoutSettings = None):
           )
         """),
         "DROP TABLE DocumentSettings_old",
+        "PRAGMA user_version = 7"
     ]:
         db.execute(f"{statement};\n")
