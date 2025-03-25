@@ -89,6 +89,9 @@ class CardSize(typing.NamedTuple):
     def as_qsize_px(self):
         return QSize(round(self.width.magnitude), round(self.height.magnitude))
 
+    def to_save_data(self):
+        return f"{self.width.magnitude:.0f}x{self.height.magnitude:.0f}"
+
 
 @enum.unique
 class CardSizes(CardSize, enum.Enum):
