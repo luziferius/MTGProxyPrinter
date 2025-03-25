@@ -18,8 +18,8 @@ import math
 import typing
 
 import pint
-from PyQt5.QtGui import QPageLayout, QPageSize
-from PyQt5.QtCore import QMarginsF, QSizeF
+from PySide6.QtGui import QPageLayout, QPageSize
+from PySide6.QtCore import QMarginsF, QSizeF
 
 try:
     from hamcrest import contains_exactly
