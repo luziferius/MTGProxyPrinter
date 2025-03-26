@@ -20,7 +20,7 @@ import itertools
 import pathlib
 import sqlite3
 import textwrap
-import typing
+from typing import Counter, Dict, Generator, Iterable, List, NamedTuple, Optional, Tuple, TYPE_CHECKING, TypeVar
 from unittest.mock import patch
 
 import pint
@@ -46,7 +46,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.save_file_migrations import migrate_database
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 logger = get_logger(__name__)
 del get_logger
@@ -75,12 +75,12 @@ class CardType(str, enum.Enum):
             raise NotImplementedError()
 
 
-class DatabaseLoadResult(typing.NamedTuple):
+class DatabaseLoadResult(NamedTuple):
     card: AnyCardType
     was_migrated: bool
 
 
-class DocumentSaveRow(typing.NamedTuple):
+class DocumentSaveRow(NamedTuple):
     page: int
     slot: int
     is_front: bool
@@ -89,11 +89,11 @@ class DocumentSaveRow(typing.NamedTuple):
     custom_card_id: UUID
 
 
-DocumentSaveFormat = typing.List[DocumentSaveRow]
-T = typing.TypeVar("T")
+DocumentSaveFormat = List[DocumentSaveRow]
+T = TypeVar("T")
 
 
-def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.Iterable[typing.Tuple[T, ...]]:
+def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[Tuple[T, ...]]:
     """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
     iterable = iter(iterable)
     return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())
@@ -209,7 +209,7 @@ class Worker(LoaderSignals):
         self.image_loader.download_finished.connect(image_db.card_download_finished)
         self.image_loader.download_progress.connect(image_db.card_download_progress)
         self.image_loader.network_error_occurred.connect(self.on_network_error_occurred)
-        self.network_errors_during_load: typing.Counter[str] = collections.Counter()
+        self.network_errors_during_load: Counter[str] = collections.Counter()
         self.finished.connect(self.propagate_errors_during_load)
         self.should_run: bool = True
         self.unknown_ids = 0
@@ -268,18 +268,18 @@ class Worker(LoaderSignals):
         from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
         with patch.object(self.card_db, "db", self.db):
             save_db = self._open_validate_and_migrate_save_file(self.save_path)
-            total_cards = save_db.execute("SELECT count(1) FROM Card").fetchone()[0] + 2
-            self.begin_loading_loop.emit(total_cards, "Loading document:")
+            total_steps = 2 + save_db.execute("SELECT count(1) FROM Card").fetchone()[0]
+            self.begin_loading_loop.emit(total_steps, "Loading document:")
             page_layout = self._load_document_settings(save_db)
-            self.advance_progress()
+            self._advance_progress()
             pages = self._load_cards(save_db)
             self._fix_mixed_pages(pages, page_layout)
-            self.advance_progress()
+            self._advance_progress()
         action = ActionLoadDocument(self.save_path, pages, page_layout)
         self.load_requested.emit(action)
         self._complete_loading()
 
-    def advance_progress(self):
+    def _advance_progress(self):
         self.current_progress += 1
         self.progress_loading_loop.emit(self.current_progress)
 
@@ -302,8 +302,8 @@ class Worker(LoaderSignals):
         return db
 
 
-    def _load_cards(self, save_db: sqlite3.Connection) -> typing.List[CardList]:
-        custom_cards: typing.Dict[str, Card] = {}
+    def _load_cards(self, save_db: sqlite3.Connection) -> List[CardList]:
+        custom_cards: Dict[str, Card] = {}
         total_cards = save_db.execute("SELECT count(1) FROM Card").fetchone()[0]
         self.begin_loading_loop.emit(total_cards, "Loading document:")
         rows = self._load_rows(save_db)
@@ -311,7 +311,7 @@ class Worker(LoaderSignals):
         return list(map(self._load_cards_on_page, pages, itertools.repeat(custom_cards)))
 
     @staticmethod
-    def _load_rows(save_db: sqlite3.Connection) -> typing.Generator[DocumentSaveRow, None, None]:
+    def _load_rows(save_db: sqlite3.Connection) -> Generator[DocumentSaveRow, None, None]:
         query = textwrap.dedent("""\
             SELECT page, slot, is_front, type, scryfall_id, custom_card_id -- _load_rows()
                 FROM Card
@@ -322,7 +322,7 @@ class Worker(LoaderSignals):
             in save_db.execute(query))
 
     @staticmethod
-    def _split_into_pages(rows: typing.Iterable[DocumentSaveRow]) -> typing.Generator[typing.List[DocumentSaveRow], None, None]:
+    def _split_into_pages(rows: Iterable[DocumentSaveRow]) -> Generator[List[DocumentSaveRow], None, None]:
         page = []
         previous = -1
         for row in rows:
@@ -333,7 +333,7 @@ class Worker(LoaderSignals):
             page.append(row)
         yield page
 
-    def _load_cards_on_page(self, page: typing.List[DocumentSaveRow], custom_cards: typing.Dict[str, Card]) -> CardList:
+    def _load_cards_on_page(self, page: List[DocumentSaveRow], custom_cards: Dict[str, Card]) -> CardList:
         card_db = self.card_db
         result: CardList = []
         for item in page:
@@ -351,16 +351,16 @@ class Worker(LoaderSignals):
                 # Empty slot.
 
                 pass
-            self.advance_progress()
+            self._advance_progress()
         return result
 
-    def _load_official_card_from_card_db(self, data: DocumentSaveRow, prefer_already_downloaded: bool) -> typing.Optional[DatabaseLoadResult]:
+    def _load_official_card_from_card_db(self, data: DocumentSaveRow, prefer_already_downloaded: bool) -> Optional[DatabaseLoadResult]:
         if data.card_type == CardType.CHECK_CARD:
             return self._load_check_card(data, prefer_already_downloaded)
         else:
             return self._load_official_card(data, prefer_already_downloaded)
 
-    def _load_check_card(self, data: DocumentSaveRow, prefer_already_downloaded: bool) -> typing.Optional[DatabaseLoadResult]:
+    def _load_check_card(self, data: DocumentSaveRow, prefer_already_downloaded: bool) -> Optional[DatabaseLoadResult]:
         """
         Loads a check card. Retuns None if the given scryfall id does not belong to a DFC.
         If the front is unavailable, try to find a replacement.
@@ -386,7 +386,7 @@ class Worker(LoaderSignals):
         self.image_loader.get_image_synchronous(card)
         return DatabaseLoadResult(card, migrated)
 
-    def _load_official_card(self, data: DocumentSaveRow, prefer_already_downloaded: bool) -> typing.Optional[DatabaseLoadResult]:
+    def _load_official_card(self, data: DocumentSaveRow, prefer_already_downloaded: bool) -> Optional[DatabaseLoadResult]:
         migrated = False
         scryfall_id = data.data.scryfall_id
         is_front = data.data.is_front
@@ -413,7 +413,7 @@ class Worker(LoaderSignals):
             logger.info(f"Found suitable replacement card: {card}")
         return card
 
-    def _fix_mixed_pages(self, pages: typing.List[CardList], page_settings: PageLayoutSettings):
+    def _fix_mixed_pages(self, pages: List[CardList], page_settings: PageLayoutSettings):
         """
         Documents saved with older versions (or specifically crafted save files) can contain images with mixed
         sizes on the same page.
@@ -482,7 +482,7 @@ class Worker(LoaderSignals):
                 FROM Card
                 WHERE scryfall_id IS NOT NULL
                 ORDER BY page ASC, slot ASC""")
-        supported_card_types: typing.List[str] = list(item.value for item in CardType)
+        supported_card_types: List[str] = list(item.value for item in CardType)
         for row_number, row_data in enumerate(db.execute(query)):
             if row_data[2] is not None:
                 result.append(Worker._append_official_card(row_data, row_number, supported_card_types))
