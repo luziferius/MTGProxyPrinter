@@ -177,7 +177,7 @@ def test_migration_6_to_7_transforms_data():
     mtg_proxy_printer.save_file_migrations._migrate_6_to_7(db, settings)
     assert_that(
         data := db.execute("SELECT * FROM Card ORDER BY page ASC, slot ASC").fetchall(),
-        contains_exactly((1, 1, 1, 'r', uuid1, None), (2, 1, 1, 'r', uuid2, None)),
+        contains_exactly((1, 1, True, 'r', uuid1, None), (2, 1, True, 'r', uuid2, None)),
         f"Bad card data: {data}"
     )
     assert_that(

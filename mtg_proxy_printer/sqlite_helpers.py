@@ -45,6 +45,7 @@ sqlite3.register_adapter(pathlib.PosixPath, str)
 sqlite3.register_adapter(pathlib.WindowsPath, str)
 sqlite3.register_adapter(type(1*unit_registry.mm), str)
 sqlite3.register_converter("TEXT_QUANTITY", lambda b: unit_registry.parse_expression(b.decode("utf-8")))
+sqlite3.register_converter("BOOLEAN_INTEGER", lambda b: bool(int(b)))
 
 
 def read_resource_text(package: str, resource: str, encoding: str = "utf-8") -> str:

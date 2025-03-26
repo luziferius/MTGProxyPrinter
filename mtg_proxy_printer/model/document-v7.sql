@@ -28,8 +28,8 @@ CREATE TABLE CustomCardData (
   set_name TEXT NOT NULL DEFAULT '',
   set_code TEXT NOT NULL DEFAULT '',
   collector_number TEXT NOT NULL DEFAULT '',
-  is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)) DEFAULT TRUE,
-  oversized INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)) DEFAULT FALSE,
+  is_front BOOLEAN_INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)) DEFAULT TRUE,
+  oversized BOOLEAN_INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)) DEFAULT FALSE,
   other_face TEXT REFERENCES CustomCardData(card_id)  -- If this is a DFC, this references the other side
 );
 
@@ -41,7 +41,7 @@ CREATE TABLE Page (
 CREATE TABLE Card (
   page INTEGER NOT NULL CHECK (page > 0) REFERENCES Page(page),
   slot INTEGER NOT NULL CHECK (slot > 0),
-  is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
+  is_front BOOLEAN_INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
   type TEXT NOT NULL CHECK (type <> ''),
   scryfall_id TEXT CHECK (scryfall_id GLOB '[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]'),
   custom_card_id TEXT REFERENCES CustomCardData(card_id) DEFAULT NULL,
