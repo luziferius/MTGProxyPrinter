@@ -13,14 +13,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import dataclasses
 import functools
 import hashlib
-import itertools
 import sqlite3
 from pathlib import Path
 import typing
-from tracemalloc import Statistic
 
 from PyQt5.QtCore import QBuffer, QIODevice
 
@@ -67,7 +64,11 @@ class ActionSaveDocument(DocumentAction):
             self._save_settings(db, layout)
             self._clean_unused_custom_cards(db)
             db.commit()
-            db.execute("VACUUM")
+            if db.execute(cached_dedent("""\
+                SELECT cast(freelist_count AS real)/page_count > 0.1 AS "should vacuum" 
+                  FROM pragma_page_count
+                  INNER JOIN pragma_freelist_count""")).fetchone()[0]:
+                db.execute("VACUUM")
         logger.debug("Database saved and closed.")
 
     @staticmethod
