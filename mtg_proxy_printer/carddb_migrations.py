@@ -31,7 +31,7 @@ import typing
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import List, Dict, Union, Tuple, Any, Generator, Callable
+from typing import List, Dict, Union, Tuple, Any, Generator, Callable, Iterable
 
 from PyQt5.QtCore import QCoreApplication, Qt
 
@@ -97,7 +97,8 @@ class Migrate_21_to_22(MigrationScript):
         # Import locally to break a cyclic dependency
         import mtg_proxy_printer.card_info_downloader
         aw = mtg_proxy_printer.card_info_downloader.ApiStreamWorker()
-        updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate"+suffix)
+        updates: Iterable[Tuple[int, datetime.datetime]] = db.execute(
+            "SELECT update_id, update_timestamp FROM LastDatabaseUpdate"+suffix)
         data = []
         for id_, timestamp in updates:
             url_parameters = urllib.parse.urlencode({
@@ -105,7 +106,7 @@ class Migrate_21_to_22(MigrationScript):
                 "include_variations": "true",
                 "include_extras": "true",
                 "unique": "prints",
-                "q": f"date>1970-01-01 date<={datetime.datetime.fromisoformat(timestamp).date()}"
+                "q": f"date>1970-01-01 date<={timestamp.date()}"
             })
             try:
                 card_count = next(aw.read_json_card_data_from_url(
@@ -113,7 +114,7 @@ class Migrate_21_to_22(MigrationScript):
                 ))
             except (urllib.error.URLError, socket.error):
                 card_count = 0
-            data.append((id_, timestamp, card_count))
+            data.append((id_, timestamp.isoformat(), card_count))
             # Rate limit the requests to 10 per second, according to the Scryfall API usage recommendations
             time.sleep(0.1)
             progress_meter.advance()
