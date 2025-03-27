@@ -45,7 +45,7 @@ def validate_qt_model_signal_parameter(
     return not parent.isValid() and first == expected_first and last == expected_last
 
 
-@pytest.mark.parametrize("source_version", [2, 3, 4, 5])
+@pytest.mark.parametrize("source_version", [2, 3, 4, 5, 6])
 def test_save_migration(tmp_path: Path, document: Document, source_version: int):
     """Tests migration of existing saves to the newest schema revision on save."""
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
@@ -148,7 +148,7 @@ def _validate_database_schema(db_path: Path):
     :raises AssertionError: If the provided file contains an invalid schema
     :returns: Database schema version
     """
-    target_schema_version = 6
+    target_schema_version = 7
     db_unsafe = open_database(
         db_path, f"document-v{target_schema_version}", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION)
     assert_that(
@@ -196,7 +196,12 @@ def _validate_saved_document_settings(document: Document, save_file: Path):
     layout = document.page_layout
     with open_database(save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save:
         assert_that(
-            save.execute("SELECT COUNT(*) FROM DocumentSettings").fetchone(),
+            save.execute(textwrap.dedent("""
+            SELECT sum(cnt) FROM (
+              SELECT COUNT(1) AS cnt FROM DocumentSettings
+              UNION ALL 
+              SELECT COUNT(1) AS cnt FROM DocumentDimensions
+            )""")).fetchone(),
             contains_exactly(len(dataclasses.astuple(layout)))
         )
         keys = ", ".join(map("'{}'".format, layout.__annotations__.keys()))
