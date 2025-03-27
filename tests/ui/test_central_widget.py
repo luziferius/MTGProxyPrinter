@@ -25,6 +25,7 @@ from hamcrest import *
 from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.units_and_sizes import CardSizes
 
 # Import dynamically used by pytest. Without this, the main_window fixture won’t be found by pytest.
 from .test_main_window import main_window  # noqa
@@ -51,9 +52,9 @@ def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBo
     ('\tTab\t', 'Tab')
 ])
 def test__get_default_image_save_path(qtbot, main_window, name: str, expected: str):
-    card = NonCallableMagicMock(spec=Card)
+    card = NonCallableMagicMock(spec=Card) # TODO: Move this test
     card.name = name
-    result = PurePath(main_window.ui.central_widget._get_default_image_save_path(card))
+    result = PurePath(main_window.ui.central_widget.ui.page_card_table_view._get_default_image_save_path(card))
     assert_that(
         result,
         has_properties({
@@ -64,14 +65,15 @@ def test__get_default_image_save_path(qtbot, main_window, name: str, expected: s
 
 
 @pytest.mark.parametrize("card", [
-    Card("", MTGSet("", ""), "", "", "", True, "", "", True, False, 1, False, None),
+    Card("", MTGSet("", ""), "", "", "", True, "", "", True, CardSizes.REGULAR, 1, False, None),
     CheckCard(
-        Card("", MTGSet("", ""), "", "", "", True, "", "", True, False, 1, False, None),
-        Card("", MTGSet("", ""), "", "", "", True, "", "", True, False, 1, False, None),
+        Card("", MTGSet("", ""), "", "", "", True, "", "", True, CardSizes.REGULAR, 1, False, None),
+        Card("", MTGSet("", ""), "", "", "", True, "", "", True, CardSizes.REGULAR, 1, False, None),
     )
 ])
 @pytest.mark.parametrize("count", [1, 3])
 def test__add_copies_directly_adds_card_with_image(qtbot, main_window, image_db, card, count):
+    # TODO: Convert this to a test case for the PageCardTableView, drop dependency on the main window.
     if isinstance(card, Card):
         card.image_file = image_db.get_blank()
     else:
@@ -80,19 +82,20 @@ def test__add_copies_directly_adds_card_with_image(qtbot, main_window, image_db,
     cw = main_window.ui.central_widget
     with patch.object(cw, "request_action", spec=True) as request_action, \
             patch.object(cw, "obtain_card_image", spec=True) as obtain_card_image:
-        cw._add_copies(card, count)
+        cw.ui.page_card_table_view._add_copies(card, count)
     request_action.emit.assert_called_once()
     obtain_card_image.emit.assert_not_called()
 
 
 @pytest.mark.parametrize("card", [
-    Card("", MTGSet("", ""), "", "", "", True, "", "", True, False, 1, False, None)
+    Card("", MTGSet("", ""), "", "", "", True, "", "", True, CardSizes.REGULAR, 1, False, None)
 ])
 @pytest.mark.parametrize("count", [1, 3])
 def test__add_copies_uses_image_db_for_card_without_image(qtbot, main_window, card, count):
+    # TODO: Convert this to a test case for the PageCardTableView, drop dependency on the main window.
     cw = main_window.ui.central_widget
     with patch.object(cw, "request_action", spec=True) as request_action, \
             patch.object(cw, "obtain_card_image", spec=True) as obtain_card_image:
-        cw._add_copies(card, count)
+        cw.ui.page_card_table_view._add_copies(card, count)
     request_action.emit.assert_not_called()
     obtain_card_image.emit.assert_called_once()
