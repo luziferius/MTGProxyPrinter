@@ -65,7 +65,7 @@ class PageCardTableView(QTableView):
         self.setItemDelegateForColumn(PageColumns.Language, combo_box_delegate)
         return combo_box_delegate
 
-    @Slot([QPoint])
+    @Slot(QPoint)
     def page_table_context_menu_requested(self, pos: QPoint):
         if not (index := self.indexAt(pos)).isValid():
             logger.debug("Right clicked empty space in the page card table view, ignoring event")
