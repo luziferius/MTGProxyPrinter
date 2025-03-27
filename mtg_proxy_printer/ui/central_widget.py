@@ -13,25 +13,16 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Union, Type
 
-import functools
-import math
-import operator
-import pathlib
-from typing import Union, Type, Optional
-
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, \
-    QModelIndex, QPoint, Qt
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QAction, QMenu, QInputDialog, QFileDialog
+from PyQt5.QtCore import  pyqtSlot as Slot, QItemSelectionModel, QModelIndex
+from PyQt5.QtWidgets import QWidget
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.model.document import Document, PageColumns
-from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardList, CheckCard, AnyCardType, AnyCardTypeForTypeCheck
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.document_controller import DocumentAction
-from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards, ActionAddCard
 
 try:
     from mtg_proxy_printer.ui.generated.central_widget.columnar import Ui_ColumnarCentralWidget
@@ -57,8 +48,6 @@ UiType = Union[Type[Ui_GroupedCentralWidget], Type[Ui_ColumnarCentralWidget], Ty
 
 class CentralWidget(QWidget):
 
-    request_action = Signal(DocumentAction)
-
     def __init__(self, parent: QWidget = None):
         logger.debug(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
@@ -67,15 +56,11 @@ class CentralWidget(QWidget):
         self.ui = ui_class()
         self.ui.setupUi(self)
         self.document: Document = None
-        self.card_db: CardDatabase = None
-        self.image_db: ImageDatabase = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_data(self, document: Document, card_db: CardDatabase, image_db: ImageDatabase):
-        ui = self.ui
         self.document = document
-        self.card_db = card_db
-        self.image_db = image_db
+        ui = self.ui
         ui.page_card_table_view.set_data(document, card_db)
         ui.page_card_table_view.request_action.connect(document.apply)
         ui.page_card_table_view.obtain_card_image.connect(image_db.fill_document_action_image)
@@ -84,9 +69,7 @@ class CentralWidget(QWidget):
 
         document.rowsAboutToBeRemoved.connect(self.on_document_rows_about_to_be_removed)
         document.loading_state_changed.connect(self.select_first_page)
-        document.current_page_changed.connect(self.on_current_page_changed)
-        self.request_action.connect(document.apply)
-        self.ui.page_renderer.set_document(document)
+        ui.page_renderer.set_document(document)
         self._setup_add_card_widget(card_db, image_db)
         self._setup_document_view(document)
 
@@ -96,26 +79,9 @@ class CentralWidget(QWidget):
 
     def _setup_document_view(self, document: Document):
         self.ui.document_view.setModel(document)
+        # Has to be set up here, because setModel() implicitly creates the QItemSelectionModel
         self.ui.document_view.selectionModel().currentChanged.connect(document.on_ui_selects_new_page)
         self.select_first_page()
-
-
-    def on_current_page_changed(self, new_page: QPersistentModelIndex):
-        self.ui.page_card_table_view.clearSelection()
-        self.ui.page_card_table_view.setRootIndex(new_page.sibling(new_page.row(), new_page.column()))
-        self.ui.page_card_table_view.setColumnHidden(PageColumns.Image, True)
-        # The size adjustments have to be done here,
-        # because the width can only be set after the model root index to show has been set
-        default_column_width = 102
-        for column, scaling_factor in (
-            (PageColumns.CardName, 1.7),
-            (PageColumns.Set, 2),
-            (PageColumns.CollectorNumber, 0.95),
-            (PageColumns.Language, 0.8),
-            (PageColumns.IsFront, 0.8),
-        ):
-            new_size = math.floor(default_column_width * scaling_factor)
-            self.ui.page_card_table_view.setColumnWidth(column, new_size)
 
     def on_document_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
         currently_selected_page = self.ui.document_view.currentIndex().row()
@@ -132,17 +98,9 @@ class CentralWidget(QWidget):
         # model indices.
         new_page_to_select = max(0, first-1)
         logger.debug(
-            f"Currently selected last page {currently_selected_page} about to be removed. New page to select: {new_page_to_select}")
+            f"Currently selected page {currently_selected_page} about to be removed. "
+            f"New page to select: {new_page_to_select}")
         self.ui.document_view.setCurrentIndex(self.document.index(new_page_to_select, 0))
-
-    @Slot()
-    def on_delete_selected_images_button_clicked(self):
-        multi_selection = self.ui.page_card_table_view.selectionModel().selectedRows()
-        if multi_selection:
-            rows = [index.row() for index in multi_selection]
-            logger.debug(f"User removes {len(multi_selection)} items from the current page.")
-            action = ActionRemoveCards(rows)
-            self.request_action.emit(action)
 
     @Slot()
     def select_first_page(self, loading_in_progress: bool = False):
