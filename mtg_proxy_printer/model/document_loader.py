@@ -321,6 +321,7 @@ class Worker(LoaderSignals):
 
     def _load_cards_on_page(
             self, save_db: sqlite3.Connection, page: int, expected_size: str, custom_cards: CustomCards) -> CardList:
+
         query = textwrap.dedent("""\
             SELECT slot, is_front, type, scryfall_id, custom_card_id -- _load_cards_on_page()
                 FROM Card
@@ -330,6 +331,7 @@ class Worker(LoaderSignals):
         valid_card_types = {v.value for v in CardType}
         is_positive_int = all_of(instance_of(int), greater_than_or_equal_to(1))
         result: CardList = []
+        card_size = CardSizes.REGULAR if expected_size == CardSizes.REGULAR.to_save_data() else CardSizes.OVERSIZED
         for item in db_data:
             self._validate_save_db_card_row(is_positive_int, item, valid_card_types)
             slot, is_front, card_type_str, scryfall_id, custom_card_id = item
@@ -352,8 +354,7 @@ class Worker(LoaderSignals):
                 if loaded.was_migrated:
                     self.migrated_ids += 1
             else:
-                # Empty slot. TODO
-                pass
+                result.append(self.document.get_empty_card_for_size(card_size))
             self._advance_progress()
         return result
 

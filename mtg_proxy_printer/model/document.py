@@ -26,7 +26,7 @@ from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, 
     QPersistentModelIndex
 
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
-from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
 from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData, Card, MTGSet
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.model.document_loader import DocumentLoader
@@ -376,6 +376,9 @@ class Document(QAbstractItemModel):
 
     def get_empty_card_for_current_page(self) -> Card:
         size = CardSizes.for_page_type(self.currently_edited_page.page_type())
+        return self.get_empty_card_for_size(size)
+
+    def get_empty_card_for_size(self, size: CardSize) -> Card:
         pixmap = self.image_db.get_blank(size)
         card = Card(
             self.tr("Empty Placeholder"), MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, pixmap
