@@ -55,7 +55,7 @@ in a paged document suitable for printing or PDF export.
 
 - Magic Arena
 - Magic Online (MTGO)
-- [XMage](http://xmage.de)
+- [XMage](http://xmage.today)
 - [Tappedout.net](https://tappedout.net) deck lists (choose CSV export)
 - [Scryfall.com](https://scryfall.com) deck lists (choose CSV export)
 - Magic Workstation Deck Data (`.mwDeck` files)

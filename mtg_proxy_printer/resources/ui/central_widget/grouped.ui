@@ -63,7 +63,7 @@
     </widget>
    </item>
    <item row="5" column="2" rowspan="2">
-    <widget class="QTableView" name="page_card_table_view">
+    <widget class="PageCardTableView" name="page_card_table_view">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>8</horstretch>
@@ -123,6 +123,13 @@
    <header>mtg_proxy_printer.ui.page_renderer</header>
    <slots>
     <slot>on_resize_event_triggered()</slot>
+   </slots>
+  </customwidget>
+  <customwidget>
+   <class>PageCardTableView</class>
+   <extends>QTableView</extends>
+   <header>mtg_proxy_printer.ui.page_card_table_view</header>
+   <slots>
    </slots>
   </customwidget>
   <customwidget>
