@@ -157,6 +157,7 @@ def validate_database_schema(
         contains_exactly(file_magic),
         magic_mismatch_error_msg
     )
+    db_unsafe.execute("PRAGMA integrity_check")
     user_schema_version = db_unsafe.execute("PRAGMA user_version").fetchone()[0]
     try:
         db_known_good = create_in_memory_database(
