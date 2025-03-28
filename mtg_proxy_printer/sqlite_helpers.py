@@ -194,8 +194,13 @@ def validate_database_schema(
             "Given file inconsistent: Unexpected indices")
     return user_schema_version
 
-
-@functools.lru_cache(None)
-def cached_dedent(text: str):
-    """Wraps textwrap.dedent() in an LRU cache."""
-    return textwrap.dedent(text)
+if hasattr(functools, "cache"):
+    @functools.cache
+    def cached_dedent(text: str):
+        """Wraps textwrap.dedent() in a cache."""
+        return textwrap.dedent(text)
+else:  # Python 3.8 compatibility
+    @functools.lru_cache(None)
+    def cached_dedent(text: str):
+        """Wraps textwrap.dedent() in an LRU cache."""
+        return textwrap.dedent(text)
