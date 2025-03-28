@@ -66,7 +66,7 @@ class CentralWidget(QWidget):
         ui.page_card_table_view.obtain_card_image.connect(image_db.fill_document_action_image)
         # Have the "delete selected" button enabled iff the current selection is non-empty
         ui.page_card_table_view.changed_selection_is_empty.connect(ui.delete_selected_images_button.setDisabled)
-
+        ui.delete_selected_images_button.clicked.connect(ui.page_card_table_view.delete_selected_images)
         document.rowsAboutToBeRemoved.connect(self.on_document_rows_about_to_be_removed)
         document.loading_state_changed.connect(self.select_first_page)
         ui.page_renderer.set_document(document)

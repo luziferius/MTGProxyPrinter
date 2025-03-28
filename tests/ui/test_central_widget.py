@@ -35,5 +35,6 @@ def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBo
         only_contains(instance_of(Page))
     )
     central_widget.ui.page_card_table_view.setCurrentIndex(document.index(8, 0, document.index(0, 0)))
-    qtbot.mouseClick(central_widget.ui.delete_selected_images_button, Qt.MouseButton.LeftButton)
+    with qtbot.wait_signal(document.action_applied):
+        qtbot.mouseClick(central_widget.ui.delete_selected_images_button, Qt.MouseButton.LeftButton)
     assert_that(document.pages, contains_exactly(has_length(8)))
