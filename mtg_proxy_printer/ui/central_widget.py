@@ -59,10 +59,10 @@ class CentralWidget(QWidget):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_data(self, document: Document, card_db: CardDatabase, image_db: ImageDatabase):
+        logger.debug(f"{self.__class__.__name__} received model instances. Setting up child widgets…")
         self.document = document
         ui = self.ui
         ui.page_card_table_view.set_data(document, card_db)
-        ui.page_card_table_view.request_action.connect(document.apply)
         ui.page_card_table_view.obtain_card_image.connect(image_db.fill_document_action_image)
         # Have the "delete selected" button enabled iff the current selection is non-empty
         ui.page_card_table_view.changed_selection_is_empty.connect(ui.delete_selected_images_button.setDisabled)
@@ -72,6 +72,7 @@ class CentralWidget(QWidget):
         ui.page_renderer.set_document(document)
         self._setup_add_card_widget(card_db, image_db)
         self._setup_document_view(document)
+        logger.debug(f"{self.__class__.__name__} setup completed")
 
     def _setup_add_card_widget(self, card_db: CardDatabase, image_db: ImageDatabase):
         self.ui.add_card_widget.set_card_database(card_db)
@@ -84,11 +85,11 @@ class CentralWidget(QWidget):
         self.select_first_page()
 
     def on_document_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
-        currently_selected_page = self.ui.document_view.currentIndex().row()
-        is_page_index = not parent.isValid()
-        if not is_page_index:
+        if parent.isValid():
             # Not interested in removed cards here, so return if cards are about to be removed.
             return
+        document_view = self.ui.document_view
+        currently_selected_page = document_view.currentIndex().row()
         removed_pages = last - first + 1
         if currently_selected_page < self.document.rowCount()-removed_pages:
             # After removal, the current page remains within the document and stays valid. Nothing to do.
@@ -100,7 +101,7 @@ class CentralWidget(QWidget):
         logger.debug(
             f"Currently selected page {currently_selected_page} about to be removed. "
             f"New page to select: {new_page_to_select}")
-        self.ui.document_view.setCurrentIndex(self.document.index(new_page_to_select, 0))
+        document_view.setCurrentIndex(self.document.index(new_page_to_select, 0))
 
     @Slot()
     def select_first_page(self, loading_in_progress: bool = False):

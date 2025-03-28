@@ -51,12 +51,16 @@ class PageCardTableView(QTableView):
     def set_data(self, document: Document, card_db: CardDatabase):
         self.card_db = card_db
         self.setModel(document)
+        self.request_action.connect(document.apply)
         document.current_page_changed.connect(self.on_current_page_changed)
         # Has to be set up here, because setModel() implicitly creates the QItemSelectionModel
-        selection_model = self.selectionModel()
-        selection_model.selectionChanged.connect(
-            lambda: self.changed_selection_is_empty.emit(selection_model.selection().isEmpty())
-        )
+        self.selectionModel().selectionChanged.connect(self._on_selection_changed)
+
+    @Slot()
+    def _on_selection_changed(self):
+        is_empty = self.selectionModel().selection().isEmpty()
+        self.changed_selection_is_empty.emit(is_empty)
+
 
     def _setup_combo_box_item_delegate(self):
         combo_box_delegate = DocumentComboBoxItemDelegate(self)
