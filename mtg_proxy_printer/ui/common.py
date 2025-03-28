@@ -148,13 +148,12 @@ class WizardBase(QWizard):
         self._setup_dialog_button_icons()
 
     def _set_default_size(self, size: QSize):
-        new_width = size.width()
-        new_height = size.height()
         if (parent := self.parent()) is not None:
             parent_pos = parent.pos()
             available_space = self.screen().availableGeometry()
-            new_width = min(available_space.width(), new_width)
-            new_height = min(available_space.height(), new_height)
+            # Clamp size to the available space
+            new_width = min(available_space.width(), size.width())
+            new_height = min(available_space.height(), size.height())
             # Clamp the window position to the screen so that it avoids
             # positioning the window decoration above the screen border.
             target_x = max(0, min(
@@ -167,7 +166,7 @@ class WizardBase(QWizard):
             target_y += style.pixelMetric(style.PixelMetric.PM_TitleBarHeight)
             self.setGeometry(target_x, target_y, new_width, new_height)
         else:
-            self.resize(new_width, new_height)
+            self.resize(size)
 
     def _setup_dialog_button_icons(self):
         for role, icon in self.BUTTON_ICONS.items():
