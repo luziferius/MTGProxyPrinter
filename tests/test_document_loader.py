@@ -20,20 +20,20 @@ import pathlib
 import sqlite3
 import unittest.mock
 import textwrap
-from unittest.mock import MagicMock
 
 import pint
-from pint.facets import QuantityT
 from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *
 
 import mtg_proxy_printer.model.document_loader
+from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 from tests.helpers import quantity_close_to
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, CardSizes, QuantityT
 from mtg_proxy_printer.model.carddb import CheckCard
-import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
+from mtg_proxy_printer.model.document import PageColumns, Document
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 CardType = mtg_proxy_printer.model.document_loader.CardType
 mm: UnitT = unit_registry.mm
@@ -53,7 +53,7 @@ def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Conn
         mock.assert_called_once()
 
 
-def assert_document_is_empty(document: mtg_proxy_printer.model.document.Document):
+def assert_document_is_empty(document: Document):
     assert_that(document.rowCount(), is_(equal_to(1)))
     page_index = document.index(0, 0)
     assert_that(page_index.isValid())
@@ -71,8 +71,12 @@ def disabled_check_constraints(db: sqlite3.Connection):
 
 
 def test_valid_data_loads_correctly(
-        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
+        qtbot: QtBot, document: Document,
         empty_save_database: sqlite3.Connection):
+    empty_save_database.execute(
+        "INSERT INTO Page (page, image_size) VALUES (?, ?)",
+        (1, CardSizes.REGULAR.to_save_data())
+    )
     empty_save_database.execute(
         'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)',
         (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r")
@@ -83,12 +87,8 @@ def test_valid_data_loads_correctly(
         row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
         draw_cut_markers=True, draw_sharp_corners=False,
     )
-    page_layout_items = page_layout.to_save_file_data()
     assert_that(page_layout.compute_page_card_capacity(PageType.OVERSIZED), is_(greater_than_or_equal_to(1)))
-    empty_save_database.executemany(
-        "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
-        page_layout_items
-    )
+    ActionSaveDocument.save_settings(empty_save_database, page_layout)
     loader = document.loader
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.sqlite_helpers.open_database") as mock:
@@ -103,7 +103,7 @@ def test_valid_data_loads_correctly(
     assert_that(page_index.isValid())
     assert_that(document.rowCount(page_index), is_(1))
     assert_that(
-        document.index(0, mtg_proxy_printer.model.document.PageColumns.CardName, page_index).data(),
+        document.index(0, PageColumns.CardName, page_index).data(),
         is_("Fury Sliver")
     )
     assert_that(document.save_file_path, is_(equal_to(save_path)))
@@ -119,20 +119,19 @@ def test_valid_data_loads_correctly(
 
 
 def test_document_with_mixed_pages_distributes_cards_based_on_size(
-        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
+        qtbot: QtBot, document: Document,
         empty_save_database: sqlite3.Connection):
+    empty_save_database.execute(
+        "INSERT INTO Page (page, image_size) VALUES (?, ?)",
+        (1, CardSizes.REGULAR.to_save_data())
+    )
     empty_save_database.executemany(
         'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)', [
             (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r"),
             (1, 2, 1, "650722b4-d72b-4745-a1a5-00a34836282b", "r"),
          ]
     )
-    page_layout = mtg_proxy_printer.model.document.PageLayoutSettings.create_from_settings()
-    page_layout_items = page_layout.to_save_file_data()
-    empty_save_database.executemany(
-        "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
-        page_layout_items
-    )
+    ActionSaveDocument.save_settings(empty_save_database, PageLayoutSettings.create_from_settings())
     loader = document.loader
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.sqlite_helpers.open_database") as mock:
@@ -165,7 +164,7 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
     zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(0), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD.value]),
 ))
 def test_invalid_data_in_card_columns_raises_exception(
-        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
+        qtbot: QtBot, document: Document,
         empty_save_database: sqlite3.Connection, data):
     # Replace the Card table with one that has no implicit type casting
     empty_save_database.execute("DROP TABLE Card")
@@ -188,7 +187,7 @@ def test_invalid_data_in_card_columns_raises_exception(
 
 
 def test_protects_against_infinite_save_data(
-        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
+        qtbot: QtBot, document: Document,
         empty_save_database: sqlite3.Connection):
     empty_save_database.execute("DROP TABLE Card")
     # LIMIT clause in the definition below is a safety measure.
@@ -269,7 +268,7 @@ def generate_test_cases_for_test_protects_against_infinite_settings_data():
 
 @pytest.mark.parametrize("user_version, script", generate_test_cases_for_test_protects_against_infinite_settings_data())
 def test_protects_against_infinite_settings_data(
-        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
+        qtbot: QtBot, document: Document,
         empty_save_database: sqlite3.Connection, user_version: int, script: str):
     empty_save_database.execute(f"PRAGMA user_version = {user_version}")
     empty_save_database.execute("DROP TABLE DocumentSettings")
@@ -286,7 +285,7 @@ def test_protects_against_infinite_settings_data(
 
 
 def test_cancelling_loading_does_not_crash(
-        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
+        qtbot: QtBot, document: Document,
         empty_save_database: sqlite3.Connection):
     empty_save_database.executemany(
         'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)', [
@@ -305,7 +304,7 @@ def test_cancelling_loading_does_not_crash(
 
 
 def test_loads_check_card(
-        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document, empty_save_database: sqlite3.Connection):
+        qtbot: QtBot, document: Document, empty_save_database: sqlite3.Connection):
     empty_save_database.executemany(
         'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)', [
             (1, 1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", CardType.CHECK_CARD.value),
@@ -353,8 +352,10 @@ def legacy_save_file(request):
         mtg_proxy_printer.model.document_loader.DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False)
     if save_version < 6:
         db.execute(f"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
-    else:
+    elif save_version == 6:
         db.executemany("INSERT INTO DocumentSettings (key, value) VALUES (?, ?)", settings)
+    else:
+        pass
     if reverse_unordered:
         db.execute("PRAGMA reverse_unordered_selects = TRUE")
     yield db
@@ -390,15 +391,9 @@ def test_load_settings_from_legacy_save_file_is_successful(
 @pytest.mark.parametrize("title", ["str", "", "1", "0x1", "1.0.0", "1..0", "01", "1.0"])
 def test_load_correctly_sets_document_title(
         qtbot: QtBot, empty_save_database: sqlite3.Connection, document_light, title):
-    if title.startswith("0") or title == "1.0":
-        # TODO: Leading zeros, and trailing zero decimals aren't handled correctly
-        pytest.xfail("Leading zeros and trailing zero decimals not yet supported correctly")
     loader = document_light.loader
     annotations = document_light.page_layout.__annotations__
-    empty_save_database.executemany(
-        "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
-        document_light.page_layout.to_save_file_data()
-    )
+    ActionSaveDocument.save_settings(empty_save_database, document_light.page_layout)
     empty_save_database.execute(
         "UPDATE DocumentSettings SET value = ? WHERE key = ?",
         (title, "document_name"))

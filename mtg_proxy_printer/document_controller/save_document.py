@@ -61,7 +61,7 @@ class ActionSaveDocument(DocumentAction):
             self._clear_cards_and_pages(db)
             self._save_pages(db, document)
             self._save_cards(db, document)
-            self._save_settings(db, layout)
+            self.save_settings(db, layout)
             self._clean_unused_custom_cards(db)
             db.commit()
             if db.execute(cached_dedent("""\
@@ -72,7 +72,7 @@ class ActionSaveDocument(DocumentAction):
         logger.debug("Database saved and closed.")
 
     @staticmethod
-    def _save_settings(save_file: sqlite3.Connection, layout: PageLayoutSettings):
+    def save_settings(save_file: sqlite3.Connection, layout: PageLayoutSettings):
         settings, dimensions = layout.to_save_file_data()
         save_file.executemany(
             'INSERT OR REPLACE INTO DocumentSettings ("key", value) VALUES (?, ?)\n',
