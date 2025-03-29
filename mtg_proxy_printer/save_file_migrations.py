@@ -243,7 +243,7 @@ def _migrate_6_to_7(db: sqlite3.Connection, _: PageLayoutSettings = None):
           scryfall_id TEXT CHECK (scryfall_id GLOB '[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]'),
           custom_card_id TEXT REFERENCES CustomCardData(card_id) DEFAULT NULL,
           PRIMARY KEY(page, slot),
-          CONSTRAINT "Card slot must refer to either an official or custom card" CHECK ((scryfall_id IS NULL) <> (custom_card_id IS NULL))
+          CONSTRAINT "Card slot must not refer to both an official and custom card" CHECK ((scryfall_id IS NULL) OR (custom_card_id IS NULL))
         ) WITHOUT ROWID"""),
         textwrap.dedent("""\
         INSERT INTO Card (page, slot, is_front, type, scryfall_id, custom_card_id)

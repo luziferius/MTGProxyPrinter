@@ -109,8 +109,13 @@ class ActionSaveDocument(DocumentAction):
                         "INSERT INTO Card (page, slot, is_front, type, scryfall_id) VALUES (?, ?, ? ,?, ?)",
                         (page_number, slot, card.is_front, CardType.from_card(card), card.scryfall_id)
                     )
-                else:
+                elif card.image_file is not document.image_db.get_blank(card.size):
                     ActionSaveDocument._save_custom_card(save_file, page_number, slot, card)
+                else:  # Empty slot
+                    save_file.execute(
+                        "INSERT INTO Card (page, slot, is_front, type) VALUES (?, ? ,?, ?)",
+                        (page_number, slot, card.is_front, CardType.from_card(card))
+                    )
         logger.debug(f"Written {save_file.execute('SELECT count(1) FROM Card').fetchone()[0]} cards.")
 
     @staticmethod

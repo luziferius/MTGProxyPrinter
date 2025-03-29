@@ -46,7 +46,7 @@ CREATE TABLE Card (
   scryfall_id TEXT CHECK (scryfall_id GLOB '[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9]-[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]'),
   custom_card_id TEXT REFERENCES CustomCardData(card_id) DEFAULT NULL,
   PRIMARY KEY(page, slot),
-  CONSTRAINT "Card slot must refer to either an official or custom card" CHECK ((scryfall_id IS NULL) <> (custom_card_id IS NULL))
+  CONSTRAINT "Card slot must not refer to both an official and custom card" CHECK ((scryfall_id IS NULL) OR (custom_card_id IS NULL))
 ) WITHOUT ROWID;
 
 CREATE TABLE DocumentSettings (
