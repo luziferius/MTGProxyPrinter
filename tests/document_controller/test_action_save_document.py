@@ -34,7 +34,7 @@ from mtg_proxy_printer.document_controller.edit_document_settings import ActionE
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 
 from tests.test_document import document_custom_layout
-from tests.helpers import close_to_
+from tests.helpers import close_to_, quantity_close_to
 
 ItemDataRole = Qt.ItemDataRole
 mm: UnitT = unit_registry.mm
@@ -130,8 +130,8 @@ def test_subsequent_save_updates_settings(tmp_path: Path, qtbot: QtBot, document
                            check_params_cbs=[lambda value: value, lambda value: not value]):
         document_custom_layout.loader.load_document(save_file)
     assert_that(
-        document_custom_layout.page_layout.page_height.to(mm).magnitude,
-        is_(close_to_(1000)))
+        document_custom_layout.page_layout.page_height,
+        is_(quantity_close_to(1000*mm)))
 
 
 def _create_save_file(temp_path: Path, source_version: int):
@@ -194,7 +194,7 @@ def _validate_database_schema(db_path: Path):
 
 def _validate_saved_document_settings(document: Document, save_file: Path):
     layout = document.page_layout
-    with open_database(save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save:
+    with open_database(save_file, "document-v7", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save:
         assert_that(
             save.execute(textwrap.dedent("""
             SELECT sum(cnt) FROM (
@@ -211,22 +211,32 @@ def _validate_saved_document_settings(document: Document, save_file: Path):
               WHERE key IN ({keys})
               ORDER BY key ASC
             """)
-        # TODO: Use the unit-aware matchers!
         assert_that(
             [value for value, in save.execute(query).fetchall()],
             contains_exactly(
-                close_to_(layout.card_bleed.magnitude),
-                close_to_(layout.column_spacing.magnitude),
                 layout.document_name,
-                int(layout.draw_cut_markers),
-                int(layout.draw_sharp_corners),
-                int(layout.draw_page_numbers),
-                close_to_(layout.margin_bottom.magnitude),
-                close_to_(layout.margin_left.magnitude),
-                close_to_(layout.margin_right.magnitude),
-                close_to_(layout.margin_top.magnitude),
-                close_to_(layout.page_height.magnitude),
-                close_to_(layout.page_width.magnitude),
-                close_to_(layout.row_spacing.magnitude),
+                str(layout.draw_cut_markers),
+                str(layout.draw_page_numbers),
+                str(layout.draw_sharp_corners),
+            )
+        )
+        query = textwrap.dedent(f"""\
+                    SELECT value
+                      FROM DocumentDimensions
+                      WHERE key IN ({keys})
+                      ORDER BY key ASC
+                    """)
+        assert_that(
+            [value for value, in save.execute(query).fetchall()],
+            contains_exactly(
+                quantity_close_to(layout.card_bleed),
+                quantity_close_to(layout.column_spacing),
+                quantity_close_to(layout.margin_bottom),
+                quantity_close_to(layout.margin_left),
+                quantity_close_to(layout.margin_right),
+                quantity_close_to(layout.margin_top),
+                quantity_close_to(layout.page_height),
+                quantity_close_to(layout.page_width),
+                quantity_close_to(layout.row_spacing),
             )
         )

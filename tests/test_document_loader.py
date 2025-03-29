@@ -20,6 +20,7 @@ import pathlib
 import sqlite3
 import unittest.mock
 import textwrap
+from unittest.mock import MagicMock
 
 import pint
 from pint.facets import QuantityT
@@ -42,11 +43,11 @@ mm: UnitT = unit_registry.mm
 def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, user_version: int):
     empty_save_database.execute(f"PRAGMA user_version = {user_version};")
     assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(user_version))
-    with unittest.mock.patch("mtg_proxy_printer.sqlite_helpers.open_database") as mock:
+    worker = mtg_proxy_printer.model.document_loader.Worker
+    with unittest.mock.patch("mtg_proxy_printer.model.document_loader.open_database") as mock:
         mock.return_value = empty_save_database
         assert_that(
-            calling(mtg_proxy_printer.model.document_loader.Worker._read_data_from_save_path).with_args(
-                "Value ignored by mock", "Value ignored by mock"),
+            calling(worker._open_validate_and_migrate_save_file).with_args(pathlib.Path()),
             raises(AssertionError)
         )
         mock.assert_called_once()
