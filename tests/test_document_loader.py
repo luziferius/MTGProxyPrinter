@@ -393,9 +393,7 @@ def test_loads_check_card(
     ], [True, False]))
 def legacy_save_file(request):
     (save_version, settings), reverse_unordered = request.param  # type: (int, list), bool
-    db = mtg_proxy_printer.sqlite_helpers.open_database(
-        ":memory:", f"document-v{save_version}",
-        mtg_proxy_printer.model.document_loader.DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False)
+    db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", f"document-v{save_version}", False)
     if save_version < 6:
         db.execute(f"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
     elif save_version == 6:

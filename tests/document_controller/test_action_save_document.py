@@ -27,7 +27,7 @@ from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_dat
 from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT, CardSizes
 from mtg_proxy_printer.model.carddb import CheckCard
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.document_loader import DocumentLoader, CardType
+from mtg_proxy_printer.model.document_loader import CardType
 from mtg_proxy_printer.model.imagedb_files import ImageKey
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
@@ -76,8 +76,7 @@ def test_save_as_saves_regular_card(tmp_path: Path, document: Document, is_front
     save_file = tmp_path/"test.mtgproxies"
     action = ActionSaveDocument(save_file)
     action.apply(document)
-    with open_database(
-            save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False) as con:
+    with open_database(save_file, "document-v6", False) as con:
         content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
     del con
     assert_that(
@@ -96,8 +95,7 @@ def test_save_as_saves_check_card(tmp_path: Path, document: Document):
     save_file = tmp_path / "test.mtgproxies"
     action = ActionSaveDocument(save_file)
     action.apply(document)
-    with open_database(
-            save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False) as con:
+    with open_database(save_file, "document-v6") as con:
         content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
     del con
     assert_that(
@@ -137,7 +135,7 @@ def test_subsequent_save_updates_settings(tmp_path: Path, qtbot: QtBot, document
 def _create_save_file(temp_path: Path, source_version: int):
     """Creates an empty document save file at the given path and using the given schema version."""
     save_file_path = temp_path/"test.mtgproxies"
-    open_database(save_file_path, f"document-v{source_version}", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION).close()
+    open_database(save_file_path, f"document-v{source_version}").close()
     return save_file_path
 
 
@@ -149,15 +147,13 @@ def _validate_database_schema(db_path: Path):
     :returns: Database schema version
     """
     target_schema_version = 7
-    db_unsafe = open_database(
-        db_path, f"document-v{target_schema_version}", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION)
+    db_unsafe = open_database(db_path, f"document-v{target_schema_version}")
     assert_that(
         db_unsafe.execute("PRAGMA application_id").fetchone(), contains_exactly(41325044),
         "Not an MTGProxyPrinter save file!"
     )
     assert_that(db_unsafe.execute("PRAGMA user_version").fetchone(), contains_exactly(target_schema_version))
-    db_known_good = create_in_memory_database(
-        f"document-v{target_schema_version}", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION)
+    db_known_good = create_in_memory_database(f"document-v{target_schema_version}")
     tables_and_views_query = textwrap.dedent("""\
         SELECT   s.type, s.name,
                  p.cid AS column_id, p.name AS column_name, p.type AS column_type,
@@ -194,7 +190,7 @@ def _validate_database_schema(db_path: Path):
 
 def _validate_saved_document_settings(document: Document, save_file: Path):
     layout = document.page_layout
-    with open_database(save_file, "document-v7", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save:
+    with open_database(save_file, "document-v7") as save:
         assert_that(
             save.execute(textwrap.dedent("""
             SELECT sum(cnt) FROM (

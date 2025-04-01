@@ -54,8 +54,7 @@ class ActionSaveDocument(DocumentAction):
     def apply(self, document: "Document") -> Self:
         logger.debug(f"About to save document to {self.file_path}")
         layout = document.page_layout
-        with open_database(
-                self.file_path, "document-v6", document.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
+        with open_database(self.file_path, "document-v6") as db:
             db.execute("BEGIN IMMEDIATE TRANSACTION")
             migrate_database(db, layout)
             self._clear_cards_and_pages(db)

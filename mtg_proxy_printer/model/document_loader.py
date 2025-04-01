@@ -126,7 +126,6 @@ class DocumentLoader(LoaderSignals):
     """
 
     loading_state_changed = Signal(bool)
-    MIN_SUPPORTED_SQLITE_VERSION = (3, 31, 0)
 
     def __init__(self, document: "Document", db: sqlite3.Connection = None):  # db parameter used by test code
         super().__init__(None)
@@ -224,8 +223,7 @@ class Worker(LoaderSignals):
         # Avoids opening connections that aren't actually used and opens the connection
         # in the thread that actually uses it.
         if self._db is None:
-            self._db = open_database(
-                self.card_db.db_path, SCHEMA_NAME, self.card_db.MIN_SUPPORTED_SQLITE_VERSION)
+            self._db = open_database(self.card_db.db_path, SCHEMA_NAME)
         return self._db
 
     def propagate_errors_during_load(self):
@@ -293,9 +291,7 @@ class Worker(LoaderSignals):
 
         :param save_path: File system path to open
         :return: The opened database connection."""
-        db = open_database(
-            save_path, f"document-v7", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION
-        )
+        db = open_database(save_path, f"document-v7")
         user_version = Worker._validate_database_schema(db)
         if user_version not in range(2, 8):
             raise AssertionError(f"Unknown database schema version: {user_version}")
@@ -561,7 +557,6 @@ class Worker(LoaderSignals):
         user_schema_version = db_unsafe.execute("PRAGMA user_version").fetchone()[0]
         return validate_database_schema(
             db_unsafe, SAVE_FILE_MAGIC_NUMBER, f"document-v{user_schema_version}",
-            DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION,
             "Application ID mismatch. Not an MTGProxyPrinter save file!",
         )
 

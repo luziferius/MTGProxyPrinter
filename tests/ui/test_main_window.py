@@ -34,13 +34,12 @@ from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.ui.central_widget import Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, \
     Ui_TabbedCentralWidget
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 from tests.helpers import fill_card_database_with_json_cards
 from tests.document_controller.helpers import insert_card_in_page
@@ -123,7 +122,7 @@ def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> path
 
 def _create_save_file(temp_path: pathlib.Path):
     save_file_path = temp_path/"test.mtgproxies"
-    with open_database(save_file_path, "document-v7", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save_file:
+    with open_database(save_file_path, "document-v7") as save_file:
         ActionSaveDocument.save_settings(save_file, PageLayoutSettings.create_from_settings())
         save_file.execute(
             "INSERT INTO Page(page, image_size) VALUES (?, ?)",

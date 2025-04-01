@@ -33,16 +33,14 @@ mm: UnitT = unit_registry.mm
 
 def validate_save_database_schema(db: sqlite3.Connection, schema_version: int):
     mtg_proxy_printer.sqlite_helpers.validate_database_schema(
-        db, SAVE_FILE_MAGIC_NUMBER, f"document-v{schema_version}",
-        DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, "Invalid header"
+        db, SAVE_FILE_MAGIC_NUMBER, f"document-v{schema_version}", "Invalid header"
     )
     user_version = db.execute("PRAGMA user_version").fetchone()[0]
     assert_that(user_version, is_(equal_to(schema_version)))
 
 
 def create_save_db(schema_version: int) -> sqlite3.Connection:
-    return mtg_proxy_printer.sqlite_helpers.open_database(
-        ":memory:", f"document-v{schema_version}", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION)
+    return mtg_proxy_printer.sqlite_helpers.open_database(":memory:", f"document-v{schema_version}")
 
 
 @pytest.mark.parametrize("source_version", range(2, 7))

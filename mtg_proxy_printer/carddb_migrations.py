@@ -759,8 +759,7 @@ class DatabaseMigrationRunner(Runnable):
         """
         Run the database update.
         """
-        db = mtg_proxy_printer.sqlite_helpers.open_database(
-            self.db_path, "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+        db = mtg_proxy_printer.sqlite_helpers.open_database(self.db_path, "carddb")
         begin_schema_version = self._get_schema_version(db)
         target_version = max(self.migration_scripts.keys())+1
         if begin_schema_version >= target_version:
