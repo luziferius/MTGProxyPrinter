@@ -341,7 +341,7 @@ class CardDatabase(QObject):
         logger.debug("Validating schema of the opened database")
         try:
             validate_database_schema(
-                db, 0, SCHEMA_NAME, "Card database has unknown application id.")
+                db, 0, SCHEMA_NAME, "Card database has unknown application id.", False)
         except AssertionError:
             logger.exception("Card database schema validation failed. Trying to continue, but expect crashes")
         else:

@@ -72,7 +72,9 @@ def create_in_memory_database(schema_name: str, check_same_thread: bool = True) 
     logger.info(f"Creating in-memory database using schema {schema_name}.")
     db = sqlite3.connect(":memory:", check_same_thread=check_same_thread, detect_types=sqlite3.PARSE_DECLTYPES)
     # These settings are volatile, thus have to be set for each opened connection
-    db.executescript("PRAGMA foreign_keys = ON; PRAGMA analysis_limit=1000; PRAGMA trusted_schema = OFF;")
+    db.execute("PRAGMA foreign_keys = ON\n")
+    db.execute("PRAGMA trusted_schema = OFF\n")
+    db.execute("PRAGMA analysis_limit=1000\n")
     populate_database_schema(db, schema_name)
     return db
 
@@ -92,7 +94,8 @@ def open_database(
     db = sqlite3.connect(db_path, check_same_thread=check_same_thread, detect_types=sqlite3.PARSE_DECLTYPES)
     logger.debug(f"Connected SQLite database {location}.")
     # These settings are volatile, thus have to be set for each opened connection
-    db.executescript("PRAGMA foreign_keys = ON; PRAGMA trusted_schema = OFF;\n")
+    db.execute("PRAGMA foreign_keys = ON\n")
+    db.execute("PRAGMA trusted_schema = OFF\n")
     logger.debug("Enabled SQLite3 foreign keys support.")
     if should_create_schema:
         populate_database_schema(db, schema_name)
@@ -137,20 +140,31 @@ def get_target_database_schema_version(schema_name: str) -> int:
 
 def validate_database_schema(
         db_unsafe: sqlite3.Connection, file_magic: int, schema_name: str,
-        magic_mismatch_error_msg: str) -> int:
+        magic_mismatch_error_msg: str, is_untrusted_db: bool = True) -> int:
     """
     Validates the database schema of the user-provided file against a known-good schema.
 
     :raises AssertionError: If the provided file contains an invalid schema
+    :param db_unsafe: Arbitrary SQLite3 database connection
+    :param file_magic: Expected Application ID
+    :param schema_name: Expected database schema
+    :param magic_mismatch_error_msg: UI-presentable error message returned on mismatching application id
+    :param is_untrusted_db: Perform additional validation logic.
+      Can be turned off, since these can take a long time on the CardDatabase file.
     :returns: Database schema version
     """
     assert_that(
-        db_unsafe.execute("PRAGMA application_id").fetchone(),
+        db_unsafe.execute("PRAGMA application_id\n").fetchone(),
         contains_exactly(file_magic),
         magic_mismatch_error_msg
     )
-    db_unsafe.execute("PRAGMA integrity_check")
-    user_schema_version = db_unsafe.execute("PRAGMA user_version").fetchone()[0]
+    if is_untrusted_db:
+        # https://www.sqlite.org/security.html
+        db_unsafe.execute("PRAGMA mmap_size=0\n")
+        db_unsafe.execute("PRAGMA cell_size_check=ON\n")
+        db_unsafe.execute("PRAGMA integrity_check\n")
+
+    user_schema_version = db_unsafe.execute("PRAGMA user_version\n").fetchone()[0]
     try:
         db_known_good = create_in_memory_database(schema_name)
     except FileNotFoundError as e:
