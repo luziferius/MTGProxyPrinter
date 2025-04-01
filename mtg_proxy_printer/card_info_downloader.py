@@ -410,7 +410,7 @@ class DatabaseImportWorker(DownloaderBase):
         # in the thread that actually uses it.
         if self._db is None:
             logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
-            self._db = open_database(self.model.db_path, SCHEMA_NAME, self.model.MIN_SUPPORTED_SQLITE_VERSION)
+            self._db = open_database(self.model.db_path, SCHEMA_NAME)
         return self._db
 
     @with_database_write_lock()

@@ -13,8 +13,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+import itertools
 import unittest.mock
+
+import pint
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
@@ -231,7 +233,7 @@ def test_to_page_layout(
             bottom=margins.bottom(),
         ),
         isValid=True,
-        orientation=orientation,
+        orientation=equal_to(orientation),
     ))
     assert_that(q_page_layout.pageSize().size(QPageSize.Unit.Millimeter), has_getters(
         height=close_to(297, 0.01),
@@ -239,15 +241,19 @@ def test_to_page_layout(
     ))
 
 def test_to_save_file_data_contains_all_keys(page_layout: PageLayoutSettings):
-    data = [key for key, value in page_layout.to_save_file_data()]
+    data = [key for key, value in itertools.chain.from_iterable(page_layout.to_save_file_data())]
     assert_that(
         data,
         contains_inanyorder(*PageLayoutSettings.__annotations__.keys()),
     )
 
 def test_to_save_file_data_returns_only_acceptable_types(page_layout: PageLayoutSettings):
-    data = [value for key, value in page_layout.to_save_file_data()]
+    settings, dimensions = page_layout.to_save_file_data()
     assert_that(
-        data,
-        only_contains(instance_of(str), instance_of(float), instance_of(bool), instance_of(int)),
+        [value for key, value in settings],
+        only_contains(instance_of(str)),
+    )
+    assert_that(
+        [value for key, value in dimensions],
+        only_contains(instance_of(pint.Quantity)),
     )

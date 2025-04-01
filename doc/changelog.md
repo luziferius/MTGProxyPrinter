@@ -4,6 +4,7 @@
 
 ## Changed features
 
+- Improved custom card support: It is now possible to save custom cards and empty slots in the apps save file format.
 - The card table in the deck import wizard now has an editable Copies column to state the number of copies per card,
   instead of duplicating the card for that many rows. This makes it possible to edit the number of copies per card
 - When splitting exported PDFs, zero-pad the sequence numbers appended to the file name 

@@ -310,7 +310,6 @@ class CardDatabase(QObject):
     Holds the connection to the local SQLite database that contains the relevant card data.
     Provides methods for data access.
     """
-    MIN_SUPPORTED_SQLITE_VERSION = (3, 35, 0)
     card_data_updated = Signal()
 
     def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
@@ -333,21 +332,16 @@ class CardDatabase(QObject):
     @Slot()
     def reopen_database(self) -> None:
         logger.info(f"About to open card database from {self.db_path}")
-        db = open_database(
-            self.db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION,
-            check_same_thread=self._db_check_same_thread)
+        db = open_database(self.db_path, SCHEMA_NAME, check_same_thread=self._db_check_same_thread)
         outdated_on_disk = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, SCHEMA_NAME) > 0
         if outdated_on_disk:
             logger.warning(
                 "Refusing to load outdated database schema. Use empty in-memory database until migrations complete.")
-            db = open_database(
-                ":memory:", SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION,
-                check_same_thread=self._db_check_same_thread)
+            db = open_database(":memory:", SCHEMA_NAME, check_same_thread=self._db_check_same_thread)
         logger.debug("Validating schema of the opened database")
         try:
             validate_database_schema(
-                db, 0, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION,
-                "Card database has unknown application id.")
+                db, 0, SCHEMA_NAME, "Card database has unknown application id.", False)
         except AssertionError:
             logger.exception("Card database schema validation failed. Trying to continue, but expect crashes")
         else:
