@@ -21,34 +21,43 @@ in a paged document suitable for printing or PDF export.
 - Obtains high-quality images from Scryfall (where available)
   - Images are cached locally for faster loading times when printing the same cards again
 - Basic support for printing custom cards. Drop images onto the main window to add them as custom regular-size cards.
-- Import deck lists in various formats, like Magic Arena deck lists and XMage deck files (see below for a list of supported formats)
+- Import deck lists in various formats, like Magic Arena deck lists and XMage 
+  deck files (see below for a list of supported formats)
   - Automatic download of deck lists from various deck list database websites (see below for a list)
   - One-click removal of basic lands (optionally also including Wastes and Snow-covered basic lands)
-  - Optional, automatic deck list translation. Translate all cards in the deck list to your preferred language. (Depending on image availability.)
+  - Optional, automatic deck list translation. Translate all cards in the deck list to your preferred language.
+    (Depending on image availability.)
   - Manually override chosen card printings, if you dislike the printing choices made in the deck list
-  - When importing a deck list that contains excluded printings (see below), MTGProxyPrinter tries to replace them with suitable surrogates, where possible
+  - When importing a deck list that contains excluded printings (see below), MTGProxyPrinter tries to replace them 
+    with suitable surrogates, where possible
 - Supports double-faced cards and split cards
   - Both front and back are searchable by all names printed on the card
-  - Automatic handling of opposing card faces: MTGProxyPrinter automatically adds the same number of copies of the other face. (This feature can be disabled)
+  - Automatic handling of opposing card faces: MTGProxyPrinter automatically adds the same number
+    of copies of the other face. (This feature can be disabled)
   - Optional generation of check cards for double-faced cards. Those combine both sides on a single side
 - Hide cards using various card and printing filters. Hidden cards are treated as though they do not exist.
   - Bans in various formats supported by Scryfall
   - Border color (white-bordered, gold-bordered)
   - Full-art, or extended-art cards
-  - Funny cards (Silver-bordered and other black-bordered promotional cards, like the “Heroes of the Realm” cards. Also cards from Un-sets with acorn-shaped security stamp.)
+  - Funny cards (Silver-bordered and other black-bordered promotional cards, like the “Heroes of the Realm” cards.
+    Also cards from Un-sets with acorn-shaped security stamp.)
   - Image availability (for non-English cards)
   - Being oversized
-  - Digital printings (includes both Magic Online promotional card versions, MTG Arena digital-only cards and other digital printings)
+  - Digital printings (includes both Magic Online promotional card versions, MTG Arena digital-only cards,
+    and other digital printings)
 - Supports cards in all languages supported by Scryfall
-- Supports the official tokens (As offered by Scryfall, which is currently English only. If Scryfall starts to offer localized tokens, these will be become available, too.)
+- Supports the official tokens (As offered by Scryfall, which is currently English only.
+  If Scryfall starts to offer localized tokens, these will be become available, too.)
 - Adjustable document appearance
   - Adjustable paper size, page margins, spacing between card images
   - Optional printing of cut helper lines to aid machine-cutting printed sheets
   - Optionally render sharp image corners, instead of the default round ones
-  - Optionally draw a bleed (a thick outline of configurable width) around the images. The bleed color is sampled from the images to ensure compatibility with arbitrary border colors
+  - Optionally draw a bleed (a thick outline of configurable width) around the images. The bleed color is sampled
+    from the images to ensure compatibility with arbitrary border colors
   - Optionally print a document title and page numbers on all pages, to ease identifying loose sheets of printed cards
 - Full support for oversized cards, like Archenemy Scheme cards or Planechase Planes. 
-  - Regular-size cards and oversized cards are kept on separate pages to ensure consistent image spacing and proper rendering of cut helper lines.
+  - Regular-size cards and oversized cards are kept on separate pages to ensure consistent image spacing
+    and proper rendering of cut helper lines.
 - Ability to add “related cards” of cards in the document. These are cards referenced by name or tokens created.
 
 ### Supported deck list formats
@@ -59,7 +68,8 @@ in a paged document suitable for printing or PDF export.
 - [Tappedout.net](https://tappedout.net) deck lists (choose CSV export)
 - [Scryfall.com](https://scryfall.com) deck lists (choose CSV export)
 - Magic Workstation Deck Data (`.mwDeck` files)
-- Any other deck list format containing one card per line, by supplying a matching regular expression to parse the file (this is an advanced feature).
+- Any other deck list format containing one card per line, by supplying a matching regular
+  expression to parse the file (this is an advanced feature).
 
 
 ### Supported deck list database sites
@@ -138,7 +148,8 @@ execute `pipx install .` or `pip install .` from the repository root directory
 Execute `mtg-proxy-printer` to start the GUI. The Windows MSI package places a starter in the Start menu.
 
 At first start and at somewhat regular intervals, MTGProxyPrinter requires downloading the MTG card data
-from the Scryfall API. This dataset containing the information about the available 400k+ printings is roughly 250-300 MiB large.
+from the Scryfall API. This dataset containing the information about the available 400k+ printings
+is roughly 250-300 MiB large.
 
 When starting, an empty document is created. You can add any number of pages, if you need more than one page to print.
 The left-most panel in the main window shows an overview over all pages with a summary of what is on each page.
