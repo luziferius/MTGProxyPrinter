@@ -28,17 +28,18 @@ import pytest
 
 import mtg_proxy_printer.http_file
 import mtg_proxy_printer.downloader_base
+from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.ui.central_widget import Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, \
     Ui_TabbedCentralWidget
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
+from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 from tests.helpers import fill_card_database_with_json_cards
 from tests.document_controller.helpers import insert_card_in_page
@@ -121,16 +122,15 @@ def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> path
 
 def _create_save_file(temp_path: pathlib.Path):
     save_file_path = temp_path/"test.mtgproxies"
-    settings = PageLayoutSettings.create_from_settings().to_save_file_data()
-    #settings = dataclasses.asdict(PageLayoutSettings.create_from_settings()).items()
-    with open_database(save_file_path, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save_file:
+    with open_database(save_file_path, "document-v7") as save_file:
+        ActionSaveDocument.save_settings(save_file, PageLayoutSettings.create_from_settings())
+        save_file.execute(
+            "INSERT INTO Page(page, image_size) VALUES (?, ?)",
+            (1, CardSizes.REGULAR.to_save_data())
+        )
         save_file.execute(
             "INSERT INTO Card (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)",
             (1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r")
-        )
-        save_file.executemany(
-            "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
-            settings
         )
     return save_file_path
 

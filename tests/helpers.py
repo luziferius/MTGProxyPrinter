@@ -19,7 +19,6 @@ import functools
 import json
 import os
 import typing
-from functools import partial
 from numbers import Real
 from unittest.mock import patch, MagicMock
 

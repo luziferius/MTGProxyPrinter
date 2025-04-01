@@ -16,6 +16,7 @@
 import dataclasses
 import math
 import typing
+from typing import Generator, Tuple
 
 import pint
 from PyQt5.QtGui import QPageLayout, QPageSize
@@ -100,12 +101,12 @@ class PageLayoutSettings:
         return layout
 
     def to_save_file_data(self):
-        # TODO: With Document save file version 7, directly store values as-is
-        return (
-            # For now, don't store Quantities as strings in the database
-            (key, (value.to(unit_registry.mm).magnitude if isinstance(value, pint.Quantity) else value))
-            for key, value in dataclasses.asdict(self).items()
-        )
+        values = dataclasses.asdict(self)
+        settings = (
+            (key, str(value)) for key, value in values.items() if not isinstance(value, pint.Quantity))
+        dimensions: Generator[Tuple[str, QuantityT], None, None] = (
+            (key, value) for key, value in values.items() if isinstance(value, pint.Quantity))
+        return settings, dimensions
 
     def __lt__(self, other):
         if not isinstance(other, self.__class__):

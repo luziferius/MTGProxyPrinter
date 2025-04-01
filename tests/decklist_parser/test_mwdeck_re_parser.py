@@ -30,6 +30,8 @@ from hamcrest import *
     ("6 [TSP] Fury Sliver", 6, CardIdentificationData(name="Fury Sliver", set_code="TSP")),
     ("SB:  5 [] Fury Sliver", 5, CardIdentificationData(name="Fury Sliver")),
     ("SB:  4 [TSP] Fury Sliver", 4, CardIdentificationData(name="Fury Sliver", set_code="TSP")),
+    ("SB: 5 [] Fury Sliver", 5, CardIdentificationData(name="Fury Sliver")),
+    ("SB: 4 [TSP] Fury Sliver", 4, CardIdentificationData(name="Fury Sliver", set_code="TSP")),
 ])
 def test_magic_workstation_deck_list_all_variants_work(
         card_db: CardDatabase, deck: str, count: int, card_data: CardIdentificationData):
