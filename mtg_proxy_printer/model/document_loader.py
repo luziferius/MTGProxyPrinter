@@ -251,7 +251,7 @@ class Worker(LoaderSignals):
             logger.exception(
                 "Selected file is not a known MTGProxyPrinter document or contains invalid data. Not loading it.")
             self.loading_file_failed.emit(self.save_path, str(e))
-            self.finished.emit()
+            self.finished.emit()  # Release UI in failure case. _load_document() emits this during regular operation
         finally:
             self.db.close()
             self._db = None
@@ -274,7 +274,7 @@ class Worker(LoaderSignals):
             page_layout = self._load_document_settings(save_db)
             self._advance_progress()
             logger.debug(f"About to load {total_cards} cards.")
-            pages = self._load_cards(save_db)
+            pages = self._load_cards(save_db) if total_cards else []
             self._fix_mixed_pages(pages, page_layout)
             self._advance_progress()
         action = ActionLoadDocument(self.save_path, pages, page_layout)
@@ -306,8 +306,9 @@ class Worker(LoaderSignals):
 
     def _load_cards(self, save_db: sqlite3.Connection) -> List[CardList]:
         custom_cards: CustomCards = {}
-        assert_that(save_db.execute("SELECT min(page) FROM Page").fetchone(), contains_exactly(
-            all_of(instance_of(int), greater_than_or_equal_to(1))
+        assert_that(
+            save_db.execute("SELECT min(page) FROM Page").fetchone(),
+            contains_exactly(all_of(instance_of(int), greater_than_or_equal_to(1))
         ))
         pages: List[CardList] = []
         allowed_sizes = {CardSizes.REGULAR.to_save_data(), CardSizes.OVERSIZED.to_save_data()}

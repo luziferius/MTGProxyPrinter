@@ -15,11 +15,13 @@
 
 
 import contextlib
-import itertools
-import pathlib
+from itertools import chain, repeat, product
+from pathlib import Path
 import sqlite3
+import tempfile
 import unittest.mock
 import textwrap
+
 
 import pint
 from pytestqt.qtbot import QtBot
@@ -47,7 +49,7 @@ def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Conn
     with unittest.mock.patch("mtg_proxy_printer.model.document_loader.open_database") as mock:
         mock.return_value = empty_save_database
         assert_that(
-            calling(worker._open_validate_and_migrate_save_file).with_args(pathlib.Path()),
+            calling(worker._open_validate_and_migrate_save_file).with_args(Path()),
             raises(AssertionError)
         )
         mock.assert_called_once()
@@ -70,7 +72,7 @@ def disabled_check_constraints(db: sqlite3.Connection):
     db.execute("PRAGMA ignore_check_constraints = FALSE;")
 
 
-def test_valid_data_loads_correctly(
+def test_document_with_card_loads_correctly(
         qtbot: QtBot, document: Document,
         empty_save_database: sqlite3.Connection):
     empty_save_database.execute(
@@ -90,7 +92,7 @@ def test_valid_data_loads_correctly(
     assert_that(page_layout.compute_page_card_capacity(PageType.OVERSIZED), is_(greater_than_or_equal_to(1)))
     ActionSaveDocument.save_settings(empty_save_database, page_layout)
     loader = document.loader
-    save_path = pathlib.Path("/tmp/invalid.mtgproxies")
+    save_path = Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document_loader.open_database") as mock:
         mock.return_value = empty_save_database
         with qtbot.waitSignals([loader.loading_state_changed]*2,
@@ -106,6 +108,42 @@ def test_valid_data_loads_correctly(
         document.index(0, PageColumns.CardName, page_index).data(),
         is_("Fury Sliver")
     )
+    assert_that(document.save_file_path, is_(equal_to(save_path)))
+    assert_that(document.page_layout, is_(equal_to(page_layout)))
+    assert_that(
+        document.page_layout.compute_page_card_capacity(PageType.REGULAR),
+        is_(equal_to(page_layout.compute_page_card_capacity(PageType.REGULAR)))
+    )
+    assert_that(
+        document.page_layout.compute_page_card_capacity(PageType.OVERSIZED),
+        is_(equal_to(page_layout.compute_page_card_capacity(PageType.OVERSIZED)))
+    )
+
+def test_empty_document_loads_correctly(
+        qtbot: QtBot, document: Document,
+        empty_save_database: sqlite3.Connection):
+    page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
+        page_height=300*mm, page_width=200*mm,
+        margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
+        row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
+        draw_cut_markers=True, draw_sharp_corners=False,
+    )
+    assert_that(page_layout.compute_page_card_capacity(PageType.OVERSIZED), is_(greater_than_or_equal_to(1)))
+    ActionSaveDocument.save_settings(empty_save_database, page_layout)
+    loader = document.loader
+    save_path = Path("/tmp/invalid.mtgproxies")
+    with unittest.mock.patch("mtg_proxy_printer.model.document_loader.open_database") as mock:
+        mock.return_value = empty_save_database
+        with qtbot.waitSignals([loader.loading_state_changed]*2,
+                               check_params_cbs=[(lambda value: value), (lambda value: not value)]), \
+                qtbot.waitSignals([loader.load_requested, document.page_layout_changed]), \
+                qtbot.assert_not_emitted(loader.loading_file_failed):
+            loader.load_document(save_path)
+    mock.assert_called_once()
+    assert_that(document.rowCount(), is_(equal_to(1)))
+    page_index = document.index(0, 0)
+    assert_that(page_index.isValid())
+    assert_that(document.rowCount(page_index), is_(0))
     assert_that(document.save_file_path, is_(equal_to(save_path)))
     assert_that(document.page_layout, is_(equal_to(page_layout)))
     assert_that(
@@ -133,7 +171,7 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
     )
     ActionSaveDocument.save_settings(empty_save_database, PageLayoutSettings.create_from_settings())
     loader = document.loader
-    save_path = pathlib.Path("/tmp/invalid.mtgproxies")
+    save_path = Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document_loader.open_database") as mock:
         mock.return_value = empty_save_database
         with qtbot.waitSignals([loader.loading_state_changed] * 2,
@@ -149,19 +187,19 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
     assert_that(total_cards, is_(2))
 
 
-@pytest.mark.parametrize("data", itertools.chain(
+@pytest.mark.parametrize("data", chain(
     # Syntactically invalid
-    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.REGULAR.value)),
-    zip(itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.REGULAR.value)),
-    zip(itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.REGULAR.value)),
-    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(CardType.REGULAR.value)),
-    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.CHECK_CARD.value)),
-    zip(itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.CHECK_CARD.value)),
-    zip(itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.CHECK_CARD.value)),
-    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(CardType.CHECK_CARD.value)),
+    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(1), repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.REGULAR.value)),
+    zip(repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.REGULAR.value)),
+    zip(repeat(1), repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.REGULAR.value)),
+    zip(repeat(1), repeat(1), repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(CardType.REGULAR.value)),
+    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(1), repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.CHECK_CARD.value)),
+    zip(repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.CHECK_CARD.value)),
+    zip(repeat(1), repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.CHECK_CARD.value)),
+    zip(repeat(1), repeat(1), repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(CardType.CHECK_CARD.value)),
     # Semantically invalid, as type "d" it means generating a DFC check card for a single sided card.
-    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD.value]),
-    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(0), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD.value]),
+    zip(repeat(1), repeat(1), repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD.value]),
+    zip(repeat(1), repeat(1), repeat(0), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD.value]),
 ))
 def test_invalid_data_in_card_columns_raises_exception(
         qtbot: QtBot, document: Document,
@@ -180,7 +218,7 @@ def test_invalid_data_in_card_columns_raises_exception(
         mock.return_value = empty_save_database
         with qtbot.waitSignal(loader.loading_file_failed, raising=True), \
                 qtbot.assertNotEmitted(loader.load_requested):
-            loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+            loader.load_document(Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
     assert_document_is_empty(document)
     assert_that(document.save_file_path, is_(none()))
@@ -207,7 +245,7 @@ def test_protects_against_infinite_save_data(
         mock.return_value = empty_save_database
         with qtbot.waitSignal(loader.loading_file_failed, raising=True), \
                 qtbot.assertNotEmitted(loader.load_requested):
-            loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+            loader.load_document(Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
     assert_document_is_empty(document)
     assert_that(document.save_file_path, is_(none()))
@@ -278,7 +316,7 @@ def test_protects_against_infinite_settings_data(
         mock.return_value = empty_save_database
         with qtbot.waitSignal(loader.loading_file_failed, raising=True), \
                 qtbot.assertNotEmitted(loader.load_requested):
-            loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+            loader.load_document(Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
     assert_document_is_empty(document)
     assert_that(document.save_file_path, is_(none()))
@@ -287,6 +325,10 @@ def test_protects_against_infinite_settings_data(
 def test_cancelling_loading_does_not_crash(
         qtbot: QtBot, document: Document,
         empty_save_database: sqlite3.Connection):
+    ActionSaveDocument.save_settings(empty_save_database, document.page_layout)
+    empty_save_database.execute(
+        "INSERT INTO Page (page, image_size) VALUES (?, ?)", (1, CardSizes.REGULAR.to_save_data())
+    )
     empty_save_database.executemany(
         'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)', [
             (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r"),
@@ -300,11 +342,15 @@ def test_cancelling_loading_does_not_crash(
         with qtbot.wait_signals(
                 [loader.begin_loading_loop, loader.progress_loading_loop,
                  loader.loading_state_changed, loader.finished], timeout=100):
-            loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+            loader.load_document(Path("/tmp/invalid.mtgproxies"))
 
 
 def test_loads_check_card(
         qtbot: QtBot, document: Document, empty_save_database: sqlite3.Connection):
+    ActionSaveDocument.save_settings(empty_save_database, document.page_layout)
+    empty_save_database.execute(
+        "INSERT INTO Page (page, image_size) VALUES (?, ?)", (1, CardSizes.REGULAR.to_save_data())
+    )
     empty_save_database.executemany(
         'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)', [
             (1, 1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", CardType.CHECK_CARD.value),
@@ -315,7 +361,7 @@ def test_loads_check_card(
         open_database.return_value = empty_save_database
         with qtbot.wait_signal(document.action_applied), \
                 qtbot.assert_not_emitted(loader.loading_file_failed):
-            loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+            loader.load_document(Path("/tmp/invalid.mtgproxies"))
     assert_that(
         document.pages, contains_exactly(
             contains_exactly(has_property("card", all_of(
@@ -331,7 +377,7 @@ def test_loads_check_card(
     )
 
 
-@pytest.fixture(params=itertools.product([
+@pytest.fixture(params=product([
     (4, [1, 200, 150, 4, 5, 6, 7, 2, 3, 1]),
     (5, [1, 200, 150, 4, 5, 6, 7, 2, 3, 1, 0]),
     # Only old image spacing keys present
@@ -364,13 +410,14 @@ def legacy_save_file(request):
 
 
 def test_load_settings_from_legacy_save_file_is_successful(
-        qtbot: QtBot, legacy_save_file: sqlite3.Connection, document_light):
+        qtbot: QtBot, legacy_save_file: sqlite3.Connection, document_light: Document):
     loader = document_light.loader
     with unittest.mock.patch(
             "mtg_proxy_printer.model.document_loader.open_database",
             return_value=legacy_save_file), \
-            qtbot.wait_signal(document_light.action_applied):
-        loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+            qtbot.wait_signal(document_light.action_applied, timeout=2**30), \
+            qtbot.assert_not_emitted(loader.loading_file_failed):
+        loader.load_document(Path("/tmp/invalid.mtgproxies"))
     annotations = document_light.page_layout.__annotations__
     assert_that(
         document_light.page_layout,
@@ -390,7 +437,7 @@ def test_load_settings_from_legacy_save_file_is_successful(
 
 @pytest.mark.parametrize("title", ["str", "", "1", "0x1", "1.0.0", "1..0", "01", "1.0"])
 def test_load_correctly_sets_document_title(
-        qtbot: QtBot, empty_save_database: sqlite3.Connection, document_light, title):
+        qtbot: QtBot, empty_save_database: sqlite3.Connection, document_light: Document, title: str):
     loader = document_light.loader
     annotations = document_light.page_layout.__annotations__
     ActionSaveDocument.save_settings(empty_save_database, document_light.page_layout)
@@ -401,8 +448,9 @@ def test_load_correctly_sets_document_title(
     with unittest.mock.patch(
             "mtg_proxy_printer.model.document_loader.open_database",
             return_value=empty_save_database), \
-            qtbot.wait_signal(document_light.action_applied):
-        loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+            qtbot.wait_signal(document_light.action_applied), \
+            qtbot.assert_not_emitted(loader.loading_file_failed):
+        loader.load_document(Path("/tmp/invalid.mtgproxies"))
 
     assert_that(
         document_light.page_layout,
