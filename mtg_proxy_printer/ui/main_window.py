@@ -32,6 +32,7 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, Ac
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.ui.custom_card_import_dialog import CustomCardImportDialog
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, CardSizes
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
@@ -482,8 +483,8 @@ class MainWindow(QMainWindow):
         if self._to_save_file_path(event):
             logger.info("User drags a saved MTGProxyPrinter document onto the main window, accepting event")
             event.acceptProposedAction()
-        elif images := self._to_pixmaps(event):
-            logger.info(f"User drags {len(images)} images onto the main window, accepting event")
+        elif CustomCardImportDialog.dragdrop_acceptable(event):
+            logger.info(f"User drags {len(event.mimeData().urls())} images onto the main window, accepting event")
             event.acceptProposedAction()
         else:
             logger.debug("Rejecting drag&drop action for unknown or invalid data")
@@ -492,14 +493,10 @@ class MainWindow(QMainWindow):
         if path := self._to_save_file_path(event):
             logger.info("User dropped save file onto the main window, loading the dropped document")
             self.document.loader.load_document(path)
-        elif images := self._to_pixmaps(event):
-            logger.info(f"User dropped {len(images)} images onto the main window, adding them as custom cards")
-            for image in images:
-                card = Card(
-                    "Custom card", MTGSet("CUS", "Custom"), "", "", "", True, "", "", True,
-                    CardSizes.REGULAR, 1, False, image)
-                action = ActionAddCard(card)
-                self.document.apply(action)
+        elif CustomCardImportDialog.dragdrop_acceptable(event):
+            self.current_dialog = dialog = CustomCardImportDialog(self.card_database, self)
+            dialog.finished.connect(self.on_dialog_finished)
+            dialog.show_from_drop_event(event)
 
     @staticmethod
     def _to_save_file_path(event: typing.Union[QDragEnterEvent, QDropEvent]) -> typing.Optional[pathlib.Path]:
