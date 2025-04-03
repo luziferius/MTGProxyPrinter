@@ -14,11 +14,12 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import math
+from typing import Union
 
 from PyQt5.QtCore import Qt, pyqtSignal as Signal, pyqtSlot as Slot
 from PyQt5.QtWidgets import QTableView, QWidget
 
-from mtg_proxy_printer.model.card_list import CardListColumns
+from mtg_proxy_printer.model.card_list import CardListColumns, CardListModel
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, SpinboxItemDelegate
 
@@ -39,9 +40,11 @@ class CardListTableView(QTableView):
         super().__init__(parent)
         self._combo_box_delegate = self._setup_combo_box_item_delegate()
         self._copies_delegate = self._setup_copies_delegate()
+        self.sort_model = NaturallySortedSortFilterProxyModel(self)
 
-    def setModel(self, model: NaturallySortedSortFilterProxyModel):
-        super().setModel(model)
+    def setModel(self, model: CardListModel):
+        self.sort_model.setSourceModel(model)
+        super().setModel(self.sort_model)
         # Has to be set up here, because setModel() implicitly creates the QItemSelectionModel
         self.selectionModel().selectionChanged.connect(self._on_selection_changed)
         # Now that the model is set and columns are discovered, set the column widths to reasonable values.

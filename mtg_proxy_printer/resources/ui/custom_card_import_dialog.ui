@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QTableView" name="image_table"/>
+    <widget class="CardListTableView" name="image_table"/>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="button_box">
@@ -29,6 +29,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CardListTableView</class>
+   <extends>QTableView</extends>
+   <header>mtg_proxy_printer.ui.card_list_table_view</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

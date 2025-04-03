@@ -45,7 +45,7 @@ class CustomCardImportDialog(QDialog):
         self.ui = ui = Ui_CustomCardImportDialog()
         ui.setupUi(self)
         self.model = CardListModel(card_db)
-        ui.image_table.setModel(self.model)  # TODO: The table needs validators for the copies column
+        ui.image_table.setModel(self.model)
 
     @staticmethod
     def dragdrop_acceptable(event: EventTypes) -> bool:

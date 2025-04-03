@@ -454,9 +454,8 @@ class SummaryPage(QWizardPage):
         ui.setupUi(self)
         self.setCommitPage(True)
         self.card_list = CardListModel(card_db, self)
-        self.card_list_sort_model = self._create_sort_model(self.card_list)
         self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
-        ui.parsed_cards_table.setModel(self.card_list_sort_model)
+        ui.parsed_cards_table.setModel(self.card_list)
         self.registerField("should_replace_document", self.ui.should_replace_document)
         ui.should_replace_document.toggled[bool].connect(
             self._update_accept_button_on_replace_document_option_toggled)
@@ -579,7 +578,8 @@ class SummaryPage(QWizardPage):
 
     def _remove_selected_cards(self):
         logger.info("User removes the selected cards")
-        selection_mapped_to_source = self.card_list_sort_model.mapSelectionToSource(
+        sort_model = self.ui.parsed_cards_table.sort_model
+        selection_mapped_to_source = sort_model.mapSelectionToSource(
             self.ui.parsed_cards_table.selectionModel().selection())
         self.card_list.remove_multi_selection(selection_mapped_to_source)
         if not self.card_list.rowCount():
@@ -617,8 +617,9 @@ class DeckImportWizard(WizardBase):
         logger.info("User finished the import wizard, performing the requested actions")
         if replace_document := self.field("should_replace_document"):
             logger.info("User chose to replace the current document content, clearing it")
+        sort_order = self.summary_page.ui.parsed_cards_table.sort_model.row_sort_order()
         action = ActionImportDeckList(
-            self.summary_page.card_list.as_cards(self.summary_page.card_list_sort_model.row_sort_order()),
+            self.summary_page.card_list.as_cards(sort_order),
             replace_document
         )
         logger.info(f"User loaded a deck list with {action.card_count()} cards, adding these to the document")
