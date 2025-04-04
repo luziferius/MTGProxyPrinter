@@ -21,7 +21,8 @@ from PyQt5.QtWidgets import QTableView, QWidget
 
 from mtg_proxy_printer.model.card_list import CardListColumns, CardListModel
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
-from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, BoundedCopiesSpinboxDelegate
+from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, BoundedCopiesSpinboxDelegate, \
+    CardSideSelectionDelegate
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -40,6 +41,7 @@ class CardListTableView(QTableView):
         super().__init__(parent)
         self._combo_box_delegate = self._setup_combo_box_item_delegate()
         self._copies_delegate = self._setup_copies_delegate()
+        self._side_delegate = self._setup_side_delegate()
         self.sort_model = NaturallySortedSortFilterProxyModel(self)
 
     def setModel(self, model: CardListModel):
@@ -67,6 +69,11 @@ class CardListTableView(QTableView):
     def _setup_copies_delegate(self) -> BoundedCopiesSpinboxDelegate:
         delegate = BoundedCopiesSpinboxDelegate(self)
         self.setItemDelegateForColumn(CardListColumns.Copies, delegate)
+        return delegate
+
+    def _setup_side_delegate(self) -> CardSideSelectionDelegate:
+        delegate = CardSideSelectionDelegate(self)
+        self.setItemDelegateForColumn(CardListColumns.IsFront, delegate)
         return delegate
 
     def _setup_default_column_widths(self):

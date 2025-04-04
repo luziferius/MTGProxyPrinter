@@ -30,6 +30,7 @@ __all__ = [
     "DocumentComboBoxItemDelegate",
     "CardListComboBoxItemDelegate",
     "BoundedCopiesSpinboxDelegate",
+    "CardSideSelectionDelegate",
 ]
 ItemDataRole = Qt.ItemDataRole
 
@@ -41,6 +42,22 @@ class BoundedCopiesSpinboxDelegate(QStyledItemDelegate):
         editor.setMinimum(1)
         editor.setMaximum(100)
         return editor
+
+
+class CardSideSelectionDelegate(QStyledItemDelegate):
+    """A QComboBox delegate used to switch between Front and Back face of cards"""
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QSpinBox:
+        editor = QComboBox(parent)
+        editor.addItem(self.tr("Front"), True)
+        editor.addItem(self.tr("Back"), False)
+        return editor
+
+    def setModelData(self, editor: QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:
+        new_value = editor.currentData(ItemDataRole.UserRole)
+        previous_value = index.data(ItemDataRole.EditRole)
+        if new_value != previous_value:
+            logger.debug(f"Setting data for column {index.column()} to {new_value}")
+            model.setData(index, new_value, ItemDataRole.EditRole)
 
 
 class ComboBoxItemDelegate(QStyledItemDelegate):
