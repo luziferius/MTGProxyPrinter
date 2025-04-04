@@ -38,7 +38,7 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, CardListColumns
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase, markdown_to_html
-from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, SpinboxItemDelegate
+from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, BoundedCopiesSpinboxDelegate
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
 try:

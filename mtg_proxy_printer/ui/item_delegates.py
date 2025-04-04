@@ -29,12 +29,13 @@ __all__ = [
     "ComboBoxItemDelegate",
     "DocumentComboBoxItemDelegate",
     "CardListComboBoxItemDelegate",
-    "SpinboxItemDelegate",
+    "BoundedCopiesSpinboxDelegate",
 ]
 ItemDataRole = Qt.ItemDataRole
 
 
-class SpinboxItemDelegate(QStyledItemDelegate):
+class BoundedCopiesSpinboxDelegate(QStyledItemDelegate):
+    """A QSpinBox delegate bounded to the inclusive range (1-100). Used for card copies."""
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QSpinBox:
         editor = QSpinBox(parent)
         editor.setMinimum(1)

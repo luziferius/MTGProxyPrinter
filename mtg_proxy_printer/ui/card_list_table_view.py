@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import QTableView, QWidget
 
 from mtg_proxy_printer.model.card_list import CardListColumns, CardListModel
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
-from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, SpinboxItemDelegate
+from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, BoundedCopiesSpinboxDelegate
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -64,8 +64,8 @@ class CardListTableView(QTableView):
         self.setItemDelegateForColumn(CardListColumns.Language, delegate)
         return delegate
 
-    def _setup_copies_delegate(self) -> SpinboxItemDelegate:
-        delegate = SpinboxItemDelegate(self)
+    def _setup_copies_delegate(self) -> BoundedCopiesSpinboxDelegate:
+        delegate = BoundedCopiesSpinboxDelegate(self)
         self.setItemDelegateForColumn(CardListColumns.Copies, delegate)
         return delegate
 
