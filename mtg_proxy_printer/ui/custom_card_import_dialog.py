@@ -12,14 +12,17 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 from collections import Counter
 from pathlib import Path
 import typing
 
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import Qt, QSize, pyqtSignal as Signal
 from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QPixmap
 from PyQt5.QtWidgets import QDialog, QWidget
 
+from mtg_proxy_printer.document_controller import DocumentAction
+from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
@@ -39,6 +42,8 @@ EventTypes = typing.Union[QDragEnterEvent, QDropEvent]
 
 
 class CustomCardImportDialog(QDialog):
+
+    request_action = Signal(DocumentAction)
 
     def __init__(self, card_db: CardDatabase, parent: QWidget = None, flags=Qt.WindowFlags()):
         super().__init__(parent, flags)
@@ -76,3 +81,8 @@ class CustomCardImportDialog(QDialog):
                 )
                 result[card] += 1
         return result
+
+    def accept(self):
+        action = ActionImportDeckList(self.model.as_cards(), False)
+        self.request_action.emit(action)
+        super().accept()

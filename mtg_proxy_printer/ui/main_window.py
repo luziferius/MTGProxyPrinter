@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import QApplication, QMessageBox, QAction, QWidget, QMainWi
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
+from mtg_proxy_printer.model.card_list import CardListModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
@@ -495,6 +496,7 @@ class MainWindow(QMainWindow):
             self.document.loader.load_document(path)
         elif CustomCardImportDialog.dragdrop_acceptable(event):
             self.current_dialog = dialog = CustomCardImportDialog(self.card_database, self)
+            dialog.request_action.connect(self.document.apply)
             dialog.finished.connect(self.on_dialog_finished)
             dialog.show_from_drop_event(event)
 
