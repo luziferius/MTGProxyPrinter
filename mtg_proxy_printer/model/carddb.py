@@ -120,11 +120,11 @@ class Card:
     scryfall_id: str = dataclasses.field(compare=True)
     is_front: bool = dataclasses.field(compare=True)
     oracle_id: str = dataclasses.field(compare=True)
-    image_uri: str = dataclasses.field(compare=False)
+    image_uri: str = dataclasses.field(compare=True)
     highres_image: bool = dataclasses.field(compare=False)
     size: CardSize = dataclasses.field(compare=False)
-    face_number: int = dataclasses.field(compare=False)
-    is_dfc: bool = dataclasses.field(compare=False)
+    face_number: int = dataclasses.field(compare=True)
+    is_dfc: bool = dataclasses.field(compare=True)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
 
     def set_image_file(self, image: QPixmap):
