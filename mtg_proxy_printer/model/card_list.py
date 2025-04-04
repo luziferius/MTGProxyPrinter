@@ -17,11 +17,13 @@ from collections import Counter
 import dataclasses
 import enum
 import itertools
+from pathlib import Path
 import typing
 
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, QItemSelection
 from PyQt5.QtGui import QIcon
 
+from mtg_proxy_printer.ui.common import get_image_for_tooltip_display
 from mtg_proxy_printer.decklist_parser.common import CardCounter
 from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase, AnyCardType
 from mtg_proxy_printer.logger import get_logger
@@ -107,6 +109,8 @@ class CardListModel(QAbstractTableModel):
                 if role == ItemDataRole.EditRole:
                     return card.is_front
                 return self.tr("Front") if card.is_front else self.tr("Back")
+        if not card.oracle_id and column == CardListColumns.CardName and role == ItemDataRole.ToolTipRole:
+            return get_image_for_tooltip_display(Path(card.image_uri))
         if card.is_oversized:
             if role == ItemDataRole.ToolTipRole:
                 return self.tr("Beware: Potentially oversized card!\nThis card may not fit in your deck.")
