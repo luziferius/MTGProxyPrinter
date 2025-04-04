@@ -13,17 +13,18 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+import functools
 import pathlib
 import platform
 import typing
 
-from PyQt5.QtCore import QFile, QUrl, QObject, QSize, QCoreApplication
+from PyQt5.QtCore import QFile, QUrl, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
 from PyQt5.QtWidgets import QLabel, QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
 
+from mtg_proxy_printer.units_and_sizes import OptStr
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -38,6 +39,7 @@ __all__ = [
     "load_ui_from_file",
     "format_size",
     "WizardBase",
+    "get_image_for_tooltip_display",
 ]
 
 try:
@@ -53,6 +55,28 @@ else:
     ICON_PATH_PREFIX = ":/icons"
     HAS_COMPILED_RESOURCES = True
     atexit.register(mtg_proxy_printer.ui.compiled_resources.qCleanupResources)
+
+
+@functools.lru_cache(maxsize=256)
+def get_image_for_tooltip_display(path: pathlib.Path, card_name: OptStr = None, scaling_factor: int = 3) -> str:
+    """
+    Returns a tooltip string showing a scaled down image for the given path.
+    :param path: Filesystem path to the image file
+    :param card_name: Optional card name. If given, it is placed above the image
+    :param scaling_factor: Scales the source by factor to 1/scaling_factor
+    :return: HTML fragment with the image embedded as a base64 encoded PNG
+    """
+    source = QPixmap(str(path))
+    pixmap = source.scaled(
+        source.width() // scaling_factor, source.height() // scaling_factor,
+        Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    buffer = QBuffer()
+    buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+    pixmap.save(buffer, "PNG", quality=100)
+    image = buffer.data().toBase64().data().decode()
+    card_name = f'<p style="text-align:center">{card_name}</p><br>' if card_name else ""
+    tooltip_text = f'{card_name}<img src="data:image/png;base64,{image}">'
+    return tooltip_text
 
 
 def highlight_widget(widget: QWidget) -> None:

@@ -31,7 +31,7 @@ from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.imagedb_files import CacheContent as ImageCacheContent, ImageKey
-from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase
+from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase, get_image_for_tooltip_display
 from mtg_proxy_printer.units_and_sizes import OptStr
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -53,22 +53,6 @@ INVALID_INDEX = QModelIndex()
 SelectRows = QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows
 ItemDataRole = Qt.ItemDataRole
 Orientation = Qt.Orientation
-
-
-@functools.lru_cache(maxsize=256)
-def get_image_for_tooltip_display(path: pathlib.Path, card_name: OptStr = None) -> str:
-    scaling_factor = 3
-    source = QPixmap(str(path))
-    pixmap = source.scaled(
-        source.width() // scaling_factor, source.height() // scaling_factor,
-        Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-    buffer = QBuffer()
-    buffer.open(QIODevice.OpenModeFlag.WriteOnly)
-    pixmap.save(buffer, "PNG", quality=100)
-    image = buffer.data().toBase64().data().decode()
-    card_name = f'<p style="text-align:center">{card_name}</p><br>' if card_name else ""
-    tooltip_text = f'{card_name}<img src="data:image/png;base64,{image}">'
-    return tooltip_text
 
 
 class KnownCardColumns(enum.IntEnum):
