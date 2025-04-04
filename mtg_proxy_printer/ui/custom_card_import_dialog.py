@@ -71,7 +71,8 @@ class CustomCardImportDialog(QDialog):
                 if pixmap.width() != width or pixmap.height() != height:
                     new_size = QSize(width, height)
                     pixmap = pixmap.scaled(new_size, transformMode=TransformationMode.SmoothTransformation)
-                # TODO: The object hash has to take the URI or pixmap into account
-                card = Card("Custom card", MTGSet("", ""), "", "en", "", True, "", str(path), True, regular, 1, False, pixmap)
+                card = Card(
+                    path.stem, MTGSet("", ""), "", "en", "", True, "", str(path), True, regular, 1, False, pixmap
+                )
                 result[card] += 1
         return result
