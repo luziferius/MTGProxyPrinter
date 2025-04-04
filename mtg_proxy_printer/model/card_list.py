@@ -115,35 +115,72 @@ class CardListModel(QAbstractTableModel):
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         flags = super().flags(index)
-        if index.column() in self.EDITABLE_COLUMNS:
+        if index.column() in self.EDITABLE_COLUMNS or not self.rows[index.row()].card.oracle_id:
             flags |= ItemFlag.ItemIsEditable
         return flags
 
     def setData(self, index: QModelIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
         row, column = index.row(), index.column()
-        if role == ItemDataRole.EditRole and column in self.EDITABLE_COLUMNS:
-            logger.debug(f"Setting card list model data for column {column} to {value}")
-            container = self.rows[row]
-            card = container.card
-            if column == CardListColumns.Copies:
-                old_value, container.copies = container.copies, value
-                if card.is_oversized and (difference := value-old_value):
-                    self.oversized_card_count += difference
-                    self.oversized_card_count_changed.emit(self.oversized_card_count)
-                return True
-            elif column == CardListColumns.CollectorNumber:
-                card_data = CardIdentificationData(
-                    card.language, card.name, card.set.code, value, is_front=card.is_front)
-            elif column == CardListColumns.Set:
-                card_data = CardIdentificationData(
-                    card.language, card.name, value, is_front=card.is_front
-                )
-            else:
-                card_data = self.card_db.translate_card(card, value)
-                if card_data == card:
-                    return False
-            return self._request_replacement_card(index, card_data)
+        container = self.rows[row]
+        card = container.card
+        if card.oracle_id and role == ItemDataRole.EditRole and column in self.EDITABLE_COLUMNS:
+            return self._set_data_for_official_card(index, value)
+        elif not card.oracle_id and role == ItemDataRole.EditRole:
+            return self._set_data_for_custom_card(index, value)
         return False
+
+    def _set_data_for_official_card(self, index: QModelIndex, value: typing.Any) -> bool:
+        row, column = index.row(), index.column()
+        container = self.rows[row]
+        card = container.card
+        logger.debug(f"Setting card list model data for column {column} to {value}")
+        if column == CardListColumns.Copies:
+            return self._set_copies_value(container, card, value)
+        elif column == CardListColumns.CollectorNumber:
+            card_data = CardIdentificationData(
+                card.language, card.name, card.set.code, value, is_front=card.is_front)
+        elif column == CardListColumns.Set:
+            card_data = CardIdentificationData(
+                card.language, card.name, value, is_front=card.is_front
+            )
+        else:
+            card_data = self.card_db.translate_card(card, value)
+            if card_data == card:
+                return False
+        return self._request_replacement_card(index, card_data)
+
+    def _set_data_for_custom_card(self, index: QModelIndex, value: typing.Any) -> bool:
+        row, column = index.row(), index.column()
+        container = self.rows[row]
+        card = container.card
+        if column == CardListColumns.Copies:
+            return self._set_copies_value(container, card, value)
+        elif column == CardListColumns.CardName:
+            card.name = value
+            return True
+        elif column == CardListColumns.CollectorNumber:
+            card.collector_number = value
+            return True
+        elif column == CardListColumns.Language:
+            card.language = value
+            return True
+        elif column == CardListColumns.IsFront:
+            card.is_front = value
+            card.face_number = int(not value)
+            return True
+        elif column == CardListColumns.Set:
+            # TODO: Implement this. Pass Name and code as a tuple[str, str]? Needs a new delegate.
+            #    Maybe two line-edits in a horizontal layout with parenthesis labels around the second?
+            #    Like [Name edit]([Code edit])
+            return False
+        return False
+
+    def _set_copies_value(self, container: CardListModelRow, card: Card, value: int) -> bool:
+        old_value, container.copies = container.copies, value
+        if card.is_oversized and (difference := value - old_value):
+            self.oversized_card_count += difference
+            self.oversized_card_count_changed.emit(self.oversized_card_count)
+        return value != old_value
 
     def _request_replacement_card(
             self, index: QModelIndex, card_data: typing.Union[CardIdentificationData, AnyCardType]):
