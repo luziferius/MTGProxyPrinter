@@ -2,9 +2,20 @@
 
 # Next version (in development)
 
+## New features
+
+- Improved custom card support
+  - Adding custom cards via drag & drop now opens a dialog to customize the import
+    - Allows setting the number of copies to add for each card. Vastly improves the workflow when you want
+      to print multiple copies. 
+    - Shown card name is now derived from the file name, instead of defaulting to "Custom Card"
+  - The import dialog can also be accessed from the File menu. Access to printing custom cards no longer
+    requires the use of drag & drop.
+  - It is now possible to save custom cards and empty slots in the apps save file format.
+    Custom cards are no longer lost when saving.
+
 ## Changed features
 
-- Improved custom card support: It is now possible to save custom cards and empty slots in the apps save file format.
 - The card table in the deck import wizard now has an editable Copies column to state the number of copies per card,
   instead of duplicating the card for that many rows. This makes it possible to edit the number of copies per card
 - When splitting exported PDFs, zero-pad the sequence numbers appended to the file name 
