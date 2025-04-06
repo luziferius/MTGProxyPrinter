@@ -262,6 +262,13 @@ class MainWindow(QMainWindow):
         wizard.show()
 
     @Slot()
+    def on_action_add_custom_cards_triggered(self):
+        logger.info(f"User adds custom cards.")
+        dialog = CustomCardImportDialog(self.card_database, self)
+        dialog.request_action.connect(self.document.apply)
+        dialog.show()
+        
+    @Slot()
     def on_action_print_triggered(self):
         logger.info(f"User prints the current document.")
         action_str = self.tr(
