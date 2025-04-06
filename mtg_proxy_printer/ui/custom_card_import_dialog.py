@@ -79,7 +79,7 @@ class CustomCardImportDialog(QDialog):
 
     @Slot()
     def on_set_copies_to_clicked(self):
-        value = 1
+        value = self.ui.card_copies.value()
         self.model.set_all_copies_to(value)
         logger.info(f"All copy counts set to {value}")
 

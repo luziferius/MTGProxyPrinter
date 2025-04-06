@@ -14,16 +14,6 @@
    <string>Import custom cards</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="3" column="3">
-    <widget class="QPushButton" name="remove_selected">
-     <property name="text">
-      <string>Remove selected</string>
-     </property>
-     <property name="icon">
-      <iconset theme="edit-delete"/>
-     </property>
-    </widget>
-   </item>
    <item row="1" column="3">
     <widget class="QLabel" name="image_label">
      <property name="maximumSize">
@@ -37,10 +27,10 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="2" rowspan="8">
+   <item row="1" column="2" rowspan="10">
     <widget class="CardListTableView" name="card_table"/>
    </item>
-   <item row="4" column="3">
+   <item row="6" column="3">
     <widget class="QPushButton" name="set_copies_to">
      <property name="text">
       <string>Set Copies to …</string>
@@ -50,7 +40,34 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="3">
+   <item row="6" column="4">
+    <widget class="QSpinBox" name="card_copies">
+     <property name="minimum">
+      <number>1</number>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="3" colspan="2">
+    <widget class="QPushButton" name="remove_selected">
+     <property name="text">
+      <string>Remove selected</string>
+     </property>
+     <property name="icon">
+      <iconset theme="edit-delete"/>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3" colspan="2">
+    <widget class="QPushButton" name="add_cards">
+     <property name="text">
+      <string>Add cards</string>
+     </property>
+     <property name="icon">
+      <iconset theme="list-add"/>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="3" colspan="2">
     <widget class="QDialogButtonBox" name="button_box">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
@@ -63,16 +80,6 @@
      </property>
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="3">
-    <widget class="QPushButton" name="add_cards">
-     <property name="text">
-      <string>Add cards</string>
-     </property>
-     <property name="icon">
-      <iconset theme="list-add"/>
      </property>
     </widget>
    </item>
