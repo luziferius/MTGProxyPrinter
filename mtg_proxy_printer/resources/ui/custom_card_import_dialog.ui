@@ -13,17 +13,66 @@
   <property name="windowTitle">
    <string>Import custom cards</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <widget class="CardListTableView" name="image_table"/>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="3" column="3">
+    <widget class="QPushButton" name="remove_selected">
+     <property name="text">
+      <string>Remove selected</string>
+     </property>
+     <property name="icon">
+      <iconset theme="edit-delete"/>
+     </property>
+    </widget>
    </item>
-   <item>
+   <item row="1" column="3">
+    <widget class="QLabel" name="image_label">
+     <property name="maximumSize">
+      <size>
+       <width>800</width>
+       <height>1100</height>
+      </size>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2" rowspan="8">
+    <widget class="CardListTableView" name="card_table"/>
+   </item>
+   <item row="4" column="3">
+    <widget class="QPushButton" name="set_copies_to">
+     <property name="text">
+      <string>Set Copies to …</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-edit"/>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="3">
     <widget class="QDialogButtonBox" name="button_box">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+      <enum>Qt::Vertical</enum>
      </property>
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3">
+    <widget class="QPushButton" name="add_cards">
+     <property name="text">
+      <string>Add cards</string>
+     </property>
+     <property name="icon">
+      <iconset theme="list-add"/>
      </property>
     </widget>
    </item>

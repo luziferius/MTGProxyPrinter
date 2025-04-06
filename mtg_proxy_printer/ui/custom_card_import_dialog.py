@@ -17,9 +17,9 @@ from collections import Counter
 from pathlib import Path
 import typing
 
-from PyQt5.QtCore import Qt, QSize, pyqtSignal as Signal
+from PyQt5.QtCore import Qt, QSize, pyqtSignal as Signal, pyqtSlot as Slot
 from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QPixmap
-from PyQt5.QtWidgets import QDialog, QWidget
+from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog
 
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
@@ -34,6 +34,7 @@ except ModuleNotFoundError:
 
 from mtg_proxy_printer.model.card_list import CardListModel  # TODO: This doesn't fit. Doesn't (yet) support editing custom cards
 import mtg_proxy_printer.units_and_sizes
+from mtg_proxy_printer.app_dirs import data_directories
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -50,13 +51,31 @@ class CustomCardImportDialog(QDialog):
         self.ui = ui = Ui_CustomCardImportDialog()
         ui.setupUi(self)
         self.model = CardListModel(card_db)
-        ui.image_table.setModel(self.model)
+        ui.card_table.setModel(self.model)
+        logger.info(f"Created {self.__class__.__name__} instance")
 
     @staticmethod
     def dragdrop_acceptable(event: EventTypes) -> bool:
         urls = event.mimeData().urls()
         local_paths = [Path(url.toLocalFile()) for url in urls]
-        return local_paths and all((path.is_file() for path in local_paths))
+        acceptable = local_paths and all((path.is_file() for path in local_paths))
+        return acceptable
+
+    @Slot()
+    def on_add_cards_clicked(self):
+        logger.info("User about to add additional card images")
+        default_path = getattr(data_directories, "user_pictures_dir", str(Path.home()))
+        files, _ = QFileDialog.getOpenFileNames(self, self.tr("Import custom cards"), default_path)
+        logger.debug(f"User selected {len(files)} paths")
+        file_paths = list(map(Path, files))
+        cards = self.create_cards(file_paths)
+        self.model.add_cards(cards)
+        logger.info(f"Added {len(cards)} cards from the selected files.")
+
+    @Slot()
+    def on_remove_selected_clicked(self):
+        logger.info("User about to delete all selected cards from the card table")
+        pass
 
     def show_from_drop_event(self, event: QDropEvent):
         urls = event.mimeData().urls()
