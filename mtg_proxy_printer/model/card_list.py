@@ -337,3 +337,10 @@ class CardListModel(QAbstractTableModel):
         merged = reversed(self._merge_ranges(to_remove_rows))
         removed_cards = sum(itertools.starmap(self.remove_cards, merged))
         logger.info(f"User requested removal of basic lands, removed {removed_cards} cards")
+
+    def set_all_copies_to(self, value: int):
+        top = self.index(0, CardListColumns.Copies)
+        bottom = self.index(self.rowCount()-1, CardListColumns.Copies)
+        for item in self.rows:
+            item.copies = value
+        self.dataChanged.emit(top, bottom, [ItemDataRole.DisplayRole, ItemDataRole.EditRole])

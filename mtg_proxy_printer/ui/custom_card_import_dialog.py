@@ -32,7 +32,7 @@ except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
     Ui_CustomCardImportDialog = load_ui_from_file("custom_card_import_dialog")
 
-from mtg_proxy_printer.model.card_list import CardListModel  # TODO: This doesn't fit. Doesn't (yet) support editing custom cards
+from mtg_proxy_printer.model.card_list import CardListModel
 import mtg_proxy_printer.units_and_sizes
 from mtg_proxy_printer.app_dirs import data_directories
 from mtg_proxy_printer.logger import get_logger
@@ -75,7 +75,13 @@ class CustomCardImportDialog(QDialog):
     @Slot()
     def on_remove_selected_clicked(self):
         logger.info("User about to delete all selected cards from the card table")
-        pass
+        self.model.clear()
+
+    @Slot()
+    def on_set_copies_to_clicked(self):
+        value = 1
+        self.model.set_all_copies_to(value)
+        logger.info(f"All copy counts set to {value}")
 
     def show_from_drop_event(self, event: QDropEvent):
         urls = event.mimeData().urls()
