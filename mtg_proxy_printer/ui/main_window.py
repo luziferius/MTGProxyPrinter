@@ -24,8 +24,7 @@ from PyQt5.QtWidgets import QApplication, QMessageBox, QAction, QWidget, QMainWi
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
-from mtg_proxy_printer.model.card_list import CardListModel
-from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
+from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
@@ -34,7 +33,7 @@ from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffle
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.ui.custom_card_import_dialog import CustomCardImportDialog
-from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, CardSizes
+from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
@@ -264,10 +263,11 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_add_custom_cards_triggered(self):
         logger.info(f"User adds custom cards.")
-        dialog = CustomCardImportDialog(self.card_database, self)
+        self.current_dialog = dialog = CustomCardImportDialog(self.card_database, self)
+        dialog.finished.connect(self.on_dialog_finished)
         dialog.request_action.connect(self.document.apply)
         dialog.show()
-        
+
     @Slot()
     def on_action_print_triggered(self):
         logger.info(f"User prints the current document.")
@@ -276,9 +276,9 @@ class MainWindow(QMainWindow):
             "This is passed as the {action} when asking the user about compacting the document if that can save pages")
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
-        self.current_dialog = PrintDialog(self.document, self)
-        self.current_dialog.finished.connect(self.on_dialog_finished)
-        self.missing_images_manager.obtain_missing_images(self.current_dialog.open)
+        self.current_dialog = dialog = PrintDialog(self.document, self)
+        dialog.finished.connect(self.on_dialog_finished)
+        self.missing_images_manager.obtain_missing_images(dialog.open)
 
     @Slot()
     def on_action_print_preview_triggered(self):
@@ -288,9 +288,9 @@ class MainWindow(QMainWindow):
             "This is passed as the {action} when asking the user about compacting the document if that can save pages")
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
-        self.current_dialog = PrintPreviewDialog(self.document, self)
-        self.current_dialog.finished.connect(self.on_dialog_finished)
-        self.missing_images_manager.obtain_missing_images(self.current_dialog.open)
+        self.current_dialog = dialog = PrintPreviewDialog(self.document, self)
+        dialog.finished.connect(self.on_dialog_finished)
+        self.missing_images_manager.obtain_missing_images(dialog.open)
 
     @Slot()
     def on_action_print_pdf_triggered(self):
@@ -300,9 +300,9 @@ class MainWindow(QMainWindow):
             "This is passed as the {action} when asking the user about compacting the document if that can save pages")
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
-        self.current_dialog = SavePDFDialog(self, self.document)
-        self.current_dialog.finished.connect(self.on_dialog_finished)
-        self.missing_images_manager.obtain_missing_images(self.current_dialog.open)
+        self.current_dialog = dialog = SavePDFDialog(self, self.document)
+        dialog.finished.connect(self.on_dialog_finished)
+        self.missing_images_manager.obtain_missing_images(dialog.open)
 
     @Slot()
     def on_action_add_empty_card_triggered(self):
@@ -368,9 +368,9 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_edit_document_settings_triggered(self):
         logger.info("User wants to edit the document settings. Showing the editor dialog")
-        self.current_dialog = DocumentSettingsDialog(self.document, self)
-        self.current_dialog.finished.connect(self.on_dialog_finished)
-        self.current_dialog.open()
+        self.current_dialog = dialog = DocumentSettingsDialog(self.document, self)
+        dialog.finished.connect(self.on_dialog_finished)
+        dialog.open()
 
     @Slot()
     def on_action_download_missing_card_images_triggered(self):
@@ -379,16 +379,16 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def on_action_save_as_triggered(self):
-        self.current_dialog = SaveDocumentAsDialog(self.document, self)
-        self.current_dialog.finished.connect(self.on_dialog_finished)
-        self.current_dialog.open()
+        self.current_dialog = dialog = SaveDocumentAsDialog(self.document, self)
+        dialog.finished.connect(self.on_dialog_finished)
+        dialog.open()
 
     @Slot()
     def on_action_load_document_triggered(self):
-        self.current_dialog = LoadDocumentDialog(self, self.document)
-        self.current_dialog.accepted.connect(self.ui.central_widget.select_first_page)
-        self.current_dialog.finished.connect(self.on_dialog_finished)
-        self.current_dialog.open()
+        self.current_dialog = dialog = LoadDocumentDialog(self, self.document)
+        dialog.accepted.connect(self.ui.central_widget.select_first_page)
+        dialog.finished.connect(self.on_dialog_finished)
+        dialog.open()
 
     def on_document_loading_failed(self, failed_path: pathlib.Path, reason: str):
         function_text = self.ui.action_import_deck_list.text()
