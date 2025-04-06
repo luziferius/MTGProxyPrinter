@@ -235,7 +235,6 @@ class CardListModel(QAbstractTableModel):
             self.oversized_card_count -= row.copies
             self.oversized_card_count_changed.emit(self.oversized_card_count)
 
-    @Slot(list)
     def remove_multi_selection(self, indices: QItemSelection) -> int:
         """
         Remove all cards in the given multi-selection.

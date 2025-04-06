@@ -19,7 +19,7 @@ import typing
 
 from PyQt5.QtCore import Qt, QSize, pyqtSignal as Signal, pyqtSlot as Slot
 from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QPixmap
-from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog
+from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QPushButton
 
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
@@ -50,9 +50,23 @@ class CustomCardImportDialog(QDialog):
         super().__init__(parent, flags)
         self.ui = ui = Ui_CustomCardImportDialog()
         ui.setupUi(self)
+        self.ok_button.setEnabled(False)
+        ui.remove_selected.setDisabled(True)
         self.model = CardListModel(card_db)
         ui.card_table.setModel(self.model)
+        ui.card_table.selectionModel().selectionChanged.connect(self.on_card_table_selection_changed)
+        self.model.rowsInserted.connect(self.on_rows_inserted)
+        self.model.rowsRemoved.connect(self.on_rows_removed)
+        self.model.modelReset.connect(self.on_rows_removed)
         logger.info(f"Created {self.__class__.__name__} instance")
+
+    @property
+    def currently_selected_cards(self):
+        return self.ui.card_table.selectionModel().selection()
+
+    @property
+    def ok_button(self) -> QPushButton:
+        return self.ui.button_box.button(self.ui.button_box.StandardButton.Ok)
 
     @staticmethod
     def dragdrop_acceptable(event: EventTypes) -> bool:
@@ -60,6 +74,20 @@ class CustomCardImportDialog(QDialog):
         local_paths = [Path(url.toLocalFile()) for url in urls]
         acceptable = local_paths and all((path.is_file() for path in local_paths))
         return acceptable
+
+    @Slot()
+    def on_card_table_selection_changed(self):
+        cards_selected = self.currently_selected_cards.isEmpty()
+        self.ui.remove_selected.setDisabled(cards_selected)
+
+    @Slot()
+    def on_rows_inserted(self):
+        self.ok_button.setEnabled(True)
+
+    @Slot()
+    def on_rows_removed(self):
+        has_cards = bool(self.model.rowCount())
+        self.ok_button.setEnabled(has_cards)
 
     @Slot()
     def on_add_cards_clicked(self):
@@ -75,7 +103,7 @@ class CustomCardImportDialog(QDialog):
     @Slot()
     def on_remove_selected_clicked(self):
         logger.info("User about to delete all selected cards from the card table")
-        self.model.clear()
+        self.model.remove_multi_selection(self.currently_selected_cards)
 
     @Slot()
     def on_set_copies_to_clicked(self):
