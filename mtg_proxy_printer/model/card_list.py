@@ -25,7 +25,7 @@ from PyQt5.QtGui import QIcon
 
 from mtg_proxy_printer.ui.common import get_image_for_tooltip_display
 from mtg_proxy_printer.decklist_parser.common import CardCounter
-from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase, AnyCardType
+from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase, AnyCardType, CheckCard
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)

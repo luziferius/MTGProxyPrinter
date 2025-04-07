@@ -179,6 +179,11 @@ class CheckCard:
     def set(self) -> MTGSet:
         return self.front.set
 
+    @set.setter
+    def set(self, value: MTGSet):
+        self.front.set = value
+        self.back.set = value
+
     @property
     def collector_number(self) -> str:
         return self.front.collector_number
