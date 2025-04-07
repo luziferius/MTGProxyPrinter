@@ -18,10 +18,17 @@ import typing
 from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel
 from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox
 
-from mtg_proxy_printer.model.carddb import Card
+from mtg_proxy_printer.model.carddb import Card, MTGSet
 from mtg_proxy_printer.model.card_list import CardListColumns
 from mtg_proxy_printer.model.document import Document, PageColumns
 from mtg_proxy_printer.logger import get_logger
+
+try:
+    from mtg_proxy_printer.ui.generated.set_editor_widget import Ui_SetEditor
+except ModuleNotFoundError:
+    from mtg_proxy_printer.ui.common import load_ui_from_file
+    Ui_SetEditor = load_ui_from_file("set_editor_widget")
+
 
 logger = get_logger(__name__)
 del get_logger
@@ -58,6 +65,31 @@ class CardSideSelectionDelegate(QStyledItemDelegate):
         if new_value != previous_value:
             logger.debug(f"Setting data for column {index.column()} to {new_value}")
             model.setData(index, new_value, ItemDataRole.EditRole)
+
+
+class SetEditorDelegate(QStyledItemDelegate):
+
+    class SetEditor(QWidget):
+        def __init__(self, parent: QWidget = None, flags=Qt.WindowFlags()):
+            super().__init__(parent, flags)
+            self.ui = ui = Ui_SetEditor()
+            ui.setupUi(self)
+
+        def set_data(self, mtg_set: MTGSet):
+            self.ui.name_editor.setText(mtg_set.name)
+            self.ui.code_edit.setText(mtg_set.code)
+
+        def to_mtg_set(self):
+            return MTGSet(self.ui.code_edit.text(), self.ui.name_editor.text())
+
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
+        editor = self.SetEditor(parent)
+        current_data: MTGSet = index.data(ItemDataRole.EditRole)
+        editor.set_data(current_data)
+        return editor
+
+    def setModelData(self, editor, model: QAbstractItemModel, index: QModelIndex) -> None:
+        model.setData(index, editor.to_mtg_set(), ItemDataRole.EditRole)
 
 
 class ComboBoxItemDelegate(QStyledItemDelegate):

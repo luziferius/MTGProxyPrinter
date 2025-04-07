@@ -98,7 +98,7 @@ class CardListModel(QAbstractTableModel):
                 return card.name
             elif column == CardListColumns.Set:
                 if role == ItemDataRole.EditRole:
-                    return card.set.code
+                    return card.set
                 else:
                     return f"{card.set.name} ({card.set.code.upper()})"
             elif column == CardListColumns.CollectorNumber:
@@ -137,7 +137,7 @@ class CardListModel(QAbstractTableModel):
         row, column = index.row(), index.column()
         container = self.rows[row]
         card = container.card
-        logger.debug(f"Setting card list model data for column {column} to {value}")
+        logger.debug(f"Setting card list model data on official card for column {column} to {value}")
         if column == CardListColumns.Copies:
             return self._set_copies_value(container, card, value)
         elif column == CardListColumns.CollectorNumber:
@@ -157,6 +157,7 @@ class CardListModel(QAbstractTableModel):
         row, column = index.row(), index.column()
         container = self.rows[row]
         card = container.card
+        logger.debug(f"Setting card list model data on custom card for column {column} to {value}")
         if column == CardListColumns.Copies:
             return self._set_copies_value(container, card, value)
         elif column == CardListColumns.CardName:
@@ -173,10 +174,8 @@ class CardListModel(QAbstractTableModel):
             card.face_number = int(not value)
             return True
         elif column == CardListColumns.Set:
-            # TODO: Implement this. Pass Name and code as a tuple[str, str]? Needs a new delegate.
-            #    Maybe two line-edits in a horizontal layout with parenthesis labels around the second?
-            #    Like [Name edit]([Code edit])
-            return False
+            card.set = value
+            return True
         return False
 
     def _set_copies_value(self, container: CardListModelRow, card: Card, value: int) -> bool:
