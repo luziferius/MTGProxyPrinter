@@ -18,10 +18,13 @@ from collections import Counter
 import itertools
 from unittest.mock import NonCallableMagicMock
 
-from PyQt5.QtWidgets import QComboBox
+from PyQt5.QtCore import QModelIndex
+from PyQt5.QtWidgets import QComboBox, QSpinBox, QWidget, QStyleOptionViewItem
 import pytest
 from hamcrest import *
+from pytestqt.qtbot import QtBot
 
+from hasgetter import has_getters
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.card_list import CardListModel, CardListColumns
@@ -30,7 +33,23 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
-from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, DocumentComboBoxItemDelegate
+from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, DocumentComboBoxItemDelegate, \
+    BoundedCopiesSpinboxDelegate
+
+@pytest.fixture()
+def bounded_copies_spinbox(qtbot: QtBot) -> QSpinBox:
+    parent = QWidget()
+    qtbot.add_widget(parent)
+    delegate = BoundedCopiesSpinboxDelegate()
+    editor = delegate.createEditor(parent, QStyleOptionViewItem(), QModelIndex())
+    yield editor
+
+
+def test_BoundedCopiesSpinboxDelegate_createEditor_returns_correct_type(bounded_copies_spinbox: QSpinBox):
+    assert_that(bounded_copies_spinbox, is_(instance_of(QSpinBox)))
+
+def test_BoundedCopiesSpinboxDelegate_createEditor_has_correct_limits(bounded_copies_spinbox: QSpinBox):
+    assert_that(bounded_copies_spinbox, has_getters(minimum=1, maximum=100))
 
 
 @pytest.fixture(params=itertools.product(range(3), ["", "language"]))
