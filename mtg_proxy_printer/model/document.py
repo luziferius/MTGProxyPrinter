@@ -265,14 +265,16 @@ class Document(QAbstractItemModel):
             self._set_data_for_custom_card(index, value)
         return False
 
-    @staticmethod
-    def _set_data_for_custom_card(index: QModelIndex, value: typing.Any) -> bool:
+    def _set_data_for_custom_card(self, index: QModelIndex, value: typing.Any) -> bool:
         row, column = index.row(), index.column()
         container: CardContainer = index.internalPointer()
         card = container.card
         logger.debug(f"Setting page data on custom card for {column=} to {value}")
         if column == PageColumns.CardName:
             card.name = value
+            parent = index.parent()
+            # Update the page overview on name changes
+            self.dataChanged.emit(parent, parent, [ItemDataRole.DisplayRole])
             return True
         elif column == PageColumns.CollectorNumber:
             card.collector_number = value
