@@ -30,3 +30,4 @@ mtg_proxy_printer/resources/translations/*.qm
 mtg_proxy_printer/resources/translations/mtgproxyprinter_sources.ts
 Screenshots/*.txt
 *.png
+requirements*.txt
