@@ -14,11 +14,12 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import typing
+from typing import Union
 
 from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel
 from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox
 
-from mtg_proxy_printer.model.carddb import Card, MTGSet
+from mtg_proxy_printer.model.carddb import Card, MTGSet, AnyCardType
 from mtg_proxy_printer.model.card_list import CardListColumns
 from mtg_proxy_printer.model.document import Document, PageColumns
 from mtg_proxy_printer.logger import get_logger
@@ -38,6 +39,7 @@ __all__ = [
     "CardListComboBoxItemDelegate",
     "BoundedCopiesSpinboxDelegate",
     "CardSideSelectionDelegate",
+    "SetEditorDelegate",
 ]
 ItemDataRole = Qt.ItemDataRole
 
@@ -69,7 +71,8 @@ class CardSideSelectionDelegate(QStyledItemDelegate):
 
 class SetEditorDelegate(QStyledItemDelegate):
 
-    class SetEditor(QWidget):
+    class CustomCardSetEditor(QWidget):
+        """A widget holding two line edits, allowing the user to freely edit the set name & code of custom cards."""
         def __init__(self, parent: QWidget = None, flags=Qt.WindowFlags()):
             super().__init__(parent, flags)
             self.ui = ui = Ui_SetEditor()
@@ -83,13 +86,35 @@ class SetEditorDelegate(QStyledItemDelegate):
             return MTGSet(self.ui.code_edit.text(), self.ui.name_editor.text())
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
-        editor = self.SetEditor(parent)
-        current_data: MTGSet = index.data(ItemDataRole.EditRole)
-        editor.set_data(current_data)
-        return editor
+        card: AnyCardType = index.data(ItemDataRole.UserRole)
+        # Use a locked-down choice-based editor for official cards, and a free-form editor for custom cards
+        return QComboBox(parent) if card.oracle_id else self.CustomCardSetEditor(parent)
 
-    def setModelData(self, editor, model: QAbstractItemModel, index: QModelIndex) -> None:
-        model.setData(index, editor.to_mtg_set(), ItemDataRole.EditRole)
+    def setEditorData(self, editor: Union[QComboBox, CustomCardSetEditor], index: QModelIndex):
+        card: AnyCardType = index.data(ItemDataRole.UserRole)
+        if self._is_official_card(editor):
+            model = index.model()
+            while hasattr(model, "sourceModel"):  # Resolve the source model to gain access to the card database.
+                model = model.sourceModel()
+            source_model: Document = model
+            matching_sets = source_model.card_db.get_available_sets_for_card(card)
+            current_set_code = card.set.code
+            for position, set_data in enumerate(matching_sets):
+                editor.addItem(set_data.data(ItemDataRole.DisplayRole), set_data)
+                if set_data.code == current_set_code:
+                    editor.setCurrentIndex(position)
+        else:  # Custom card
+            current_data: MTGSet = index.data(ItemDataRole.EditRole)
+            editor.set_data(current_data)
+
+    def setModelData(
+            self, editor: Union[QComboBox, CustomCardSetEditor], model: QAbstractItemModel, index: QModelIndex) -> None:
+        data = editor.currentData(ItemDataRole.UserRole) if self._is_official_card(editor) else editor.to_mtg_set()
+        model.setData(index, data, ItemDataRole.EditRole)
+
+    @staticmethod
+    def _is_official_card(editor: Union[QComboBox, CustomCardSetEditor]):
+        return isinstance(editor, QComboBox)
 
 
 class ComboBoxItemDelegate(QStyledItemDelegate):
@@ -111,7 +136,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
         card: Card = index.data(ItemDataRole.UserRole)
         if hasattr(self.COLUMNS, "Copies") and column == self.COLUMNS.Copies:
             pass
-        elif column == self.COLUMNS.Set:
+        elif column == self.COLUMNS.Set:  # TODO: Outdated. Remove. Replace use in Document with SetEditorDelegate
             matching_sets = source_model.card_db.get_available_sets_for_card(card)
             current_set_code = card.set.code
             current_set_position = 0

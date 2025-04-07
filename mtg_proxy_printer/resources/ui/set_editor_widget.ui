@@ -63,6 +63,10 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>name_editor</tabstop>
+  <tabstop>code_edit</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

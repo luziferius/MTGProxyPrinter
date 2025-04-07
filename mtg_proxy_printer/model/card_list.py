@@ -145,7 +145,7 @@ class CardListModel(QAbstractTableModel):
                 card.language, card.name, card.set.code, value, is_front=card.is_front)
         elif column == CardListColumns.Set:
             card_data = CardIdentificationData(
-                card.language, card.name, value, is_front=card.is_front
+                card.language, card.name, value.code, is_front=card.is_front
             )
         else:
             card_data = self.card_db.translate_card(card, value)

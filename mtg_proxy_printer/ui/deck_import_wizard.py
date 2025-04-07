@@ -16,7 +16,6 @@
 
 
 import itertools
-import math
 import pathlib
 import re
 import typing
@@ -24,7 +23,7 @@ import urllib.error
 import urllib.parse
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
-    QItemSelection, QSize, QUrl
+    QSize, QUrl
 from PyQt5.QtGui import QValidator, QIcon, QDesktopServices
 from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
@@ -35,10 +34,9 @@ from mtg_proxy_printer.decklist_downloader import IsIdentifyingDeckUrlValidator,
     get_downloader_class, ParserBase
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.model.card_list import CardListModel, CardListColumns
+from mtg_proxy_printer.model.card_list import CardListModel
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase, markdown_to_html
-from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, BoundedCopiesSpinboxDelegate
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
 try:

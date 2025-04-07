@@ -14,7 +14,6 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import math
-from typing import Union
 
 from PyQt5.QtCore import Qt, pyqtSignal as Signal, pyqtSlot as Slot
 from PyQt5.QtWidgets import QTableView, QWidget
@@ -62,7 +61,6 @@ class CardListTableView(QTableView):
 
     def _setup_combo_box_item_delegate(self) -> CardListComboBoxItemDelegate:
         delegate = CardListComboBoxItemDelegate(self)
-        self.setItemDelegateForColumn(CardListColumns.Set, delegate)
         self.setItemDelegateForColumn(CardListColumns.CollectorNumber, delegate)
         self.setItemDelegateForColumn(CardListColumns.Language, delegate)
         return delegate
