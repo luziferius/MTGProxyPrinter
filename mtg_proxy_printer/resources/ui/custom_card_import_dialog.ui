@@ -14,22 +14,6 @@
    <string>Import custom cards</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="3">
-    <widget class="QLabel" name="image_label">
-     <property name="maximumSize">
-      <size>
-       <width>800</width>
-       <height>1100</height>
-      </size>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="2" rowspan="10">
-    <widget class="CardListTableView" name="card_table"/>
-   </item>
    <item row="6" column="3">
     <widget class="QPushButton" name="set_copies_to">
      <property name="text">
@@ -47,6 +31,9 @@
      </property>
     </widget>
    </item>
+   <item row="1" column="2" rowspan="11">
+    <widget class="CardListTableView" name="card_table"/>
+   </item>
    <item row="3" column="3" colspan="2">
     <widget class="QPushButton" name="remove_selected">
      <property name="text">
@@ -60,17 +47,17 @@
    <item row="2" column="3" colspan="2">
     <widget class="QPushButton" name="add_cards">
      <property name="text">
-      <string>Add cards</string>
+      <string>Load images</string>
      </property>
      <property name="icon">
-      <iconset theme="list-add"/>
+      <iconset theme="document-import"/>
      </property>
     </widget>
    </item>
-   <item row="7" column="3" colspan="2">
+   <item row="8" column="3" colspan="2">
     <widget class="QDialogButtonBox" name="button_box">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+      <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
@@ -82,6 +69,19 @@
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
     </widget>
+   </item>
+   <item row="7" column="3">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>
