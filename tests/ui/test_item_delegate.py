@@ -34,7 +34,8 @@ from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
 from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, DocumentComboBoxItemDelegate, \
-    BoundedCopiesSpinboxDelegate
+    BoundedCopiesSpinboxDelegate, SetEditorDelegate
+
 
 @pytest.fixture()
 def bounded_copies_spinbox(qtbot: QtBot) -> QSpinBox:
@@ -50,6 +51,24 @@ def test_BoundedCopiesSpinboxDelegate_createEditor_returns_correct_type(bounded_
 
 def test_BoundedCopiesSpinboxDelegate_createEditor_has_correct_limits(bounded_copies_spinbox: QSpinBox):
     assert_that(bounded_copies_spinbox, has_getters(minimum=1, maximum=100))
+
+
+@pytest.mark.parametrize("mtg_set", [MTGSet("BAR", "bar"), MTGSet("FOO", "foo")])
+def test_CustomCardSetEditor_set_data(qtbot: QtBot, mtg_set: MTGSet):
+    editor = SetEditorDelegate.CustomCardSetEditor()
+    qtbot.add_widget(editor)
+    editor.set_data(mtg_set)
+    assert_that(editor.ui.name_editor.text(), is_(equal_to(mtg_set.name)))
+    assert_that(editor.ui.code_edit.text(), is_(equal_to(mtg_set.code)))
+
+
+@pytest.mark.parametrize("mtg_set", [MTGSet("BAR", "bar"), MTGSet("FOO", "foo")])
+def test_CustomCardSetEditor_to_mtg_set(qtbot: QtBot, mtg_set: MTGSet):
+    editor = SetEditorDelegate.CustomCardSetEditor()
+    qtbot.add_widget(editor)
+    editor.ui.name_editor.setText(mtg_set.name)
+    editor.ui.code_edit.setText(mtg_set.code)
+    assert_that(editor.to_mtg_set(), is_(equal_to(mtg_set)))
 
 
 @pytest.fixture(params=itertools.product(range(3), ["", "language"]))
