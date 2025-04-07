@@ -87,7 +87,7 @@ class MTGSet:
     def data(self, role: ItemDataRole):
         """data getter used for Qt Model API based access"""
         if role == ItemDataRole.EditRole:
-            return self.code
+            return self
         elif role == ItemDataRole.DisplayRole:
             return f"{self.name} ({self.code.upper()})"
         elif role == ItemDataRole.ToolTipRole:

@@ -233,25 +233,25 @@ class Document(QAbstractItemModel):
         index = self._to_index(index)
         data = index.internalPointer()
         flags = super().flags(index)
-        if isinstance(data, CardContainer) and index.column() in self.EDITABLE_COLUMNS:
+        if isinstance(data, CardContainer) and (index.column() in self.EDITABLE_COLUMNS or not data.card.oracle_id):
             flags |= ItemFlag.ItemIsEditable
         return flags
 
     def setData(self, index: AnyIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
         index = self._to_index(index)
-        data = index.internalPointer()
+        data: CardContainer = index.internalPointer()
+        if not isinstance(data, CardContainer) or role != ItemDataRole.EditRole:
+            return False
         column = index.column()
-        if isinstance(data, CardContainer) \
-                and role == ItemDataRole.EditRole \
-                and column in self.EDITABLE_COLUMNS:
-            logger.debug(f"Setting model data for {column=} to {value}")
-            card = data.card
+        card = data.card
+        if card.oracle_id and column in self.EDITABLE_COLUMNS:
+            logger.debug(f"Setting page data on official card for {column=} to {value}")
             if column == PageColumns.CollectorNumber:
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
             elif column == PageColumns.Set:
                 card_data = CardIdentificationData(
-                    card.language, card.name, value, is_front=card.is_front
+                    card.language, card.name, value.code, is_front=card.is_front
                 )
             else:
                 replacement = self.card_db.translate_card(card, value)
@@ -261,6 +261,32 @@ class Document(QAbstractItemModel):
                     return True
                 return False
             return self._request_replacement_card(index, card_data)
+        elif not card.oracle_id:
+            self._set_data_for_custom_card(index, value)
+        return False
+
+    @staticmethod
+    def _set_data_for_custom_card(index: QModelIndex, value: typing.Any) -> bool:
+        row, column = index.row(), index.column()
+        container: CardContainer = index.internalPointer()
+        card = container.card
+        logger.debug(f"Setting page data on custom card for {column=} to {value}")
+        if column == PageColumns.CardName:
+            card.name = value
+            return True
+        elif column == PageColumns.CollectorNumber:
+            card.collector_number = value
+            return True
+        elif column == PageColumns.Language:
+            card.language = value
+            return True
+        elif column == PageColumns.IsFront:
+            card.is_front = value
+            card.face_number = int(not value)
+            return True
+        elif column == PageColumns.Set:
+            card.set = value
+            return True
         return False
 
     @staticmethod

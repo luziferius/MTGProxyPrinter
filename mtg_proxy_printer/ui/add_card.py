@@ -25,6 +25,7 @@ import mtg_proxy_printer.model.string_list
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.model.carddb import MTGSet
 from mtg_proxy_printer.ui.common import load_ui_from_file
 
 from mtg_proxy_printer.logger import get_logger
@@ -146,12 +147,12 @@ class AddCardWidget(QWidget):
         valid = current_model_index.isValid()
         self.ui.collector_number_box.setEnabled(valid)
         if valid:
-            set_abbr = current_model_index.data(ItemDataRole.EditRole)
+            mtg_set: MTGSet = current_model_index.data(ItemDataRole.EditRole)
             collector_numbers = self.card_database.find_collector_numbers_matching(
-                self.current_card_name, set_abbr, self.current_language
+                self.current_card_name, mtg_set.code, self.current_language
             )
             logger.debug(
-                f'Selected: "{set_abbr}", language: {self.current_language}, matching {len(collector_numbers)} prints')
+                f'Selected: "{mtg_set.code}", language: {self.current_language}, matching {len(collector_numbers)} prints')
             self.collector_number_model.setStringList(collector_numbers)
             self.ui.collector_number_list.selectionModel().select(
                 self.collector_number_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect)
@@ -268,7 +269,7 @@ class AddCardWidget(QWidget):
     def current_set_name(self) -> Optional[str]:
         selected = self.ui.set_name_list.selectedIndexes()
         if selected:
-            return selected[0].data(ItemDataRole.EditRole)
+            return selected[0].data(ItemDataRole.EditRole).code
         else:
             return None
 
