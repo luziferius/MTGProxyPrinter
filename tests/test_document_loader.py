@@ -34,7 +34,8 @@ from tests.helpers import quantity_close_to
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, CardSizes, QuantityT
 from mtg_proxy_printer.model.carddb import CheckCard
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.document import PageColumns, Document
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 CardType = mtg_proxy_printer.model.document_loader.CardType

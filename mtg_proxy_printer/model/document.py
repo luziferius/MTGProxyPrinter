@@ -25,7 +25,7 @@ import typing
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, \
     QPersistentModelIndex
 
-from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
+from mtg_proxy_printer.model.document_page import CardContainer, Page, PageColumns
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
 from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData, Card, MTGSet
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
@@ -47,21 +47,11 @@ else:
 
 __all__ = [
     "Document",
-    "PageColumns",
 ]
 
 
 class DocumentColumns(enum.IntEnum):
     Page = 0
-
-
-class PageColumns(enum.IntEnum):
-    CardName = 0
-    Set = enum.auto()
-    CollectorNumber = enum.auto()
-    Language = enum.auto()
-    IsFront = enum.auto()
-    Image = enum.auto()
 
 
 INVALID_INDEX = QModelIndex()
@@ -111,7 +101,7 @@ class Document(QAbstractItemModel):
         self.loader = DocumentLoader(self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.loader.load_requested.connect(self.apply)
-        self.pages: PageList = [first_page := Page()]
+        self.pages: typing.List[Page] = [first_page := Page()]
         # Mapping from page id() to list index in the page list
         self.page_index_cache: typing.Dict[int, int] = {id(first_page): 0}
         self.currently_edited_page = first_page

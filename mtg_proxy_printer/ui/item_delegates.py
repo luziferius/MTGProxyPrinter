@@ -21,7 +21,8 @@ from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, 
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet, AnyCardType
 from mtg_proxy_printer.model.card_list import CardListColumns
-from mtg_proxy_printer.model.document import Document, PageColumns
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.logger import get_logger
 
 try:

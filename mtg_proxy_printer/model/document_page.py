@@ -15,11 +15,21 @@
 
 
 import dataclasses
+import enum
 from functools import partial
 import typing
 
 from mtg_proxy_printer.model.carddb import AnyCardType, AnyCardTypeForTypeCheck
 from mtg_proxy_printer.units_and_sizes import PageType
+
+
+class PageColumns(enum.IntEnum):
+    CardName = 0
+    Set = enum.auto()
+    CollectorNumber = enum.auto()
+    Language = enum.auto()
+    IsFront = enum.auto()
+    Image = enum.auto()
 
 
 @dataclasses.dataclass
@@ -69,6 +79,3 @@ class Page(typing.List[CardContainer]):
         container = CardContainer(self, __object)
         super().append(container)
         return container
-
-
-PageList = typing.List[Page]
