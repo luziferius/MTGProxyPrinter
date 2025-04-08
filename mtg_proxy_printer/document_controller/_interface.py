@@ -70,7 +70,7 @@ class DocumentAction:
         Reverses the application of the action to the given document, undoing its effects.
         For this to work properly, this action must have been the most recent action applied to the document.
         """
-        pass
+        return self
 
     def __eq__(self, other) -> bool:
         return isinstance(other, self.__class__) and all(

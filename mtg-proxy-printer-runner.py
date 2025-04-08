@@ -27,7 +27,7 @@ root_path = pathlib.Path(__file__).parent.absolute().resolve()
 sys.path.insert(0, str(root_path))
 
 import mtg_proxy_printer.model.carddb
-from mtg_proxy_printer.__main__ import main  # noqa
+from mtg_proxy_printer.__main__ import main
 
 
 # These methods are wrapped by the profile() function

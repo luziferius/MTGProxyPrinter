@@ -25,6 +25,7 @@ import typing
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, \
     QPersistentModelIndex
 
+from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCustomCard
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageColumns
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
 from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData, Card, MTGSet
@@ -252,32 +253,7 @@ class Document(QAbstractItemModel):
                 return False
             return self._request_replacement_card(index, card_data)
         elif not card.oracle_id:
-            self._set_data_for_custom_card(index, value)
-        return False
-
-    def _set_data_for_custom_card(self, index: QModelIndex, value: typing.Any) -> bool:
-        row, column = index.row(), index.column()
-        container: CardContainer = index.internalPointer()
-        card = container.card
-        logger.debug(f"Setting page data on custom card for {column=} to {value}")
-        if column == PageColumns.CardName:
-            card.name = value
-            parent = index.parent()
-            # Update the page overview on name changes
-            self.dataChanged.emit(parent, parent, [ItemDataRole.DisplayRole])
-            return True
-        elif column == PageColumns.CollectorNumber:
-            card.collector_number = value
-            return True
-        elif column == PageColumns.Language:
-            card.language = value
-            return True
-        elif column == PageColumns.IsFront:
-            card.is_front = value
-            card.face_number = int(not value)
-            return True
-        elif column == PageColumns.Set:
-            card.set = value
+            self.apply(ActionEditCustomCard(index, value))
             return True
         return False
 
