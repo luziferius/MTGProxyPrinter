@@ -29,7 +29,7 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, Ac
 from mtg_proxy_printer.model.carddb import Card, CheckCard, CardDatabase, AnyCardType, CardList, AnyCardTypeForTypeCheck
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
-from mtg_proxy_printer.ui.item_delegates import DocumentComboBoxItemDelegate, SetEditorDelegate
+from mtg_proxy_printer.ui.item_delegates import DocumentComboBoxItemDelegate, SetEditorDelegate, LanguageEditorDelegate
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -48,6 +48,7 @@ class PageCardTableView(QTableView):
         self.customContextMenuRequested.connect(self.page_table_context_menu_requested)
         self._column_delegates = (
             self._setup_combo_box_item_delegate(),
+            self._setup_language_delegate(),
             self._setup_set_delegate(),
         )
         self.card_db: CardDatabase = None
@@ -70,6 +71,11 @@ class PageCardTableView(QTableView):
         self.setItemDelegateForColumn(PageColumns.CollectorNumber, combo_box_delegate)
         self.setItemDelegateForColumn(PageColumns.Language, combo_box_delegate)
         return combo_box_delegate
+
+    def _setup_language_delegate(self):
+        delegate = LanguageEditorDelegate(self)
+        self.setItemDelegateForColumn(PageColumns.Language, delegate)
+        return delegate
 
     def _setup_set_delegate(self):
         delegate = SetEditorDelegate(self)

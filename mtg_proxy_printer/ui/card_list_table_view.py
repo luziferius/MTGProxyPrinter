@@ -21,7 +21,7 @@ from PyQt5.QtWidgets import QTableView, QWidget
 from mtg_proxy_printer.model.card_list import CardListColumns, CardListModel
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, BoundedCopiesSpinboxDelegate, \
-    CardSideSelectionDelegate, SetEditorDelegate
+    CardSideSelectionDelegate, SetEditorDelegate, LanguageEditorDelegate
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -40,6 +40,7 @@ class CardListTableView(QTableView):
         super().__init__(parent)
         self._column_delegates = (
             self._setup_combo_box_item_delegate(),
+            self._setup_language_delegate(),
             self._setup_copies_delegate(),
             self._setup_side_delegate(),
             self._setup_set_delegate(),
@@ -60,6 +61,11 @@ class CardListTableView(QTableView):
         is_empty = selection.isEmpty()
         logger.debug(f"Selection changed: Currently selected cells: {selection.count()}")
         self.changed_selection_is_empty.emit(is_empty)
+
+    def _setup_language_delegate(self):
+        delegate = LanguageEditorDelegate(self)
+        self.setItemDelegateForColumn(CardListColumns.Language, delegate)
+        return delegate
 
     def _setup_combo_box_item_delegate(self) -> CardListComboBoxItemDelegate:
         delegate = CardListComboBoxItemDelegate(self)

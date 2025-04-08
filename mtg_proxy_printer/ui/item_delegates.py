@@ -41,6 +41,7 @@ __all__ = [
     "BoundedCopiesSpinboxDelegate",
     "CardSideSelectionDelegate",
     "SetEditorDelegate",
+    "LanguageEditorDelegate",
 ]
 ItemDataRole = Qt.ItemDataRole
 
@@ -118,7 +119,38 @@ class SetEditorDelegate(QStyledItemDelegate):
         return isinstance(editor, QComboBox)
 
 
+class LanguageEditorDelegate(QStyledItemDelegate):
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
+        return QComboBox(parent)
 
+
+    def setEditorData(self, editor: QComboBox, index: QModelIndex):
+        # TODO: Move the model resolution into a function (QModelIndex) -> Document
+        model: typing.Union[Document, QSortFilterProxyModel] = index.model()
+        column = index.column()
+        while hasattr(model, "sourceModel"):  # Resolve the source model to gain access to the card database.
+            model = model.sourceModel()
+        source_model: Document = model
+        card: Card = index.data(ItemDataRole.UserRole)
+        current_language = card.language
+        custom_card = not card.oracle_id
+        editor.setEditable(custom_card)  # Allow custom languages for custom cards only
+        if custom_card:
+            editor.lineEdit().setMaxLength(5)
+            languages = source_model.card_db.get_all_languages()
+        else:
+            languages = source_model.card_db.get_available_languages_for_card(card)
+        for language in languages:
+            editor.addItem(language, language)
+        if current_language in languages:
+            editor.setCurrentIndex(languages.index(index.data(ItemDataRole.EditRole)))
+
+    def setModelData(self, editor: QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:
+        new_value = editor.lineEdit().text() if editor.isEditable() else editor.currentData(ItemDataRole.UserRole)
+        previous_value = index.data(ItemDataRole.EditRole)
+        if new_value != previous_value:
+            logger.debug(f"Setting data for column {index.column()} to {new_value}")
+            model.setData(index, new_value, ItemDataRole.EditRole)
 
 
 class ComboBoxItemDelegate(QStyledItemDelegate):
@@ -128,8 +160,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
     COLUMNS: typing.Union[PageColumns, CardListColumns] = None
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
-        editor = QComboBox(parent)
-        return editor
+        return QComboBox(parent)
 
     def setEditorData(self, editor: QComboBox, index: QModelIndex) -> None:
         model: typing.Union[Document, QSortFilterProxyModel] = index.model()
