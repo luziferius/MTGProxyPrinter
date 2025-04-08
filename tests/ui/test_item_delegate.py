@@ -24,7 +24,6 @@ import pytest
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 
-from hasgetter import has_getters
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.card_list import CardListModel, CardListColumns
@@ -32,9 +31,10 @@ from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.units_and_sizes import CardSizes
-
 from mtg_proxy_printer.ui.item_delegates import CardListComboBoxItemDelegate, DocumentComboBoxItemDelegate, \
     BoundedCopiesSpinboxDelegate, SetEditorDelegate
+
+from tests.hasgetter import has_getters
 
 
 @pytest.fixture()
