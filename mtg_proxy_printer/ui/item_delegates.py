@@ -118,6 +118,9 @@ class SetEditorDelegate(QStyledItemDelegate):
         return isinstance(editor, QComboBox)
 
 
+
+
+
 class ComboBoxItemDelegate(QStyledItemDelegate):
     """
     Editor widget allowing the user to switch a card printing by offering a choice among valid alternatives.

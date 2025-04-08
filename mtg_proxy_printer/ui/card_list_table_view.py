@@ -38,10 +38,12 @@ class CardListTableView(QTableView):
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        self._combo_box_delegate = self._setup_combo_box_item_delegate()
-        self._copies_delegate = self._setup_copies_delegate()
-        self._side_delegate = self._setup_side_delegate()
-        self._set_delegate = self._setup_set_delegate()
+        self._column_delegates = (
+            self._setup_combo_box_item_delegate(),
+            self._setup_copies_delegate(),
+            self._setup_side_delegate(),
+            self._setup_set_delegate(),
+        )
         self.sort_model = NaturallySortedSortFilterProxyModel(self)
 
     def setModel(self, model: CardListModel):

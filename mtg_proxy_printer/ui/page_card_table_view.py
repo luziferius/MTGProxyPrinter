@@ -46,8 +46,10 @@ class PageCardTableView(QTableView):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.customContextMenuRequested.connect(self.page_table_context_menu_requested)
-        self._combo_box_delegate = self._setup_combo_box_item_delegate()
-        self._set_delegate = self._setup_set_delegate()
+        self._column_delegates = (
+            self._setup_combo_box_item_delegate(),
+            self._setup_set_delegate(),
+        )
         self.card_db: CardDatabase = None
 
     def set_data(self, document: Document, card_db: CardDatabase):
