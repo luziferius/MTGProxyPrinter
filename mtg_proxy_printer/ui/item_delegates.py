@@ -139,24 +139,25 @@ class LanguageEditorDelegate(QStyledItemDelegate):
     For custom cards, populate the combo box with all known languages and also enable the edit functionality
     to allow free-form text entry.
     """
+    MAX_LENGTH = 5
+
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
         return QComboBox(parent)
-
 
     def setEditorData(self, editor: QComboBox, index: QModelIndex):
         model = get_document_from_index(index)
         card: Card = index.data(ItemDataRole.UserRole)
         current_language = card.language
-        custom_card = not card.oracle_id
-        editor.setEditable(custom_card)  # Allow custom languages for custom cards only
-        if custom_card:
-            editor.lineEdit().setMaxLength(5)
+        is_custom_card = not card.oracle_id
+        editor.setEditable(is_custom_card)  # Allow custom languages for custom cards only
+        if is_custom_card:
+            editor.lineEdit().setMaxLength(self.MAX_LENGTH)
             languages = model.card_db.get_all_languages()
         else:
             languages = model.card_db.get_available_languages_for_card(card)
         for language in languages:
             editor.addItem(language, language)
-        if current_language in languages:
+        if current_language in languages:  # This is only false for custom cards and user-entered, unknown languages
             editor.setCurrentIndex(languages.index(index.data(ItemDataRole.EditRole)))
 
     def setModelData(self, editor: QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:
