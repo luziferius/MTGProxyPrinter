@@ -46,6 +46,20 @@ __all__ = [
 ItemDataRole = Qt.ItemDataRole
 
 
+def get_document_from_index(index: QModelIndex) -> Document:
+    """
+    Returns the Document instance associated with the given index.
+    Resolves any chain of layered sort/filter models, to grant access to non-Qt-API Document methods.
+    """
+    model: typing.Union[Document, QSortFilterProxyModel, None] = index.model()
+    if model is None:
+        raise RuntimeError("Invalid index without attached model passed")
+    while hasattr(model, "sourceModel"):
+        model = model.sourceModel()
+    source_model: Document = model
+    return source_model
+
+
 class BoundedCopiesSpinboxDelegate(QStyledItemDelegate):
     """A QSpinBox delegate bounded to the inclusive range (1-100). Used for card copies."""
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QSpinBox:
@@ -72,7 +86,10 @@ class CardSideSelectionDelegate(QStyledItemDelegate):
 
 
 class SetEditorDelegate(QStyledItemDelegate):
-
+    """
+    A set editor. For official cards, use a QComboBox with valid set choices for the given card.
+    For custom cards, use the embedded editor widget to allow free-form text entry.
+    """
     class CustomCardSetEditor(QWidget):
         """A widget holding two line edits, allowing the user to freely edit the set name & code of custom cards."""
         def __init__(self, parent: QWidget = None, flags=Qt.WindowFlags()):
@@ -95,11 +112,8 @@ class SetEditorDelegate(QStyledItemDelegate):
     def setEditorData(self, editor: Union[QComboBox, CustomCardSetEditor], index: QModelIndex):
         card: AnyCardType = index.data(ItemDataRole.UserRole)
         if self._is_official_card(editor):
-            model = index.model()
-            while hasattr(model, "sourceModel"):  # Resolve the source model to gain access to the card database.
-                model = model.sourceModel()
-            source_model: Document = model
-            matching_sets = source_model.card_db.get_available_sets_for_card(card)
+            model = get_document_from_index(index)
+            matching_sets = model.card_db.get_available_sets_for_card(card)
             current_set_code = card.set.code
             for position, set_data in enumerate(matching_sets):
                 editor.addItem(set_data.data(ItemDataRole.DisplayRole), set_data)
@@ -120,26 +134,26 @@ class SetEditorDelegate(QStyledItemDelegate):
 
 
 class LanguageEditorDelegate(QStyledItemDelegate):
+    """
+    A language editor. For official cards, use a QComboBox with valid language choices for the given card.
+    For custom cards, populate the combo box with all known languages and also enable the edit functionality
+    to allow free-form text entry.
+    """
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
         return QComboBox(parent)
 
 
     def setEditorData(self, editor: QComboBox, index: QModelIndex):
-        # TODO: Move the model resolution into a function (QModelIndex) -> Document
-        model: typing.Union[Document, QSortFilterProxyModel] = index.model()
-        column = index.column()
-        while hasattr(model, "sourceModel"):  # Resolve the source model to gain access to the card database.
-            model = model.sourceModel()
-        source_model: Document = model
+        model = get_document_from_index(index)
         card: Card = index.data(ItemDataRole.UserRole)
         current_language = card.language
         custom_card = not card.oracle_id
         editor.setEditable(custom_card)  # Allow custom languages for custom cards only
         if custom_card:
             editor.lineEdit().setMaxLength(5)
-            languages = source_model.card_db.get_all_languages()
+            languages = model.card_db.get_all_languages()
         else:
-            languages = source_model.card_db.get_available_languages_for_card(card)
+            languages = model.card_db.get_available_languages_for_card(card)
         for language in languages:
             editor.addItem(language, language)
         if current_language in languages:
@@ -163,16 +177,13 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
         return QComboBox(parent)
 
     def setEditorData(self, editor: QComboBox, index: QModelIndex) -> None:
-        model: typing.Union[Document, QSortFilterProxyModel] = index.model()
+        model = get_document_from_index(index)
         column = index.column()
-        while hasattr(model, "sourceModel"):  # Resolve the source model to gain access to the card database.
-            model = model.sourceModel()
-        source_model: Document = model
         card: Card = index.data(ItemDataRole.UserRole)
         if hasattr(self.COLUMNS, "Copies") and column == self.COLUMNS.Copies:
             pass
         elif column == self.COLUMNS.Set:  # TODO: Outdated. Remove. Replace use in Document with SetEditorDelegate
-            matching_sets = source_model.card_db.get_available_sets_for_card(card)
+            matching_sets = model.card_db.get_available_sets_for_card(card)
             current_set_code = card.set.code
             current_set_position = 0
             for position, set_data in enumerate(matching_sets):
@@ -182,7 +193,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
             editor.setCurrentIndex(current_set_position)
 
         elif column == self.COLUMNS.CollectorNumber:
-            matching_collector_numbers = source_model.card_db.get_available_collector_numbers_for_card_in_set(card)
+            matching_collector_numbers = model.card_db.get_available_collector_numbers_for_card_in_set(card)
             for collector_number in matching_collector_numbers:
                 editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
             if matching_collector_numbers:
@@ -190,7 +201,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
 
         elif column == self.COLUMNS.Language:
             card = index.data(ItemDataRole.UserRole)
-            matching_languages = source_model.card_db.get_available_languages_for_card(card)
+            matching_languages = model.card_db.get_available_languages_for_card(card)
             for language in matching_languages:
                 editor.addItem(language, language)
             if matching_languages:
