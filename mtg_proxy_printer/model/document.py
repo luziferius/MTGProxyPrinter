@@ -224,7 +224,7 @@ class Document(QAbstractItemModel):
         index = self._to_index(index)
         data = index.internalPointer()
         flags = super().flags(index)
-        if isinstance(data, CardContainer) and (index.column() in self.EDITABLE_COLUMNS or not data.card.oracle_id):
+        if isinstance(data, CardContainer) and (index.column() in self.EDITABLE_COLUMNS or data.card.is_custom_card):
             flags |= ItemFlag.ItemIsEditable
         return flags
 
@@ -235,7 +235,10 @@ class Document(QAbstractItemModel):
             return False
         column = index.column()
         card = data.card
-        if card.oracle_id and column in self.EDITABLE_COLUMNS:
+        if card.is_custom_card:
+            self.apply(ActionEditCustomCard(index, value))
+            return True
+        elif column in self.EDITABLE_COLUMNS:
             logger.debug(f"Setting page data on official card for {column=} to {value}")
             if column == PageColumns.CollectorNumber:
                 card_data = CardIdentificationData(
@@ -252,9 +255,6 @@ class Document(QAbstractItemModel):
                     return True
                 return False
             return self._request_replacement_card(index, card_data)
-        elif not card.oracle_id:
-            self.apply(ActionEditCustomCard(index, value))
-            return True
         return False
 
     @staticmethod

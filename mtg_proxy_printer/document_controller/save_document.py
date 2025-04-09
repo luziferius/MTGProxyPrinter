@@ -133,7 +133,7 @@ class ActionSaveDocument(DocumentAction):
                 (custom_card_id,)).fetchone()[0]:
             return custom_card_id
         parameters = (
-            custom_card_id, image, card.name, card.set.name, card.set.code,
+            custom_card_id, image, card.name, card.set.name, card.set_code,
             card.collector_number, card.is_front, card.is_oversized)
         save_file.execute(
             cached_dedent("""\

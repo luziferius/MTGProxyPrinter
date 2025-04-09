@@ -158,8 +158,12 @@ class Card:
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
 
     @property
-    def set_code(self):
+    def set_code(self):  # TODO: Really needed? Inn't really used and can be removed.
         return self.set.code
+
+    @property
+    def is_custom_card(self):
+        return not self.oracle_id
 
     @property
     def is_oversized(self) -> bool:
@@ -223,6 +227,10 @@ class CheckCard:
     @property
     def is_dfc(self) -> bool:
         return False
+
+    @property
+    def is_custom_card(self):
+        return not self.oracle_id
 
     @property
     def image_file(self) -> typing.Optional[QPixmap]:
@@ -623,7 +631,7 @@ class CardDatabase(QObject):
             # as long as Scryfall does not provide localized tokens.
             related_cards = \
                 self.get_cards_from_data(
-                    CardIdentificationData(card.language, set_code=card.set.code, oracle_id=related_oracle_id),
+                    CardIdentificationData(card.language, set_code=card.set_code, oracle_id=related_oracle_id),
                     order_by_print_count=True) or \
                 self.get_cards_from_data(
                     CardIdentificationData(card.language, oracle_id=related_oracle_id),
@@ -927,7 +935,7 @@ class CardDatabase(QObject):
           )
           ORDER BY release_date ASC
         """)
-        parameters = card.oracle_id, card.language, card.set.code
+        parameters = card.oracle_id, card.language, card.set_code
         result = [MTGSet(code, name) for code, name in self.db.execute(query, parameters)]
         if not result:
             result.append(card.set)
@@ -952,7 +960,7 @@ class CardDatabase(QObject):
               AND language = ?
           )
         """)
-        parameters = (card.collector_number, card.oracle_id, card.set.code, card.language)
+        parameters = (card.collector_number, card.oracle_id, card.set_code, card.language)
         result = natural_sorted((number for number, in self.db.execute(query, parameters)))
         return result
 

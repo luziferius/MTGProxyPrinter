@@ -100,7 +100,8 @@ class CardListModel(QAbstractTableModel):
                 if role == ItemDataRole.EditRole:
                     return card.set
                 else:
-                    return f"{card.set.name} ({card.set.code.upper()})"
+                    set_ = card.set
+                    return f"{set_.name} ({set_.code.upper()})"
             elif column == CardListColumns.CollectorNumber:
                 return card.collector_number
             elif column == CardListColumns.Language:
@@ -109,7 +110,7 @@ class CardListModel(QAbstractTableModel):
                 if role == ItemDataRole.EditRole:
                     return card.is_front
                 return self.tr("Front") if card.is_front else self.tr("Back")
-        if not card.oracle_id and column == CardListColumns.CardName and role == ItemDataRole.ToolTipRole:
+        if card.is_custom_card and column == CardListColumns.CardName and role == ItemDataRole.ToolTipRole:
             return get_image_for_tooltip_display(Path(card.image_uri))
         if card.is_oversized:
             if role == ItemDataRole.ToolTipRole:
@@ -119,7 +120,7 @@ class CardListModel(QAbstractTableModel):
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         flags = super().flags(index)
-        if index.column() in self.EDITABLE_COLUMNS or not self.rows[index.row()].card.oracle_id:
+        if index.column() in self.EDITABLE_COLUMNS or self.rows[index.row()].card.is_custom_card:
             flags |= ItemFlag.ItemIsEditable
         return flags
 
@@ -127,9 +128,9 @@ class CardListModel(QAbstractTableModel):
         row, column = index.row(), index.column()
         container = self.rows[row]
         card = container.card
-        if card.oracle_id and role == ItemDataRole.EditRole and column in self.EDITABLE_COLUMNS:
+        if not card.is_custom_card and role == ItemDataRole.EditRole and column in self.EDITABLE_COLUMNS:
             return self._set_data_for_official_card(index, value)
-        elif not card.oracle_id and role == ItemDataRole.EditRole:
+        elif card.is_custom_card and role == ItemDataRole.EditRole:
             return self._set_data_for_custom_card(index, value)
         return False
 
@@ -142,7 +143,7 @@ class CardListModel(QAbstractTableModel):
             return self._set_copies_value(container, card, value)
         elif column == CardListColumns.CollectorNumber:
             card_data = CardIdentificationData(
-                card.language, card.name, card.set.code, value, is_front=card.is_front)
+                card.language, card.name, card.set_code, value, is_front=card.is_front)
         elif column == CardListColumns.Set:
             card_data = CardIdentificationData(
                 card.language, card.name, value.code, is_front=card.is_front

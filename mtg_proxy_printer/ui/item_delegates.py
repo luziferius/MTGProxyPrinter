@@ -107,11 +107,14 @@ class SetEditorDelegate(QStyledItemDelegate):
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
         card: AnyCardType = index.data(ItemDataRole.UserRole)
         # Use a locked-down choice-based editor for official cards, and a free-form editor for custom cards
-        return QComboBox(parent) if card.oracle_id else self.CustomCardSetEditor(parent)
+        return self.CustomCardSetEditor(parent) if card.is_custom_card else QComboBox(parent)
 
     def setEditorData(self, editor: Union[QComboBox, CustomCardSetEditor], index: QModelIndex):
         card: AnyCardType = index.data(ItemDataRole.UserRole)
-        if self._is_official_card(editor):
+        if card.is_custom_card:
+            current_data: MTGSet = index.data(ItemDataRole.EditRole)
+            editor.set_data(current_data)
+        else:
             model = get_document_from_index(index)
             matching_sets = model.card_db.get_available_sets_for_card(card)
             current_set_code = card.set.code
@@ -119,13 +122,11 @@ class SetEditorDelegate(QStyledItemDelegate):
                 editor.addItem(set_data.data(ItemDataRole.DisplayRole), set_data)
                 if set_data.code == current_set_code:
                     editor.setCurrentIndex(position)
-        else:  # Custom card
-            current_data: MTGSet = index.data(ItemDataRole.EditRole)
-            editor.set_data(current_data)
 
     def setModelData(
             self, editor: Union[QComboBox, CustomCardSetEditor], model: QAbstractItemModel, index: QModelIndex) -> None:
-        data = editor.currentData(ItemDataRole.UserRole) if self._is_official_card(editor) else editor.to_mtg_set()
+        card: AnyCardType = index.data(ItemDataRole.UserRole)
+        data = editor.to_mtg_set() if card.is_custom_card else editor.currentData(ItemDataRole.UserRole)
         model.setData(index, data, ItemDataRole.EditRole)
 
     @staticmethod
@@ -148,7 +149,7 @@ class LanguageEditorDelegate(QStyledItemDelegate):
         model = get_document_from_index(index)
         card: Card = index.data(ItemDataRole.UserRole)
         current_language = card.language
-        is_custom_card = not card.oracle_id
+        is_custom_card = card.is_custom_card
         editor.setEditable(is_custom_card)  # Allow custom languages for custom cards only
         if is_custom_card:
             editor.lineEdit().setMaxLength(self.MAX_LENGTH)
