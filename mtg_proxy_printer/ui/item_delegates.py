@@ -17,12 +17,10 @@ import typing
 from typing import Union
 
 from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel
-from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox
+from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox, QLineEdit
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet, AnyCardType
-from mtg_proxy_printer.model.card_list import CardListColumns
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.logger import get_logger
 
 try:
@@ -35,9 +33,7 @@ except ModuleNotFoundError:
 logger = get_logger(__name__)
 del get_logger
 __all__ = [
-    "ComboBoxItemDelegate",
-    "DocumentComboBoxItemDelegate",
-    "CardListComboBoxItemDelegate",
+    "CollectorNumberEditorDelegate",
     "BoundedCopiesSpinboxDelegate",
     "CardSideSelectionDelegate",
     "SetEditorDelegate",
@@ -169,35 +165,35 @@ class LanguageEditorDelegate(QStyledItemDelegate):
             model.setData(index, new_value, ItemDataRole.EditRole)
 
 
-class ComboBoxItemDelegate(QStyledItemDelegate):
+class CollectorNumberEditorDelegate(QStyledItemDelegate):
     """
-    Editor widget allowing the user to switch a card printing by offering a choice among valid alternatives.
+    Editor for collector numbers. Allows free-form editing for custom cards,
+    and uses a locked-down choice-based combo box for official cards
     """
-    COLUMNS: typing.Union[PageColumns, CardListColumns] = None
+    def createEditor(
+            self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex
+    ) -> typing.Union[QLineEdit, QComboBox]:
+        card: AnyCardType = index.data(ItemDataRole.UserRole)
+        # Use a locked-down choice-based editor for official cards, and a free-form editor for custom cards
+        return QLineEdit(parent) if card.is_custom_card else QComboBox(parent)
 
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
-        return QComboBox(parent)
-
-    def setEditorData(self, editor: QComboBox, index: QModelIndex) -> None:
+    def setEditorData(self, editor: typing.Union[QLineEdit, QComboBox], index: QModelIndex) -> None:
         model = get_document_from_index(index)
-        column = index.column()
         card: Card = index.data(ItemDataRole.UserRole)
-        matching_collector_numbers = model.card_db.get_available_collector_numbers_for_card_in_set(card)
-        for collector_number in matching_collector_numbers:
-            editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
-        if matching_collector_numbers:
-            editor.setCurrentIndex(matching_collector_numbers.index(index.data(ItemDataRole.EditRole)))
+        if card.is_custom_card:
+            editor.setText(card.collector_number)
+        else:
+            matching_collector_numbers = model.card_db.get_available_collector_numbers_for_card_in_set(card)
+            for collector_number in matching_collector_numbers:
+                editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
+            if matching_collector_numbers:
+                editor.setCurrentIndex(matching_collector_numbers.index(index.data(ItemDataRole.EditRole)))
 
-    def setModelData(self, editor: QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:
-        new_value = editor.currentData(ItemDataRole.UserRole)
-        previous_value = index.data(ItemDataRole.EditRole)
+    def setModelData(
+            self, editor: typing.Union[QLineEdit, QComboBox], model: QAbstractItemModel, index: QModelIndex) -> None:
+        card: Card = index.data(ItemDataRole.UserRole)
+        new_value = editor.text() if card.is_custom_card else editor.currentData(ItemDataRole.UserRole)
+        previous_value = card.collector_number
         if new_value != previous_value:
-            logger.debug(f"Setting data for column {index.column()} to {new_value}")
+            logger.debug(f"Setting collector number from {previous_value} to {new_value}")
             model.setData(index, new_value, ItemDataRole.EditRole)
-
-
-class DocumentComboBoxItemDelegate(ComboBoxItemDelegate):
-    COLUMNS = PageColumns
-
-class CardListComboBoxItemDelegate(ComboBoxItemDelegate):
-    COLUMNS = CardListColumns
