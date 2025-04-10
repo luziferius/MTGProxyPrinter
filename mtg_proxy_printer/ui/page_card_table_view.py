@@ -69,7 +69,6 @@ class PageCardTableView(QTableView):
     def _setup_combo_box_item_delegate(self):
         combo_box_delegate = DocumentComboBoxItemDelegate(self)
         self.setItemDelegateForColumn(PageColumns.CollectorNumber, combo_box_delegate)
-        self.setItemDelegateForColumn(PageColumns.Language, combo_box_delegate)
         return combo_box_delegate
 
     def _setup_language_delegate(self):

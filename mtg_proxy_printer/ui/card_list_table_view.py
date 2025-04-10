@@ -70,7 +70,6 @@ class CardListTableView(QTableView):
     def _setup_combo_box_item_delegate(self) -> CardListComboBoxItemDelegate:
         delegate = CardListComboBoxItemDelegate(self)
         self.setItemDelegateForColumn(CardListColumns.CollectorNumber, delegate)
-        self.setItemDelegateForColumn(CardListColumns.Language, delegate)
         return delegate
 
     def _setup_copies_delegate(self) -> BoundedCopiesSpinboxDelegate:

@@ -182,32 +182,11 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
         model = get_document_from_index(index)
         column = index.column()
         card: Card = index.data(ItemDataRole.UserRole)
-        if hasattr(self.COLUMNS, "Copies") and column == self.COLUMNS.Copies:
-            pass
-        elif column == self.COLUMNS.Set:  # TODO: Outdated. Remove. Replace use in Document with SetEditorDelegate
-            matching_sets = model.card_db.get_available_sets_for_card(card)
-            current_set_code = card.set.code
-            current_set_position = 0
-            for position, set_data in enumerate(matching_sets):
-                editor.addItem(set_data.data(ItemDataRole.DisplayRole), set_data.data(ItemDataRole.EditRole))
-                if set_data.code == current_set_code:
-                    current_set_position = position
-            editor.setCurrentIndex(current_set_position)
-
-        elif column == self.COLUMNS.CollectorNumber:
-            matching_collector_numbers = model.card_db.get_available_collector_numbers_for_card_in_set(card)
-            for collector_number in matching_collector_numbers:
-                editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
-            if matching_collector_numbers:
-                editor.setCurrentIndex(matching_collector_numbers.index(index.data(ItemDataRole.EditRole)))
-
-        elif column == self.COLUMNS.Language:
-            card = index.data(ItemDataRole.UserRole)
-            matching_languages = model.card_db.get_available_languages_for_card(card)
-            for language in matching_languages:
-                editor.addItem(language, language)
-            if matching_languages:
-                editor.setCurrentIndex(matching_languages.index(index.data(ItemDataRole.EditRole)))
+        matching_collector_numbers = model.card_db.get_available_collector_numbers_for_card_in_set(card)
+        for collector_number in matching_collector_numbers:
+            editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
+        if matching_collector_numbers:
+            editor.setCurrentIndex(matching_collector_numbers.index(index.data(ItemDataRole.EditRole)))
 
     def setModelData(self, editor: QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:
         new_value = editor.currentData(ItemDataRole.UserRole)

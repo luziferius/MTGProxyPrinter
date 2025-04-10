@@ -106,6 +106,7 @@ def test_setEditorData_on_card_list_empty_model(qtbot, card_db: CardDatabase, ca
 
 @pytest.mark.parametrize("column", Document.EDITABLE_COLUMNS)
 def test_setEditorData_on_document_empty_model(qtbot, card_db: CardDatabase, document_empty_carddb, column):
+    # TODO: Extend this for all delegate classes?
     editor_widget = QComboBox()
     delegate = DocumentComboBoxItemDelegate()
     page_index = document_empty_carddb.index(0, 0)
