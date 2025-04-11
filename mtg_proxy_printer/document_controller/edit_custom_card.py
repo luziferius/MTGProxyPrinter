@@ -84,11 +84,8 @@ class ActionEditCustomCard(DocumentAction):
         for lower, upper in document.find_relevant_index_ranges(card, column):
             document.dataChanged.emit(lower, upper, [ItemDataRole.DisplayRole, ItemDataRole.EditRole])
 
-
     @functools.cached_property
     def as_str(self):
         return self.translate(
             "ActionEditCustomCard", "Edit custom card, set {column_header_text} to {new_value}",
             "Undo/redo tooltip text").format(column_header_text=self.header_text, new_value=self.new_display_value)
-
-

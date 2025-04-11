@@ -82,6 +82,7 @@ class NaturallySortedSortFilterProxyModel(QSortFilterProxyModel):
             self.mapToSource(self.index(row, 0)).row() for row in range(self.rowCount())
         ]
 
+
 def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[typing.Tuple[int, int]]:
     sequence = sorted(sequence)
     ranges: typing.List[typing.Tuple[int, int]] = []
