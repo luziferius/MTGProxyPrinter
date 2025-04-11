@@ -70,9 +70,9 @@ class ActionEditCustomCard(DocumentAction):
         logger.debug(f"Setting page data on custom card for {column=} to {value}")
         if column == PageColumns.CardName:
             card.name = value
-            parent = index.parent()
-            # Update the page overview on name changes  # TODO: This should be done on all pages containing the card
-            document.dataChanged.emit(parent, parent, [ItemDataRole.DisplayRole])
+            # Update the page overview on name changes  # TODO: This could be optimized to redraw only affected pages
+            lower, upper = document.index(0, 0), document.index(document.rowCount()-1, 0)
+            document.dataChanged.emit(lower, upper, [ItemDataRole.DisplayRole])
         elif column == PageColumns.CollectorNumber:
             card.collector_number = value
         elif column == PageColumns.Language:
@@ -83,7 +83,6 @@ class ActionEditCustomCard(DocumentAction):
         elif column == PageColumns.Set:
             card.set = value
         for lower, upper in document.find_all_instances(card, column):
-            logger.debug(f"dataChanged(): page={lower.parent().row()}, lower={lower.row()}, upper={upper.row()}")
             document.dataChanged.emit(lower, upper, [ItemDataRole.DisplayRole, ItemDataRole.EditRole])
 
 
