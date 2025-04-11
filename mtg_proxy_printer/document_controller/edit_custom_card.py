@@ -71,7 +71,7 @@ class ActionEditCustomCard(DocumentAction):
         if column == PageColumns.CardName:
             card.name = value
             parent = index.parent()
-            # Update the page overview on name changes
+            # Update the page overview on name changes  # TODO: This should be done on all pages containing the card
             document.dataChanged.emit(parent, parent, [ItemDataRole.DisplayRole])
         elif column == PageColumns.CollectorNumber:
             card.collector_number = value
@@ -82,7 +82,9 @@ class ActionEditCustomCard(DocumentAction):
             card.face_number = int(not value)
         elif column == PageColumns.Set:
             card.set = value
-        document.dataChanged.emit(index, index, [ItemDataRole.DisplayRole, ItemDataRole.EditRole])
+        for lower, upper in document.find_all_instances(card, column):
+            logger.debug(f"dataChanged(): page={lower.parent().row()}, lower={lower.row()}, upper={upper.row()}")
+            document.dataChanged.emit(lower, upper, [ItemDataRole.DisplayRole, ItemDataRole.EditRole])
 
 
     @functools.cached_property

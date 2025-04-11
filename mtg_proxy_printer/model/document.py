@@ -25,6 +25,7 @@ import typing
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, \
     QPersistentModelIndex
 
+from mtg_proxy_printer.natsort import to_list_of_ranges
 from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCustomCard
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageColumns
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
@@ -423,3 +424,14 @@ class Document(QAbstractItemModel):
         self.page_index_cache.update(
             (id(page), index) for index, page in enumerate(self.pages)
         )
+
+    def find_all_instances(self, to_find: AnyCardType, column: PageColumns):
+        for page_row, page in enumerate(self.pages):
+            instance_rows = to_list_of_ranges(
+                # Use is to find exact same instances
+                (row for row, container in enumerate(page) if container.card is to_find)
+            )
+            if instance_rows:
+                parent = self.index(page_row, 0)
+                for lower, upper in instance_rows:
+                    yield self.index(lower, column, parent), self.index(upper, column, parent)

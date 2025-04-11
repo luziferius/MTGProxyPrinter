@@ -23,6 +23,7 @@ from mtg_proxy_printer.model.carddb import Card, AnyCardType
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import Page
+from mtg_proxy_printer.natsort import to_list_of_ranges
 from ._interface import DocumentAction, IllegalStateError, Self, split_iterable
 from .page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.logger import get_logger
@@ -218,17 +219,3 @@ class ActionRemoveCards(DocumentAction):
             "ActionRemoveCards", "Remove %n card(s) from page {page_number}",
             "Undo/redo tooltip text", card_count
         ).format(page_number=page_number)
-
-
-def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[typing.Tuple[int, int]]:
-    sequence = sorted(sequence)
-    ranges: typing.List[typing.Tuple[int, int]] = []
-    sequence = itertools.chain(sequence, (sentinel := object(),))
-    lower = upper = next(sequence)
-    for item in sequence:
-        if item is sentinel or upper != item-1:
-            ranges.append((lower, upper))
-            lower = upper = item
-        else:
-            upper = item
-    return ranges
