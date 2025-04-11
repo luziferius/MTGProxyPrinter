@@ -630,13 +630,13 @@ class CardDatabase(QObject):
                 cards.append(related_cards[0])
         return cards
 
-    def find_collector_numbers_matching(self, card_name: str, set_abbr: str, language: str) -> StringList:
+    def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> StringList:
         """
         Finds all collector numbers matching the given filter. The result contains multiple elements, if the card
         had multiple variants with distinct collector numbers in the given set.
 
         :param card_name: Card name, matched exactly
-        :param set_abbr: Set abbreviation, matched exactly
+        :param set_code: Set abbreviation, matched exactly
         :param language: Card language, matched exactly
         :return: Naturally sorted list of collector numbers, i.e. ["2", "10"]
         """
@@ -656,7 +656,7 @@ class CardDatabase(QObject):
               AND set_code = ?
               AND card_name = ?
         ''')
-        return natural_sorted(item for item, in self.db.execute(query, (language, set_abbr, card_name)))
+        return natural_sorted(item for item, in self.db.execute(query, (language, set_code, card_name)))
 
     def find_sets_matching(
             self, card_name: str, language: str, set_name_filter: str = None,
@@ -703,11 +703,11 @@ class CardDatabase(QObject):
         if result is None:
             return None
         else:
-            name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
+            name, set_code, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
                 is_oversized, face_number, is_dfc = result
             size = CardSizes.from_bool(is_oversized)
             return Card(
-                name, MTGSet(set_abbr, set_name), collector_number,
+                name, MTGSet(set_code, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
                 bool(highres_image), size, face_number, bool(is_dfc),
             )
