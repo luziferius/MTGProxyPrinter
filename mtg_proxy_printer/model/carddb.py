@@ -24,6 +24,7 @@ import pathlib
 import sqlite3
 import threading
 import typing
+from itertools import starmap
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter, QColorConstants
@@ -390,7 +391,7 @@ class CardDatabase(QObject):
     def get_last_card_data_update_timestamp(self) -> typing.Optional[datetime.datetime]:
         """Returns the last card data update timestamp, or None, if no card data was ever imported"""
         query = "SELECT MAX(update_timestamp) FROM LastDatabaseUpdate -- get_last_card_data_update_timestamp\n"
-        result = self._read_optional_scalar_from_db(query, [])
+        result = self._read_optional_scalar_from_db(query)
         return datetime.datetime.fromisoformat(result) if result else None
 
     def allow_updating_card_data(self) -> bool:
@@ -405,10 +406,8 @@ class CardDatabase(QObject):
     def get_all_languages(self) -> StringList:
         """Returns the list of all known and visible languages, sorted ascendingly."""
         logger.debug("Reading all known languages")
-        result = [
-            lang for lang, in self.db.execute(
-                "SELECT language FROM PrintLanguage ORDER BY language ASC -- get_all_languages()\n")
-        ]
+        query = "SELECT language FROM PrintLanguage ORDER BY language ASC -- get_all_languages()\n"
+        result = self._read_scalar_list_from_db(query)
         return result
 
     def get_card_names(self, language: str, card_name_filter: str = None) -> StringList:
@@ -429,12 +428,7 @@ class CardDatabase(QObject):
             parameters.append(f"{card_name_filter}%")
         else:
             query = query.format(name_filter='')
-        result = [
-            found_name for found_name, in
-            self.db.execute(
-                query, parameters
-            )
-        ]
+        result = self._read_scalar_list_from_db(query, parameters)
         return result
 
     def get_basic_land_oracle_ids(
@@ -609,9 +603,8 @@ class CardDatabase(QObject):
           FROM Card
           JOIN related_oracle_ids ON Card.card_id = related_oracle_ids.related_id
         """)
-        related_card_ids = self.db.execute(query, (card.oracle_id,))
         cards = []
-        for related_oracle_id, in related_card_ids:
+        for related_oracle_id in self._read_scalar_list_from_db(query, (card.oracle_id,)):
             # Prefer same set over other sets, which is important for multi-component cards like Meld cards. If it
             # isn't available, take from any other set. As a last-ditch fallback, resort to English printings.
             # The last case is most likely hit with non-English token-producing cards,
@@ -690,7 +683,7 @@ class CardDatabase(QObject):
             parameters += [f"{set_name_filter}%"] * 2
 
         query += '    ORDER BY set_name ASC\n'
-        return list(itertools.starmap(MTGSet, self.db.execute(query, parameters)))
+        return list(starmap(MTGSet, self.db.execute(query, parameters)))
 
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         query = cached_dedent('''\
@@ -895,7 +888,7 @@ class CardDatabase(QObject):
           ORDER BY language ASC;
         """)
         parameters = card.language, card.oracle_id
-        result = [item for item, in self.db.execute(query, parameters)]
+        result = self._read_scalar_list_from_db(query, parameters)
         return result
 
     def get_available_sets_for_card(self, card: Card) -> typing.List[MTGSet]:
@@ -923,7 +916,7 @@ class CardDatabase(QObject):
           ORDER BY release_date ASC
         """)
         parameters = card.oracle_id, card.language, card.set.code
-        result = [MTGSet(code, name) for code, name in self.db.execute(query, parameters)]
+        result = list(starmap(MTGSet, self.db.execute(query, parameters)))
         if not result:
             result.append(card.set)
         return result
@@ -951,11 +944,20 @@ class CardDatabase(QObject):
         result = natural_sorted((number for number, in self.db.execute(query, parameters)))
         return result
 
-    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any] = None):
+    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any] = ()):
+        """
+        Runs the query with the given parameters that is expected to return either a singular value or None,
+        and returns the result
+        """
         if result := self.db.execute(query, parameters).fetchone():
             return result[0]
         else:
             return None
+
+    def _read_scalar_list_from_db(
+            self, query: str, parameters: typing.Sequence[typing.Any] = ()) -> typing.List[typing.Any]:
+        """Runs the query with the given parameters, returning a list of singular items"""
+        return [item for item, in self.db.execute(query, parameters)]
 
     def is_removed_printing(self, scryfall_id: str) -> bool:
         logger.debug(f"Query RemovedPrintings table for scryfall id {scryfall_id}")
