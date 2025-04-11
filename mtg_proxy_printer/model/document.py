@@ -425,7 +425,8 @@ class Document(QAbstractItemModel):
             (id(page), index) for index, page in enumerate(self.pages)
         )
 
-    def find_all_instances(self, to_find: AnyCardType, column: PageColumns):
+    def find_relevant_index_ranges(self, to_find: AnyCardType, column: PageColumns):
+        """Finds all indices relevant for the given card."""
         for page_row, page in enumerate(self.pages):
             instance_rows = to_list_of_ranges(
                 # Use is to find exact same instances
@@ -433,5 +434,7 @@ class Document(QAbstractItemModel):
             )
             if instance_rows:
                 parent = self.index(page_row, 0)
+                if column == PageColumns.CardName:
+                    yield parent, parent
                 for lower, upper in instance_rows:
                     yield self.index(lower, column, parent), self.index(upper, column, parent)

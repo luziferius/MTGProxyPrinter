@@ -69,10 +69,9 @@ class ActionEditCustomCard(DocumentAction):
         card = container.card
         logger.debug(f"Setting page data on custom card for {column=} to {value}")
         if column == PageColumns.CardName:
+            # This also affects the page overview. find_relevant_index_ranges()
+            # takes care of that by also returning relevant Page indices
             card.name = value
-            # Update the page overview on name changes  # TODO: This could be optimized to redraw only affected pages
-            lower, upper = document.index(0, 0), document.index(document.rowCount()-1, 0)
-            document.dataChanged.emit(lower, upper, [ItemDataRole.DisplayRole])
         elif column == PageColumns.CollectorNumber:
             card.collector_number = value
         elif column == PageColumns.Language:
@@ -82,7 +81,7 @@ class ActionEditCustomCard(DocumentAction):
             card.face_number = int(not value)
         elif column == PageColumns.Set:
             card.set = value
-        for lower, upper in document.find_all_instances(card, column):
+        for lower, upper in document.find_relevant_index_ranges(card, column):
             document.dataChanged.emit(lower, upper, [ItemDataRole.DisplayRole, ItemDataRole.EditRole])
 
 
