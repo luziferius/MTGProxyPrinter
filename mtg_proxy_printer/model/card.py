@@ -103,8 +103,9 @@ class Card:
         return self.size == CardSizes.OVERSIZED
 
 
+@dataclasses.dataclass()
 class CustomCard(Card):
-    source_image_file: QPixmap = dataclasses.field(compare=False)
+    source_image_file: QPixmap = dataclasses.field(default=None, compare=False)
 
     @property
     def is_custom_card(self) -> bool:
