@@ -103,17 +103,18 @@ class ActionSaveDocument(DocumentAction):
         for page_number, page in enumerate(document.pages, start=1):
             for slot, container in enumerate(page, start=1):
                 card = container.card
-                if card.scryfall_id:
-                    save_file.execute(
-                        "INSERT INTO Card (page, slot, is_front, type, scryfall_id) VALUES (?, ?, ? ,?, ?)",
-                        (page_number, slot, card.is_front, CardType.from_card(card), card.scryfall_id)
-                    )
-                elif card.image_file is not document.image_db.get_blank(card.size):
-                    ActionSaveDocument._save_custom_card(save_file, page_number, slot, card)
-                else:  # Empty slot
+                if card.is_custom_card and card.image_file is not document.image_db.get_blank(card.size):
+                    # Empty slot
                     save_file.execute(
                         "INSERT INTO Card (page, slot, is_front, type) VALUES (?, ? ,?, ?)",
                         (page_number, slot, card.is_front, CardType.from_card(card))
+                    )
+                elif card.is_custom_card:
+                    ActionSaveDocument._save_custom_card(save_file, page_number, slot, card)
+                else:
+                    save_file.execute(
+                        "INSERT INTO Card (page, slot, is_front, type, scryfall_id) VALUES (?, ?, ? ,?, ?)",
+                        (page_number, slot, card.is_front, CardType.from_card(card), card.scryfall_id)
                     )
         logger.debug(f"Written {save_file.execute('SELECT count(1) FROM Card').fetchone()[0]} cards.")
 
@@ -134,11 +135,11 @@ class ActionSaveDocument(DocumentAction):
             return custom_card_id
         parameters = (
             custom_card_id, image, card.name, card.set.name, card.set_code,
-            card.collector_number, card.is_front, card.is_oversized)
+            card.collector_number, card.is_front)
         save_file.execute(
             cached_dedent("""\
-            INSERT INTO CustomCardData (card_id, image, name, set_name, set_code, collector_number, is_front, oversized)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)"""),
+            INSERT INTO CustomCardData (card_id, image, name, set_name, set_code, collector_number, is_front)
+                VALUES (?, ?, ?, ?, ?, ?, ?)"""),
             parameters
         )
         return custom_card_id
