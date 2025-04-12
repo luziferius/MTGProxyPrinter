@@ -19,7 +19,7 @@ import pytest
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.model.carddb import MTGSet
+from mtg_proxy_printer.model.card import MTGSet
 from mtg_proxy_printer.ui.item_delegates import BoundedCopiesSpinboxDelegate, SetEditorDelegate
 
 from tests.hasgetter import has_getters

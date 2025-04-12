@@ -20,12 +20,13 @@ from PyQt5.QtCore import QStringListModel, pyqtSlot as Slot, pyqtSignal as Signa
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox
 from PyQt5.QtGui import QIcon
 
+import mtg_proxy_printer.model.card
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 import mtg_proxy_printer.model.string_list
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.model.carddb import MTGSet
+from mtg_proxy_printer.model.card import MTGSet
 from mtg_proxy_printer.ui.common import load_ui_from_file
 
 from mtg_proxy_printer.logger import get_logger
@@ -238,7 +239,7 @@ class AddCardWidget(QWidget):
             self.request_action.emit(ActionAddCard(opposing_face, copies))
 
     @staticmethod
-    def _log_added_card(card: mtg_proxy_printer.model.carddb.Card, copies: int):
+    def _log_added_card(card: mtg_proxy_printer.model.card.Card, copies: int):
         logger.debug(f"Adding {copies}× [{card.set.code.upper()}:{card.collector_number}] {card.name}")
 
     @Slot()

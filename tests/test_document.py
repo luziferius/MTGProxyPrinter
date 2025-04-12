@@ -27,7 +27,7 @@ import pytest
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, CardSizes, CardSize
-from mtg_proxy_printer.model.carddb import Card, MTGSet
+from mtg_proxy_printer.model.card import MTGSet, Card
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings

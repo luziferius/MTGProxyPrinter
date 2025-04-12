@@ -26,7 +26,8 @@ from PyQt5.QtWidgets import QTableView, QWidget, QMenu, QAction, QInputDialog, Q
 from mtg_proxy_printer.app_dirs import data_directories
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
-from mtg_proxy_printer.model.carddb import Card, CheckCard, CardDatabase, AnyCardType, CardList, AnyCardTypeForTypeCheck
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType, AnyCardTypeForTypeCheck
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.ui.item_delegates import CollectorNumberEditorDelegate, SetEditorDelegate, LanguageEditorDelegate

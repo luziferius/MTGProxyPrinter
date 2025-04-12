@@ -24,7 +24,7 @@ from PyQt5.QtGui import QPixmap
 import hamcrest.core.base_matcher
 from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to, has_property
 
-from mtg_proxy_printer.model.carddb import Card, MTGSet, AnyCardType
+from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType
 from mtg_proxy_printer.model.document_page import CardContainer, Page
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 

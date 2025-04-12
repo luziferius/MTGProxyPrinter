@@ -19,7 +19,8 @@ import itertools
 import math
 import typing
 
-from mtg_proxy_printer.model.carddb import Card, AnyCardType
+from ..model.card import Card, AnyCardType
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import Page

@@ -17,18 +17,18 @@
 import dataclasses
 import datetime
 import enum
-import functools
 import math
 import pathlib
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel, QSize
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QItemSelectionModel, QSize
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
-from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.card import MTGSet, Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.imagedb_files import CacheContent as ImageCacheContent, ImageKey
 from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase, get_image_for_tooltip_display

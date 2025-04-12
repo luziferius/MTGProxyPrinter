@@ -17,7 +17,6 @@
 import atexit
 import dataclasses
 import datetime
-import enum
 import itertools
 import functools
 import pathlib
@@ -26,41 +25,34 @@ import threading
 import typing
 
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter, QColorConstants
-from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal, pyqtSlot as Slot
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
+from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, OptionalCard, CardList
 from mtg_proxy_printer.model.imagedb_files import CacheContent
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import PageType, StringList, OptStr, CardSizes, CardSize
+from mtg_proxy_printer.units_and_sizes import StringList, OptStr, CardSizes
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
 
-QueuedConnection = Qt.ConnectionType.QueuedConnection
 OLD_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardDataCache.sqlite3"
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_data_path / "CardDatabase.sqlite3"
-ItemDataRole = Qt.ItemDataRole
-RenderHint = QPainter.RenderHint
 SCHEMA_NAME = "carddb"
 # The card data is mostly stable, Scryfall recommends fetching the card bulk data only in larger intervals, like
 # once per month or so.
 MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
+T = typing.TypeVar("T", Card, CheckCard)
+write_semaphore = threading.BoundedSemaphore()
+
 
 __all__ = [
     "CardIdentificationData",
-    "MTGSet",
-    "CheckCard",
-    "Card",
-    "AnyCardType",
-    "AnyCardTypeForTypeCheck",
-    "CardCorner",
     "CardDatabase",
-    "CardList",
     "OLD_DATABASE_LOCATION",
     "DEFAULT_DATABASE_LOCATION",
     "with_database_write_lock",
@@ -79,222 +71,10 @@ class CardIdentificationData:
     oracle_id: OptStr = None
 
 
-@dataclasses.dataclass(frozen=True)
-class MTGSet:
-    code: str
-    name: str
-
-    def data(self, role: ItemDataRole):
-        """data getter used for Qt Model API based access"""
-        if role == ItemDataRole.EditRole:
-            return self
-        elif role == ItemDataRole.DisplayRole:
-            return f"{self.name} ({self.code.upper()})"
-        elif role == ItemDataRole.ToolTipRole:
-            return self.name
-        else:
-            return None
-
-
-@enum.unique
-class CardCorner(enum.Enum):
-    """
-    The four corners of a card. Values are relative image positions in X and Y.
-    These are fractions so that they work properly for both regular and oversized cards
-
-    Values are tuned to return the top-left corner of a 10x10 area
-    centered around (20,20) away from the respective corner.
-    """
-    TOP_LEFT = (15/745, 15/1040)
-    TOP_RIGHT = (1-25/745, 15/1040)
-    BOTTOM_LEFT = (15/745, 1-25/1040)
-    BOTTOM_RIGHT = (1-25/745, 1-25/1040)
-
-
-@dataclasses.dataclass(unsafe_hash=True)
-class Card:
-    name: str = dataclasses.field(compare=True)
-    set: MTGSet = dataclasses.field(compare=True)
-    collector_number: str = dataclasses.field(compare=True)
-    language: str = dataclasses.field(compare=True)
-    scryfall_id: str = dataclasses.field(compare=True)
-    is_front: bool = dataclasses.field(compare=True)
-    oracle_id: str = dataclasses.field(compare=True)
-    image_uri: str = dataclasses.field(compare=True)
-    highres_image: bool = dataclasses.field(compare=False)
-    size: CardSize = dataclasses.field(compare=False)
-    face_number: int = dataclasses.field(compare=True)
-    is_dfc: bool = dataclasses.field(compare=True)
-    image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
-
-    def set_image_file(self, image: QPixmap):
-        self.image_file = image
-        self.corner_color.cache_clear()
-
-    def requested_page_type(self) -> PageType:
-        if self.image_file is None:
-            return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
-        size = self.image_file.size()
-        if (size.width(), size.height()) == (1040, 1490):
-            return PageType.OVERSIZED
-        return PageType.REGULAR
-
-    @functools.lru_cache(maxsize=len(CardCorner))
-    def corner_color(self, corner: CardCorner) -> QColor:
-        """Returns the color of the card at the given corner. """
-        if self.image_file is None:
-            return QColorConstants.Transparent
-        sample_area = self.image_file.copy(QRect(
-            QPoint(
-                round(self.image_file.width() * corner.value[0]),
-                round(self.image_file.height() * corner.value[1])),
-            QSize(10, 10)
-        ))
-        average_color = sample_area.scaled(
-            1, 1, transformMode=Qt.TransformationMode.SmoothTransformation).toImage().pixelColor(0, 0)
-        return average_color
-
-    def display_string(self):
-        return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
-
-    @property
-    def set_code(self):  # TODO: Really needed? Inn't really used and can be removed.
-        return self.set.code
-
-    @property
-    def is_custom_card(self):
-        return not self.oracle_id
-
-    @property
-    def is_oversized(self) -> bool:
-        return self.size is CardSizes.OVERSIZED
-
-
-@dataclasses.dataclass(unsafe_hash=True)
-class CheckCard:
-    front: Card
-    back: Card
-
-    @property
-    def name(self) -> str:
-        return f"{self.front.name} // {self.back.name}"
-
-    @property
-    def set(self) -> MTGSet:
-        return self.front.set
-
-    @set.setter
-    def set(self, value: MTGSet):
-        self.front.set = value
-        self.back.set = value
-
-    @property
-    def collector_number(self) -> str:
-        return self.front.collector_number
-
-    @property
-    def language(self) -> str:
-        return self.front.language
-
-    @property
-    def scryfall_id(self) -> str:
-        return self.front.scryfall_id
-
-    @property
-    def is_front(self) -> bool:
-        return True
-
-    @property
-    def oracle_id(self) -> str:
-        return self.front.oracle_id
-
-    @property
-    def image_uri(self) -> str:
-        return ""
-
-    @property
-    def highres_image(self) -> bool:
-        return self.front.highres_image and self.back.highres_image
-
-    @property
-    def is_oversized(self):
-        return self.front.is_oversized
-
-    @property
-    def face_number(self) -> int:
-        return 0
-
-    @property
-    def is_dfc(self) -> bool:
-        return False
-
-    @property
-    def is_custom_card(self):
-        return not self.oracle_id
-
-    @property
-    def image_file(self) -> typing.Optional[QPixmap]:
-        if self.front.image_file is None or self.back.image_file is None:
-            return None
-        card_size = self.front.image_file.size()
-        # Unlike metric paper sizes, the MTG card aspect ratio does not follow the golden ratio.
-        # Cards thus can’t be scaled using a singular factor of sqrt(2) on both axis.
-        # The scaled cards get a bit compressed horizontally.
-        vertical_scaling_factor = card_size.width() / card_size.height()
-        horizontal_scaling_factor = card_size.height()/(card_size.width()*2)
-        combined_image = QPixmap(card_size)
-        combined_image.fill(QColor.fromRgb(255, 255, 255, 0))  # Fill with fully transparent white
-        painter = QPainter(combined_image)
-        painter.setRenderHints(RenderHint.SmoothPixmapTransform | RenderHint.HighQualityAntialiasing)
-        transformation = QTransform()
-        transformation.rotate(90)
-        transformation.scale(horizontal_scaling_factor, vertical_scaling_factor)
-        painter.setTransform(transformation)
-        painter.drawPixmap(QPointF(card_size.width(), -card_size.height()), self.back.image_file)
-        painter.drawPixmap(QPointF(0, -card_size.height()), self.front.image_file)
-
-        return combined_image
-
-    def requested_page_type(self) -> PageType:
-        if self.front.image_file is None or self.back.image_file is None:
-            return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
-        size = self.front.image_file.size()
-        if (size.width(), size.height()) == (1040, 1490):
-            return PageType.OVERSIZED
-        return PageType.REGULAR
-
-    @functools.lru_cache(maxsize=len(CardCorner))
-    def corner_color(self, corner: CardCorner) -> QColor:
-        """Returns the color of the card at the given corner. """
-        if self.front.image_file is None or self.back.image_file is None:
-            return QColorConstants.Transparent
-        if corner == CardCorner.TOP_LEFT:
-            self.front.corner_color(CardCorner.BOTTOM_LEFT)
-        elif corner == CardCorner.TOP_RIGHT:
-            self.front.corner_color(CardCorner.TOP_LEFT)
-        elif corner == CardCorner.BOTTOM_LEFT:
-            self.back.corner_color(CardCorner.BOTTOM_RIGHT)
-        elif corner == CardCorner.BOTTOM_RIGHT:
-            self.back.corner_color(CardCorner.TOP_RIGHT)
-        return QColorConstants.Transparent
-
-    def display_string(self):
-        return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
-
-
 class ImageDatabaseCards(typing.NamedTuple):
     visible: typing.List[typing.Tuple[Card, CacheContent]] = []
     hidden: typing.List[typing.Tuple[Card, CacheContent]] = []
     unknown: typing.List[CacheContent] = []
-
-
-OptionalCard = typing.Optional[Card]
-CardList = typing.List[Card]
-AnyCardType = typing.Union[Card, CheckCard]
-# Py3.8 compatibility hack, because isinstance(a, AnyCardType) fails on 3.8
-AnyCardTypeForTypeCheck = typing.get_args(AnyCardType)
-T = typing.TypeVar("T", Card, CheckCard)
-write_semaphore = threading.BoundedSemaphore()
 
 
 def with_database_write_lock(semaphore: threading.BoundedSemaphore = write_semaphore):

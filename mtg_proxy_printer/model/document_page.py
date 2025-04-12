@@ -19,7 +19,7 @@ import enum
 from functools import partial
 import typing
 
-from mtg_proxy_printer.model.carddb import AnyCardType, AnyCardTypeForTypeCheck
+from mtg_proxy_printer.model.card import AnyCardType, AnyCardTypeForTypeCheck
 from mtg_proxy_printer.units_and_sizes import PageType
 
 

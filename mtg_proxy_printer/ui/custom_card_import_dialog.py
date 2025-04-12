@@ -23,7 +23,8 @@ from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QPushButton
 
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
-from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.card import MTGSet, Card
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
 try:

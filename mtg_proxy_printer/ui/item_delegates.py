@@ -19,7 +19,7 @@ from typing import Union
 from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel
 from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox, QLineEdit
 
-from mtg_proxy_printer.model.carddb import Card, MTGSet, AnyCardType
+from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger
 

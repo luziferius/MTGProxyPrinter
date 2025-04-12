@@ -38,8 +38,8 @@ except ImportError:
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
-from mtg_proxy_printer.model.carddb import CardIdentificationData, CardList, Card, CheckCard, AnyCardType, SCHEMA_NAME, \
-    MTGSet
+from mtg_proxy_printer.model.carddb import CardIdentificationData, SCHEMA_NAME
+from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, CardList, AnyCardType
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger

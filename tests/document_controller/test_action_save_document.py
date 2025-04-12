@@ -25,7 +25,7 @@ from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT, CardSizes
-from mtg_proxy_printer.model.carddb import CheckCard
+from mtg_proxy_printer.model.card import CheckCard
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import CardType
 from mtg_proxy_printer.model.imagedb_files import ImageKey

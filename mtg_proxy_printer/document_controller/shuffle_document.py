@@ -26,7 +26,7 @@ import typing
 from PyQt5.QtCore import Qt, QModelIndex
 
 from ._interface import DocumentAction, IllegalStateError, Self
-from mtg_proxy_printer.model.carddb import Card
+from ..model.card import Card
 from mtg_proxy_printer.model.document_page import CardContainer, PageColumns
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import PageType

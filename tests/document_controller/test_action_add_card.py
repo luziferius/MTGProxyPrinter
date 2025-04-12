@@ -20,7 +20,7 @@ import unittest.mock
 import pytest
 from hamcrest import *
 
-from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
+from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard
 from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.document_controller import IllegalStateError

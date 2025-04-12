@@ -18,8 +18,7 @@ import typing
 
 from PyQt5.QtCore import QAbstractListModel, Qt, QObject, QModelIndex
 
-from mtg_proxy_printer.model.carddb import MTGSet
-
+from mtg_proxy_printer.model.card import MTGSet
 
 __all__ = [
     "PrettySetListModel",
