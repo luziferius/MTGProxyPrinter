@@ -112,16 +112,61 @@ class Card:
 
     @property
     def is_custom_card(self) -> bool:
-        return not self.oracle_id
+        return False
 
     @property
     def is_oversized(self) -> bool:
         return self.size == CardSizes.OVERSIZED
 
 
-@dataclasses.dataclass()
-class CustomCard(Card):
+@dataclasses.dataclass(unsafe_hash=True)
+class CustomCard:
+    name: str = dataclasses.field(compare=True)
+    set: MTGSet = dataclasses.field(compare=True)
+    collector_number: str = dataclasses.field(compare=True)
+    language: str = dataclasses.field(compare=True)
+    is_front: bool = dataclasses.field(compare=True)
+    oracle_id: str = dataclasses.field(compare=True)
+    image_uri: str = dataclasses.field(compare=True)
+    highres_image: bool = dataclasses.field(compare=False)
+    size: CardSize = dataclasses.field(compare=False)
+    face_number: int = dataclasses.field(compare=True)
+    is_dfc: bool = dataclasses.field(compare=True)
     source_image_file: bytes = dataclasses.field(default=None, compare=False)
+
+    def requested_page_type(self) -> PageType:
+        if self.image_file is None:
+            return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
+        size = self.image_file.size()
+        if (size.width(), size.height()) == (1040, 1490):
+            return PageType.OVERSIZED
+        return PageType.REGULAR
+
+    @functools.lru_cache(maxsize=len(CardCorner))
+    def corner_color(self, corner: CardCorner) -> QColor:
+        """Returns the color of the card at the given corner. """
+        if self.image_file is None:
+            return QColorConstants.Transparent
+        sample_area = self.image_file.copy(QRect(
+            QPoint(
+                round(self.image_file.width() * corner.value[0]),
+                round(self.image_file.height() * corner.value[1])),
+            QSize(10, 10)
+        ))
+        average_color = sample_area.scaled(
+            1, 1, transformMode=SmoothTransformation).toImage().pixelColor(0, 0)
+        return average_color
+
+    def display_string(self):
+        return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
+
+    @property
+    def set_code(self):  # Compatibility with CardIdentificationData
+        return self.set.code
+
+    @property
+    def is_oversized(self) -> bool:
+        return self.size == CardSizes.OVERSIZED
 
     @property
     def is_custom_card(self) -> bool:
@@ -134,25 +179,11 @@ class CustomCard(Card):
         target_size = self.size.as_qsize_px()
         return source if source.size() == target_size else source.scaled(target_size, transformMode=SmoothTransformation)
 
-    @property
-    def size(self) -> CardSize:
-        return super().size
-
-    @size.setter
-    def size(self, value: CardSize):
-        current = super().size
-        if current != value:
-            super().size = value
-            del self.image_file  # Per documentation, the property cache is cleared by deleting the attribute
-
     @functools.cached_property
     def scryfall_id(self) -> UUID:
         hd = hashlib.md5(self.source_image_file).hexdigest()  # TODO: Maybe use something else instead of md5?
         return UUID(f"{hd[:8]}-{hd[8:12]}-{hd[12:16]}-{hd[16:20]}-{hd[20:]}")
 
-    @scryfall_id.setter
-    def scryfall_id(self, _):
-        pass
 
 @dataclasses.dataclass(unsafe_hash=True)
 class CheckCard:
@@ -266,8 +297,8 @@ class CheckCard:
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
 
 
-OptionalCard = typing.Optional[Card]
-CardList = typing.List[Card]
 AnyCardType = typing.Union[Card, CheckCard, CustomCard]
+CardList = typing.List[AnyCardType]
+OptionalCard = typing.Optional[AnyCardType]
 # Py3.8 compatibility hack, because isinstance(a, AnyCardType) fails on 3.8
 AnyCardTypeForTypeCheck = typing.get_args(AnyCardType)

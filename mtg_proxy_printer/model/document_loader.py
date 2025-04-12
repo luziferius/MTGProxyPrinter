@@ -42,7 +42,7 @@ from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, CardList, AnyC
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, QuantityT, UUID, CardSizes, OptStr, unit_registry
+from mtg_proxy_printer.units_and_sizes import PageType, QuantityT, UUID, CardSizes, OptStr, unit_registry, CardSize
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.save_file_migrations import migrate_database
@@ -67,7 +67,7 @@ class CardType(str, enum.Enum):
 
     @classmethod
     def from_card(cls, card: AnyCardType) -> "CardType":
-        if isinstance(card, Card):
+        if isinstance(card, (Card, CustomCard)):
             return cls.REGULAR
         elif isinstance(card, CheckCard):
             return cls.CHECK_CARD
@@ -317,7 +317,6 @@ class Worker(LoaderSignals):
 
     def _load_cards_on_page(
             self, save_db: sqlite3.Connection, page: int, expected_size: str, custom_cards: CustomCards) -> CardList:
-
         query = textwrap.dedent("""\
             SELECT slot, is_front, type, scryfall_id, custom_card_id -- _load_cards_on_page()
                 FROM Card
@@ -336,7 +335,7 @@ class Worker(LoaderSignals):
                 if custom_card_id in custom_cards:
                     result.append(custom_cards[custom_card_id])
                 else:
-                    card = self._load_custom_card_from_save(save_db, card_row)
+                    card = self._load_custom_card_from_save(save_db, card_size, card_row)
                     if card.image_file:
                         result.append(card)
                         custom_cards[custom_card_id] = card
@@ -436,7 +435,7 @@ class Worker(LoaderSignals):
         return card
 
     @staticmethod
-    def _load_custom_card_from_save(save_db: sqlite3.Connection, card_row: CardRow) -> Card:
+    def _load_custom_card_from_save(save_db: sqlite3.Connection, card_size: CardSize, card_row: CardRow) -> CustomCard:
         query = cached_dedent("""\
         SELECT name, set_code, set_name, collector_number, image
           FROM CustomCardData 
@@ -445,14 +444,9 @@ class Worker(LoaderSignals):
         name, set_code, set_name, collector_number, image_bytes = save_db.execute(
             query, (card_row.custom_card_id, card_row.is_front)
         ).fetchone()  # type: str, str, str, str, bytes
-        image = QPixmap()
-        image.loadFromData(image_bytes)
-        # TODO: Improve this
-        size = CardSizes.REGULAR if image.width() == 745 else CardSizes.OVERSIZED
-        scryfall_id = ""
         return CustomCard(
-            name, MTGSet(set_code, set_name), collector_number, "en", scryfall_id,
-            card_row.is_front, "", "",True, size, 1 + (not card_row.is_front), False, source_image_file=image
+            name, MTGSet(set_code, set_name), collector_number, "en",
+            card_row.is_front, "", "",True, card_size, 1 + (not card_row.is_front), False, image_bytes
         )
 
     def _fix_mixed_pages(self, pages: List[CardList], page_settings: PageLayoutSettings):
@@ -543,7 +537,6 @@ class Worker(LoaderSignals):
             if annotated_type is bool:
                 value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
             elif annotated_type is QuantityT:
-                # TODO: Handle invalid, non-length units
                 # Ensure all floats are within the allowed bounds.
                 value = mtg_proxy_printer.settings.clamp_to_supported_range(
                     value, mtg_proxy_printer.settings.MIN_SIZE, mtg_proxy_printer.settings.MAX_SIZE)

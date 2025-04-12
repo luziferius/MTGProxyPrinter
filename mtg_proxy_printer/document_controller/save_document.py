@@ -54,7 +54,7 @@ class ActionSaveDocument(DocumentAction):
     def apply(self, document: "Document") -> Self:
         logger.debug(f"About to save document to {self.file_path}")
         layout = document.page_layout
-        with open_database(self.file_path, "document-v6") as db:
+        with open_database(self.file_path, "document-v7") as db:
             db.execute("BEGIN IMMEDIATE TRANSACTION  -- apply()\n")
             migrate_database(db, layout)
             self._clear_cards_and_pages(db)
@@ -110,7 +110,7 @@ class ActionSaveDocument(DocumentAction):
         for page_number, page in enumerate(document.pages, start=1):
             for slot, container in enumerate(page, start=1):
                 card = container.card
-                if card.is_custom_card and card.image_file is not document.image_db.get_blank(card.size):
+                if card.image_file is document.image_db.get_blank(card.size):
                     # Empty slot
                     save_file.execute(
                         empty_slot,(page_number, slot, card.is_front, CardType.from_card(card))

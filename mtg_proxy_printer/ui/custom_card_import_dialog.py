@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QPushButton
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.model.card import MTGSet, Card
+from mtg_proxy_printer.model.card import MTGSet, Card, CustomCard
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
 try:
@@ -120,18 +120,14 @@ class CustomCardImportDialog(QDialog):
         self.show()
 
     @staticmethod
-    def create_cards(paths: typing.List[Path]) -> typing.Counter[Card]:
-        result: typing.Counter[Card] = Counter()
+    def create_cards(paths: typing.List[Path]) -> typing.Counter[CustomCard]:
+        result: typing.Counter[CustomCard] = Counter()
         regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
-        width, height = regular.width.magnitude, regular.height.magnitude
         for path in paths:
-            pixmap = QPixmap(str(path))
-            if not pixmap.isNull():
-                if pixmap.width() != width or pixmap.height() != height:
-                    new_size = QSize(width, height)
-                    pixmap = pixmap.scaled(new_size, transformMode=TransformationMode.SmoothTransformation)
-                card = Card(
-                    path.stem, MTGSet("", ""), "", "en", "", True, "", str(path), True, regular, 1, False, pixmap
+            if not QPixmap(str(path)).isNull():
+                pixmap_bytes = path.read_bytes()  # Should be guarded by the Pixmap constructor to prevent accidental DoS
+                card = CustomCard(
+                    path.stem, MTGSet("", ""), "", "en", True, "", str(path), True, regular, 1, False,pixmap_bytes
                 )
                 result[card] += 1
         return result
