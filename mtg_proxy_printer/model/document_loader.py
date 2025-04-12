@@ -440,9 +440,11 @@ class Worker(LoaderSignals):
         query = cached_dedent("""\
         SELECT name, set_code, set_name, collector_number, image
           FROM CustomCardData 
-          WHERE card_id = ? AND is_front = ?""")
-        result: Tuple[str, str, str, str, bytes] = save_db.execute(query, (card_row.custom_card_id, card_row.is_front)).fetchone()
-        name, set_code, set_name, collector_number, image_bytes = result
+          WHERE card_id = ? AND is_front = ?
+        """)
+        name, set_code, set_name, collector_number, image_bytes = save_db.execute(
+            query, (card_row.custom_card_id, card_row.is_front)
+        ).fetchone()  # type: str, str, str, str, bytes
         image = QPixmap()
         image.loadFromData(image_bytes)
         # TODO: Improve this
