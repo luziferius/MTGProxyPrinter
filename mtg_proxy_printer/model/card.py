@@ -128,13 +128,14 @@ class CustomCard(Card):
         return True
 
     @functools.cached_property
-    def image_file(self):
-        source = QPixmap().loadFromData(self.source_image_file)
+    def image_file(self) -> QPixmap:
+        source = QPixmap()
+        source.loadFromData(self.source_image_file)
         target_size = self.size.as_qsize_px()
         return source if source.size() == target_size else source.scaled(target_size, transformMode=SmoothTransformation)
 
     @property
-    def size(self):
+    def size(self) -> CardSize:
         return super().size
 
     @size.setter
@@ -145,7 +146,7 @@ class CustomCard(Card):
             del self.image_file  # Per documentation, the property cache is cleared by deleting the attribute
 
     @functools.cached_property
-    def scryfall_id(self):
+    def scryfall_id(self) -> UUID:
         hd = hashlib.md5(self.source_image_file).hexdigest()  # TODO: Maybe use something else instead of md5?
         return UUID(f"{hd[:8]}-{hd[8:12]}-{hd[12:16]}-{hd[16:20]}-{hd[20:]}")
 
