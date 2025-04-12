@@ -536,7 +536,6 @@ class Worker(LoaderSignals):
             ),
             "Document settings contain invalid data or data types"
         )
-
         for key, annotated_type in PageLayoutSettings.__annotations__.items():
             value = getattr(settings, key)
             if annotated_type is bool:

@@ -1,4 +1,20 @@
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import dataclasses
+import hashlib
 import enum
 import functools
 import typing
@@ -6,7 +22,7 @@ import typing
 from PyQt5.QtCore import QRect, QPoint, QSize, Qt, QPointF
 from PyQt5.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform
 
-from mtg_proxy_printer.units_and_sizes import CardSize, PageType, CardSizes
+from mtg_proxy_printer.units_and_sizes import CardSize, PageType, CardSizes, UUID
 
 ItemDataRole = Qt.ItemDataRole
 RenderHint = QPainter.RenderHint
@@ -105,7 +121,7 @@ class Card:
 
 @dataclasses.dataclass()
 class CustomCard(Card):
-    source_image_file: QPixmap = dataclasses.field(default=None, compare=False)
+    source_image_file: bytes = dataclasses.field(default=None, compare=False)
 
     @property
     def is_custom_card(self) -> bool:
@@ -113,8 +129,8 @@ class CustomCard(Card):
 
     @functools.cached_property
     def image_file(self):
+        source = QPixmap().loadFromData(self.source_image_file)
         target_size = self.size.as_qsize_px()
-        source = self.source_image_file
         return source if source.size() == target_size else source.scaled(target_size, transformMode=SmoothTransformation)
 
     @property
@@ -128,6 +144,14 @@ class CustomCard(Card):
             super().size = value
             del self.image_file  # Per documentation, the property cache is cleared by deleting the attribute
 
+    @functools.cached_property
+    def scryfall_id(self):
+        hd = hashlib.md5(self.source_image_file).hexdigest()  # TODO: Maybe use something else instead of md5?
+        return UUID(f"{hd[:8]}-{hd[8:12]}-{hd[12:16]}-{hd[16:20]}-{hd[20:]}")
+
+    @scryfall_id.setter
+    def scryfall_id(self, _):
+        pass
 
 @dataclasses.dataclass(unsafe_hash=True)
 class CheckCard:
