@@ -10,6 +10,7 @@ from mtg_proxy_printer.units_and_sizes import CardSize, PageType, CardSizes
 
 ItemDataRole = Qt.ItemDataRole
 RenderHint = QPainter.RenderHint
+SmoothTransformation = Qt.TransformationMode.SmoothTransformation
 
 @dataclasses.dataclass(frozen=True)
 class MTGSet:
@@ -83,23 +84,48 @@ class Card:
             QSize(10, 10)
         ))
         average_color = sample_area.scaled(
-            1, 1, transformMode=Qt.TransformationMode.SmoothTransformation).toImage().pixelColor(0, 0)
+            1, 1, transformMode=SmoothTransformation).toImage().pixelColor(0, 0)
         return average_color
 
     def display_string(self):
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
 
     @property
-    def set_code(self):  # TODO: Really needed? Inn't really used and can be removed.
+    def set_code(self):  # Compatibility with CardIdentificationData
         return self.set.code
 
     @property
-    def is_custom_card(self):
+    def is_custom_card(self) -> bool:
         return not self.oracle_id
 
     @property
     def is_oversized(self) -> bool:
-        return self.size is CardSizes.OVERSIZED
+        return self.size == CardSizes.OVERSIZED
+
+
+class CustomCard(Card):
+    source_image_file: QPixmap = dataclasses.field(compare=False)
+
+    @property
+    def is_custom_card(self) -> bool:
+        return True
+
+    @functools.cached_property
+    def image_file(self):
+        target_size = self.size.as_qsize_px()
+        source = self.source_image_file
+        return source if source.size() == target_size else source.scaled(target_size, transformMode=SmoothTransformation)
+
+    @property
+    def size(self):
+        return super().size
+
+    @size.setter
+    def size(self, value: CardSize):
+        current = super().size
+        if current != value:
+            super().size = value
+            del self.image_file  # Per documentation, the property cache is cleared by deleting the attribute
 
 
 @dataclasses.dataclass(unsafe_hash=True)
@@ -216,5 +242,6 @@ class CheckCard:
 
 OptionalCard = typing.Optional[Card]
 CardList = typing.List[Card]
-AnyCardType = typing.Union[Card, CheckCard]
-AnyCardTypeForTypeCheck = typing.get_args(AnyCardType)  # Py3.8 compatibility hack, because isinstance(a, AnyCardType) fails on 3.8
+AnyCardType = typing.Union[Card, CheckCard, CustomCard]
+# Py3.8 compatibility hack, because isinstance(a, AnyCardType) fails on 3.8
+AnyCardTypeForTypeCheck = typing.get_args(AnyCardType)

@@ -27,7 +27,7 @@ import typing
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
-from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, OptionalCard, CardList
+from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, OptionalCard, CardList, CustomCard
 from mtg_proxy_printer.model.imagedb_files import CacheContent
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.natsort import natural_sorted
@@ -46,7 +46,7 @@ SCHEMA_NAME = "carddb"
 # The card data is mostly stable, Scryfall recommends fetching the card bulk data only in larger intervals, like
 # once per month or so.
 MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
-T = typing.TypeVar("T", Card, CheckCard)
+T = typing.TypeVar("T", Card, CheckCard, CustomCard)
 write_semaphore = threading.BoundedSemaphore()
 
 
