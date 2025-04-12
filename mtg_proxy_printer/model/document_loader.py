@@ -27,8 +27,7 @@ import pint
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, Qt
 from PyQt5.QtGui import QPixmap
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
-    has_properties, is_, any_of, none, has_item
-
+    has_properties, is_, any_of, none, has_item, has_property, equal_to
 
 try:
     from hamcrest import contains_exactly
@@ -39,11 +38,11 @@ except ImportError:
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 from mtg_proxy_printer.model.carddb import CardIdentificationData, SCHEMA_NAME
-from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, CardList, AnyCardType
+from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, CardList, AnyCardType, CustomCard
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, QuantityT, UUID, CardSizes, OptStr
+from mtg_proxy_printer.units_and_sizes import PageType, QuantityT, UUID, CardSizes, OptStr, unit_registry
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.save_file_migrations import migrate_database
@@ -439,18 +438,20 @@ class Worker(LoaderSignals):
     @staticmethod
     def _load_custom_card_from_save(save_db: sqlite3.Connection, card_row: CardRow) -> Card:
         query = cached_dedent("""\
-        SELECT name, set_code, set_name, collector_number, oversized, image
+        SELECT name, set_code, set_name, collector_number, image
           FROM CustomCardData 
           WHERE card_id = ? AND is_front = ?""")
-        result: Tuple[str, str, str, str, bool, bytes] = save_db.execute(query, (card_row.custom_card_id, card_row.is_front)).fetchone()
-        name, set_code, set_name, collector_number, oversized, image_bytes = result
+        result: Tuple[str, str, str, str, bytes] = save_db.execute(query, (card_row.custom_card_id, card_row.is_front)).fetchone()
+        name, set_code, set_name, collector_number, image_bytes = result
         image = QPixmap()
         image.loadFromData(image_bytes)
         # TODO: Improve this
         size = CardSizes.REGULAR if image.width() == 745 else CardSizes.OVERSIZED
-        return Card(
-            name, MTGSet(set_code, set_name), collector_number, "en", "",
-            card_row.is_front, "", "", True, size, 1 + (not card_row.is_front), False, image)
+        scryfall_id = ""
+        return CustomCard(
+            name, MTGSet(set_code, set_name), collector_number, "en", scryfall_id,
+            card_row.is_front, "", "",True, size, 1 + (not card_row.is_front), False, source_image_file=image
+        )
 
     def _fix_mixed_pages(self, pages: List[CardList], page_settings: PageLayoutSettings):
         """
@@ -512,22 +513,25 @@ class Worker(LoaderSignals):
                 WHERE "key" in ({keys})
             """)
         settings.update(db.execute(document_dimensions_query))
-        is_number = instance_of(pint.Quantity)
+        is_distance = all_of(
+            instance_of(pint.Quantity),
+            has_property("dimensionality", equal_to(unit_registry.mm.dimensionality)))
+        is_bool_str = is_in(("True", "False"))
         assert_that(
             settings,
             has_properties(
-                card_bleed=is_number,
-                page_height=is_number,
-                page_width=is_number,
-                margin_top=is_number,
-                margin_bottom=is_number,
-                margin_left=is_number,
-                margin_right=is_number,
-                row_spacing=is_number,
-                column_spacing=is_number,
-                draw_cut_markers=is_in(("True", "False")),
-                draw_sharp_corners=is_in(("True", "False")),
-                draw_page_numbers=is_in(("True", "False")),
+                card_bleed=is_distance,
+                page_height=is_distance,
+                page_width=is_distance,
+                margin_top=is_distance,
+                margin_bottom=is_distance,
+                margin_left=is_distance,
+                margin_right=is_distance,
+                row_spacing=is_distance,
+                column_spacing=is_distance,
+                draw_cut_markers=is_bool_str,
+                draw_sharp_corners=is_bool_str,
+                draw_page_numbers=is_bool_str,
                 document_name=instance_of(str),
             ),
             "Document settings contain invalid data or data types"
