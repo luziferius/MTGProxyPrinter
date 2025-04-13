@@ -196,6 +196,8 @@ class Worker(LoaderSignals):
         super().__init__(None)
         self.document = document
         self.save_path = path
+        # TODO: Can't the Worker create a CardDatabase instance instead of monkey-patching the existing instance?
+        #  There is no state or object connection in the CardDatabase that requires it being a singleton.
         self.card_db = document.card_db
         self.image_db = image_db = document.image_db
         self._db: sqlite3.Connection = None
@@ -218,6 +220,7 @@ class Worker(LoaderSignals):
 
     @property
     def db(self) -> sqlite3.Connection:
+        """A connection to the card database file. Created on demand and used"""
         # Delay connection creation until first access.
         # Avoids opening connections that aren't actually used and opens the connection
         # in the thread that actually uses it.
