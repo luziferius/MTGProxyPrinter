@@ -250,6 +250,7 @@ class Worker(LoaderSignals):
             self.loading_file_failed.emit(self.save_path, str(e))
             self.finished.emit()  # Release UI in failure case. _load_document() emits this during regular operation
         finally:
+            self.db.rollback()
             self.db.close()
             self._db = None
 
@@ -272,6 +273,8 @@ class Worker(LoaderSignals):
             self._advance_progress()
             logger.debug(f"About to load {total_cards} cards.")
             pages = self._load_cards(save_db) if total_cards else []
+            save_db.rollback()
+            save_db.close()
             self._fix_mixed_pages(pages, page_layout)
             self._advance_progress()
         action = ActionLoadDocument(self.save_path, pages, page_layout)
@@ -291,11 +294,16 @@ class Worker(LoaderSignals):
         :param save_path: File system path to open
         :return: The opened database connection."""
         db = open_database(save_path, f"document-v7")
-        user_version = Worker._validate_database_schema(db)
-        if user_version not in range(2, 8):
-            raise AssertionError(f"Unknown database schema version: {user_version}")
-        logger.info(f"Save file version is {user_version}")
-        migrate_database(db, PageLayoutSettings.create_from_settings())
+        try:
+            user_version = Worker._validate_database_schema(db)
+            if user_version not in range(2, 8):
+                raise AssertionError(f"Unknown database schema version: {user_version}")
+            logger.info(f"Save file version is {user_version}")
+            migrate_database(db, PageLayoutSettings.create_from_settings())
+        except Exception:
+            db.rollback()
+            db.close()
+            raise
         return db
 
 
@@ -313,7 +321,6 @@ class Worker(LoaderSignals):
             assert_that(expected_size, is_in(allowed_sizes))
             pages.append(self._load_cards_on_page(save_db, page, expected_size, custom_cards))
         return pages
-
 
     def _load_cards_on_page(
             self, save_db: sqlite3.Connection, page: int, expected_size: str, custom_cards: CustomCards) -> CardList:
@@ -353,7 +360,6 @@ class Worker(LoaderSignals):
             self._advance_progress()
         return result
 
-
     @staticmethod
     def _validate_save_db_card_row(is_positive_int, item, valid_card_types):
         assert_that(item, contains_exactly(
@@ -370,7 +376,6 @@ class Worker(LoaderSignals):
         assert_that(
             (scryfall_id, custom_card_id), has_item(none()),
             "Scryfall ID and custom card ID must not be both present")
-
 
     def _load_official_card_from_card_db(self, data: CardRow) -> Optional[DatabaseLoadResult]:
         if data.card_type == CardType.CHECK_CARD:
