@@ -34,7 +34,7 @@ from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import StringList, OptStr, CardSizes
+from mtg_proxy_printer.units_and_sizes import StringList, OptStr, CardSizes, CardSize, UUID
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -104,9 +104,10 @@ class CardDatabase(QObject):
     Provides methods for data access.
     """
     card_data_updated = Signal()
+    custom_cards: typing.Dict[UUID, CustomCard] = {}
 
     def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
-                 check_same_thread: bool = True):
+                 check_same_thread: bool = True, register_exit_hooks: bool = True):
         """
         :param db_path: Path to the database file. May be “:memory:” to create an in-memory database for testing
             purposes.
@@ -119,7 +120,7 @@ class CardDatabase(QObject):
         self._db_is_temporary = False
         self.reopen_database()
         self._exit_hook = None
-        if db_path != ":memory:":
+        if db_path != ":memory:" and register_exit_hooks:
             self._register_exit_hook()
 
     @Slot()
@@ -860,3 +861,14 @@ class CardDatabase(QObject):
             language_override, scryfall_id, card.is_front, card.oracle_id, image_uri,
             bool(highres_image), size, face_number, bool(is_dfc),
         )
+
+    def get_custom_card(
+            self, name: str, set_code: str, set_name: str, collector_number: str,
+            size: CardSize, is_front: bool, image: bytes) -> CustomCard:
+        card = CustomCard(
+            name, MTGSet(set_code, set_name), collector_number, "en",
+            is_front, "", "", True, size, 1 + (not is_front), False, image)
+        custom_card_id = card.scryfall_id
+        card = self.custom_cards.get(custom_card_id, card)
+        self.custom_cards[custom_card_id] = card
+        return card

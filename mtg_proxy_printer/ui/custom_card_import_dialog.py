@@ -119,16 +119,16 @@ class CustomCardImportDialog(QDialog):
         self.model.add_cards(cards)
         self.show()
 
-    @staticmethod
-    def create_cards(paths: typing.List[Path]) -> typing.Counter[CustomCard]:
+    def create_cards(self, paths: typing.List[Path]) -> typing.Counter[CustomCard]:
         result: typing.Counter[CustomCard] = Counter()
         regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
+        card_db = self.model.card_db
         for path in paths:
             if not QPixmap(str(path)).isNull():
-                pixmap_bytes = path.read_bytes()  # Should be guarded by the Pixmap constructor to prevent accidental DoS
-                card = CustomCard(
-                    path.stem, MTGSet("", ""), "", "en", True, "", str(path), True, regular, 1, False,pixmap_bytes
-                )
+                # This read should stay guarded by the Pixmap constructor to prevent accidental DoS by reading huge files
+                pixmap_bytes = path.read_bytes()
+                card = card_db.get_custom_card(
+                    path.stem, "" , "", "", regular, True, pixmap_bytes)
                 result[card] += 1
         return result
 

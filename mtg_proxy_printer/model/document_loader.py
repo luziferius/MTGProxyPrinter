@@ -37,7 +37,7 @@ except ImportError:
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
-from mtg_proxy_printer.model.carddb import CardIdentificationData, SCHEMA_NAME
+from mtg_proxy_printer.model.carddb import CardIdentificationData, SCHEMA_NAME, CardDatabase
 from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, CardList, AnyCardType, CustomCard
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
@@ -126,10 +126,9 @@ class DocumentLoader(LoaderSignals):
 
     loading_state_changed = Signal(bool)
 
-    def __init__(self, document: "Document", db: sqlite3.Connection = None):  # db parameter used by test code
+    def __init__(self, document: "Document"):
         super().__init__(None)
         self.document = document
-        self.db = db
         disable_loading_state_on_completion = functools.partial(self.loading_state_changed.emit, False)
         self.finished.connect(disable_loading_state_on_completion, Qt.ConnectionType.DirectConnection)
 
@@ -166,8 +165,6 @@ class LoaderRunner(Runnable):
     def _create_worker(self):
         parent = self.parent
         worker = Worker(parent.document, self.path)
-        if parent.db is not None:  # Used by tests to explicitly set the database
-            worker._db = parent.db
         # The blocking connection causes the worker to wait for the document in the main thread to complete the loading
         worker.load_requested.connect(parent.load_requested, Qt.ConnectionType.BlockingQueuedConnection)
         worker.loading_file_failed.connect(parent.loading_file_failed)
@@ -196,19 +193,19 @@ class Worker(LoaderSignals):
         super().__init__(None)
         self.document = document
         self.save_path = path
+        self.card_db_path = document.card_db.db_path
         # TODO: Can't the Worker create a CardDatabase instance instead of monkey-patching the existing instance?
         #  There is no state or object connection in the CardDatabase that requires it being a singleton.
-        self.card_db = document.card_db
+        self.card_db: CardDatabase = None
         self.image_db = image_db = document.image_db
-        self._db: sqlite3.Connection = None
         # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
         # That one lives in its own thread and runs asynchronously and is thus unusable for loading documents.
         # So create a separate instance and use it synchronously inside this worker thread.
-        self.image_loader = ImageDownloader(image_db, self)
-        self.image_loader.download_begins.connect(image_db.card_download_starting)
-        self.image_loader.download_finished.connect(image_db.card_download_finished)
-        self.image_loader.download_progress.connect(image_db.card_download_progress)
-        self.image_loader.network_error_occurred.connect(self.on_network_error_occurred)
+        self.image_loader = image_loader = ImageDownloader(image_db, self)
+        image_loader.download_begins.connect(image_db.card_download_starting)
+        image_loader.download_finished.connect(image_db.card_download_finished)
+        image_loader.download_progress.connect(image_db.card_download_progress)
+        image_loader.network_error_occurred.connect(self.on_network_error_occurred)
         self.network_errors_during_load: Counter[str] = collections.Counter()
         self.finished.connect(self.propagate_errors_during_load)
         self.should_run: bool = True
@@ -217,16 +214,6 @@ class Worker(LoaderSignals):
         self.current_progress = 0
         self.prefer_already_downloaded = mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
             "prefer-already-downloaded-images")
-
-    @property
-    def db(self) -> sqlite3.Connection:
-        """A connection to the card database file. Created on demand and used"""
-        # Delay connection creation until first access.
-        # Avoids opening connections that aren't actually used and opens the connection
-        # in the thread that actually uses it.
-        if self._db is None:
-            self._db = open_database(self.card_db.db_path, SCHEMA_NAME)
-        return self._db
 
     def propagate_errors_during_load(self):
         if error_count := sum(self.network_errors_during_load.values()):
@@ -245,6 +232,7 @@ class Worker(LoaderSignals):
 
     def load_document(self):
         self.should_run = True
+        self.card_db = CardDatabase(self.card_db_path, self, register_exit_hooks=False)
         try:
             self._load_document()
         except (AssertionError, sqlite3.DatabaseError) as e:
@@ -253,9 +241,9 @@ class Worker(LoaderSignals):
             self.loading_file_failed.emit(self.save_path, str(e))
             self.finished.emit()  # Release UI in failure case. _load_document() emits this during regular operation
         finally:
-            self.db.rollback()
-            self.db.close()
-            self._db = None
+            self.card_db.db.rollback()
+            self.card_db.db.close()
+            self.card_db = None
 
     def _complete_loading(self):
         if self.unknown_ids or self.migrated_ids:
@@ -268,18 +256,17 @@ class Worker(LoaderSignals):
         # Imported here to break a circular import. TODO: Investigate a better fix
         from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
         additional_steps = 2
-        with patch.object(self.card_db, "db", self.db):
-            save_db = self._open_validate_and_migrate_save_file(self.save_path)
-            total_cards = save_db.execute("SELECT count(1) FROM Card").fetchone()[0]
-            self.begin_loading_loop.emit(total_cards+additional_steps, "Loading document:")
-            page_layout = self._load_document_settings(save_db)
-            self._advance_progress()
-            logger.debug(f"About to load {total_cards} cards.")
-            pages = self._load_cards(save_db) if total_cards else []
-            save_db.rollback()
-            save_db.close()
-            self._fix_mixed_pages(pages, page_layout)
-            self._advance_progress()
+        save_db = self._open_validate_and_migrate_save_file(self.save_path)
+        total_cards = save_db.execute("SELECT count(1) FROM Card").fetchone()[0]
+        self.begin_loading_loop.emit(total_cards+additional_steps, "Loading document:")
+        page_layout = self._load_document_settings(save_db)
+        self._advance_progress()
+        logger.debug(f"About to load {total_cards} cards.")
+        pages = self._load_cards(save_db) if total_cards else []
+        save_db.rollback()
+        save_db.close()
+        self._fix_mixed_pages(pages, page_layout)
+        self._advance_progress()
         action = ActionLoadDocument(self.save_path, pages, page_layout)
         self.load_requested.emit(action)
         self._complete_loading()
@@ -442,8 +429,7 @@ class Worker(LoaderSignals):
             logger.info(f"Found suitable replacement card: {card}")
         return card
 
-    @staticmethod
-    def _load_custom_card_from_save(save_db: sqlite3.Connection, card_size: CardSize, card_row: CardRow) -> CustomCard:
+    def _load_custom_card_from_save(self, save_db: sqlite3.Connection, card_size: CardSize, card_row: CardRow) -> CustomCard:
         query = cached_dedent("""\
         SELECT name, set_code, set_name, collector_number, image
           FROM CustomCardData 
@@ -452,10 +438,8 @@ class Worker(LoaderSignals):
         name, set_code, set_name, collector_number, image_bytes = save_db.execute(
             query, (card_row.custom_card_id, card_row.is_front)
         ).fetchone()  # type: str, str, str, str, bytes
-        return CustomCard(
-            name, MTGSet(set_code, set_name), collector_number, "en",
-            card_row.is_front, "", "",True, card_size, 1 + (not card_row.is_front), False, image_bytes
-        )
+        return self.card_db.get_custom_card(
+            name, set_code, set_name, collector_number, card_size, card_row.is_front, image_bytes)
 
     def _fix_mixed_pages(self, pages: List[CardList], page_settings: PageLayoutSettings):
         """
