@@ -35,7 +35,6 @@ __all__ = [
     "HAS_COMPILED_RESOURCES",
     "highlight_widget",
     "BlockedSignals",
-    "set_url_label",
     "load_ui_from_file",
     "format_size",
     "WizardBase",
@@ -103,19 +102,6 @@ class BlockedSignals:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.qt_object.blockSignals(False)
-
-
-def set_url_label(label: QLabel, path: Path, display_text: str = None):
-
-    url = QUrl.fromLocalFile(str(path.expanduser()))
-    if not label.openExternalLinks():
-        # The openExternalLinks property is not set in the UI file, so fail fast instead of doing workarounds.
-        raise ValueError(
-            f"QLabel with disabled openExternalLinks property used to display an external URL. This won’t work, so "
-            f"fail now. Label: {label}, Text: {label.text()}")
-    if not display_text:
-        display_text = str(path)
-    label.setText(f"""<a href="{url.path(QUrl.FullyEncoded):s}">{display_text:s}</a>""")
 
 
 def load_ui_from_file(name: str):
