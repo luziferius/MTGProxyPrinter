@@ -112,11 +112,10 @@ class CardListModel(QAbstractTableModel):
                 return self.tr("Front") if card.is_front else self.tr("Back")
         if card.is_custom_card and column == CardListColumns.CardName and role == ItemDataRole.ToolTipRole:
             return get_card_image_tooltip(card.source_image_file)
-        if card.is_oversized:
-            if role == ItemDataRole.ToolTipRole:
-                return self.tr("Beware: Potentially oversized card!\nThis card may not fit in your deck.")
-            elif role == ItemDataRole.DecorationRole:
-                return self._oversized_icon
+        elif card.is_oversized and role == ItemDataRole.ToolTipRole:
+            return self.tr("Beware: Potentially oversized card!\nThis card may not fit in your deck.")
+        if card.is_oversized and role == ItemDataRole.DecorationRole:
+            return self._oversized_icon
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         flags = super().flags(index)
