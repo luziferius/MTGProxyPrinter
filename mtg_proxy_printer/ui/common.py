@@ -14,9 +14,9 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import functools
-import pathlib
+from pathlib import Path
 import platform
-import typing
+from typing import Union, Dict
 
 from PyQt5.QtCore import QFile, QUrl, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
 from PyQt5.QtWidgets import QLabel, QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit
@@ -39,14 +39,14 @@ __all__ = [
     "load_ui_from_file",
     "format_size",
     "WizardBase",
-    "get_image_for_tooltip_display",
+    "get_card_image_tooltip",
 ]
 
 try:
     import mtg_proxy_printer.ui.compiled_resources
 except ModuleNotFoundError:
-    RESOURCE_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.with_name("resources"))
-    ICON_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.with_name("resources") / "icons")
+    RESOURCE_PATH_PREFIX = str(Path(__file__).resolve().parent.with_name("resources"))
+    ICON_PATH_PREFIX = str(Path(__file__).resolve().parent.with_name("resources") / "icons")
     HAS_COMPILED_RESOURCES = False
 else:
     import atexit
@@ -58,25 +58,26 @@ else:
 
 
 @functools.lru_cache(maxsize=256)
-def get_image_for_tooltip_display(path: pathlib.Path, card_name: OptStr = None, scaling_factor: int = 3) -> str:
+def get_card_image_tooltip(image: Union[bytes, Path], card_name: OptStr = None, scaling_factor: int = 3) -> str:
     """
     Returns a tooltip string showing a scaled down image for the given path.
-    :param path: Filesystem path to the image file
-    :param card_name: Optional card name. If given, it is placed above the image
+    :param image: Filesystem path to the image file or raw image content as bytes
+    :param card_name: Optional card name. If given, it is centered above the image
     :param scaling_factor: Scales the source by factor to 1/scaling_factor
     :return: HTML fragment with the image embedded as a base64 encoded PNG
     """
-    source = QPixmap(str(path))
-    pixmap = source.scaled(
-        source.width() // scaling_factor, source.height() // scaling_factor,
-        Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    if isinstance(image, bytes):
+        source = QPixmap()
+        source.loadFromData(image)
+    else:
+        source = QPixmap(str(image))
+    pixmap = source.scaledToWidth(source.width() // scaling_factor, Qt.TransformationMode.SmoothTransformation)
     buffer = QBuffer()
     buffer.open(QIODevice.OpenModeFlag.WriteOnly)
     pixmap.save(buffer, "PNG", quality=100)
     image = buffer.data().toBase64().data().decode()
     card_name = f'<p style="text-align:center">{card_name}</p><br>' if card_name else ""
-    tooltip_text = f'{card_name}<img src="data:image/png;base64,{image}">'
-    return tooltip_text
+    return f'{card_name}<img src="data:image/png;base64,{image}">'
 
 
 def highlight_widget(widget: QWidget) -> None:
@@ -104,7 +105,7 @@ class BlockedSignals:
         self.qt_object.blockSignals(False)
 
 
-def set_url_label(label: QLabel, path: pathlib.Path, display_text: str = None):
+def set_url_label(label: QLabel, path: Path, display_text: str = None):
 
     url = QUrl.fromLocalFile(str(path.expanduser()))
     if not label.openExternalLinks():
@@ -159,7 +160,7 @@ def format_size(size: float) -> str:
 
 class WizardBase(QWizard):
     """Base class for wizards based on QWizard"""
-    BUTTON_ICONS: typing.Dict[QWizard.WizardButton, str] = {}
+    BUTTON_ICONS: Dict[QWizard.WizardButton, str] = {}
 
     def __init__(self, window_size: QSize, parent: QWidget, flags):
         super().__init__(parent, flags)

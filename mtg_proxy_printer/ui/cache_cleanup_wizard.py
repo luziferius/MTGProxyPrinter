@@ -31,7 +31,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.card import MTGSet, Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.imagedb_files import CacheContent as ImageCacheContent, ImageKey
-from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase, get_image_for_tooltip_display
+from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase, get_card_image_tooltip
 from mtg_proxy_printer.units_and_sizes import OptStr
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -88,7 +88,7 @@ class KnownCardRow(QObject):
         if column == KnownCardColumns.Name and role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
             data = self.name
         elif column == KnownCardColumns.Name and role == ItemDataRole.ToolTipRole:
-            data = get_image_for_tooltip_display(self.path, self.preferred_language_name)
+            data = get_card_image_tooltip(self.path, self.preferred_language_name)
         elif column == KnownCardColumns.Set:
             data = self.set.data(role)
         elif column == KnownCardColumns.CollectorNumber and role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
@@ -224,7 +224,7 @@ class UnknownCardRow(QObject):
         if column == UnknownCardColumns.ScryfallId and role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
             data = self.scryfall_id
         elif column == UnknownCardColumns.ScryfallId and role == ItemDataRole.ToolTipRole:
-            data = get_image_for_tooltip_display(self.path)
+            data = get_card_image_tooltip(self.path)
         elif column == UnknownCardColumns.IsFront and role == ItemDataRole.DisplayRole:
             data = self.tr("Front") if self.is_front else self.tr("Back")
         elif column == UnknownCardColumns.IsFront and role == ItemDataRole.EditRole:
@@ -474,6 +474,6 @@ class CacheCleanupWizard(WizardBase):
 
     @staticmethod
     def _clear_tooltip_cache():
-        logger.debug(f"Tooltip cache efficiency: {get_image_for_tooltip_display.cache_info()}")
+        logger.debug(f"Tooltip cache efficiency: {get_card_image_tooltip.cache_info()}")
         # Free memory by clearing the cached, base64 encoded PNGs used for tooltip display
-        get_image_for_tooltip_display.cache_clear()
+        get_card_image_tooltip.cache_clear()

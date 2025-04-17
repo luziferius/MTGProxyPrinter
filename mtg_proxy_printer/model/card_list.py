@@ -17,16 +17,15 @@ from collections import Counter
 import dataclasses
 import enum
 import itertools
-from pathlib import Path
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, QItemSelection
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSignal as Signal, QItemSelection
 from PyQt5.QtGui import QIcon
 
-from mtg_proxy_printer.ui.common import get_image_for_tooltip_display
+from mtg_proxy_printer.ui.common import get_card_image_tooltip
 from mtg_proxy_printer.decklist_parser.common import CardCounter
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardDatabase
-from mtg_proxy_printer.model.card import Card, CheckCard, AnyCardType
+from mtg_proxy_printer.model.card import Card, AnyCardType
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -42,7 +41,7 @@ INVALID_INDEX = QModelIndex()
 
 @dataclasses.dataclass
 class CardListModelRow:
-    card: Card
+    card: AnyCardType
     copies: int
 
 
@@ -112,7 +111,7 @@ class CardListModel(QAbstractTableModel):
                     return card.is_front
                 return self.tr("Front") if card.is_front else self.tr("Back")
         if card.is_custom_card and column == CardListColumns.CardName and role == ItemDataRole.ToolTipRole:
-            return get_image_for_tooltip_display(Path(card.image_uri))
+            return get_card_image_tooltip(card.source_image_file)
         if card.is_oversized:
             if role == ItemDataRole.ToolTipRole:
                 return self.tr("Beware: Potentially oversized card!\nThis card may not fit in your deck.")
@@ -196,8 +195,7 @@ class CardListModel(QAbstractTableModel):
         else:
             result = [card_data]
         if result:
-            # Simply choose the first match. The user can’t make a choice at this point, so just use one of
-            # the results.
+            # Simply choose the first match. The user can’t make a choice at this point, so just use one of the results.
             new_card = result[0]
             logger.debug(f"Replacing with {new_card}")
             top_left = index.sibling(row, column)
@@ -241,7 +239,6 @@ class CardListModel(QAbstractTableModel):
         Remove all cards in the given multi-selection.
         :return: Number of cards removed
         """
-
         selected_ranges = sorted(
             (selected_range.top(), selected_range.bottom()) for selected_range in indices
         )
