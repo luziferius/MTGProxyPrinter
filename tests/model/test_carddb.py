@@ -34,9 +34,9 @@ from mtg_proxy_printer.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.units_and_sizes import UUID
 
-from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
+from ..helpers import assert_model_is_empty, fill_card_database_with_json_card, \
     fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation, update_database_printing_filters
-from .test_card_info_downloader import TestCaseData
+from ..test_card_info_downloader import TestCaseData
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]

@@ -18,7 +18,6 @@ import contextlib
 from itertools import chain, repeat, product
 from pathlib import Path
 import sqlite3
-import tempfile
 import unittest.mock
 import textwrap
 
