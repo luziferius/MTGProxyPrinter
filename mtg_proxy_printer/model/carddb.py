@@ -867,7 +867,7 @@ class CardDatabase(QObject):
             size: CardSize, is_front: bool, image: bytes) -> CustomCard:
         card = CustomCard(
             name, MTGSet(set_code, set_name), collector_number, "en",
-            is_front, "", "", True, size, 1 + (not is_front), False, image)
+            is_front, "", True, size, 1 + (not is_front), False, image)
         custom_card_id = card.scryfall_id
         card = self.custom_cards.get(custom_card_id, card)
         self.custom_cards[custom_card_id] = card
