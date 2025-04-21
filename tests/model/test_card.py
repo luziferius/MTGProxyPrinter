@@ -24,8 +24,10 @@ from mtg_proxy_printer.units_and_sizes import CardSize, CardSizes, PageType, UUI
 
 from hamcrest import *
 
+
+# noinspection PyUnusedLocal
 @pytest.fixture()
-def card(qtbot: QtBot) -> Card:
+def card(qtbot: QtBot) -> Card:  # QPixmap() requires a QApplication to function
     size = CardSizes.REGULAR
     pixmap = QPixmap(size.as_qsize_px())
     pixmap.fill(QColorConstants.Red)
@@ -36,8 +38,10 @@ def card(qtbot: QtBot) -> Card:
         size, 1, False, pixmap
     )
 
+
+# noinspection PyUnusedLocal
 @pytest.fixture()
-def oversized(qtbot: QtBot) -> Card:
+def oversized(qtbot: QtBot) -> Card:  # QPixmap() requires a QApplication to function
     size = CardSizes.OVERSIZED
     pixmap = QPixmap(size.as_qsize_px())
     pixmap.fill(QColorConstants.Red)
@@ -96,8 +100,9 @@ def image_as_bytes(color: QColor, size: CardSize) -> bytes:
     return buffer.data().data()
 
 
+# noinspection PyUnusedLocal
 @pytest.fixture()
-def custom_card(qtbot: QtBot) -> CustomCard:
+def custom_card(qtbot: QtBot) -> CustomCard:  # QPixmap() requires a QApplication to function
     size = CardSizes.REGULAR
     image = image_as_bytes(QColorConstants.Red, size)
     return CustomCard(
@@ -106,8 +111,10 @@ def custom_card(qtbot: QtBot) -> CustomCard:
         size, 1, False, image
     )
 
+
+# noinspection PyUnusedLocal
 @pytest.fixture()
-def custom_oversized(qtbot: QtBot) -> CustomCard:
+def custom_oversized(qtbot: QtBot) -> CustomCard:  # QPixmap() requires a QApplication to function
     size = CardSizes.OVERSIZED
     image = image_as_bytes(QColorConstants.Red, size)
     return CustomCard(
@@ -128,7 +135,7 @@ def test_custom_card_image_file(custom_card: CustomCard):
 
 
 def test_custom_card_scryfall_id_is_uuid(custom_card: CustomCard):
-    assert_that(custom_card.scryfall_id, is_(instance_of(UUID)))
+    assert_that(custom_card.scryfall_id, instance_of(UUID), "Scryfall ID not a UUID")
 
 
 def test_custom_card_set_code(custom_card: CustomCard):
@@ -164,7 +171,7 @@ def _create_back(front: Card) -> Card:
     back.set_image_file(image)
     back.name = "Back"
     back.is_front = False
-    back.face_number = 2
+    back.face_number = front.face_number + 1
     return back
 
 @pytest.fixture()
