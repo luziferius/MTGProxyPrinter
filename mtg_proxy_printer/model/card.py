@@ -231,6 +231,10 @@ class CheckCard:
         return ""
 
     @property
+    def set_code(self):
+        return self.front.set_code
+
+    @property
     def highres_image(self) -> bool:
         return self.front.highres_image and self.back.highres_image
 
@@ -240,7 +244,7 @@ class CheckCard:
 
     @property
     def face_number(self) -> int:
-        return 0
+        return 1
 
     @property
     def is_dfc(self) -> bool:
@@ -248,7 +252,7 @@ class CheckCard:
 
     @property
     def is_custom_card(self):
-        return not self.oracle_id
+        return self.front.is_custom_card
 
     @property
     def image_file(self) -> typing.Optional[QPixmap]:
@@ -259,9 +263,9 @@ class CheckCard:
         # Cards thus can’t be scaled using a singular factor of sqrt(2) on both axis.
         # The scaled cards get a bit compressed horizontally.
         vertical_scaling_factor = card_size.width() / card_size.height()
-        horizontal_scaling_factor = card_size.height()/(card_size.width()*2)
+        horizontal_scaling_factor = card_size.height() / (2 * card_size.width())
         combined_image = QPixmap(card_size)
-        combined_image.fill(QColor.fromRgb(255, 255, 255, 0))  # Fill with fully transparent white
+        combined_image.fill(QColorConstants.Transparent)
         painter = QPainter(combined_image)
         painter.setRenderHints(RenderHint.SmoothPixmapTransform | RenderHint.HighQualityAntialiasing)
         transformation = QTransform()
@@ -284,16 +288,14 @@ class CheckCard:
     @functools.lru_cache(maxsize=len(CardCorner))
     def corner_color(self, corner: CardCorner) -> QColor:
         """Returns the color of the card at the given corner. """
-        if self.front.image_file is None or self.back.image_file is None:
-            return QColorConstants.Transparent
         if corner == CardCorner.TOP_LEFT:
-            self.front.corner_color(CardCorner.BOTTOM_LEFT)
+            return self.front.corner_color(CardCorner.BOTTOM_LEFT)
         elif corner == CardCorner.TOP_RIGHT:
-            self.front.corner_color(CardCorner.TOP_LEFT)
+            return self.front.corner_color(CardCorner.TOP_LEFT)
         elif corner == CardCorner.BOTTOM_LEFT:
-            self.back.corner_color(CardCorner.BOTTOM_RIGHT)
+            return self.back.corner_color(CardCorner.BOTTOM_RIGHT)
         elif corner == CardCorner.BOTTOM_RIGHT:
-            self.back.corner_color(CardCorner.TOP_RIGHT)
+            return self.back.corner_color(CardCorner.TOP_RIGHT)
         return QColorConstants.Transparent
 
     def display_string(self):

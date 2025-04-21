@@ -12,13 +12,14 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
+import copy
 
 import pytest
-from PyQt5.QtCore import QBuffer, QIODevice, QPoint
+from PyQt5.QtCore import QBuffer, QIODevice
 from PyQt5.QtGui import QPixmap, QColorConstants, QColor
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.model.card import Card, MTGSet, CardCorner, CustomCard
+from mtg_proxy_printer.model.card import Card, MTGSet, CardCorner, CustomCard, CheckCard
 from mtg_proxy_printer.units_and_sizes import CardSize, CardSizes, PageType, UUID
 
 from hamcrest import *
@@ -154,3 +155,67 @@ def test_custom_card_display_string(custom_card: CustomCard):
 
 def test_custom_card_oracle_id_is_empty(custom_card: CustomCard):
     assert_that(custom_card.oracle_id, is_(empty()))
+
+
+def _create_back(front: Card) -> Card:
+    back = copy.copy(front)
+    image = front.image_file.copy()
+    image.fill(QColorConstants.Green)
+    back.set_image_file(image)
+    back.name = "Back"
+    back.is_front = False
+    back.face_number = 2
+    return back
+
+@pytest.fixture()
+def check_card(card: Card) -> CheckCard:
+    back = _create_back(card)
+    return CheckCard(card, back)
+
+@pytest.fixture()
+def oversized_check_card(oversized: Card) -> CheckCard:
+    back = _create_back(oversized)
+    return CheckCard(oversized, back)
+
+
+def test_check_card_corner_color(check_card: CheckCard):
+    assert_that(check_card.corner_color(CardCorner.TOP_LEFT), is_(equal_to(QColorConstants.Red)))
+    assert_that(check_card.corner_color(CardCorner.BOTTOM_LEFT), is_(equal_to(QColorConstants.Green)))
+
+
+def test_check_card_image_file(check_card: CheckCard):
+    image = check_card.image_file.toImage()
+    test_px_top = image.pixelColor(image.width()//2, image.height()//3)
+    assert_that(test_px_top, is_(equal_to(QColorConstants.Red)))
+    test_px_bottom = image.pixelColor(image.width()//2, image.height()-image.height()//3)
+    assert_that(test_px_bottom, is_(equal_to(QColorConstants.Green)))
+
+
+def test_check_card_scryfall_id_is_uuid(check_card: CheckCard):
+    assert_that(check_card.scryfall_id, is_(check_card.front.scryfall_id))
+
+
+def test_check_card_set_code(check_card: CheckCard):
+    assert_that(check_card.set_code, is_("CODE"))
+
+
+def test_check_card_is_custom_card(check_card: CheckCard):
+    assert_that(check_card.is_custom_card, is_(False))
+
+
+def test_check_card_is_oversized(check_card: CheckCard, oversized_check_card: CheckCard):
+    assert_that(check_card.is_oversized, is_(False))
+    assert_that(oversized_check_card.is_oversized, is_(True))
+
+
+def test_check_card_requested_page_type(check_card: CheckCard, oversized_check_card: CheckCard):
+    assert_that(check_card.requested_page_type(), is_(PageType.REGULAR))
+    assert_that(oversized_check_card.requested_page_type(), is_(PageType.OVERSIZED))
+
+
+def test_check_card_display_string(check_card: CheckCard):
+    assert_that(check_card.display_string(), is_('"Name // Back" [CODE:collector number]'))
+
+
+def test_check_card_oracle_id_is_empty(check_card: CheckCard):
+    assert_that(check_card.oracle_id, is_(check_card.front.oracle_id))
