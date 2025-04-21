@@ -126,7 +126,6 @@ class CustomCard:
     collector_number: str = dataclasses.field(compare=True)
     language: str = dataclasses.field(compare=True)
     is_front: bool = dataclasses.field(compare=True)
-    oracle_id: str = dataclasses.field(compare=True)
     image_uri: str = dataclasses.field(compare=True)
     highres_image: bool = dataclasses.field(compare=False)
     size: CardSize = dataclasses.field(compare=False)
@@ -159,6 +158,10 @@ class CustomCard:
 
     def display_string(self):
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
+
+    @property
+    def oracle_id(self):
+        return ""
 
     @property
     def set_code(self):  # Compatibility with CardIdentificationData
