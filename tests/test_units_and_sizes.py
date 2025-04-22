@@ -17,7 +17,7 @@
 import pytest
 from hamcrest import *
 
-from helpers import quantity_close_to
+from tests.helpers import quantity_close_to
 from mtg_proxy_printer.units_and_sizes import UUID, CardSizes, CardSize, PageType, ConfigParser, unit_registry
 from tests.hasgetter import has_getters
 
