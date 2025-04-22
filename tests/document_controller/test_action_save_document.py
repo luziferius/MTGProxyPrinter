@@ -33,8 +33,8 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 
-from tests.test_document import document_custom_layout
-from tests.helpers import close_to_, quantity_close_to
+from tests.model.test_document import document_custom_layout
+from tests.helpers import quantity_close_to
 
 ItemDataRole = Qt.ItemDataRole
 mm: UnitT = unit_registry.mm
