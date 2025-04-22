@@ -83,10 +83,7 @@ class Card:
     def requested_page_type(self) -> PageType:
         if self.image_file is None:
             return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
-        size = self.image_file.size()
-        if (size.width(), size.height()) == (1040, 1490):
-            return PageType.OVERSIZED
-        return PageType.REGULAR
+        return PageType.OVERSIZED if self.image_file.size() == CardSizes.OVERSIZED.as_qsize_px() else PageType.REGULAR
 
     @functools.lru_cache(maxsize=len(CardCorner))
     def corner_color(self, corner: CardCorner) -> QColor:
@@ -136,10 +133,7 @@ class CustomCard:
     def requested_page_type(self) -> PageType:
         if self.image_file is None:
             return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
-        size = self.image_file.size()
-        if (size.width(), size.height()) == (1040, 1490):
-            return PageType.OVERSIZED
-        return PageType.REGULAR
+        return PageType.OVERSIZED if self.image_file.size() == CardSizes.OVERSIZED.as_qsize_px() else PageType.REGULAR
 
     @functools.lru_cache(maxsize=len(CardCorner))
     def corner_color(self, corner: CardCorner) -> QColor:
@@ -282,12 +276,7 @@ class CheckCard:
         return combined_image
 
     def requested_page_type(self) -> PageType:
-        if self.front.image_file is None or self.back.image_file is None:
-            return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
-        size = self.front.image_file.size()
-        if (size.width(), size.height()) == (1040, 1490):
-            return PageType.OVERSIZED
-        return PageType.REGULAR
+        return self.front.requested_page_type()
 
     @functools.lru_cache(maxsize=len(CardCorner))
     def corner_color(self, corner: CardCorner) -> QColor:
