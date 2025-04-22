@@ -76,7 +76,7 @@ def test_save_as_saves_regular_card(tmp_path: Path, document: Document, is_front
     save_file = tmp_path/"test.mtgproxies"
     action = ActionSaveDocument(save_file)
     action.apply(document)
-    with open_database(save_file, "document-v6", False) as con:
+    with open_database(save_file, "document-v7") as con:
         content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
     del con
     assert_that(
@@ -95,7 +95,7 @@ def test_save_as_saves_check_card(tmp_path: Path, document: Document):
     save_file = tmp_path / "test.mtgproxies"
     action = ActionSaveDocument(save_file)
     action.apply(document)
-    with open_database(save_file, "document-v6") as con:
+    with open_database(save_file, "document-v7") as con:
         content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
     del con
     assert_that(
@@ -121,10 +121,10 @@ def test_subsequent_save_updates_settings(tmp_path: Path, qtbot: QtBot, document
     action.apply(document_custom_layout)
     _validate_database_schema(save_file)
     _validate_saved_document_settings(document_custom_layout, save_file)
-    with qtbot.waitSignal(document_custom_layout.page_layout_changed):
+    with qtbot.waitSignal(document_custom_layout.page_layout_changed, timeout=100):
         document_custom_layout.apply(ActionEditDocumentSettings(layout))
     action.apply(document_custom_layout)
-    with qtbot.waitSignals([document_custom_layout.loading_state_changed]*2,
+    with qtbot.waitSignals([document_custom_layout.loading_state_changed]*2, timeout=100,
                            check_params_cbs=[lambda value: value, lambda value: not value]):
         document_custom_layout.loader.load_document(save_file)
     assert_that(
