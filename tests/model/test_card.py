@@ -165,7 +165,7 @@ def test_custom_card_oracle_id_is_empty(custom_card: CustomCard):
 
 @pytest.mark.parametrize("property_name", Card.__annotations__)
 def test_custom_card_has_all_card_attributes(custom_card: CustomCard, property_name: str):
-    assert_that(custom_card, has_property(property_name, anything()))
+    assert_that(custom_card, has_property(property_name))
 
 def _create_back(front: Card) -> Card:
     back = copy.copy(front)
@@ -232,4 +232,4 @@ def test_check_card_oracle_id_is_empty(check_card: CheckCard):
 
 @pytest.mark.parametrize("property_name", Card.__annotations__)
 def test_check_card_has_all_card_attributes(check_card: CheckCard, property_name: str):
-    assert_that(check_card, has_property(property_name, anything()))
+    assert_that(check_card, has_property(property_name))
