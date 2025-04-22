@@ -227,6 +227,10 @@ class CheckCard:
         return self.front.oracle_id
 
     @property
+    def size(self):
+        return self.front.size
+
+    @property
     def image_uri(self) -> str:
         return ""
 
