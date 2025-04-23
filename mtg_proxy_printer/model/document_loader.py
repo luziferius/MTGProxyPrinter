@@ -20,7 +20,8 @@ import itertools
 import pathlib
 import sqlite3
 import textwrap
-from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, Tuple, TYPE_CHECKING, TypeVar
+from pathlib import Path
+from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, Tuple, TYPE_CHECKING, TypeVar, Union, Literal
 from unittest.mock import patch
 
 import pint
@@ -193,10 +194,7 @@ class Worker(LoaderSignals):
         super().__init__(None)
         self.document = document
         self.save_path = path
-        self.card_db_path = document.card_db.db_path
-        # TODO: Can't the Worker create a CardDatabase instance instead of monkey-patching the existing instance?
-        #  There is no state or object connection in the CardDatabase that requires it being a singleton.
-        self.card_db: CardDatabase = None
+        self.card_db = self._open_carddb(document)
         self.image_db = image_db = document.image_db
         # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
         # That one lives in its own thread and runs asynchronously and is thus unusable for loading documents.
@@ -215,6 +213,13 @@ class Worker(LoaderSignals):
         self.prefer_already_downloaded = mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
             "prefer-already-downloaded-images")
 
+    def _open_carddb(self, document: "Document") -> CardDatabase:
+        db_path = document.card_db.db_path
+        card_db = CardDatabase(db_path, self, register_exit_hooks=False)
+        if db_path == ":memory:":  # For testing, copy the in-memory database of the passed card database instance
+            document.card_db.db.backup(card_db.db)
+        return card_db
+
     def propagate_errors_during_load(self):
         if error_count := sum(self.network_errors_during_load.values()):
             logger.warning(f"{error_count} errors occurred during document load, reporting to the user")
@@ -232,7 +237,6 @@ class Worker(LoaderSignals):
 
     def load_document(self):
         self.should_run = True
-        self.card_db = CardDatabase(self.card_db_path, self, register_exit_hooks=False)
         try:
             self._load_document()
         except (AssertionError, sqlite3.DatabaseError) as e:
