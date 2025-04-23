@@ -19,10 +19,10 @@ import dataclasses
 import datetime
 import itertools
 import functools
-import pathlib
+from pathlib import Path
 import sqlite3
 import threading
-import typing
+from typing import Literal, Union, Dict, List, Tuple, NamedTuple, TypeVar, Optional, Set, Sequence, Any
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot
@@ -46,7 +46,7 @@ SCHEMA_NAME = "carddb"
 # The card data is mostly stable, Scryfall recommends fetching the card bulk data only in larger intervals, like
 # once per month or so.
 MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
-T = typing.TypeVar("T", Card, CheckCard, CustomCard)
+T = TypeVar("T", Card, CheckCard, CustomCard)
 write_semaphore = threading.BoundedSemaphore()
 
 
@@ -67,14 +67,14 @@ class CardIdentificationData:
     set_code: OptStr = None
     collector_number: OptStr = None
     scryfall_id: OptStr = None
-    is_front: typing.Optional[bool] = None
+    is_front: Optional[bool] = None
     oracle_id: OptStr = None
 
 
-class ImageDatabaseCards(typing.NamedTuple):
-    visible: typing.List[typing.Tuple[Card, CacheContent]] = []
-    hidden: typing.List[typing.Tuple[Card, CacheContent]] = []
-    unknown: typing.List[CacheContent] = []
+class ImageDatabaseCards(NamedTuple):
+    visible: List[Tuple[Card, CacheContent]] = []
+    hidden: List[Tuple[Card, CacheContent]] = []
+    unknown: List[CacheContent] = []
 
 
 def with_database_write_lock(semaphore: threading.BoundedSemaphore = write_semaphore):
@@ -104,9 +104,9 @@ class CardDatabase(QObject):
     Provides methods for data access.
     """
     card_data_updated = Signal()
-    custom_cards: typing.Dict[UUID, CustomCard] = {}
+    custom_cards: Dict[UUID, CustomCard] = {}
 
-    def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
+    def __init__(self, db_path: Union[Literal[":memory:"], Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
                  check_same_thread: bool = True, register_exit_hooks: bool = True):
         """
         :param db_path: Path to the database file. May be “:memory:” to create an in-memory database for testing
@@ -181,7 +181,7 @@ class CardDatabase(QObject):
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
         return bool(result)
 
-    def get_last_card_data_update_timestamp(self) -> typing.Optional[datetime.datetime]:
+    def get_last_card_data_update_timestamp(self) -> Optional[datetime.datetime]:
         """Returns the last card data update timestamp, or None, if no card data was ever imported"""
         query = "SELECT MAX(update_timestamp) FROM LastDatabaseUpdate -- get_last_card_data_update_timestamp\n"
         result = self._read_optional_scalar_from_db(query, [])
@@ -232,7 +232,7 @@ class CardDatabase(QObject):
         return result
 
     def get_basic_land_oracle_ids(
-            self, include_wastes: bool = False, include_snow_basics: bool = False) -> typing.Set[str]:
+            self, include_wastes: bool = False, include_snow_basics: bool = False) -> Set[str]:
         """Returns the oracle ids of all Basic lands."""
         names = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']
         # Ordering matters: If WotC ever prints "Snow-Covered Wastes" (as of writing, those don’t exist),
@@ -454,7 +454,7 @@ class CardDatabase(QObject):
 
     def find_sets_matching(
             self, card_name: str, language: str, set_name_filter: str = None,
-            *, is_front: bool = None) -> typing.List[MTGSet]:
+            *, is_front: bool = None) -> List[MTGSet]:
         """
         Finds all matching sets that the given card was printed in.
 
@@ -506,7 +506,7 @@ class CardDatabase(QObject):
                 bool(highres_image), size, face_number, bool(is_dfc),
             )
 
-    def get_all_cards_from_image_cache(self, cache_content: typing.List[CacheContent]) -> ImageDatabaseCards:
+    def get_all_cards_from_image_cache(self, cache_content: List[CacheContent]) -> ImageDatabaseCards:
         """
         Partitions the content of the ImageDatabase disk cache into three lists:
         - All visible card printings
@@ -555,14 +555,14 @@ class CardDatabase(QObject):
         ''')
         cards = ImageDatabaseCards([], [], [])
         cards.unknown[:] = (
-            CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), pathlib.Path(abs_path))
+            CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), Path(abs_path))
             for scryfall_id, is_front, highres_on_disk, abs_path
             in db.execute(unknown_images_query))
         for scryfall_id, is_front, highres_on_disk, abs_path, \
                 name, set_code, set_name, collector_number, language, image_uri, oracle_id, \
                 is_oversized, face_number, is_dfc, is_hidden \
                 in db.execute(known_images_query):
-            cache_item = CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), pathlib.Path(abs_path))
+            cache_item = CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), Path(abs_path))
             size = CardSizes.from_bool(is_oversized)
             card = Card(
                 name, MTGSet(set_code, set_name), collector_number,
@@ -582,7 +582,7 @@ class CardDatabase(QObject):
         """
         return self.get_card_with_scryfall_id(card.scryfall_id, not card.is_front)
 
-    def guess_language_from_name(self, name: str) -> typing.Optional[str]:
+    def guess_language_from_name(self, name: str) -> Optional[str]:
         """Guesses the card language from the card name. Returns None, if no result was found."""
         query = cached_dedent('''\
         SELECT "language" -- guess_language_from_name()
@@ -616,7 +616,7 @@ class CardDatabase(QObject):
         ''')
         return bool(self._read_optional_scalar_from_db(query, (scryfall_id,)))
 
-    def translate_card_name(self, card_data: typing.Union[CardIdentificationData, Card], target_language: str,
+    def translate_card_name(self, card_data: Union[CardIdentificationData, Card], target_language: str,
                             include_hidden_names: bool = False) -> OptStr:
         """
         Translates a card into the target_language. Uses the language in the card data as the source language, if given.
@@ -692,7 +692,7 @@ class CardDatabase(QObject):
         result = [item for item, in self.db.execute(query, parameters)]
         return result
 
-    def get_available_sets_for_card(self, card: Card) -> typing.List[MTGSet]:
+    def get_available_sets_for_card(self, card: Card) -> List[MTGSet]:
         """
         Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
         """
@@ -745,7 +745,7 @@ class CardDatabase(QObject):
         result = natural_sorted((number for number, in self.db.execute(query, parameters)))
         return result
 
-    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any] = None):
+    def _read_optional_scalar_from_db(self, query: str, parameters: Sequence[Any] = None):
         if result := self.db.execute(query, parameters).fetchone():
             return result[0]
         else:
@@ -761,7 +761,7 @@ class CardDatabase(QObject):
         """)
         return bool(self._read_optional_scalar_from_db(query, parameters))
 
-    def cards_not_used_since(self, keys: typing.List[typing.Tuple[str, bool]], date: datetime.date) -> typing.List[int]:
+    def cards_not_used_since(self, keys: List[Tuple[str, bool]], date: datetime.date) -> List[int]:
         """
         Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
         into the input list that correspond to cards that were not used since the given date.
@@ -779,7 +779,7 @@ class CardDatabase(QObject):
                 cards_not_used_since.append(index)
         return cards_not_used_since
 
-    def cards_used_less_often_then(self,  keys: typing.List[typing.Tuple[str, bool]], count: int) -> typing.List[int]:
+    def cards_used_less_often_then(self,  keys: List[Tuple[str, bool]], count: int) -> List[int]:
         """
         Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
         into the input list that correspond to cards that are used less often than the given count.
