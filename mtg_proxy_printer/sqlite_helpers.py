@@ -24,7 +24,6 @@ import textwrap
 import typing
 
 from hamcrest import assert_that, contains_exactly
-import pint
 
 from mtg_proxy_printer.units_and_sizes import unit_registry
 from mtg_proxy_printer.logger import get_logger

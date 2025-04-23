@@ -87,7 +87,7 @@ class CardRow(NamedTuple):
     custom_card_id: Optional[UUID]
 
 
-
+sqlite3.register_adapter(CardType, lambda item: item.value)
 CustomCards = Dict[str, Card]
 T = TypeVar("T")
 
