@@ -23,7 +23,7 @@ import mtg_proxy_printer.model.document_loader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.document_loader import SAVE_FILE_MAGIC_NUMBER, DocumentLoader
+from mtg_proxy_printer.model.document_loader import SAVE_FILE_MAGIC_NUMBER, DocumentLoader, CardType
 import mtg_proxy_printer.save_file_migrations
 from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT
 
@@ -157,7 +157,7 @@ def test_migration_6_to_7_transforms_data():
     settings.draw_sharp_corners = True
     uuid1 = "aaaabbbb-1111-2222-3333-55556666ffff"
     uuid2 = "ffffeeee-9999-8888-7777-ddddccccbbbb"
-    db.executemany("INSERT INTO Card VALUES (?, ?, ?, ?, ?)", [(1, 1, 1, uuid1, "r"), (2, 1, 1, uuid2, "r")])
+    db.executemany("INSERT INTO Card VALUES (?, ?, ?, ?, ?)", [(1, 1, 1, uuid1, CardType.REGULAR), (2, 1, 1, uuid2, CardType.REGULAR)])
     # Insert slightly altered data, then pass the unaltered PageLayoutSettings.
     # This verifies that the stored data is used and not replaced with the current default settings.
     db.executemany(
