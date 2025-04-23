@@ -360,7 +360,7 @@ def test_loads_check_card(
     )
 
 
-@pytest.fixture(params=product([
+@pytest.fixture(params=[
     (4, [1, 200, 150, 4, 5, 6, 7, 2, 3, 1]),
     (5, [1, 200, 150, 4, 5, 6, 7, 2, 3, 1, 0]),
     # Only old image spacing keys present
@@ -372,42 +372,38 @@ def test_loads_check_card(
          ("image_spacing_horizontal", 8), ("image_spacing_vertical", 9), ("margin_top", 4), ("margin_bottom", 5),
          ("margin_left", 6), ("margin_right", 7), ("page_height", 200), ("page_width", 150),
          ("row_spacing", 2), ("column_spacing", 3)]),
-
-    ], [True, False]))
-def legacy_save_file(request):
-    (save_version, settings), reverse_unordered = request.param  # type: (int, list), bool
-    db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", f"document-v{save_version}", False)
+    ])
+def legacy_save_file(request, tmp_path: Path):
+    save = tmp_path/"save.mtxproxies"
+    save_version, settings = request.param  # type: int, list
+    db = mtg_proxy_printer.sqlite_helpers.open_database(save, f"document-v{save_version}", False)
+    db.execute("BEGIN IMMEDIATE TRANSACTION")
     if save_version < 6:
         db.execute(f"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
     elif save_version == 6:
         db.executemany("INSERT INTO DocumentSettings (key, value) VALUES (?, ?)", settings)
     else:
         pass
-    if reverse_unordered:
-        db.execute("PRAGMA reverse_unordered_selects = TRUE")
-    yield db
+    db.commit()
     db.close()
-    del db
+    return save
 
 
 def test_load_settings_from_legacy_save_file_is_successful(
-        qtbot: QtBot, legacy_save_file: sqlite3.Connection, document_light: Document):
-    loader = document_light.loader
-    with unittest.mock.patch(
-            "mtg_proxy_printer.model.document_loader.open_database",
-            return_value=legacy_save_file), \
-            qtbot.wait_signal(document_light.action_applied, timeout=2**30), \
+        qtbot: QtBot, legacy_save_file: Path, document: Document):
+    loader = document.loader
+    with qtbot.wait_signal(document.action_applied), \
             qtbot.assert_not_emitted(loader.loading_file_failed):
-        loader.load_document(Path("/tmp/invalid.mtgproxies"))
-    annotations = document_light.page_layout.__annotations__
+        loader.load_document(legacy_save_file)
+    annotations = document.page_layout.__annotations__
     assert_that(
-        document_light.page_layout,
+        document.page_layout,
         has_properties({
             item: instance_of(pint.Quantity if value is QuantityT else value)
             for item, value in annotations.items()
         })
     )
-    assert_that(document_light.page_layout, has_properties({
+    assert_that(document.page_layout, has_properties({
         "document_name": "", "draw_cut_markers": True, "draw_page_numbers": False, "draw_sharp_corners": False,
         "row_spacing": quantity_close_to(2*mm), "column_spacing": quantity_close_to(3*mm),
         "margin_top": quantity_close_to(4*mm), "margin_bottom": quantity_close_to(5*mm),
