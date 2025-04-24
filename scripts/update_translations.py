@@ -25,8 +25,11 @@ import itertools
 import pathlib
 import re
 import subprocess
+import sys
 from typing import Callable, NamedTuple
 
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.resolve()))
+from mtg_proxy_printer.settings import VALID_LANGUAGES
 
 # Mapping between source locales, as provided by Crowdin, and the target, as expected/loaded by Qt.
 # TODO: Investigate, how systems behave in locales requiring the country as disambiguation, like en or zh.
@@ -44,7 +47,8 @@ LOCALES = {
     "zh-CN": "zh_CN",
     "zh-TW": "zh_TW",
 }
-TRANSLATIONS_DIR = pathlib.Path("mtg_proxy_printer/resources/translations/")
+
+TRANSLATIONS_DIR = pathlib.Path(__file__, "..", "..", "mtg_proxy_printer/resources/translations/").resolve()
 crowdin_yml_path = pathlib.Path(__file__).parent.parent/"crowdin.yml"
 SOURCES_PATH = pathlib.Path(
     # Fetch the name of the sources .ts file from crowdin.yml.
@@ -123,10 +127,14 @@ def upload_raw_strings(args: Namespace):
 def download_new_translations(args: Namespace):
     """Downloads translated .ts files from Crowdin via the API"""
     verify_crowdin_cli_present()
-    subprocess.call([
-        "crowdin", "download"
-    ])
-
+    #subprocess.call([
+    #    "crowdin", "download"
+    #])
+    # Strip all translations that are not registered as valid locale setting
+    for file in TRANSLATIONS_DIR.glob("*.ts"):  # type: pathlib.Path
+        # Use get() to keep the mtgproxyprinter_sources.ts file by mapping it to the "System locale" value (empty str)
+        if LOCALES.get(file.stem.split("_")[1], "") not in VALID_LANGUAGES:
+            file.unlink()
 
 def get_lrelease():
     """
