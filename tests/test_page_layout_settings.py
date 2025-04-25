@@ -15,6 +15,7 @@
 
 import itertools
 import unittest.mock
+from multiprocessing.context import assert_spawning
 
 import pint
 
@@ -37,9 +38,8 @@ mm: UnitT = unit_registry.mm
 
 
 @pytest.fixture
-def page_layout():
-    layout = PageLayoutSettings.create_from_settings()
-    return layout
+def page_layout() -> PageLayoutSettings:
+    return PageLayoutSettings.create_from_settings()
 
 
 @pytest.mark.parametrize("page_type, expected", [
@@ -87,6 +87,9 @@ def test_page_layout_compute_page_card_capacity_default_value(page_layout: PageL
 def test_page_layout_compute_page_row_count(
         page_layout: PageLayoutSettings, page_type: PageType, row_spacing: QuantityT, expected: int):
     page_layout.row_spacing = row_spacing
+    assert_that(page_layout.page_height, quantity_close_to(297*mm), "Setup failed: Environment altered")
+    assert_that(page_layout.margin_top, quantity_close_to(5*mm), "Setup failed: Environment altered")
+    assert_that(page_layout.margin_bottom, quantity_close_to(5*mm), "Setup failed: Environment altered")
     assert_that(page_layout.compute_page_row_count(page_type), is_(equal_to(expected)))
 
 

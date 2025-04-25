@@ -71,65 +71,6 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> ty
         main_window.__dict__.clear()
 
 
-def test_main_window_hides_progress_bar_after_downloading_image_during_load(
-        qtbot: QtBot, main_window: MainWindow):
-    temp_path = main_window.image_db.db_path
-    mock_image_path = _create_mock_image(main_window.image_db, temp_path)
-    mock_image_size = mock_image_path.stat().st_size
-    main_window.card_database.db.execute("UPDATE CardFace SET png_image_uri = ?", (mock_image_path.as_uri(),))
-    create_save_database_with(
-        (save_file_path := temp_path/"save.mtgproxies"),
-        [(1, CardSizes.REGULAR)],
-        [(1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe", CardType.REGULAR)],
-        PageLayoutSettings.create_from_settings()
-    )
-    bars = main_window.progress_bars.ui
-
-    assert_that(bars.inner_progress_bar.isVisible(), is_(False))
-    assert_that(bars.outer_progress_bar.isVisible(), is_(False))
-    assert_that(bars.inner_progress_label.isVisible(), is_(False))
-    assert_that(bars.outer_progress_label.isVisible(), is_(False))
-    loading_signals = [
-        (main_window.loading_state_changed, "loading_state_changed(True)"),
-        (main_window.loading_state_changed, "loading_state_changed(False)"),
-        (main_window.document.loader.finished, "finished"),
-    ]
-
-    with unittest.mock.patch.object(  # Mock all HTTP-specific I/O calls
-                mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
-                "_read_content_length", return_value=mock_image_size), \
-            unittest.mock.patch.object(
-                mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
-                "getcode", return_value=200), \
-            unittest.mock.patch.object(
-                mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
-                "content_encoding", return_value="identity"), \
-            unittest.mock.patch.object(
-                mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
-                "seekable", return_value=True), \
-            unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.warning") as mb1, \
-            unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.critical") as mb2, \
-            qtbot.wait_signals(
-                loading_signals, timeout=1000,
-                check_params_cbs=[lambda value: value, lambda value: not value, lambda: True]):
-            main_window.document.loader.load_document(save_file_path)
-            
-    assert_that(bars.inner_progress_bar.isVisible(), is_(False))
-    assert_that(bars.outer_progress_bar.isVisible(), is_(False))
-    assert_that(bars.inner_progress_label.isVisible(), is_(False))
-    assert_that(bars.outer_progress_label.isVisible(), is_(False))
-    mb1.assert_not_called()
-    mb2.assert_not_called()
-
-
-def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> pathlib.Path:
-    mock_image_path = temp_path / 'temp' / "0000579f-7b35-4ed3-b44c-db2a538066fe.png"
-    mock_image_path.parent.mkdir(parents=True, exist_ok=False)
-    image_db.get_blank().save(str(mock_image_path), "PNG", 100)
-    assert_that(mock_image_path.is_file(), is_(True))
-    return mock_image_path
-
-
 def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(False)

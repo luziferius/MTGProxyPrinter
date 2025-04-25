@@ -138,7 +138,7 @@ class PageLayoutSettings:
         card_width: QuantityT = card_size.width.to("mm", "print")
         available_width: QuantityT = self.page_width - (self.margin_left + self.margin_right)
 
-        if available_width < card_width:
+        if available_width <= card_width:
             return 0
         cards = 1 + math.floor(
             (available_width - card_width) /
@@ -151,7 +151,7 @@ class PageLayoutSettings:
         card_height: QuantityT = card_size.height.to("mm", "print")
         available_height: QuantityT = self.page_height - (self.margin_top + self.margin_bottom)
 
-        if available_height < card_height:
+        if available_height <= card_height:
             return 0
         cards = 1 + math.floor(
             (available_height - card_height) /
