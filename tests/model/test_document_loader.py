@@ -140,7 +140,7 @@ def test_empty_document_loads_correctly(
 
 
 def test_document_with_mixed_pages_distributes_cards_based_on_size(
-        qtbot: QtBot, document: Document,
+        qtbot: QtBot, document: Document, page_layout: PageLayoutSettings,
         empty_save_database: sqlite3.Connection):
     create_save_database_with(
         empty_save_database,
@@ -149,7 +149,7 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
             (1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe", CardType.REGULAR),
             (1, 2, True, "650722b4-d72b-4745-a1a5-00a34836282b", CardType.REGULAR),
         ],
-        PageLayoutSettings.create_from_settings()
+        page_layout
     )
     loader = document.loader
     save_path = Path("/tmp/invalid.mtgproxies")
@@ -414,11 +414,11 @@ def test_load_settings_from_legacy_save_file_is_successful(
 
 @pytest.mark.parametrize("title", ["str", "", "1", "0x1", "1.0.0", "1..0", "01", "1.0"])
 def test_load_correctly_sets_document_title(
-        qtbot: QtBot, empty_save_database: sqlite3.Connection, document: Document, title: str):
+        qtbot: QtBot, page_layout: PageLayoutSettings,
+        empty_save_database: sqlite3.Connection, document: Document, title: str):
     loader = document.loader
-    layout = PageLayoutSettings.create_from_settings()
-    layout.document_name = title
-    create_save_database_with(empty_save_database, [], [], layout)
+    page_layout.document_name = title
+    create_save_database_with(empty_save_database, [], [], page_layout)
     with unittest.mock.patch(
             "mtg_proxy_printer.model.document_loader.open_database",
             return_value=empty_save_database), \

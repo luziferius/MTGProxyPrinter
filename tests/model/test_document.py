@@ -356,15 +356,14 @@ def document_custom_layout(document: Document) -> Document:
     document.__dict__.clear()
 
 
-def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custom_layout: Document):
-    default_layout = PageLayoutSettings.create_from_settings()
+def test_document_reset_clears_modified_page_layout(qtbot: QtBot, page_layout: PageLayoutSettings, document_custom_layout: Document):
     assert_that(
         document_custom_layout,
-        has_property("page_layout", not_(equal_to(default_layout)))
+        has_property("page_layout", not_(equal_to(page_layout)))
     )
     assert_that(
         document_custom_layout.page_layout.compute_page_row_count(),
-        is_not(equal_to(default_layout.compute_page_card_capacity())),
+        is_not(equal_to(page_layout.compute_page_card_capacity())),
         "Test setup failed."
     )
     with qtbot.waitSignal(document_custom_layout.page_layout_changed, timeout=1000):
@@ -372,7 +371,7 @@ def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custo
 
     assert_that(
         document_custom_layout,
-        has_property("page_layout", equal_to(default_layout))
+        has_property("page_layout", equal_to(page_layout))
     )
 
 

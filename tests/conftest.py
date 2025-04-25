@@ -25,16 +25,18 @@ from pathlib import Path
 
 from PyQt5.QtGui import QColorConstants, QPixmap
 import pytest
+from hamcrest import assert_that, is_
 
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.imagedb_files import ImageKey
-from tests.helpers import fill_card_database_with_json_cards
+from tests.helpers import fill_card_database_with_json_cards, is_dataclass_equal_to
 
 
 @pytest.fixture(params=[False, True])
@@ -108,3 +110,11 @@ def document_light(qtbot, mock_imagedb) -> Document:
     document.loader.db = mock_card_db.db
     yield document
     document.__dict__.clear()
+
+
+@pytest.fixture
+def page_layout() -> PageLayoutSettings:
+    layout = PageLayoutSettings.create_from_settings()
+    defaults = PageLayoutSettings.create_from_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
+    assert_that(layout, is_dataclass_equal_to(defaults))
+    return layout
