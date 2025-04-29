@@ -26,22 +26,26 @@ from mtg_proxy_printer.document_controller.compact_document import ActionCompact
 from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
 
 from .helpers import append_new_card_in_page, card_container_with, create_card
+from tests.conftest import DocumentFixture
 
 OVERSIZED = CardSizes.OVERSIZED
 REGULAR = CardSizes.REGULAR
 
-def test_apply_does_nothing_on_single_page_empty_document(document_light):
+def test_apply_does_nothing_on_single_page_empty_document(document_light: DocumentFixture):
+    document_light = document_light()
     action = ActionCompactDocument().apply(document_light)
     assert_that(action.actions, is_(empty()))
 
 
-def test_apply_raises_exception_if_called_twice(document_light):
+def test_apply_raises_exception_if_called_twice(document_light: DocumentFixture):
+    document_light = document_light()
     ActionNewPage().apply(document_light)
     action = ActionCompactDocument().apply(document_light)
     assert_that(calling(action.apply).with_args(document_light), raises(IllegalStateError))
 
 
-def test_apply_does_not_create_mixed_size_pages(document_light):
+def test_apply_does_not_create_mixed_size_pages(document_light: DocumentFixture):
+    document_light = document_light()
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     normal = append_new_card_in_page(pages[0], "Normal", REGULAR)
@@ -61,7 +65,8 @@ def test_apply_does_not_create_mixed_size_pages(document_light):
     assert_that(action.actions, is_(empty()))
 
 
-def test_apply_removes_trailing_empty_pages(document_light):
+def test_apply_removes_trailing_empty_pages(document_light: DocumentFixture):
+    document_light = document_light()
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     action = ActionCompactDocument().apply(document_light)
@@ -77,7 +82,8 @@ def test_apply_removes_trailing_empty_pages(document_light):
     )
 
 
-def test_compacting_document(document_light):
+def test_compacting_document(document_light: DocumentFixture):
+    document_light = document_light()
     pages = document_light.pages
     card = create_card("Card", REGULAR)
     # Can be compacted to 4 pages, with the last having one free slot
@@ -119,7 +125,8 @@ def test_compacting_document(document_light):
     )
 
 
-def test_compacting_document_with_regular_and_oversized_pages(document_light):
+def test_compacting_document_with_regular_and_oversized_pages(document_light: DocumentFixture):
+    document_light = document_light()
     pages = document_light.pages
     ActionNewPage(count=3).apply(document_light)
     regular1 = append_new_card_in_page(pages[0], "Regular", REGULAR)

@@ -29,6 +29,7 @@ import pytest
 from hamcrest import *
 
 from .helpers import append_new_card_in_page, create_card, card_container_with
+from tests.conftest import DocumentFixture
 
 T = typing.TypeVar("T")
 
@@ -40,7 +41,8 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
 
 
 @pytest.mark.parametrize("card_count", [1, 9, 10, 11, 100])
-def test_apply_appends_cards(document_light, card_count: int):
+def test_apply_appends_cards(document_light: DocumentFixture, card_count: int):
+    document_light = document_light()
     page_capacity = document_light.page_layout.compute_page_card_capacity(PageType.REGULAR)
     expected_pages = math.ceil(card_count/page_capacity)
     pages = document_light.pages
@@ -58,7 +60,8 @@ def test_apply_appends_cards(document_light, card_count: int):
         )
 
 
-def test_apply_does_not_create_mixed_size_page(document_light):
+def test_apply_does_not_create_mixed_size_page(document_light: DocumentFixture):
+    document_light = document_light()
     pages = document_light.pages
     existing_card = append_new_card_in_page(pages[0], "Card")
     new_card = create_card("New", CardSizes.OVERSIZED)
@@ -77,20 +80,22 @@ def test_apply_does_not_create_mixed_size_page(document_light):
     )
 
 
-def test_apply_raises_exception_if_action_list_is_not_empty(document_light):
+def test_apply_raises_exception_if_action_list_is_not_empty(document_light: DocumentFixture):
+    document_light = document_light()
     action = ActionImportDeckList(Counter(), False)
     action.actions.append(ActionAddCard(create_card("Card")))
     assert_that(calling(action.apply).with_args(document_light), raises(IllegalStateError))
 
 
-@pytest.mark.parametrize("new_card_is_oversized", [False, True])
-def test_apply_clears_document_if_enabled(qtbot, document_light, new_card_is_oversized: bool):
+@pytest.mark.parametrize("size", [CardSizes.REGULAR, CardSizes.OVERSIZED])
+def test_apply_clears_document_if_enabled(document_light: DocumentFixture, size: CardSizes):
+    document_light = document_light()
     """
     The new card should be placed on the first page, regardless of size compared to the existing card
     """
     pages = document_light.pages
     append_new_card_in_page(pages[0], "Card")
-    new_card = create_card("New", new_card_is_oversized)
+    new_card = create_card("New", size)
     action = ActionImportDeckList(Counter({new_card: 1}), True)
     action.apply(document_light)
     assert_that(pages, contains_exactly(has_length(1)))
@@ -113,9 +118,10 @@ def test_apply_clears_document_if_enabled(qtbot, document_light, new_card_is_ove
 
 
 @pytest.mark.parametrize("card_count", [1, 9, 10, 11, 100])
-def test_undo_removes_created_pages(document_light, card_count):
+def test_undo_removes_created_pages(document_light: DocumentFixture, card_count):
+    document_light = document_light()
     pages = document_light.pages
-    cards = [create_card(f"Card {number}") for number in range(1, card_count+1)]
+    cards = Counter(create_card(f"Card {number}") for number in range(1, card_count+1))
     action = ActionImportDeckList(cards, False)
     action.actions += [ActionAddCard(card).apply(document_light) for card in cards]
     page_capacity = document_light.page_layout.compute_page_card_capacity(PageType.REGULAR)
