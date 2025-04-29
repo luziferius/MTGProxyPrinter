@@ -16,11 +16,14 @@
 
 import unittest.mock
 
-from mtg_proxy_printer.model.carddb import CardDatabase, Card
+from pytestqt.qtbot import QtBot
+
+from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.decklist_parser.re_parsers import GenericRegularExpressionDeckParser
 
 from tests.helpers import fill_card_database_with_json_cards
+from tests.conftest import CardDatabaseFixture, ImageDatabaseFixture
 
 import pytest
 from hamcrest import *
@@ -34,7 +37,8 @@ def _create_image_db_mock(*already_downloaded: Card) -> ImageDatabase:
 
 @pytest.mark.parametrize("prefer_already_downloaded", [True, False])
 def test_generic_re_parser_with_card_name_only_list(
-        qtbot, card_db: CardDatabase, prefer_already_downloaded: bool):
+        qtbot: QtBot, card_db: CardDatabaseFixture, prefer_already_downloaded: bool):
+    card_db = card_db()
     fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "regular_english_card_reprint"])
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     image_db = _create_image_db_mock(card)
@@ -59,7 +63,8 @@ def test_generic_re_parser_with_card_name_only_list(
 
 @pytest.mark.parametrize("prefer_already_downloaded", [True, False])
 def test_translating_from_hidden_name_works(
-        qtbot, card_db: CardDatabase, prefer_already_downloaded: bool):
+        qtbot: QtBot, card_db: CardDatabaseFixture, prefer_already_downloaded: bool):
+    card_db = card_db()
     fill_card_database_with_json_cards(
         qtbot, card_db, ["english_Back_to_Basics", "german_Back_to_Basics"], {"hide-cards-without-images": "True"}
     )
@@ -91,7 +96,8 @@ def test_translating_from_hidden_name_works(
 @pytest.mark.parametrize("deck", ["Mentor Corrosivo", "Mentor corrosivo"])  # Portuguese (1st) and Spanish name (2nd)
 @pytest.mark.parametrize("prefer_already_downloaded", [True, False])
 def test_translating_from_name_with_ambiguous_language_works(
-        qtbot, card_db: CardDatabase, prefer_already_downloaded: bool, deck: str):
+        qtbot: QtBot, card_db: CardDatabaseFixture, prefer_already_downloaded: bool, deck: str):
+    card_db = card_db()
     fill_card_database_with_json_cards(
         qtbot, card_db, ["english_Corrosive_Mentor", "spanish_Corrosive_Mentor", "portuguese_Corrosive_Mentor"]
     )
@@ -119,7 +125,9 @@ def test_translating_from_name_with_ambiguous_language_works(
     )
 
 
-def test_print_guessing_prefers_highres_image_over_newest_printing_with_lowres_image(qtbot, card_db, image_db):
+def test_print_guessing_prefers_highres_image_over_newest_printing_with_lowres_image(
+        qtbot: QtBot, card_db: CardDatabaseFixture, image_db: ImageDatabaseFixture):
+    card_db, image_db = card_db(), image_db()
     fill_card_database_with_json_cards(
         qtbot, card_db, ["english_basic_Forest_2", "English_basic_Forest_newest_and_low_res"]
     )

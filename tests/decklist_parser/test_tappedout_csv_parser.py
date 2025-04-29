@@ -19,12 +19,14 @@ import unittest.mock
 
 import pytest
 from hamcrest import *
+from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardIdentificationData
 from mtg_proxy_printer.decklist_parser.csv_parsers import TappedOutCSVParser
 from mtg_proxy_printer.decklist_downloader import TappedOutDownloader
 
 from tests.helpers import fill_card_database_with_json_cards, SHOULD_SKIP_NETWORK_TESTS
+from tests.conftest import CardDatabaseFixture, ImageDatabaseFixture
 
 StringList = typing.List[str]
 CSV_HEADER = "Board,Qty,Name,Printing,Foil,Alter,Signed,Condition,Language"
@@ -59,7 +61,9 @@ def generate_test_cases_for_translation_and_replacement():
 @pytest.mark.parametrize(
     "cards_to_import, deck_list, expected_card", generate_test_cases_for_translation_and_replacement())
 def test_excluded_printing_is_replaced_with_an_available_printing(
-        qtbot, card_db, image_db, cards_to_import: StringList,  deck_list: str, expected_card: CardIdentificationData):
+        qtbot: QtBot, card_db: CardDatabaseFixture, image_db: ImageDatabaseFixture,
+        cards_to_import: StringList,  deck_list: str, expected_card: CardIdentificationData):
+    card_db, image_db = card_db(), image_db()
     fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {"hide-cards-without-images": "True"})
     card = _get_expected_card_from_database(card_db, expected_card)
     parser = TappedOutCSVParser(card_db, image_db)
@@ -78,7 +82,9 @@ def test_excluded_printing_is_replaced_with_an_available_printing(
 
 @pytest.mark.parametrize("cards_to_import, deck_list, expected_card", generate_test_cases_for_translation_and_replacement())
 def test_deck_list_translation_works(
-        qtbot, card_db, image_db, cards_to_import: StringList,  deck_list: str, expected_card: CardIdentificationData):
+        qtbot: QtBot, card_db: CardDatabaseFixture, image_db: ImageDatabaseFixture,
+        cards_to_import: StringList,  deck_list: str, expected_card: CardIdentificationData):
+    card_db, image_db = card_db(), image_db()
     fill_card_database_with_json_cards(qtbot, card_db, cards_to_import)
     card = _get_expected_card_from_database(card_db, expected_card)
     parser = TappedOutCSVParser(card_db, image_db)
@@ -115,7 +121,9 @@ def generate_test_cases_for_test_card_identification_works_in_simple_cases():
     "cards_to_import, deck_list, expected_card",
     generate_test_cases_for_test_card_identification_works_in_simple_cases())
 def test_card_identification_works_in_simple_cases(
-        qtbot, card_db, image_db, cards_to_import: StringList,  deck_list: str, expected_card: CardIdentificationData):
+        qtbot: QtBot, card_db: CardDatabaseFixture, image_db: ImageDatabaseFixture,
+        cards_to_import: StringList,  deck_list: str, expected_card: CardIdentificationData):
+    card_db, image_db = card_db(), image_db()
     fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {"hide-digital-cards": "False"})
     card = _get_expected_card_from_database(card_db, expected_card)
     parser = TappedOutCSVParser(card_db, image_db)
@@ -140,7 +148,9 @@ def test_card_identification_works_in_simple_cases(
     ]
 )
 def test_rows_with_invalid_data_are_added_to_invalid_lines(
-        qtbot, card_db, image_db, cards_to_import: StringList,  deck_list: str):
+        qtbot: QtBot, card_db: CardDatabaseFixture, image_db: ImageDatabaseFixture,
+        cards_to_import: StringList,  deck_list: str):
+    card_db, image_db = card_db(), image_db()
     fill_card_database_with_json_cards(qtbot, card_db, cards_to_import)
     parser = TappedOutCSVParser(card_db, image_db)
     assert_that(

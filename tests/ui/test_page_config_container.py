@@ -12,7 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+from typing import Callable
 
 from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QLineEdit
 
@@ -26,20 +26,25 @@ from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
 from tests.helpers import quantity_close_to
 
+PageConfigContainerFixture = Callable[[], PageConfigContainer]
+
 
 @pytest.fixture
-def container(qtbot: QtBot):
-    container = PageConfigContainer()
-    container.ui.page_config_widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
-    qtbot.add_widget(container)
-    return container
+def container(qtbot: QtBot) -> PageConfigContainerFixture:
+    def create():
+        container = PageConfigContainer()
+        container.ui.page_config_widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
+        qtbot.add_widget(container)
+        return container
+    return create
 
 
 @pytest.mark.parametrize(
     "widget_name",
     ["draw_cut_markers", "draw_sharp_corners", "draw_page_numbers"])
 def test_boolean_settings_change_signal_connection_from_config_widget_to_preview_area(
-        qtbot: QtBot, container: PageConfigContainer, widget_name: str):
+        qtbot: QtBot, container: PageConfigContainerFixture, widget_name: str):
+    container = container()
     page_config_widget = container.ui.page_config_widget
     document = container.ui.page_config_preview_area.document
     widget: QCheckBox = getattr(page_config_widget.ui, widget_name)
@@ -62,7 +67,8 @@ def test_boolean_settings_change_signal_connection_from_config_widget_to_preview
          "row_spacing", "column_spacing",
      ])
 def test_decimal_settings_change_signal_connection_from_config_widget_to_preview_area(
-        qtbot: QtBot, container: PageConfigContainer, widget_name: str):
+        qtbot: QtBot, container: PageConfigContainerFixture, widget_name: str):
+    container = container()
     page_config_widget = container.ui.page_config_widget
     document = container.ui.page_config_preview_area.document
     widget: QDoubleSpinBox = getattr(page_config_widget.ui, widget_name)
@@ -89,7 +95,8 @@ def test_decimal_settings_change_signal_connection_from_config_widget_to_preview
          "document_name",
      ])
 def test_textual_settings_change_signal_connection_from_config_widget_to_preview_area(
-        qtbot: QtBot, container: PageConfigContainer, widget_name: str):
+        qtbot: QtBot, container: PageConfigContainerFixture, widget_name: str):
+    container = container()
     page_config_widget = container.ui.page_config_widget
     document = container.ui.page_config_preview_area.document
     widget: QLineEdit = getattr(page_config_widget.ui, widget_name)
