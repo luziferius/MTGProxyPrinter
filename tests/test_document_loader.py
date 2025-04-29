@@ -18,7 +18,6 @@ import contextlib
 from itertools import chain, repeat, product
 from pathlib import Path
 import sqlite3
-import tempfile
 import unittest.mock
 import textwrap
 
@@ -36,6 +35,8 @@ from mtg_proxy_printer.model.carddb import CheckCard
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document import PageColumns, Document
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+
+from .conftest import SaveFileFixture
 
 CardType = mtg_proxy_printer.model.document_loader.CardType
 mm: UnitT = unit_registry.mm
@@ -391,20 +392,20 @@ def test_loads_check_card(
          ("row_spacing", 2), ("column_spacing", 3)]),
 
     ], [True, False]))
-def legacy_save_file(request):
-    (save_version, settings), reverse_unordered = request.param  # type: (int, list), bool
-    db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", f"document-v{save_version}", False)
-    if save_version < 6:
-        db.execute(f"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
-    elif save_version == 6:
-        db.executemany("INSERT INTO DocumentSettings (key, value) VALUES (?, ?)", settings)
-    else:
-        pass
-    if reverse_unordered:
-        db.execute("PRAGMA reverse_unordered_selects = TRUE")
-    yield db
-    db.close()
-    del db
+def legacy_save_file(request) -> SaveFileFixture:
+    def create():
+        (save_version, settings), reverse_unordered = request.param  # type: (int, list), bool
+        db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", f"document-v{save_version}", False)
+        if save_version < 6:
+            db.execute(f"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
+        elif save_version == 6:
+            db.executemany("INSERT INTO DocumentSettings (key, value) VALUES (?, ?)", settings)
+        else:
+            pass
+        if reverse_unordered:
+            db.execute("PRAGMA reverse_unordered_selects = TRUE")
+        return db
+    return create
 
 
 def test_load_settings_from_legacy_save_file_is_successful(

@@ -15,6 +15,7 @@
 
 
 from pathlib import PurePath
+from typing import Callable
 from unittest.mock import NonCallableMagicMock, patch
 
 import pytest
@@ -28,12 +29,19 @@ from mtg_proxy_printer.ui.page_card_table_view import PageCardTableView
 
 # Import dynamically used by pytest. Without this, the main_window fixture won’t be found by pytest.
 from .test_main_window import main_window  # noqa
+from tests.conftest import ImageDatabaseFixture
+
+TableViewFixture = Callable[[], PageCardTableView]
+
 
 @pytest.fixture()
-def table_view(document_light: Document, card_db: CardDatabase) -> PageCardTableView:
-    view = PageCardTableView()
-    view.set_data(document_light, card_db)
-    return view
+def table_view(document_light: Document, card_db: CardDatabase) -> TableViewFixture:
+    def create():
+        view = PageCardTableView()
+        view.set_data(document_light, card_db)
+        return view
+    return create
+
 
 @pytest.mark.parametrize("name, expected", [
     ('"Quoted"', 'Quoted'),
@@ -42,7 +50,8 @@ def table_view(document_light: Document, card_db: CardDatabase) -> PageCardTable
     ('Ends with dot and space .', 'Ends with dot and space'),
     ('\tTab\t', 'Tab')
 ])
-def test__get_default_image_save_path(table_view: PageCardTableView, name: str, expected: str):
+def test__get_default_image_save_path(table_view: TableViewFixture, name: str, expected: str):
+    table_view = table_view()
     card = NonCallableMagicMock(spec=Card)
     card.name = name
     result = PurePath(table_view._get_default_image_save_path(card))
@@ -64,7 +73,9 @@ def test__get_default_image_save_path(table_view: PageCardTableView, name: str, 
 ])
 @pytest.mark.parametrize("count", [1, 3])
 def test__add_copies_directly_adds_card_with_image(
-        table_view: PageCardTableView, image_db, card: AnyCardType, count: int):
+        table_view: TableViewFixture, image_db: ImageDatabaseFixture, card: AnyCardType, count: int):
+    table_view = table_view()
+    image_db = image_db()
     if isinstance(card, Card):
         card.image_file = image_db.get_blank()
     else:
@@ -82,7 +93,8 @@ def test__add_copies_directly_adds_card_with_image(
 ])
 @pytest.mark.parametrize("count", [1, 3])
 def test__add_copies_uses_image_db_for_card_without_image(
-        table_view: PageCardTableView, card: AnyCardType, count: int):
+        table_view: TableViewFixture, card: AnyCardType, count: int):
+    table_view = table_view()
     with patch.object(table_view, "request_action", spec=True) as request_action, \
             patch.object(table_view, "obtain_card_image", spec=True) as obtain_card_image:
         table_view._add_copies(card, count)

@@ -39,6 +39,7 @@ from mtg_proxy_printer.document_controller.edit_document_settings import ActionE
 
 from tests.document_controller.helpers import append_new_card_in_page
 from .document_controller.helpers import insert_card_in_page, create_card
+from .conftest import DocumentFixture
 
 ItemDataRole = Qt.ItemDataRole
 mm: UnitT = unit_registry.mm
@@ -343,16 +344,18 @@ def test_get_card_indices_of_type(document_light, page_type: PageType, parent_ro
 
 
 @pytest.fixture
-def document_custom_layout(document: Document) -> Document:
-    custom_layout = PageLayoutSettings(
-        page_height=300*mm, page_width=200*mm,
-        margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
-        row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
-        draw_cut_markers=True, draw_sharp_corners=False,
-    )
-    document.apply(ActionEditDocumentSettings(custom_layout))
-    yield document
-    document.__dict__.clear()
+def document_custom_layout(document: DocumentFixture) -> DocumentFixture:
+    def create():
+        doc = document()
+        custom_layout = PageLayoutSettings(
+            page_height=300*mm, page_width=200*mm,
+            margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
+            row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
+            draw_cut_markers=True, draw_sharp_corners=False,
+        )
+        doc.apply(ActionEditDocumentSettings(custom_layout))
+        return doc
+    return create
 
 
 def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custom_layout: Document):

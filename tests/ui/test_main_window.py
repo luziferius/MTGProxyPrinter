@@ -18,7 +18,7 @@ from collections import Counter
 import pathlib
 import typing
 import unittest.mock
-
+from typing import Callable
 
 from PyQt5.QtCore import QStringListModel, QThreadPool
 from PyQt5.QtWidgets import QMessageBox
@@ -42,36 +42,39 @@ from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 from tests.helpers import fill_card_database_with_json_cards
+from tests.conftest import CardDatabaseFixture, DocumentFixture
 from tests.document_controller.helpers import insert_card_in_page
 StandardButton = QMessageBox.StandardButton
 
+MainWindowFixture = Callable[[], MainWindow]
 
 @pytest.fixture(params=[Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, Ui_TabbedCentralWidget])
-def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> typing.Generator[MainWindow, None, None]:
-    fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
-    with unittest.mock.patch(
-            "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",
-            return_value=request.param), \
-            unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
-            unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "get_scryfall_bulk_card_data_url",
-                return_value=(unittest.mock.MagicMock(), 10)), \
-            unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "read_json_card_data_from_url",
-                return_value=iter([10])):
-        cid = CardInfoDownloader(card_db)
-        main_window = MainWindow(card_db, cid, document.image_db, document, QStringListModel(["en"]))
-        qtbot.add_widget(main_window)
-        with qtbot.wait_exposed(main_window, timeout=1000):
-            main_window.show()
-        yield main_window
-        main_window.hide()
-        del cid
-        main_window.__dict__.clear()
+def main_window(qtbot, card_db: CardDatabaseFixture, document: DocumentFixture, request) -> MainWindowFixture:
+    def create():
+        cdb = card_db()
+        doc = document()
+        fill_card_database_with_json_cards(qtbot, cdb, ["regular_english_card", "oversized_card"])
+        with unittest.mock.patch(
+                "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",
+                return_value=request.param), \
+                unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
+                unittest.mock.patch.object(
+                    mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "get_scryfall_bulk_card_data_url",
+                    return_value=(unittest.mock.MagicMock(), 10)), \
+                unittest.mock.patch.object(
+                    mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "read_json_card_data_from_url",
+                    return_value=iter([10])):
+            cid = CardInfoDownloader(cdb)
+            main_window = MainWindow(cdb, cid, doc.image_db, doc, QStringListModel(["en"]))
+            qtbot.add_widget(main_window)
+            with qtbot.wait_exposed(main_window, timeout=1000):
+                main_window.show()
+            return main_window
+    return create
 
 
 def test_main_window_hides_progress_bar_after_downloading_image_during_load(
-        qtbot: QtBot, main_window: MainWindow):
+        qtbot: QtBot, main_window: MainWindowFixture):
     with unittest.mock.patch.object(  # Mock all HTTP-specific I/O calls
                 mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
                 "_read_content_length") as cl_mock, \
@@ -135,7 +138,7 @@ def _create_save_file(temp_path: pathlib.Path):
     return save_file_path
 
 
-def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
+def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, main_window: MainWindowFixture):
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(False)
     with unittest.mock.patch.object(
@@ -150,7 +153,7 @@ def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, mai
     assert_that(ui.action_download_card_data.isEnabled(), is_(True))
 
 
-def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtBot, main_window: MainWindow):
+def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtBot, main_window: MainWindowFixture):
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
@@ -163,7 +166,7 @@ def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtB
     assert_that(ui.action_download_card_data.isEnabled(), is_(False))
 
 
-def test_action_download_card_data_is_enabled_after_network_error(qtbot: QtBot, main_window: MainWindow):
+def test_action_download_card_data_is_enabled_after_network_error(qtbot: QtBot, main_window: MainWindowFixture):
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(False)
     with unittest.mock.patch.object(
@@ -174,7 +177,7 @@ def test_action_download_card_data_is_enabled_after_network_error(qtbot: QtBot, 
     assert_that(ui.action_download_card_data.isEnabled(), is_(True))
 
 
-def test_action_download_card_data_is_enabled_after_other_error(qtbot: QtBot, main_window: MainWindow):
+def test_action_download_card_data_is_enabled_after_other_error(qtbot: QtBot, main_window: MainWindowFixture):
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(False)
     with unittest.mock.patch.object(
@@ -185,7 +188,7 @@ def test_action_download_card_data_is_enabled_after_other_error(qtbot: QtBot, ma
     assert_that(ui.action_download_card_data.isEnabled(), is_(True))
 
 
-def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
+def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtBot, main_window: MainWindowFixture):
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
@@ -201,7 +204,7 @@ def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtB
     assert_that(ui.action_download_card_data.isEnabled(), is_(True))
 
 
-def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtbot: QtBot, main_window: MainWindow):
+def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtbot: QtBot, main_window: MainWindowFixture):
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
@@ -213,7 +216,7 @@ def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtb
     thread_pool_start.assert_called_once()
 
 
-def test_accepting_application_update_offer_opens_website_in_default_browser(main_window: MainWindow):
+def test_accepting_application_update_offer_opens_website_in_default_browser(main_window: MainWindowFixture):
     with unittest.mock.patch.object(
         mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.Yes) as message_box, \
         unittest.mock.patch.object(
@@ -223,7 +226,7 @@ def test_accepting_application_update_offer_opens_website_in_default_browser(mai
         open_url_service.assert_called_once()
 
 
-def test_declining_application_update_offer_does_nothing(main_window: MainWindow):
+def test_declining_application_update_offer_does_nothing(main_window: MainWindowFixture):
     with unittest.mock.patch.object(
         mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No) as message_box, \
         unittest.mock.patch.object(
@@ -234,7 +237,7 @@ def test_declining_application_update_offer_does_nothing(main_window: MainWindow
 
 
 def test_creating_new_document_with_second_page_selected_works_without_raising_exception(
-        qtbot: QtBot, main_window: MainWindow):
+        qtbot: QtBot, main_window: MainWindowFixture):
     """
     Tests for an exception when creating a new document. Conditions required for reproduction:
     - Cut markers enabled
@@ -259,7 +262,7 @@ def test_creating_new_document_with_second_page_selected_works_without_raising_e
     assert_that(document.pages, has_length(1))
 
 
-def test_compacting_document_while_last_page_is_selected_works_without_raising_exception(main_window: MainWindow):
+def test_compacting_document_while_last_page_is_selected_works_without_raising_exception(main_window: MainWindowFixture):
     """
     Tests for an exception when compacting the document. Conditions required for reproduction:
     - 4 pages. Two with one regular card, two with one oversized card each
@@ -282,7 +285,7 @@ def test_compacting_document_while_last_page_is_selected_works_without_raising_e
     assert_that(document.rowCount(), is_(2))
 
 
-def test_removing_last_page_while_selected_works_without_raising_exception(main_window: MainWindow):
+def test_removing_last_page_while_selected_works_without_raising_exception(main_window: MainWindowFixture):
     ui = main_window.ui
     main_window.document.apply(ActionNewPage())
     ui.central_widget.ui.document_view.setCurrentIndex(main_window.document.index(1, 0))
@@ -290,7 +293,7 @@ def test_removing_last_page_while_selected_works_without_raising_exception(main_
     assert_that(main_window.document.rowCount(), is_(1))
 
 
-def test_undo_load_document_with_middle_page_selected_works_without_raising_exception(main_window: MainWindow):
+def test_undo_load_document_with_middle_page_selected_works_without_raising_exception(main_window: MainWindowFixture):
     from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
     document = main_window.document
     card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
@@ -304,7 +307,7 @@ def test_undo_load_document_with_middle_page_selected_works_without_raising_exce
     assert_that(main_window.document.rowCount(), is_(1))
 
 
-def test_undo_import_deck_list_with_last_page_selected_works_without_raising_exception(main_window):
+def test_undo_import_deck_list_with_last_page_selected_works_without_raising_exception(main_window: MainWindowFixture):
     from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
     document = main_window.document
     card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)

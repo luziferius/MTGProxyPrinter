@@ -20,6 +20,7 @@ Tests the KnownCardImageModel used internally by the CacheCleanupWizard.
 
 import pathlib
 import typing
+from typing import Callable
 
 from PyQt5.QtCore import Qt
 import pytest
@@ -41,24 +42,27 @@ class Environment(typing.NamedTuple):
     front_image: pathlib.Path
     back_image: pathlib.Path
 
+EnvironmentFixture = Callable[[], Environment]
 
 @pytest.fixture
-def environment(tmp_path: pathlib.Path, qtbot, card_db: CardDatabase):
-    fill_card_database_with_json_card(qtbot, card_db, "english_double_faced_card")
-    image_db = ImageDatabase(tmp_path)
-    front_image = image_db.db_path/"lowres_front"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
-    back_image = image_db.db_path/"lowres_back"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
-    front_image.parent.mkdir(parents=True)
-    back_image.parent.mkdir(parents=True)
-    image_db.get_blank().save(str(front_image), "PNG")
-    image_db.get_blank().save(str(back_image), "PNG")
-    yield Environment(card_db, image_db, front_image, back_image)
-    image_db.__dict__.clear()
+def environment(tmp_path: pathlib.Path, qtbot, card_db: CardDatabase) -> EnvironmentFixture:
+    def create():
+        fill_card_database_with_json_card(qtbot, card_db, "english_double_faced_card")
+        image_db = ImageDatabase(tmp_path)
+        front_image = image_db.db_path/"lowres_front"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
+        back_image = image_db.db_path/"lowres_back"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
+        front_image.parent.mkdir(parents=True)
+        back_image.parent.mkdir(parents=True)
+        image_db.get_blank().save(str(front_image), "PNG")
+        image_db.get_blank().save(str(back_image), "PNG")
+        return Environment(card_db, image_db, front_image, back_image)
+    return create
 
 
 @pytest.mark.parametrize("is_hidden", [True, False])
 @pytest.mark.parametrize("is_front", [True, False])
-def test_add_row_identifies_low_resolution_images(environment: Environment, is_front: bool, is_hidden: bool):
+def test_add_row_identifies_low_resolution_images(environment: EnvironmentFixture, is_front: bool, is_hidden: bool):
+    environment = environment()
     model = KnownCardImageModel(environment.card_db)
     card = environment.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front)
     disk_cache = environment.image_db.read_disk_cache_content()

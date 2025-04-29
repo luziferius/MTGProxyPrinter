@@ -20,6 +20,7 @@ fixtures defined here are available in all test modules.
 """
 import itertools
 import sqlite3
+from typing import Callable
 import unittest.mock
 from pathlib import Path
 
@@ -36,56 +37,67 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.imagedb_files import ImageKey
 from tests.helpers import fill_card_database_with_json_cards
 
+CardDatabaseFixture = Callable[[], CardDatabase]
+SaveFileFixture = Callable[[], sqlite3.Connection]
+ImageDatabaseFixture = Callable[[], ImageDatabase]
+DocumentFixture = Callable[[], Document]
 
 @pytest.fixture(params=[False, True])
-def card_db(request) -> CardDatabase:
-    section = mtg_proxy_printer.settings.settings["card-filter"]
-    settings_to_use = {filter_name: "False" for filter_name in section.keys()}
-    with unittest.mock.patch.dict(section, settings_to_use):
-        card_db = CardDatabase(":memory:", check_same_thread=False)
-    if request.param:
-        card_db.db.execute("PRAGMA reverse_unordered_selects = TRUE")
-    PrintingFilterUpdater(card_db, card_db.db).run()
-    return card_db
+def card_db(request) -> CardDatabaseFixture:
+    def create():
+        section = mtg_proxy_printer.settings.settings["card-filter"]
+        settings_to_use = {filter_name: "False" for filter_name in section.keys()}
+        with unittest.mock.patch.dict(section, settings_to_use):
+            card_db = CardDatabase(":memory:", check_same_thread=False)
+        if request.param:
+            card_db.db.execute("PRAGMA reverse_unordered_selects = TRUE")
+        PrintingFilterUpdater(card_db, card_db.db).run()
+        return card_db
+    return create
 
 
 @pytest.fixture(params=[False, True])
-def empty_save_database(request) -> sqlite3.Connection:
-    db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", "document-v7", check_same_thread=False)
-    if request.param:
-        db.execute("PRAGMA reverse_unordered_selects = TRUE")
-    return db
+def empty_save_database(request) -> SaveFileFixture:
+    def create():
+        db = mtg_proxy_printer.sqlite_helpers.open_database(
+            ":memory:", "document-v7", check_same_thread=False)
+        if request.param:
+            db.execute("PRAGMA reverse_unordered_selects = TRUE")
+        return db
+    return create
 
 
 @pytest.fixture
-def image_db(tmp_path: Path):
-    image_db = ImageDatabase(tmp_path)
-    regular = image_db.get_blank(CardSizes.REGULAR)
-    large = image_db.get_blank(CardSizes.OVERSIZED)
-    for scryfall_id, is_front in itertools.product(
-            ["0000579f-7b35-4ed3-b44c-db2a538066fe", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d"], [True, False]):
-        # Regular card images
-        key = ImageKey(scryfall_id, is_front, True)
-        image_db.loaded_images[key] = regular.copy()
-        image_db.images_on_disk.add(key)
-    for scryfall_id in ["650722b4-d72b-4745-a1a5-00a34836282b"]:
-        # Oversized card images
-        key = ImageKey(scryfall_id, True, True)
-        image_db.loaded_images[key] = large.copy()
-        image_db.images_on_disk.add(key)
-
-    yield image_db
-    image_db.__dict__.clear()
+def image_db(tmp_path: Path) -> ImageDatabaseFixture:
+    def create():
+        image_db = ImageDatabase(tmp_path)
+        regular = image_db.get_blank(CardSizes.REGULAR)
+        large = image_db.get_blank(CardSizes.OVERSIZED)
+        for scryfall_id, is_front in itertools.product(
+                ["0000579f-7b35-4ed3-b44c-db2a538066fe", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d"], [True, False]):
+            # Regular card images
+            key = ImageKey(scryfall_id, is_front, True)
+            image_db.loaded_images[key] = regular.copy()
+            image_db.images_on_disk.add(key)
+        for scryfall_id in ["650722b4-d72b-4745-a1a5-00a34836282b"]:
+            # Oversized card images
+            key = ImageKey(scryfall_id, True, True)
+            image_db.loaded_images[key] = large.copy()
+            image_db.images_on_disk.add(key)
+        return image_db
+    return create
 
 
 @pytest.fixture
-def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
-    fill_card_database_with_json_cards(qtbot, card_db, [
-        "regular_english_card", "oversized_card", "english_double_faced_card"])
-    document = Document(card_db, image_db)
-    document.loader.db = card_db.db
-    yield document
-    document.__dict__.clear()
+def document(qtbot, card_db: CardDatabaseFixture, image_db: ImageDatabaseFixture) -> DocumentFixture:
+    def create():
+        fill_card_database_with_json_cards(qtbot, card_db, [
+            "regular_english_card", "oversized_card", "english_double_faced_card"])
+        cdb = card_db()
+        document = Document(cdb, image_db())
+        document.loader.db = cdb.db
+        return document
+    return create
 
 @pytest.fixture
 def mock_imagedb():
@@ -99,12 +111,14 @@ def mock_imagedb():
     mock_image_db.get_blank = blanks.get
     return mock_image_db
 
+
 @pytest.fixture
-def document_light(qtbot, mock_imagedb) -> Document:
-    mock_card_db = unittest.mock.NonCallableMagicMock()
-    mock_card_db.db = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
-        "carddb", check_same_thread=False)
-    document = Document(mock_card_db, mock_imagedb)
-    document.loader.db = mock_card_db.db
-    yield document
-    document.__dict__.clear()
+def document_light(qtbot, mock_imagedb) -> DocumentFixture:
+    def create():
+        mock_card_db = unittest.mock.NonCallableMagicMock()
+        mock_card_db.db = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
+            "carddb", check_same_thread=False)
+        document = Document(mock_card_db, mock_imagedb)
+        document.loader.db = mock_card_db.db
+        return document
+    return create
