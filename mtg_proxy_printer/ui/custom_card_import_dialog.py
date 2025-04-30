@@ -17,7 +17,7 @@ from collections import Counter
 from pathlib import Path
 import typing
 
-from PyQt5.QtCore import Qt, QSize, pyqtSignal as Signal, pyqtSlot as Slot
+from PyQt5.QtCore import Qt, pyqtSignal as Signal, pyqtSlot as Slot
 from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QPixmap
 from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QPushButton
 
