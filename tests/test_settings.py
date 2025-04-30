@@ -13,11 +13,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
 from itertools import chain
 from numbers import Real
 from pathlib import Path
-import typing
+from typing import Iterable, List, Union
 from unittest.mock import patch
 
 import pint
@@ -27,14 +26,12 @@ from hamcrest import *
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.units_and_sizes import unit_registry, ConfigParser
 
-SETTINGS_DIR = Path(__file__).with_name("settings_files")
 
-
-def between(lower: Real, upper: Real):
+def between_including(lower: Real, upper: Real):
     return all_of(greater_than_or_equal_to(lower), less_than_or_equal_to(upper))
 
 
-def to_mm_str(value: Real)-> str:
+def to_mm_str(value: Real) -> str:
     return str(value*unit_registry.mm)
 
 @pytest.fixture
@@ -43,7 +40,7 @@ def default_settings() -> ConfigParser:
     settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
     return settings
 
-def numerical_document_settings_keys() -> typing.Iterable[str]:
+def numerical_document_settings_keys() -> Iterable[str]:
     return (
         key for key, value in mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"].items()
         if value.endswith(" mm")
@@ -128,12 +125,11 @@ def test__validate_document_section_normalizes_unsupported_length_units_to_mm(
     documents_section = default_settings["documents"]
     documents_section[setting] = value
     mtg_proxy_printer.settings.validate_settings(default_settings)
-    q = documents_section.get_quantity(setting)
     assert_that(
         documents_section.get_quantity(setting),
         all_of(
             has_property("units", equal_to(unit_registry.mm)),
-            has_property("magnitude", between(0, 10000))
+            has_property("magnitude", between_including(0, 10000))
         )
     )
 
@@ -156,14 +152,14 @@ def test__validate_documents_section_rounds_spacing_value_to_acceptable_value(
 @pytest.mark.parametrize("offset", [0, -1/101, 1/101])
 @pytest.mark.parametrize("settings_key", ["paper-height", "paper-width",])
 def test__validate_documents_section_rounds_paper_size_value_to_acceptable_value(
-        default_settings, expected, offset: float, settings_key: str):
+        default_settings: ConfigParser, expected: Union[float, int], offset: float, settings_key: str):
     documents_section = default_settings["documents"]
     documents_section[settings_key] = to_mm_str(expected + offset)
     mtg_proxy_printer.settings.validate_settings(default_settings)
     value = documents_section.get_quantity(settings_key).to("mm").magnitude
     assert_that(value, is_(close_to(expected, 0.01)))
 
-def test__validate_documents_section_document_name(default_settings):
+def test__validate_documents_section_document_name(default_settings: ConfigParser):
     key, value = "default-document-name", "Test"
     documents_section = default_settings["documents"]
     documents_section[key] = value
@@ -179,7 +175,7 @@ def test__validate_documents_section_document_name(default_settings):
     ("leb 2xM leb LEB", ["2xm", "leb"]),
     ("   LEB\n\n\t2xM ", ["2xm", "leb"]),
 ])
-def test_parse_card_set_filters(default_settings, set_filter: str, parsed_set_codes: typing.List[str]):
+def test_parse_card_set_filters(default_settings: ConfigParser, set_filter: str, parsed_set_codes: List[str]):
     default_settings["card-filter"]["hidden-sets"] = set_filter
     assert_that(
         mtg_proxy_printer.settings.parse_card_set_filters(default_settings),
@@ -202,7 +198,12 @@ def test_clamp_to_supported_range(value: float, expected: float):
     assert_that(clamped_value, is_(close_to(expected, 0.001)))
 
 
-@pytest.mark.parametrize("source_file", SETTINGS_DIR.glob("*.ini"))
-def test_migration_does_not_crash(source_file: Path):
-    with patch("mtg_proxy_printer.settings.config_file_path", source_file):
+@pytest.mark.parametrize("source_file", Path(__file__).with_name("settings_files").glob("*.ini"))
+def test_migration_does_not_crash(source_file: Path, default_settings: ConfigParser):
+    """
+    The settings_files directory contains sample configuration files from throughout the application history.
+    Any of these must migrate to the newest version without raising exceptions.
+    """
+    with patch("mtg_proxy_printer.settings.config_file_path", source_file), \
+            patch("mtg_proxy_printer.settings.settings", default_settings):
         mtg_proxy_printer.settings.read_settings_from_file()
