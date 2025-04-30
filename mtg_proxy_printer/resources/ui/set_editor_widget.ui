@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>SetEditor</class>
  <widget class="QWidget" name="SetEditor">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>280</width>
+    <height>36</height>
+   </rect>
+  </property>
   <layout class="QHBoxLayout" name="horizontal_layout">
    <property name="spacing">
     <number>0</number>
@@ -31,7 +39,7 @@
    <item>
     <widget class="QLabel" name="opening_parenthesis">
      <property name="text">
-      <string>(</string>
+      <string notr="true">(</string>
      </property>
     </widget>
    </item>
@@ -57,7 +65,7 @@
    <item>
     <widget class="QLabel" name="closing_parenthesis">
      <property name="text">
-      <string>)</string>
+      <string notr="true">)</string>
      </property>
     </widget>
    </item>
