@@ -24,6 +24,7 @@ from PyQt5.QtCore import QItemSelectionModel
 
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import CardListModel, CardListModelRow, CardListColumns
+from mtg_proxy_printer.model.document import Document
 
 from tests.helpers import fill_card_database_with_json_cards
 
@@ -34,18 +35,18 @@ WASTES_ID = "9cc070d3-4b83-4684-9caf-063e5c473a77"
 SNOW_FOREST_ID = "ca17acea-f079-4e53-8176-a2f5c5c408a1"
 
 
-def _populate_card_db_and_create_model(qtbot, card_db: CardDatabase) -> CardListModel:
+def _populate_card_db_and_create_model(qtbot, document: Document) -> CardListModel:
     fill_card_database_with_json_cards(
-        qtbot, card_db,
+        qtbot, document.card_db,
         ["oversized_card", "regular_english_card", "english_basic_Forest", "english_basic_Wastes", "english_basic_Snow_Forest"])
-    model = CardListModel(card_db)
+    model = CardListModel(document)
     return model
 
 
 @pytest.mark.parametrize("count", [1, 2, 10])
-def test_add_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardDatabase, count: int):
-    model = _populate_card_db_and_create_model(qtbot, card_db)
-    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+def test_add_oversized_card_updates_oversized_count(qtbot: QtBot, document: Document, count: int):
+    model = _populate_card_db_and_create_model(qtbot, document)
+    oversized = document.card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     with qtbot.wait_signal(model.oversized_card_count_changed, check_params_cb=(lambda value: value == count)):
         model.add_cards(Counter({oversized: count}))
     assert_that(model.oversized_card_count, is_(equal_to(count)))
@@ -55,9 +56,9 @@ def test_add_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardD
     (-1, 1), (0, 1), (1, 1), (99, 99), (100, 100), (101, 100),
 ])
 def test_add_cards_with_invalid_count_clamped_to_valid_range(
-        qtbot: QtBot, card_db: CardDatabase, count: int, expected: int):
-    model = _populate_card_db_and_create_model(qtbot, card_db)
-    card = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
+        qtbot: QtBot, document: Document, count: int, expected: int):
+    model = _populate_card_db_and_create_model(qtbot, document)
+    card = document.card_db.get_card_with_scryfall_id(REGULAR_ID, True)
     model.add_cards(Counter({card: count}))
     assert_that(model.rowCount(), is_(1))
     index = model.index(0, CardListColumns.Copies)
@@ -65,9 +66,9 @@ def test_add_cards_with_invalid_count_clamped_to_valid_range(
 
 
 @pytest.mark.parametrize("new_count", [5, 15])
-def test_update_oversized_card_count_updates_oversized_count(qtbot: QtBot, card_db: CardDatabase, new_count: int):
-    model = _populate_card_db_and_create_model(qtbot, card_db)
-    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+def test_update_oversized_card_count_updates_oversized_count(qtbot: QtBot, document: Document, new_count: int):
+    model = _populate_card_db_and_create_model(qtbot, document)
+    oversized = document.card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     model.add_cards(Counter({oversized: 10}))
     assert_that(model.oversized_card_count, is_(equal_to(10)))
 
@@ -77,9 +78,9 @@ def test_update_oversized_card_count_updates_oversized_count(qtbot: QtBot, card_
     assert_that(model.oversized_card_count, is_(equal_to(new_count)))
 
 
-def test_remove_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardDatabase):
-    model = _populate_card_db_and_create_model(qtbot, card_db)
-    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+def test_remove_oversized_card_updates_oversized_count(qtbot: QtBot, document: Document):
+    model = _populate_card_db_and_create_model(qtbot, document)
+    oversized = document.card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     model.add_cards(Counter({oversized: 10}))
     assert_that(model.oversized_card_count, is_(equal_to(10)))
 
@@ -88,10 +89,10 @@ def test_remove_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: Ca
     assert_that(model.oversized_card_count, is_(equal_to(0)))
 
 
-def test_replace_oversized_with_regular_card_decrements_oversized_count(qtbot: QtBot, card_db: CardDatabase):
-    model = _populate_card_db_and_create_model(qtbot, card_db)
-    regular = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
-    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+def test_replace_oversized_with_regular_card_decrements_oversized_count(qtbot: QtBot, document: Document):
+    model = _populate_card_db_and_create_model(qtbot, document)
+    regular = document.card_db.get_card_with_scryfall_id(REGULAR_ID, True)
+    oversized = document.card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     regular_data = CardIdentificationData(
         regular.language, scryfall_id=regular.scryfall_id, is_front=regular.is_front)
 
@@ -112,10 +113,10 @@ def test_replace_oversized_with_regular_card_decrements_oversized_count(qtbot: Q
     assert_that(model.oversized_card_count, is_(0))
 
 
-def test_replace_regular_with_oversized_card_increments_oversized_count(qtbot: QtBot, card_db: CardDatabase):
-    model = _populate_card_db_and_create_model(qtbot, card_db)
-    regular = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
-    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+def test_replace_regular_with_oversized_card_increments_oversized_count(qtbot: QtBot, document: Document):
+    model = _populate_card_db_and_create_model(qtbot, document)
+    regular = document.card_db.get_card_with_scryfall_id(REGULAR_ID, True)
+    oversized = document.card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     oversized_data = CardIdentificationData(
         oversized.language, scryfall_id=oversized.scryfall_id, is_front=oversized.is_front)
 
@@ -153,10 +154,10 @@ def test__merge_ranges(ranges: typing.List[typing.Tuple[int, int]], merged: typi
     )
 
 
-def test_remove_multi_selection(qtbot: QtBot, card_db: CardDatabase):
-    model = _populate_card_db_and_create_model(qtbot, card_db)
-    regular = CardListModelRow(card_db.get_card_with_scryfall_id(REGULAR_ID, True), 1)
-    oversized = CardListModelRow(card_db.get_card_with_scryfall_id(OVERSIZED_ID, True), 1)
+def test_remove_multi_selection(qtbot: QtBot, document: Document):
+    model = _populate_card_db_and_create_model(qtbot, document)
+    regular = CardListModelRow(document.card_db.get_card_with_scryfall_id(REGULAR_ID, True), 1)
+    oversized = CardListModelRow(document.card_db.get_card_with_scryfall_id(OVERSIZED_ID, True), 1)
     model.add_cards(Counter({
         oversized.card: 1,
         regular.card: 1,
@@ -212,12 +213,12 @@ def test_remove_multi_selection(qtbot: QtBot, card_db: CardDatabase):
     (True, True, [SNOW_FOREST_ID, WASTES_ID], True),
 ])
 def test_has_basic_lands(
-        qtbot: QtBot, card_db: CardDatabase,
+        qtbot: QtBot, document: Document,
         include_wastes: bool, include_snow_basics: bool,
         present_cards: typing.List[str], expected: bool):
-    model = _populate_card_db_and_create_model(qtbot, card_db)
+    model = _populate_card_db_and_create_model(qtbot, document)
     model.add_cards(Counter(
-        {card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_cards}
+        {document.card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_cards}
     ))
     assert_that(
         model.has_basic_lands(include_wastes, include_snow_basics),
@@ -247,12 +248,12 @@ def test_has_basic_lands(
     (True, True, [FOREST_ID], []),
 ])
 def test_remove_all_basic_lands(
-        qtbot: QtBot, card_db: CardDatabase,
+        qtbot: QtBot, document: Document,
         remove_wastes: bool, remove_snow_basics: bool,
         present_cards: typing.List[str], expected_remaining: typing.List[str]):
-    model = _populate_card_db_and_create_model(qtbot, card_db)
+    model = _populate_card_db_and_create_model(qtbot, document)
     model.add_cards(Counter(
-        {card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_cards}
+        {document.card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_cards}
     ))
     model.remove_all_basic_lands(remove_wastes, remove_snow_basics)
     remaining = [row.card.scryfall_id for row in model.rows]

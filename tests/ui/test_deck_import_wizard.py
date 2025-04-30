@@ -353,8 +353,6 @@ def test_custom_re_parser_works(qtbot: QtBot, document: Document):
     valid_re = r"(?P<name>.+)"
     deck_list = "Fury Sliver"
     wizard = create_and_show_wizard(qtbot, document, ["regular_english_card", "regular_english_card_reprint"])
-    cards = document.card_db.get_cards_from_data(CardIdentificationData("en", "Fury Sliver"))
-    wizard.select_deck_parser_page.image_db.filter_already_downloaded.return_value = cards
     _input_deck_list(qtbot, wizard, deck_list, enable_print_guessing=True)
     _move_wizard_forward(qtbot, wizard)
     _select_generic_re_parser(qtbot, wizard, valid_re, True)
