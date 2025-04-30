@@ -22,9 +22,12 @@ import sqlite3
 import sys
 import textwrap
 import typing
+try:
+    from typing import LiteralString
+except ImportError:
+    from typing_extensions import LiteralString
 
 from hamcrest import assert_that, contains_exactly
-import pint
 
 from mtg_proxy_printer.units_and_sizes import unit_registry
 from mtg_proxy_printer.logger import get_logger
@@ -203,13 +206,16 @@ def validate_database_schema(
             "Given file inconsistent: Unexpected indices")
     return user_schema_version
 
+
+S = typing.TypeVar("S", LiteralString, str)
+
 if hasattr(functools, "cache"):
     @functools.cache
-    def cached_dedent(text: str):
+    def cached_dedent(text: S) -> S:
         """Wraps textwrap.dedent() in a cache."""
         return textwrap.dedent(text)
 else:  # Python 3.8 compatibility
     @functools.lru_cache(None)
-    def cached_dedent(text: str):
+    def cached_dedent(text: S) -> S:
         """Wraps textwrap.dedent() in an LRU cache."""
         return textwrap.dedent(text)
