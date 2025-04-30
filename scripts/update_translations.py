@@ -127,9 +127,9 @@ def upload_raw_strings(args: Namespace):
 def download_new_translations(args: Namespace):
     """Downloads translated .ts files from Crowdin via the API"""
     verify_crowdin_cli_present()
-    #subprocess.call([
-    #    "crowdin", "download"
-    #])
+    subprocess.call([
+        "crowdin", "download"
+    ])
     # Strip all translations that are not registered as valid locale setting
     for file in TRANSLATIONS_DIR.glob("*.ts"):  # type: pathlib.Path
         # Use get() to keep the mtgproxyprinter_sources.ts file by mapping it to the "System locale" value (empty str)
