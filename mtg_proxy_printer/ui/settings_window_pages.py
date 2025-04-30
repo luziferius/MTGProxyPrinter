@@ -305,6 +305,7 @@ class GeneralSettingsPage(Page):
             (self.tr("System default"), ""),
             (self.tr("English (US)"), "en_US"),
             (self.tr("German"), "de"),
+            (self.tr("French"), "fr"),
         ]:
             ui.application_language_combo_box.addItem(display_text, language_code)
 
