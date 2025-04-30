@@ -110,8 +110,10 @@ class CustomCardImportDialog(QDialog):
     @Slot()
     def on_set_copies_to_clicked(self):
         value = self.ui.card_copies.value()
-        self.model.set_all_copies_to(value)
-        logger.info(f"All copy counts set to {value}")
+        selection = self.currently_selected_cards
+        self.model.set_copies_to(selection, value)
+        scope = "All" if selection.isEmpty() else "Selected"
+        logger.info(f"{scope} copy counts set to {value}")
 
     def show_from_drop_event(self, event: QDropEvent):
         urls = event.mimeData().urls()

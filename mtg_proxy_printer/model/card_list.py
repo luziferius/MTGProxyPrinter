@@ -359,9 +359,26 @@ class CardListModel(QAbstractTableModel):
         removed_cards = sum(itertools.starmap(self.remove_cards, merged))
         logger.info(f"User requested removal of basic lands, removed {removed_cards} cards")
 
-    def set_all_copies_to(self, value: int):
-        top = self.index(0, CardListColumns.Copies)
-        bottom = self.index(self.rowCount()-1, CardListColumns.Copies)
-        for item in self.rows:
-            item.copies = value
-        self.dataChanged.emit(top, bottom, [ItemDataRole.DisplayRole, ItemDataRole.EditRole])
+    def set_copies_to(self, indices: QItemSelection, value: int):
+        """
+        Sets the number of copies for all selected cards to value.
+        If no card is selected, set the count for all cards.
+        """
+        if indices.isEmpty():
+            selected_ranges = [
+                (0, self.rowCount()-1)
+            ]
+        else:
+            selected_ranges = sorted(
+                (selected_range.top(), selected_range.bottom()) for selected_range in indices
+            )
+            # This both minimizes the number of model changes needed and de-duplicates the data received from the
+            # selection model. If the user selects a row, the UI returns a range for each cell selected, creating many
+            # duplicates that have to be removed.
+            selected_ranges = self._merge_ranges(selected_ranges)
+        column = CardListColumns.Copies
+        roles = [ItemDataRole.DisplayRole, ItemDataRole.EditRole]
+        for top, bottom in selected_ranges:
+            for item in self.rows[top:bottom+1]:
+                item.copies = value
+            self.dataChanged.emit(self.index(top, column), self.index(bottom, column), roles)
