@@ -23,8 +23,8 @@ from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QPushButton
 
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
-from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.model.card import MTGSet, Card, CustomCard
+from mtg_proxy_printer.model.card import CustomCard
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
 try:
@@ -47,18 +47,19 @@ class CustomCardImportDialog(QDialog):
 
     request_action = Signal(DocumentAction)
 
-    def __init__(self, card_db: CardDatabase, parent: QWidget = None, flags=Qt.WindowFlags()):
+    def __init__(self, document: Document, parent: QWidget = None, flags=Qt.WindowFlags()):
         super().__init__(parent, flags)
         self.ui = ui = Ui_CustomCardImportDialog()
         ui.setupUi(self)
         self.ok_button.setEnabled(False)
         ui.remove_selected.setDisabled(True)
-        self.model = CardListModel(card_db)
-        ui.card_table.setModel(self.model)
+        self.model = model = CardListModel(document)
+        model.request_action.connect(self.request_action)
+        ui.card_table.setModel(model)
         ui.card_table.selectionModel().selectionChanged.connect(self.on_card_table_selection_changed)
-        self.model.rowsInserted.connect(self.on_rows_inserted)
-        self.model.rowsRemoved.connect(self.on_rows_removed)
-        self.model.modelReset.connect(self.on_rows_removed)
+        model.rowsInserted.connect(self.on_rows_inserted)
+        model.rowsRemoved.connect(self.on_rows_removed)
+        model.modelReset.connect(self.on_rows_removed)
         logger.info(f"Created {self.__class__.__name__} instance")
 
     @property

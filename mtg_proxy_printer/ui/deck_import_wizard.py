@@ -27,6 +27,7 @@ from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as
 from PyQt5.QtGui import QValidator, QIcon, QDesktopServices
 from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import SectionProxy
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
@@ -313,12 +314,12 @@ class SelectDeckParserPage(QWizardPage):
         logger.debug(f"Reading selected parser {self._selected_parser.__class__.__name__}")
         return self._selected_parser
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
+    def __init__(self, document: Document, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = Ui_SelectDeckParserPage()
         self.ui.setupUi(self)
-        self.card_db = card_db
-        self.image_db = image_db
+        self.card_db = document.card_db
+        self.image_db = document.image_db
         self._selected_parser = None
         self.parser_creator: typing.Callable[[], None] = (lambda: None)
         group_names = ', '.join(sorted(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES))
@@ -445,13 +446,13 @@ class SummaryPage(QWizardPage):
     SelectedRemovalOption = WizardOption.HaveCustomButton2
     SelectedRemovalButton = WizardButton.CustomButton2
 
-    def __init__(self, card_db: CardDatabase, *args, **kwargs):
+    def __init__(self, document: Document, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.ui = ui = Ui_SummaryPage()
         ui.setupUi(self)
         self.setCommitPage(True)
-        self.card_list = CardListModel(card_db, self)
+        self.card_list = CardListModel(document, self)
         self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
         ui.parsed_cards_table.setModel(self.card_list)
         self.registerField("should_replace_document", self.ui.should_replace_document)
@@ -592,13 +593,12 @@ class DeckImportWizard(WizardBase):
         QWizard.WizardButton.CancelButton: "dialog-cancel",
     }
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
-                 language_model: QStringListModel, parent: QWidget = None, flags=Qt.WindowFlags()):
+    def __init__(self, document: Document, language_model: QStringListModel,
+                 parent: QWidget = None, flags=Qt.WindowFlags()):
         super().__init__(QSize(1000, 600), parent, flags)
-        self.card_db = card_db
-        self.select_deck_parser_page = SelectDeckParserPage(card_db, image_db, self)
+        self.select_deck_parser_page = SelectDeckParserPage(document, self)
         self.load_list_page = LoadListPage(language_model, self)
-        self.summary_page = SummaryPage(card_db, self)
+        self.summary_page = SummaryPage(document, self)
         self.addPage(self.load_list_page)
         self.addPage(self.select_deck_parser_page)
         self.addPage(self.summary_page)

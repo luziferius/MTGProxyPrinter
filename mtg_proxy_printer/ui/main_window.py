@@ -256,14 +256,14 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
-        wizard = DeckImportWizard(self.card_database, self.image_db, self.language_model, parent=self)
+        wizard = DeckImportWizard(self.document, self.language_model, self)
         wizard.request_action.connect(self.image_db.fill_batch_document_action_images)
         wizard.show()
 
     @Slot()
     def on_action_add_custom_cards_triggered(self):
         logger.info(f"User adds custom cards.")
-        self.current_dialog = dialog = CustomCardImportDialog(self.card_database, self)
+        self.current_dialog = dialog = CustomCardImportDialog(self.document, self)
         dialog.finished.connect(self.on_dialog_finished)
         dialog.request_action.connect(self.document.apply)
         dialog.show()
@@ -502,7 +502,7 @@ class MainWindow(QMainWindow):
             logger.info("User dropped save file onto the main window, loading the dropped document")
             self.document.loader.load_document(path)
         elif CustomCardImportDialog.dragdrop_acceptable(event):
-            self.current_dialog = dialog = CustomCardImportDialog(self.card_database, self)
+            self.current_dialog = dialog = CustomCardImportDialog(self.document, self)
             dialog.request_action.connect(self.document.apply)
             dialog.finished.connect(self.on_dialog_finished)
             dialog.show_from_drop_event(event)

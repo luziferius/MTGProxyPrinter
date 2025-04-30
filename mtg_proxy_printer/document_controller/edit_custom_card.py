@@ -34,11 +34,7 @@ ItemDataRole = Qt.ItemDataRole
 
 class ActionEditCustomCard(DocumentAction):
     """
-    Compacts a document by filling as many empty slots as possible on pages that are not at the end of the document.
-
-    Scans the document for pages that are not completely filled and for each such page,
-    moves cards from the last page with items to it.
-    This fills all (but the last) pages up to the capacity limit to help reduce possible waste during printing.
+    Edits a field of a custom card. Ensures that the dataChanged signal is sent for all copies of the given card
     """
     COMPARISON_ATTRIBUTES = ["old_value", "new_value", "page", "row", "column"]
 

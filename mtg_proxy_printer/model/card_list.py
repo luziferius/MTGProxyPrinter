@@ -22,10 +22,14 @@ import typing
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSignal as Signal, QItemSelection
 from PyQt5.QtGui import QIcon
 
+from mtg_proxy_printer.document_controller import DocumentAction
+from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCustomCard
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.ui.common import get_card_image_tooltip
 from mtg_proxy_printer.decklist_parser.common import CardCounter
-from mtg_proxy_printer.model.carddb import CardIdentificationData, CardDatabase
-from mtg_proxy_printer.model.card import Card, AnyCardType
+from mtg_proxy_printer.model.carddb import CardIdentificationData
+from mtg_proxy_printer.model.card import Card, AnyCardType, CustomCard
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -53,8 +57,18 @@ class CardListColumns(enum.IntEnum):
     Language = enum.auto()
     IsFront = enum.auto()
 
+    def to_page_column(self):
+        return CardListToPageColumnMapping[self]
+
 
 CardList = typing.List[CardListModelRow]
+CardListToPageColumnMapping = {
+    CardListColumns.CardName: PageColumns.CardName,
+    CardListColumns.Set: PageColumns.Set,
+    CardListColumns.CollectorNumber: PageColumns.CollectorNumber,
+    CardListColumns.Language: PageColumns.Language,
+    CardListColumns.IsFront: PageColumns.IsFront,
+}
 
 class CardListModel(QAbstractTableModel):
     """
@@ -64,8 +78,9 @@ class CardListModel(QAbstractTableModel):
         CardListColumns.Copies, CardListColumns.Set, CardListColumns.CollectorNumber, CardListColumns.Language,
     }
     oversized_card_count_changed = Signal(int)
+    request_action = Signal(DocumentAction)
 
-    def __init__(self, card_db: CardDatabase, *args, **kwargs):
+    def __init__(self, document: Document, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.header = {
             CardListColumns.Copies: self.tr("Copies"),
@@ -75,7 +90,8 @@ class CardListModel(QAbstractTableModel):
             CardListColumns.Language: self.tr("Language"),
             CardListColumns.IsFront: self.tr("Side"),
         }
-        self.card_db = card_db
+        self.document = document
+        self.card_db = document.card_db
         self.rows: CardList = []
         self.oversized_card_count = 0
         self._oversized_icon = QIcon.fromTheme("data-warning")
@@ -116,6 +132,7 @@ class CardListModel(QAbstractTableModel):
             return self.tr("Beware: Potentially oversized card!\nThis card may not fit in your deck.")
         if card.is_oversized and role == ItemDataRole.DecorationRole:
             return self._oversized_icon
+        return None
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         flags = super().flags(index)
@@ -154,31 +171,39 @@ class CardListModel(QAbstractTableModel):
         return self._request_replacement_card(index, card_data)
 
     def _set_data_for_custom_card(self, index: QModelIndex, value: typing.Any) -> bool:
-        row, column = index.row(), index.column()
+        row, column = index.row(), CardListColumns(index.column())
         container = self.rows[row]
         card = container.card
         logger.debug(f"Setting card list model data on custom card for column {column} to {value}")
+        action = None
+        if document_indices := list(self.document.find_relevant_index_ranges(card, column.to_page_column())):
+            # Create the action before updating the card to gather the old data for undo purposes
+            # Take the first index found as the reference
+            document_card_index = i if (i := document_indices[0][0]).parent().isValid() else document_indices[1][0]
+            action = ActionEditCustomCard(document_card_index, value)
+
         if column == CardListColumns.Copies:
             return self._set_copies_value(container, card, value)
-        elif column == CardListColumns.CardName:
+        if column == CardListColumns.CardName:
             card.name = value
-            return True
         elif column == CardListColumns.CollectorNumber:
             card.collector_number = value
-            return True
         elif column == CardListColumns.Language:
             card.language = value
-            return True
         elif column == CardListColumns.IsFront:
             card.is_front = value
             card.face_number = int(not value)
-            return True
         elif column == CardListColumns.Set:
             card.set = value
-            return True
-        return False
+        if card_indices := list(self.document.find_relevant_index_ranges(card, column.to_page_column())):
+            logger.info(
+                f"Edited custom card present in {len(card_indices)} locations in the document."
+                f"Applying the change to the current document.")
+        if action is not None:
+            self.request_action.emit(action)
+        return True
 
-    def _set_copies_value(self, container: CardListModelRow, card: Card, value: int) -> bool:
+    def _set_copies_value(self, container: CardListModelRow, card: AnyCardType, value: int) -> bool:
         old_value, container.copies = container.copies, value
         if card.is_oversized and (difference := value - old_value):
             self.oversized_card_count += difference

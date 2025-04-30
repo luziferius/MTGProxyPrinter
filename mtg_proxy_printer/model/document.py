@@ -428,6 +428,7 @@ class Document(QAbstractItemModel):
 
     def find_relevant_index_ranges(self, to_find: AnyCardType, column: PageColumns):
         """Finds all indices relevant for the given card."""
+        # TODO: This runs in O(n)
         for page_row, page in enumerate(self.pages):
             instance_rows = to_list_of_ranges(
                 # Use is to find exact same instances
