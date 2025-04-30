@@ -19,11 +19,17 @@ import enum
 import itertools
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, QItemSelection
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSignal as Signal, QItemSelection
 from PyQt5.QtGui import QIcon
 
+from mtg_proxy_printer.document_controller import DocumentAction
+from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCustomCard
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_page import PageColumns
+from mtg_proxy_printer.ui.common import get_card_image_tooltip
 from mtg_proxy_printer.decklist_parser.common import CardCounter
-from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase, AnyCardType
+from mtg_proxy_printer.model.carddb import CardIdentificationData
+from mtg_proxy_printer.model.card import Card, AnyCardType, CustomCard
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -39,7 +45,7 @@ INVALID_INDEX = QModelIndex()
 
 @dataclasses.dataclass
 class CardListModelRow:
-    card: Card
+    card: AnyCardType
     copies: int
 
 
@@ -51,8 +57,18 @@ class CardListColumns(enum.IntEnum):
     Language = enum.auto()
     IsFront = enum.auto()
 
+    def to_page_column(self):
+        return CardListToPageColumnMapping[self]
+
 
 CardList = typing.List[CardListModelRow]
+CardListToPageColumnMapping = {
+    CardListColumns.CardName: PageColumns.CardName,
+    CardListColumns.Set: PageColumns.Set,
+    CardListColumns.CollectorNumber: PageColumns.CollectorNumber,
+    CardListColumns.Language: PageColumns.Language,
+    CardListColumns.IsFront: PageColumns.IsFront,
+}
 
 class CardListModel(QAbstractTableModel):
     """
@@ -62,8 +78,9 @@ class CardListModel(QAbstractTableModel):
         CardListColumns.Copies, CardListColumns.Set, CardListColumns.CollectorNumber, CardListColumns.Language,
     }
     oversized_card_count_changed = Signal(int)
+    request_action = Signal(DocumentAction)
 
-    def __init__(self, card_db: CardDatabase, *args, **kwargs):
+    def __init__(self, document: Document, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.header = {
             CardListColumns.Copies: self.tr("Copies"),
@@ -73,7 +90,8 @@ class CardListModel(QAbstractTableModel):
             CardListColumns.Language: self.tr("Language"),
             CardListColumns.IsFront: self.tr("Side"),
         }
-        self.card_db = card_db
+        self.document = document
+        self.card_db = document.card_db
         self.rows: CardList = []
         self.oversized_card_count = 0
         self._oversized_icon = QIcon.fromTheme("data-warning")
@@ -96,9 +114,10 @@ class CardListModel(QAbstractTableModel):
                 return card.name
             elif column == CardListColumns.Set:
                 if role == ItemDataRole.EditRole:
-                    return card.set.code
+                    return card.set
                 else:
-                    return f"{card.set.name} ({card.set.code.upper()})"
+                    set_ = card.set
+                    return f"{set_.name} ({set_.code.upper()})"
             elif column == CardListColumns.CollectorNumber:
                 return card.collector_number
             elif column == CardListColumns.Language:
@@ -107,43 +126,89 @@ class CardListModel(QAbstractTableModel):
                 if role == ItemDataRole.EditRole:
                     return card.is_front
                 return self.tr("Front") if card.is_front else self.tr("Back")
-        if card.is_oversized:
-            if role == ItemDataRole.ToolTipRole:
-                return self.tr("Beware: Potentially oversized card!\nThis card may not fit in your deck.")
-            elif role == ItemDataRole.DecorationRole:
-                return self._oversized_icon
+        if card.is_custom_card and column == CardListColumns.CardName and role == ItemDataRole.ToolTipRole:
+            return get_card_image_tooltip(card.source_image_file)
+        elif card.is_oversized and role == ItemDataRole.ToolTipRole:
+            return self.tr("Beware: Potentially oversized card!\nThis card may not fit in your deck.")
+        if card.is_oversized and role == ItemDataRole.DecorationRole:
+            return self._oversized_icon
+        return None
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         flags = super().flags(index)
-        if index.column() in self.EDITABLE_COLUMNS:
+        if index.column() in self.EDITABLE_COLUMNS or self.rows[index.row()].card.is_custom_card:
             flags |= ItemFlag.ItemIsEditable
         return flags
 
     def setData(self, index: QModelIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
         row, column = index.row(), index.column()
-        if role == ItemDataRole.EditRole and column in self.EDITABLE_COLUMNS:
-            logger.debug(f"Setting card list model data for column {column} to {value}")
-            container = self.rows[row]
-            card = container.card
-            if column == CardListColumns.Copies:
-                old_value, container.copies = container.copies, value
-                if card.is_oversized and (difference := value-old_value):
-                    self.oversized_card_count += difference
-                    self.oversized_card_count_changed.emit(self.oversized_card_count)
-                return True
-            elif column == CardListColumns.CollectorNumber:
-                card_data = CardIdentificationData(
-                    card.language, card.name, card.set.code, value, is_front=card.is_front)
-            elif column == CardListColumns.Set:
-                card_data = CardIdentificationData(
-                    card.language, card.name, value, is_front=card.is_front
-                )
-            else:
-                card_data = self.card_db.translate_card(card, value)
-                if card_data == card:
-                    return False
-            return self._request_replacement_card(index, card_data)
+        container = self.rows[row]
+        card = container.card
+        if not card.is_custom_card and role == ItemDataRole.EditRole and column in self.EDITABLE_COLUMNS:
+            return self._set_data_for_official_card(index, value)
+        elif card.is_custom_card and role == ItemDataRole.EditRole:
+            return self._set_data_for_custom_card(index, value)
         return False
+
+    def _set_data_for_official_card(self, index: QModelIndex, value: typing.Any) -> bool:
+        row, column = index.row(), index.column()
+        container = self.rows[row]
+        card = container.card
+        logger.debug(f"Setting card list model data on official card for column {column} to {value}")
+        if column == CardListColumns.Copies:
+            return self._set_copies_value(container, card, value)
+        elif column == CardListColumns.CollectorNumber:
+            card_data = CardIdentificationData(
+                card.language, card.name, card.set_code, value, is_front=card.is_front)
+        elif column == CardListColumns.Set:
+            card_data = CardIdentificationData(
+                card.language, card.name, value.code, is_front=card.is_front
+            )
+        else:
+            card_data = self.card_db.translate_card(card, value)
+            if card_data == card:
+                return False
+        return self._request_replacement_card(index, card_data)
+
+    def _set_data_for_custom_card(self, index: QModelIndex, value: typing.Any) -> bool:
+        row, column = index.row(), CardListColumns(index.column())
+        container = self.rows[row]
+        card = container.card
+        logger.debug(f"Setting card list model data on custom card for column {column} to {value}")
+        action = None
+        if document_indices := list(self.document.find_relevant_index_ranges(card, column.to_page_column())):
+            # Create the action before updating the card to gather the old data for undo purposes
+            # Take the first index found as the reference
+            document_card_index = i if (i := document_indices[0][0]).parent().isValid() else document_indices[1][0]
+            action = ActionEditCustomCard(document_card_index, value)
+
+        if column == CardListColumns.Copies:
+            return self._set_copies_value(container, card, value)
+        if column == CardListColumns.CardName:
+            card.name = value
+        elif column == CardListColumns.CollectorNumber:
+            card.collector_number = value
+        elif column == CardListColumns.Language:
+            card.language = value
+        elif column == CardListColumns.IsFront:
+            card.is_front = value
+            card.face_number = int(not value)
+        elif column == CardListColumns.Set:
+            card.set = value
+        if card_indices := list(self.document.find_relevant_index_ranges(card, column.to_page_column())):
+            logger.info(
+                f"Edited custom card present in {len(card_indices)} locations in the document."
+                f"Applying the change to the current document.")
+        if action is not None:
+            self.request_action.emit(action)
+        return True
+
+    def _set_copies_value(self, container: CardListModelRow, card: AnyCardType, value: int) -> bool:
+        old_value, container.copies = container.copies, value
+        if card.is_oversized and (difference := value - old_value):
+            self.oversized_card_count += difference
+            self.oversized_card_count_changed.emit(self.oversized_card_count)
+        return value != old_value
 
     def _request_replacement_card(
             self, index: QModelIndex, card_data: typing.Union[CardIdentificationData, AnyCardType]):
@@ -154,8 +219,7 @@ class CardListModel(QAbstractTableModel):
         else:
             result = [card_data]
         if result:
-            # Simply choose the first match. The user can’t make a choice at this point, so just use one of
-            # the results.
+            # Simply choose the first match. The user can’t make a choice at this point, so just use one of the results.
             new_card = result[0]
             logger.debug(f"Replacing with {new_card}")
             top_left = index.sibling(row, column)
@@ -194,13 +258,11 @@ class CardListModel(QAbstractTableModel):
             self.oversized_card_count -= row.copies
             self.oversized_card_count_changed.emit(self.oversized_card_count)
 
-    @Slot(list)
     def remove_multi_selection(self, indices: QItemSelection) -> int:
         """
         Remove all cards in the given multi-selection.
         :return: Number of cards removed
         """
-
         selected_ranges = sorted(
             (selected_range.top(), selected_range.bottom()) for selected_range in indices
         )
@@ -296,3 +358,27 @@ class CardListModel(QAbstractTableModel):
         merged = reversed(self._merge_ranges(to_remove_rows))
         removed_cards = sum(itertools.starmap(self.remove_cards, merged))
         logger.info(f"User requested removal of basic lands, removed {removed_cards} cards")
+
+    def set_copies_to(self, indices: QItemSelection, value: int):
+        """
+        Sets the number of copies for all selected cards to value.
+        If no card is selected, set the count for all cards.
+        """
+        if indices.isEmpty():
+            selected_ranges = [
+                (0, self.rowCount()-1)
+            ]
+        else:
+            selected_ranges = sorted(
+                (selected_range.top(), selected_range.bottom()) for selected_range in indices
+            )
+            # This both minimizes the number of model changes needed and de-duplicates the data received from the
+            # selection model. If the user selects a row, the UI returns a range for each cell selected, creating many
+            # duplicates that have to be removed.
+            selected_ranges = self._merge_ranges(selected_ranges)
+        column = CardListColumns.Copies
+        roles = [ItemDataRole.DisplayRole, ItemDataRole.EditRole]
+        for top, bottom in selected_ranges:
+            for item in self.rows[top:bottom+1]:
+                item.copies = value
+            self.dataChanged.emit(self.index(top, column), self.index(bottom, column), roles)

@@ -23,18 +23,18 @@ from PyQt5.QtCore import QModelIndex, Qt
 import pytest
 from pytestqt.qtbot import QtBot
 
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
-from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT, CardSizes
-from mtg_proxy_printer.model.carddb import CheckCard
+from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT
+from mtg_proxy_printer.model.card import CheckCard
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import CardType
-from mtg_proxy_printer.model.imagedb_files import ImageKey
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 
-from tests.test_document import document_custom_layout
-from tests.helpers import close_to_, quantity_close_to
+from tests.model.test_document import document_custom_layout
+from tests.helpers import quantity_close_to
 
 ItemDataRole = Qt.ItemDataRole
 mm: UnitT = unit_registry.mm
@@ -54,19 +54,20 @@ def test_save_migration(tmp_path: Path, document: Document, source_version: int)
     action = ActionSaveDocument(_create_save_file(Path(tmp_path), source_version))
     action.apply(document)
     _validate_database_schema(action.file_path)
-    _validate_saved_document_settings(document, action.file_path)
+    _validate_saved_document_settings(document.page_layout, action.file_path)
 
 
 def test_create_save(tmp_path: Path, document_custom_layout: Document):
     """Tests that saving a new document uses the newest database schema version"""
+    layout = document_custom_layout.page_layout
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    capacity = document_custom_layout.page_layout.compute_page_card_capacity(card.requested_page_type())
+    capacity = layout.compute_page_card_capacity(card.requested_page_type())
     document_custom_layout.apply(ActionAddCard(card, capacity))
     save_file = tmp_path / "test.mtgproxies"
     action = ActionSaveDocument(save_file)
     action.apply(document_custom_layout)
     _validate_database_schema(save_file)
-    _validate_saved_document_settings(document_custom_layout, save_file)
+    _validate_saved_document_settings(layout, save_file)
 
 
 @pytest.mark.parametrize("is_front", [True, False])
@@ -76,7 +77,7 @@ def test_save_as_saves_regular_card(tmp_path: Path, document: Document, is_front
     save_file = tmp_path/"test.mtgproxies"
     action = ActionSaveDocument(save_file)
     action.apply(document)
-    with open_database(save_file, "document-v6", False) as con:
+    with open_database(save_file, "document-v7") as con:
         content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
     del con
     assert_that(
@@ -95,7 +96,7 @@ def test_save_as_saves_check_card(tmp_path: Path, document: Document):
     save_file = tmp_path / "test.mtgproxies"
     action = ActionSaveDocument(save_file)
     action.apply(document)
-    with open_database(save_file, "document-v6") as con:
+    with open_database(save_file, "document-v7") as con:
         content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
     del con
     assert_that(
@@ -106,30 +107,24 @@ def test_save_as_saves_check_card(tmp_path: Path, document: Document):
 
 
 def test_subsequent_save_updates_settings(tmp_path: Path, qtbot: QtBot, document_custom_layout: Document):
-    """Tests that saving a new document uses the newest database schema version"""
-    layout = copy.copy(document_custom_layout.page_layout)
-    layout.page_height = 1000*mm
-    card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    # Prevent network access when re-loading the document
-    blank = document_custom_layout.image_db.get_blank(CardSizes.REGULAR)
-    document_custom_layout.image_db.loaded_images[ImageKey(card.scryfall_id, card.is_front, card.highres_image)] = blank
-    cards_per_page = document_custom_layout.page_layout.compute_page_card_capacity(card.requested_page_type())
-    document_custom_layout.apply(ActionAddCard(card, cards_per_page))
+    save_file = tmp_path / "test.mtgproxies"
+    save_action = ActionSaveDocument(save_file)
+    save_action.apply(document_custom_layout)
 
-    save_file = Path(tmp_path)/"test.mtgproxies"
-    action = ActionSaveDocument(save_file)
-    action.apply(document_custom_layout)
-    _validate_database_schema(save_file)
-    _validate_saved_document_settings(document_custom_layout, save_file)
-    with qtbot.waitSignal(document_custom_layout.page_layout_changed):
-        document_custom_layout.apply(ActionEditDocumentSettings(layout))
-    action.apply(document_custom_layout)
-    with qtbot.waitSignals([document_custom_layout.loading_state_changed]*2,
-                           check_params_cbs=[lambda value: value, lambda value: not value]):
-        document_custom_layout.loader.load_document(save_file)
-    assert_that(
-        document_custom_layout.page_layout.page_height,
-        is_(quantity_close_to(1000*mm)))
+    modified_layout = copy.copy(document_custom_layout.page_layout)
+    modified_layout.page_height = modified_layout.page_width = 1000*mm
+    modified_layout.margin_top = modified_layout.margin_bottom = 13*mm
+    modified_layout.margin_left = modified_layout.margin_right= 14*mm
+    modified_layout.column_spacing = modified_layout.row_spacing = 2*mm
+    modified_layout.draw_page_numbers = not modified_layout.draw_page_numbers
+    modified_layout.draw_cut_markers = not modified_layout.draw_cut_markers
+    modified_layout.draw_sharp_corners = not modified_layout.draw_sharp_corners
+    modified_layout.document_name = "New"
+
+    with qtbot.waitSignal(document_custom_layout.page_layout_changed, timeout=100):
+        document_custom_layout.apply(ActionEditDocumentSettings(modified_layout))
+    save_action.apply(document_custom_layout)
+    _validate_saved_document_settings(modified_layout, save_file)
 
 
 def _create_save_file(temp_path: Path, source_version: int):
@@ -188,8 +183,7 @@ def _validate_database_schema(db_path: Path):
             "Given save file inconsistent: Unexpected indices")
 
 
-def _validate_saved_document_settings(document: Document, save_file: Path):
-    layout = document.page_layout
+def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Path):
     with open_database(save_file, "document-v7") as save:
         assert_that(
             save.execute(textwrap.dedent("""

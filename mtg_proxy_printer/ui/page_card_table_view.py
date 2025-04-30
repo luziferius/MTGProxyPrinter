@@ -26,9 +26,11 @@ from PyQt5.QtWidgets import QTableView, QWidget, QMenu, QAction, QInputDialog, Q
 from mtg_proxy_printer.app_dirs import data_directories
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
-from mtg_proxy_printer.model.carddb import Card, CheckCard, CardDatabase, AnyCardType, CardList, AnyCardTypeForTypeCheck
-from mtg_proxy_printer.model.document import PageColumns, Document
-from mtg_proxy_printer.ui.item_delegates import DocumentComboBoxItemDelegate
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType, AnyCardTypeForTypeCheck
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_page import PageColumns
+from mtg_proxy_printer.ui.item_delegates import CollectorNumberEditorDelegate, SetEditorDelegate, LanguageEditorDelegate
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -45,7 +47,11 @@ class PageCardTableView(QTableView):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.customContextMenuRequested.connect(self.page_table_context_menu_requested)
-        self._combo_box_delegate = self._setup_combo_box_item_delegate()
+        self._column_delegates = (
+            self._setup_combo_box_item_delegate(),
+            self._setup_language_delegate(),
+            self._setup_set_delegate(),
+        )
         self.card_db: CardDatabase = None
 
     def set_data(self, document: Document, card_db: CardDatabase):
@@ -61,13 +67,20 @@ class PageCardTableView(QTableView):
         is_empty = self.selectionModel().selection().isEmpty()
         self.changed_selection_is_empty.emit(is_empty)
 
-
     def _setup_combo_box_item_delegate(self):
-        combo_box_delegate = DocumentComboBoxItemDelegate(self)
+        combo_box_delegate = CollectorNumberEditorDelegate(self)
         self.setItemDelegateForColumn(PageColumns.CollectorNumber, combo_box_delegate)
-        self.setItemDelegateForColumn(PageColumns.Set, combo_box_delegate)
-        self.setItemDelegateForColumn(PageColumns.Language, combo_box_delegate)
         return combo_box_delegate
+
+    def _setup_language_delegate(self):
+        delegate = LanguageEditorDelegate(self)
+        self.setItemDelegateForColumn(PageColumns.Language, delegate)
+        return delegate
+
+    def _setup_set_delegate(self):
+        delegate = SetEditorDelegate(self)
+        self.setItemDelegateForColumn(PageColumns.Set, delegate)
+        return delegate
 
     @Slot(QPoint)
     def page_table_context_menu_requested(self, pos: QPoint):

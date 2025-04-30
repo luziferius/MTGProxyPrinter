@@ -13,17 +13,18 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-import pathlib
+import functools
+from pathlib import Path
 import platform
-import typing
+from typing import Union, Dict
 
-from PyQt5.QtCore import QFile, QUrl, QObject, QSize, QCoreApplication
+from PyQt5.QtCore import QFile, QUrl, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
 from PyQt5.QtWidgets import QLabel, QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
 
+from mtg_proxy_printer.units_and_sizes import OptStr
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -34,17 +35,17 @@ __all__ = [
     "HAS_COMPILED_RESOURCES",
     "highlight_widget",
     "BlockedSignals",
-    "set_url_label",
     "load_ui_from_file",
     "format_size",
     "WizardBase",
+    "get_card_image_tooltip",
 ]
 
 try:
     import mtg_proxy_printer.ui.compiled_resources
 except ModuleNotFoundError:
-    RESOURCE_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.with_name("resources"))
-    ICON_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.with_name("resources") / "icons")
+    RESOURCE_PATH_PREFIX = str(Path(__file__).resolve().parent.with_name("resources"))
+    ICON_PATH_PREFIX = str(Path(__file__).resolve().parent.with_name("resources") / "icons")
     HAS_COMPILED_RESOURCES = False
 else:
     import atexit
@@ -53,6 +54,29 @@ else:
     ICON_PATH_PREFIX = ":/icons"
     HAS_COMPILED_RESOURCES = True
     atexit.register(mtg_proxy_printer.ui.compiled_resources.qCleanupResources)
+
+
+@functools.lru_cache(maxsize=256)
+def get_card_image_tooltip(image: Union[bytes, Path], card_name: OptStr = None, scaling_factor: int = 3) -> str:
+    """
+    Returns a tooltip string showing a scaled down image for the given path.
+    :param image: Filesystem path to the image file or raw image content as bytes
+    :param card_name: Optional card name. If given, it is centered above the image
+    :param scaling_factor: Scales the source by factor to 1/scaling_factor
+    :return: HTML fragment with the image embedded as a base64 encoded PNG
+    """
+    if isinstance(image, bytes):
+        source = QPixmap()
+        source.loadFromData(image)
+    else:
+        source = QPixmap(str(image))
+    pixmap = source.scaledToWidth(source.width() // scaling_factor, Qt.TransformationMode.SmoothTransformation)
+    buffer = QBuffer()
+    buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+    pixmap.save(buffer, "PNG", quality=100)
+    image = buffer.data().toBase64().data().decode()
+    card_name = f'<p style="text-align:center">{card_name}</p><br>' if card_name else ""
+    return f'{card_name}<img src="data:image/png;base64,{image}">'
 
 
 def highlight_widget(widget: QWidget) -> None:
@@ -78,19 +102,6 @@ class BlockedSignals:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.qt_object.blockSignals(False)
-
-
-def set_url_label(label: QLabel, path: pathlib.Path, display_text: str = None):
-
-    url = QUrl.fromLocalFile(str(path.expanduser()))
-    if not label.openExternalLinks():
-        # The openExternalLinks property is not set in the UI file, so fail fast instead of doing workarounds.
-        raise ValueError(
-            f"QLabel with disabled openExternalLinks property used to display an external URL. This won’t work, so "
-            f"fail now. Label: {label}, Text: {label.text()}")
-    if not display_text:
-        display_text = str(path)
-    label.setText(f"""<a href="{url.path(QUrl.FullyEncoded):s}">{display_text:s}</a>""")
 
 
 def load_ui_from_file(name: str):
@@ -135,7 +146,7 @@ def format_size(size: float) -> str:
 
 class WizardBase(QWizard):
     """Base class for wizards based on QWizard"""
-    BUTTON_ICONS: typing.Dict[QWizard.WizardButton, str] = {}
+    BUTTON_ICONS: Dict[QWizard.WizardButton, str] = {}
 
     def __init__(self, window_size: QSize, parent: QWidget, flags):
         super().__init__(parent, flags)

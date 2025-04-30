@@ -16,7 +16,8 @@
 
 import unittest.mock
 
-from mtg_proxy_printer.model.carddb import CardDatabase, Card
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.card import Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.decklist_parser.re_parsers import GenericRegularExpressionDeckParser
 

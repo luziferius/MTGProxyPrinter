@@ -90,7 +90,7 @@ Github = "https://github.com/luziferius/MTGProxyPrinter/"
 mtg-proxy-printer = "mtg_proxy_printer.__main__:main"
 
 [tool.pytest.ini_options]
-timeout = 10
+# timeout = 10
 
 [tool.setuptools]
 exclude-package-data = {"mtg_proxy_printer" = ["resources", "resources.*"]}

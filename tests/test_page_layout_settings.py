@@ -15,6 +15,7 @@
 
 import itertools
 import unittest.mock
+from multiprocessing.context import assert_spawning
 
 import pint
 
@@ -35,11 +36,6 @@ from tests.helpers import quantity_close_to
 
 mm: UnitT = unit_registry.mm
 
-
-@pytest.fixture
-def page_layout():
-    layout = PageLayoutSettings.create_from_settings()
-    return layout
 
 
 @pytest.mark.parametrize("page_type, expected", [
@@ -86,6 +82,9 @@ def test_page_layout_compute_page_card_capacity_default_value(page_layout: PageL
 ])
 def test_page_layout_compute_page_row_count(
         page_layout: PageLayoutSettings, page_type: PageType, row_spacing: QuantityT, expected: int):
+    assert_that(page_layout.page_height, quantity_close_to(297*mm), "Setup failed: Environment altered")
+    assert_that(page_layout.margin_top, quantity_close_to(5*mm), "Setup failed: Environment altered")
+    assert_that(page_layout.margin_bottom, quantity_close_to(5*mm), "Setup failed: Environment altered")
     page_layout.row_spacing = row_spacing
     assert_that(page_layout.compute_page_row_count(page_type), is_(equal_to(expected)))
 
@@ -137,17 +136,15 @@ def test_page_layout_lt_raises_type_error_on_incompatible_types(page_layout: Pag
     assert_that(calling(page_layout.__lt__).with_args(1), raises(TypeError))
 
 
-def test_page_layout_gt():
-    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings()
-    layout.page_height = 300*mm
-    assert_that(layout.compute_page_card_capacity(PageType.REGULAR), is_(0))
-    assert_that(layout, is_not(greater_than(layout)))
+def test_page_layout_gt(page_layout: PageLayoutSettings):
+    page_layout.page_width = 10*mm
+    assert_that(page_layout.compute_page_card_capacity(PageType.REGULAR), is_(0))
+    assert_that(page_layout, is_not(greater_than(page_layout)))
 
 
-def test_page_layout_lt():
-    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
-    assert_that(layout.compute_page_card_capacity(PageType.REGULAR), is_(9))
-    assert_that(layout, is_not(less_than(layout)))
+def test_page_layout_lt(page_layout: PageLayoutSettings):
+    assert_that(page_layout.compute_page_card_capacity(PageType.REGULAR), is_(9))
+    assert_that(page_layout, is_not(less_than(page_layout)))
 
 
 @pytest.mark.parametrize("values", [

@@ -19,7 +19,8 @@ import typing
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal
 
-from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.card import Card, AnyCardType
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
@@ -42,7 +43,7 @@ except NameError:
     def profile(func):
         return func
 
-CardCounter = typing.Counter[Card]
+CardCounter = typing.Counter[AnyCardType]
 ParsedDeck = typing.Tuple[CardCounter, typing.List[str]]
 
 

@@ -25,8 +25,9 @@ from PyQt5.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMe
 from PyQt5.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene, QGraphicsPolygonItem
 
-from mtg_proxy_printer.model.carddb import Card, CardCorner
-from mtg_proxy_printer.model.document import Document, PageColumns
+from mtg_proxy_printer.model.card import CardCorner, Card
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, RESOLUTION, CardSizes, CardSize, QuantityT
@@ -537,7 +538,13 @@ class PageScene(QGraphicsScene):
                 self.draw_cut_markers()
 
     def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[ItemDataRole]):
-        if top_left.parent().row() == self.selected_page.row() and ItemDataRole.DisplayRole in roles:
+        if (top_left.parent().row() == self.selected_page.row()
+                and ItemDataRole.DisplayRole in roles
+                # Multiple columns changed means card replaced.
+                # Editing custom cards only changes single columns.
+                # Thes cases can be ignored, as the pixmap never changes
+                and top_left.column() < bottom_right.column()
+        ):
             page_type: PageType = top_left.parent().data(ItemDataRole.UserRole)
             card_items = self.card_items
             for row in range(top_left.row(), bottom_right.row()+1):

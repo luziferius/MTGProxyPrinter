@@ -18,8 +18,11 @@ import dataclasses
 import functools
 import json
 import os
+import sqlite3
 import typing
 from numbers import Real
+from pathlib import Path
+from typing import List, Tuple, Union, Literal
 from unittest.mock import patch, MagicMock
 
 from hamcrest.core.base_matcher import BaseMatcher
@@ -32,12 +35,14 @@ from pytestqt.qtbot import QtBot
 import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
+from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
+from mtg_proxy_printer.model.document_loader import CardType
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
-from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict, QuantityT
+from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict, QuantityT, CardSize
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.sqlite_helpers import read_resource_text
-
+from mtg_proxy_printer.sqlite_helpers import read_resource_text, open_database
 
 
 def _should_skip_network_tests() -> bool:
@@ -86,6 +91,7 @@ def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.Card
         with patch.dict(section, settings_to_use):
             dw.populate_database(data)
 
+
 def update_database_printing_filters(
         card_db: mtg_proxy_printer.model.carddb.CardDatabase, filter_settings: StrDict) -> StrDict:
     section = mtg_proxy_printer.settings.settings["card-filter"]
@@ -97,6 +103,7 @@ def update_database_printing_filters(
         updater = PrintingFilterUpdater(card_db, card_db.db, force_update_hidden_column=True)
         updater.run()
     return settings_to_use
+
 
 @functools.lru_cache()
 def load_json(name: str) -> CardDataType:
@@ -129,6 +136,24 @@ def fill_card_database_with_json_card(
         filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], filter_settings)
 
+
+def create_save_database_with(
+        path_or_connection: Union[Path, Literal[":memory:"], sqlite3.Connection],
+        pages: List[Tuple[int, CardSize]],
+        cards: List[Tuple[int, int, bool, str, CardType]],
+        settings: PageLayoutSettings) -> sqlite3.Connection:
+    save = path_or_connection if isinstance(path_or_connection, sqlite3.Connection) \
+        else open_database(path_or_connection, "document-v7")
+    ActionSaveDocument.save_settings(save, settings)
+    save.executemany(
+        "INSERT INTO Page (page, image_size) VALUES (?, ?)",
+        pages
+    )
+    save.executemany(
+        'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)',
+        cards
+    )
+    return save
 
 def assert_relation_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, name: str):
     assert_that(

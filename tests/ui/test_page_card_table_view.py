@@ -22,7 +22,8 @@ from pytestqt.qtbot import QtBot
 from hamcrest import *
 
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard, CardDatabase, AnyCardType
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, AnyCardType
 from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.ui.page_card_table_view import PageCardTableView
 

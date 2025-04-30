@@ -22,7 +22,7 @@ if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.page_layout import PageLayoutSettings
     from mtg_proxy_printer.model.document import Document
 
-from mtg_proxy_printer.model.carddb import CardList
+from mtg_proxy_printer.model.card import CardList
 from ._interface import DocumentAction, IllegalStateError, ActionList, Self
 from .page_actions import ActionNewPage
 from .card_actions import ActionAddCard

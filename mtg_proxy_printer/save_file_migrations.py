@@ -224,7 +224,6 @@ def _migrate_6_to_7(db: sqlite3.Connection, _: PageLayoutSettings = None):
           set_code TEXT NOT NULL DEFAULT '',
           collector_number TEXT NOT NULL DEFAULT '',
           is_front BOOLEAN_INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)) DEFAULT TRUE,
-          oversized BOOLEAN_INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)) DEFAULT FALSE,
           other_face TEXT REFERENCES CustomCardData(card_id)  -- If this is a DFC, this references the other side
         )"""),
         "ALTER TABLE Card RENAME TO Card_old",

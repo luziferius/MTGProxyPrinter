@@ -20,7 +20,8 @@ import unittest.mock
 import pytest
 from hamcrest import *
 
-from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardIdentificationData
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.card import Card
 from mtg_proxy_printer.decklist_parser.csv_parsers import TappedOutCSVParser
 from mtg_proxy_printer.decklist_downloader import TappedOutDownloader
 

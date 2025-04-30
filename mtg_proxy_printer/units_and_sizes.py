@@ -18,6 +18,7 @@
 import configparser
 import enum
 import re
+import sqlite3
 import typing
 try:
     from typing import NotRequired
@@ -106,6 +107,9 @@ class CardSizes(CardSize, enum.Enum):
     def from_bool(cls, value: bool) -> CardSize:
         return cls.OVERSIZED if value else cls.REGULAR
 
+
+sqlite3.register_adapter(CardSize, lambda item: item.to_save_data())
+sqlite3.register_adapter(CardSizes, lambda item: item.to_save_data())
 
 @enum.unique
 class PageType(enum.Enum):

@@ -24,7 +24,8 @@ import pytest
 
 import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.card_info_downloader import SetWackinessScore
-from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.card import MTGSet, Card
 from mtg_proxy_printer.units_and_sizes import UUID, CardSizes
 
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty, \
