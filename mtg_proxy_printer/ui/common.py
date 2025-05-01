@@ -129,6 +129,19 @@ def load_icon(name: str) -> QIcon:
     icon = QIcon(file_path)
     return icon
 
+def load_file(path: str, parent = None) -> bytes:
+    file_path = f"{RESOURCE_PATH_PREFIX}/{path}"
+    file = QFile(file_path)
+    data = b''
+    if file.open(QIODevice.OpenModeFlag.ReadOnly):
+        try:
+            data = file.readAll().data()
+        finally:
+            file.close()
+            return data
+    logger.error(f"Opening {file_path} failed")
+    return data
+
 def markdown_to_html(markdown: str) -> str:
     browser = QTextEdit()
     browser.setMarkdown(markdown)

@@ -766,19 +766,19 @@ With some deck list formats, this option is always enabled.</translation>
   <context>
     <name>DefaultDocumentLayoutSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="481"/>
+      <location filename="../../ui/settings_window_pages.py" line="483"/>
       <source>Default document settings</source>
       <translation>Default document settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="481"/>
+      <location filename="../../ui/settings_window_pages.py" line="483"/>
       <source>Set the default document settings used for new documents,
 like page size, margins, spacings, etc.</source>
       <translation>Set the default document settings used for new documents,
 like page size, margins, spacings, etc.</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="489"/>
+      <location filename="../../ui/settings_window_pages.py" line="491"/>
       <source>Default settings for new documents</source>
       <translation>Default settings for new documents</translation>
     </message>
@@ -1189,22 +1189,12 @@ Similar to borderless cards, these require higher precision during the cutting p
       <translation>Tabbed layout</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="305"/>
+      <location filename="../../ui/settings_window_pages.py" line="306"/>
       <source>System default</source>
       <translation>System default</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="306"/>
-      <source>English (US)</source>
-      <translation>English (US)</translation>
-    </message>
-    <message>
-      <location filename="../../ui/settings_window_pages.py" line="307"/>
-      <source>German</source>
-      <translation>German</translation>
-    </message>
-    <message>
-      <location filename="../../ui/settings_window_pages.py" line="314"/>
+      <location filename="../../ui/settings_window_pages.py" line="316"/>
       <source>Select default save location</source>
       <translation>Select default save location</translation>
     </message>
@@ -1332,6 +1322,21 @@ Note: Cards in deck lists use the language as given by the deck list. To overwri
       <source>Card language selected at application start and default language when enabling deck list translations</source>
       <translation>Card language selected at application start and default language when enabling deck list translations</translation>
     </message>
+    <message>
+      <location filename="../../ui/settings_window_pages.py" line="307"/>
+      <source>English (US) [{progress}%]</source>
+      <translation>English (US) [{progress}%]</translation>
+    </message>
+    <message>
+      <location filename="../../ui/settings_window_pages.py" line="308"/>
+      <source>German [{progress}%]</source>
+      <translation>German [{progress}%]</translation>
+    </message>
+    <message>
+      <location filename="../../ui/settings_window_pages.py" line="309"/>
+      <source>French [{progress}%]</source>
+      <translation>French [{progress}%]</translation>
+    </message>
   </context>
   <context>
     <name>GroupedCentralWidget</name>
@@ -1354,12 +1359,12 @@ Note: Cards in deck lists use the language as given by the deck list. To overwri
   <context>
     <name>HidePrintingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="438"/>
+      <location filename="../../ui/settings_window_pages.py" line="440"/>
       <source>Hide printings</source>
       <translation>Hide printings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="438"/>
+      <location filename="../../ui/settings_window_pages.py" line="440"/>
       <source>Hide unwanted printings</source>
       <translation>Hide unwanted printings</translation>
     </message>
@@ -2171,17 +2176,17 @@ use this to reduce the initial deck shuffling required</translation>
   <context>
     <name>PDFSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="558"/>
+      <location filename="../../ui/settings_window_pages.py" line="560"/>
       <source>PDF export settings</source>
       <translation>PDF export settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="558"/>
+      <location filename="../../ui/settings_window_pages.py" line="560"/>
       <source>Configure the PDF export</source>
       <translation>Configure the PDF export</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="592"/>
+      <location filename="../../ui/settings_window_pages.py" line="594"/>
       <source>Select default PDF export location</source>
       <translation>Select default PDF export location</translation>
     </message>
@@ -2577,12 +2582,12 @@ Zoom out: {zoom_out_shortcuts}</translation>
   <context>
     <name>PrinterSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="507"/>
+      <location filename="../../ui/settings_window_pages.py" line="509"/>
       <source>Printer settings</source>
       <translation>Printer settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="507"/>
+      <location filename="../../ui/settings_window_pages.py" line="509"/>
       <source>Configure the printer</source>
       <translation>Configure the printer</translation>
     </message>
@@ -3219,7 +3224,7 @@ If unchecked, append the cards found below to the document.</translation>
   <context>
     <name>format_size</name>
     <message>
-      <location filename="../../ui/common.py" line="138"/>
+      <location filename="../../ui/common.py" line="151"/>
       <source>{size} {unit}</source>
       <comment>A formatted file size in SI bytes</comment>
       <translation>{size} {unit}</translation>
