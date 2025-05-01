@@ -27,6 +27,7 @@ from mtg_proxy_printer.units_and_sizes import CardSize, PageType, CardSizes, UUI
 ItemDataRole = Qt.ItemDataRole
 RenderHint = QPainter.RenderHint
 SmoothTransformation = Qt.TransformationMode.SmoothTransformation
+IgnoreAspectRatio = Qt.AspectRatioMode.IgnoreAspectRatio
 
 
 @dataclasses.dataclass(frozen=True)
@@ -173,7 +174,8 @@ class CustomCard:
         source = QPixmap()
         source.loadFromData(self.source_image_file)
         target_size = self.size.as_qsize_px()
-        return source if source.size() == target_size else source.scaled(target_size, SmoothTransformation)
+        return source if source.size() == target_size else source.scaled(
+            target_size, IgnoreAspectRatio, SmoothTransformation)
 
     @functools.cached_property
     def scryfall_id(self) -> UUID:

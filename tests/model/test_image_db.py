@@ -62,6 +62,7 @@ def test_delete_disk_cache_entries_removes_empty_parent_directories(qtbot: QtBot
     assert_that((image_db.db_path / keys[1].format_relative_path()).is_file(), is_(False))
     assert_that((image_db.db_path / keys[0].format_relative_path()).parent.is_dir(), is_(False))
 
+
 @pytest.mark.parametrize("size", [CardSizes.REGULAR, CardSizes.OVERSIZED])
 def test_get_blank(image_db: ImageDatabase, size: CardSize):
     image = image_db.get_blank(size)
