@@ -58,3 +58,4 @@ class PrettySetListModel(QAbstractListModel):
     def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Optional[str]:
         if index.isValid():
             return self.set_data[index.row()].data(role)
+        return None

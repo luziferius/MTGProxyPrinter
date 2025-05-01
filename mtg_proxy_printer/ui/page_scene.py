@@ -37,7 +37,9 @@ del get_logger
 
 PixelCache = typing.DefaultDict[PageType, typing.List[float]]
 ItemDataRole = Qt.ItemDataRole
-
+ColorGroup = QPalette.ColorGroup
+ColorRole = QPalette.ColorRole
+SortOrder = Qt.SortOrder
 
 @enum.unique
 class RenderLayers(enum.IntEnum):
@@ -312,17 +314,17 @@ class PageScene(QGraphicsScene):
     def get_background_color(self, render_mode: RenderMode) -> QColor:
         if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Transparent
-        return self.palette().color(QPalette.Active, QPalette.Base)
+        return self.palette().color(ColorGroup.Active, ColorRole.Base)
 
     def get_cut_marker_color(self, render_mode: RenderMode) -> QColor:
         if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Black
-        return self.palette().color(QPalette.Active, QPalette.WindowText)
+        return self.palette().color(ColorGroup.Active, ColorRole.WindowText)
 
     def get_text_color(self, render_mode: RenderMode) -> QColor:
         if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Black
-        return self.palette().color(QPalette.Active, QPalette.WindowText)
+        return self.palette().color(ColorGroup.Active, ColorRole.WindowText)
 
     def setPalette(self, palette: QPalette) -> None:
         logger.info("Color palette changed, updating PageScene background and cut line colors.")
@@ -345,15 +347,15 @@ class PageScene(QGraphicsScene):
 
     @property
     def card_items(self) -> typing.List[CardItem]:
-        return list(filter(is_card_item, self.items(Qt.AscendingOrder)))
+        return list(filter(is_card_item, self.items(SortOrder.AscendingOrder)))
 
     @property
     def cut_lines(self) -> typing.List[QGraphicsLineItem]:
-        return list(filter(is_cut_line_item, self.items(Qt.AscendingOrder)))
+        return list(filter(is_cut_line_item, self.items(SortOrder.AscendingOrder)))
 
     @property
     def text_items(self) -> typing.List[QGraphicsSimpleTextItem]:
-        return list(filter(is_text_item, self.items(Qt.AscendingOrder)))
+        return list(filter(is_text_item, self.items(SortOrder.AscendingOrder)))
 
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
@@ -606,9 +608,9 @@ class PageScene(QGraphicsScene):
         left_margin = self._distance_to_rounded_px(page_layout.margin_left)
         top_margin = self._distance_to_rounded_px(page_layout.margin_top)
 
-        card_size = CardSizes.for_page_type(page_type)
-        image_height: int = card_size.height.magnitude
-        image_width: int = card_size.width.magnitude
+        card_size = CardSizes.for_page_type(page_type).as_qsize_px()
+        image_height: int = card_size.height()
+        image_width: int = card_size.width()
 
         column_spacing = self._distance_to_rounded_px(page_layout.column_spacing)
         row_spacing = self._distance_to_rounded_px(page_layout.row_spacing)

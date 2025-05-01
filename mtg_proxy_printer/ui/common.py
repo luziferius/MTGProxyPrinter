@@ -18,8 +18,8 @@ from pathlib import Path
 import platform
 from typing import Union, Dict
 
-from PyQt5.QtCore import QFile, QUrl, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
-from PyQt5.QtWidgets import QLabel, QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit
+from PyQt5.QtCore import QFile, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
+from PyQt5.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit
 from PyQt5.QtGui import QIcon, QPixmap
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
@@ -36,6 +36,8 @@ __all__ = [
     "highlight_widget",
     "BlockedSignals",
     "load_ui_from_file",
+    "load_file",
+    "markdown_to_html",
     "format_size",
     "WizardBase",
     "get_card_image_tooltip",
@@ -131,7 +133,7 @@ def load_icon(name: str) -> QIcon:
 
 def load_file(path: str, parent = None) -> bytes:
     file_path = f"{RESOURCE_PATH_PREFIX}/{path}"
-    file = QFile(file_path)
+    file = QFile(file_path, parent)
     data = b''
     if file.open(QIODevice.OpenModeFlag.ReadOnly):
         try:

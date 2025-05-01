@@ -164,6 +164,7 @@ class ParserBase(QObject):
                 f"Matching using language and card name. Found {len(possible_matches)} matches."
             )
             return self._determine_best_match(possible_matches)
+        return None
 
     def _determine_best_match(self, possible_matches: typing.List[Card]) -> Card:
         if self.print_guessing_prefer_already_downloaded and \

@@ -29,6 +29,9 @@ import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT
 
+StandardLocation = QStandardPaths.StandardLocation
+LocateOption = QStandardPaths.LocateOption
+
 __all__ = [
     "settings",
     "DEFAULT_SETTINGS",
@@ -115,8 +118,8 @@ DEFAULT_SETTINGS["documents"] = {
     "default-document-name": "",
 }
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
-    "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
-    "deck-list-search-path": QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
+    "document-save-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
+    "deck-list-search-path": QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory),
 }
 DEFAULT_SETTINGS["gui"] = {
     "central-widget-layout": "columnar",
@@ -152,7 +155,7 @@ DEFAULT_SETTINGS["printer"] = {
     "horizontal-offset": "0 mm",
 }
 DEFAULT_SETTINGS["pdf-export"] = {
-    "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
+    "pdf-export-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
     "pdf-page-count-limit": "0",
     "landscape-compatibility-workaround": "False",
 }

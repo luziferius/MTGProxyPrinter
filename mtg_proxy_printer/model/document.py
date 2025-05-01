@@ -289,6 +289,7 @@ class Document(QAbstractItemModel):
             return item
         elif role == ItemDataRole.UserRole:
             return item.page_type()
+        return None
 
     def _data_card(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a single Card."""
@@ -316,6 +317,7 @@ class Document(QAbstractItemModel):
             elif column == PageColumns.IsFront:
                 return card.is_front if role == ItemDataRole.EditRole else (
                     self.tr("Front") if card.is_front else self.tr("Back"))
+        return None
 
     def _get_page_preview(self, page: Page):
         names = collections.Counter(container.card.name for container in page)

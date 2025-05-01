@@ -86,7 +86,7 @@ class Application(QApplication):
             self.language_model, self.document, self.main_window, self.card_info_downloader)
         self.main_window.show()
 
-    def enqueue_startup_tasks(self, args: Namespace):
+    def enqueue_startup_tasks(self, _: Namespace):
         """
         Enqueues all tasks that should run in the Qt event loop at application start.
         Includes
@@ -261,7 +261,7 @@ class Application(QApplication):
         else:
             logger.debug(f"Using system-provided icon theme '{fallback_icon_theme}'")
 
-        self.setAttribute(Qt.AA_UseHighDpiPixmaps)
+        self.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
 
     @Slot()
     def quit(self):

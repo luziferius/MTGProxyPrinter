@@ -14,21 +14,18 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import functools
-import hashlib
 import sqlite3
 from pathlib import Path
 import typing
-
-from PyQt5.QtCore import QBuffer, QIODevice
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 
 from ._interface import DocumentAction, Self
 from mtg_proxy_printer.sqlite_helpers import open_database, cached_dedent
-from mtg_proxy_printer.units_and_sizes import CardSizes, UUID
+from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from ..model.card import AnyCardType, CustomCard
+from mtg_proxy_printer.model.card import AnyCardType
 from mtg_proxy_printer.model.document_loader import CardType
 from mtg_proxy_printer.save_file_migrations import migrate_database
 

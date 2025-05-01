@@ -238,6 +238,7 @@ class MeteredSeekableHTTPFile(QObject):
         if last_error is not None:
             logger.exception(last_error)
             raise last_error
+        return None
 
     def close(self):
         self.closed = True

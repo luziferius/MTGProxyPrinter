@@ -29,7 +29,7 @@ from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.ui.common import get_card_image_tooltip
 from mtg_proxy_printer.decklist_parser.common import CardCounter
 from mtg_proxy_printer.model.carddb import CardIdentificationData
-from mtg_proxy_printer.model.card import Card, AnyCardType, CustomCard
+from mtg_proxy_printer.model.card import AnyCardType
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)

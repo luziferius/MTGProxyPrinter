@@ -20,13 +20,10 @@ import itertools
 import pathlib
 import sqlite3
 import textwrap
-from pathlib import Path
-from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, Tuple, TYPE_CHECKING, TypeVar, Union, Literal
-from unittest.mock import patch
+from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, Tuple, TYPE_CHECKING, TypeVar
 
 import pint
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, Qt
-from PyQt5.QtGui import QPixmap
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, is_, any_of, none, has_item, has_property, equal_to
 
@@ -38,8 +35,8 @@ except ImportError:
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
-from mtg_proxy_printer.model.carddb import CardIdentificationData, SCHEMA_NAME, CardDatabase
-from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, CardList, AnyCardType, CustomCard
+from mtg_proxy_printer.model.carddb import CardIdentificationData, CardDatabase
+from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType, CustomCard
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger

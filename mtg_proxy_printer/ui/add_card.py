@@ -50,6 +50,7 @@ __all__ = [
 UiTypes = Union[Type[Ui_VerticalAddCardWidget], Type[Ui_HorizontalAddCardWidget]]
 StandardButton = QDialogButtonBox.StandardButton
 ItemDataRole = Qt.ItemDataRole
+SelectionFlag = QItemSelectionModel.SelectionFlag
 
 
 class AddCardWidget(QWidget):
@@ -136,7 +137,7 @@ class AddCardWidget(QWidget):
             self.set_name_model.set_set_data(sets)
             self.ui.set_name_filter.clear()
             self.ui.set_name_list.selectionModel().select(
-                self.set_name_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect)
+                self.set_name_model.createIndex(0, 0), SelectionFlag.ClearAndSelect)
 
     @Slot(QItemSelection)
     def set_name_list_selection_changed(self, current: QItemSelection):
@@ -156,7 +157,7 @@ class AddCardWidget(QWidget):
                 f'Selected: "{mtg_set.code}", language: {self.current_language}, matching {len(collector_numbers)} prints')
             self.collector_number_model.setStringList(collector_numbers)
             self.ui.collector_number_list.selectionModel().select(
-                self.collector_number_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect)
+                self.collector_number_model.createIndex(0, 0), SelectionFlag.ClearAndSelect)
 
     @Slot(QItemSelection)
     def collector_number_list_selection_changed(self, current: QItemSelection):
@@ -172,7 +173,7 @@ class AddCardWidget(QWidget):
         if selected_card_name in card_names:
             self.ui.card_name_list.selectionModel().select(
                 self.card_name_model.createIndex(card_names.index(selected_card_name), 0),
-                QItemSelectionModel.ClearAndSelect
+                SelectionFlag.ClearAndSelect
             )
         else:
             self.set_name_model.set_set_data([])
