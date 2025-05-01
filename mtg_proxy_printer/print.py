@@ -31,6 +31,8 @@ import mtg_proxy_printer.units_and_sizes
 logger = get_logger(__name__)
 del get_logger
 
+RenderHint = QPainter.RenderHint
+
 __all__ = [
     "export_pdf",
     "create_printer",
@@ -128,7 +130,7 @@ class PDFPrinter(QPdfWriter):
             scaling = self.scene.width()/self.scene.height()
             self.painter.rotate(90)
             self.painter.translate(0, -self.scene.height())
-        self.painter.setRenderHint(QPainter.RenderHint.LosslessImageRendering)  # Prevent avoidable image degradation
+        self.painter.setRenderHint(RenderHint.LosslessImageRendering)  # Prevent avoidable image degradation
         self.painter.scale(
                 scaling*self.logicalDpiX()/self.resolution(),
                 scaling*self.logicalDpiY()/self.resolution(),
@@ -149,7 +151,6 @@ class PDFPrinter(QPdfWriter):
         """Render the given page on the internal scene"""
         index = QPersistentModelIndex(self.document.index(page_number, 0))
         self.scene.on_current_page_changed(index)
-
 
 
 class Renderer(QObject):
@@ -173,7 +174,7 @@ class Renderer(QObject):
             painter.translate(0, -self.scene.height())
             scaling = self.scene.width()/self.scene.height()
             painter.scale(scaling, scaling)
-        painter.setRenderHint(QPainter.RenderHint.LosslessImageRendering)
+        painter.setRenderHint(RenderHint.LosslessImageRendering)
         page_count = self.document.rowCount()
         for index in range(page_count):
             logger.debug(f"Printing page {index+1}/{page_count}")
