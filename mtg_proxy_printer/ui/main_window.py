@@ -18,8 +18,8 @@ import pathlib
 import typing
 
 
-from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl, Qt, QSize
-from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, QDragEnterEvent, QDropEvent, QPixmap
+from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl, Qt
+from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, QDialog
 from PySide6.QtPrintSupport import QPrintDialog
 
@@ -524,18 +524,3 @@ class MainWindow(QMainWindow):
             if acceptable:
                 return path
         return None
-
-    @staticmethod
-    def _to_pixmaps(event: typing.Union[QDragEnterEvent, QDropEvent]) -> typing.List[QPixmap]:
-        result: typing.List[QPixmap] = []
-        mime_data = event.mimeData()
-        regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
-        width, height = regular.width.magnitude, regular.height.magnitude
-        for url in mime_data.urls():
-            pixmap = QPixmap(url.toLocalFile())
-            if not pixmap.isNull():
-                if pixmap.width() != width or pixmap.height() != height:
-                    new_size = QSize(width, height)
-                    pixmap = pixmap.scaled(new_size, mode=TransformationMode.SmoothTransformation)
-                result.append(pixmap)
-        return result

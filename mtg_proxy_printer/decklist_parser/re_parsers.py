@@ -178,7 +178,7 @@ class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
         return {
             QCoreApplication.translate(
                 "MagicWorkstationDeckDataFormatParser", "Magic Workstation Deck Data Format"): ["mwDeck"],
-            }
+        }
 
     PREFIXES_TO_SKIP = frozenset({"//"})
 
