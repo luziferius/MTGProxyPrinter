@@ -13,6 +13,9 @@
     requires the use of drag & drop.
   - It is now possible to save custom cards and empty slots in the apps save file format.
     Custom cards are no longer lost when saving.
+- Add (a partial) French translation, which will be used automatically on French systems. 
+  Can be reverted to English by explicitly setting the application language to that.
+  - Translations now display their completion in the settings
 
 ## Changed features
 
