@@ -19,7 +19,8 @@ import typing
 
 from PySide6.QtCore import Qt
 
-from mtg_proxy_printer.model.carddb import Card
+from ..model.card import Card
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document_page import CardContainer
     from mtg_proxy_printer.model.document import Document

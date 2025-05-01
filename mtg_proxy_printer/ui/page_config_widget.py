@@ -46,7 +46,6 @@ class PageConfigWidget(QGroupBox):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigWidget()
         ui.setupUi(self)
-        self.hide_preview_button = ui.show_preview_button.hide
         self.page_layout = self._setup_page_layout(ui)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -175,7 +174,7 @@ class PageConfigWidget(QGroupBox):
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
                 if isinstance(widget, QDoubleSpinBox):
                     widget.setValue(value.to("mm").magnitude)
-                    value: QuantityT = widget.value()*unit_registry.mm
+                    value = widget.value()*unit_registry.mm
                 elif isinstance(widget, QLineEdit):
                     widget.setText(value)
                 else:

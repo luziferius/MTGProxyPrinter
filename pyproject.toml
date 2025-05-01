@@ -9,7 +9,13 @@ requires-python = ">= 3.8, != 3.11.1, < 4"
 authors = [
     {name = "Thomas Hess", email = "thomas.hess@udo.edu"},
 ]
+keywords = ["MTG", "Magic The Gathering", "Printing", "Proxies"]
 license = {text = "GNU GPLv3+, see LICENSE.md or https://www.gnu.org/licenses/gpl-3.0.html for details"}
+# PEP 639 license specification below. Should be activated at some point,
+# as the current license raises DeprecationWarning
+# Still incompatible with pip-tools 7, so not
+# license = "GPL-3.0-or-later"
+# license-files = ["LICENSE.md", "doc/ThirdPartyLicenses.md"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
@@ -23,6 +29,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Games/Entertainment :: Board Games",
     "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
@@ -68,16 +75,18 @@ package = [
 
 [project.urls]
 Homepage = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/index"
-"Bug tracker" = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/ticket"
+Issues = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/ticket"
 Changelog = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/doc/trunk/doc/changelog.md"
 Translations = "https://crowdin.com/project/mtgproxyprinter"
+Repository = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/timeline"
+Github = "https://github.com/luziferius/MTGProxyPrinter/"
 
 
 [project.gui-scripts]
 mtg-proxy-printer = "mtg_proxy_printer.__main__:main"
 
 [tool.pytest.ini_options]
-timeout = 10
+# timeout = 10
 
 [tool.setuptools]
 exclude-package-data = {"mtg_proxy_printer" = ["resources", "resources.*"]}
@@ -100,10 +109,11 @@ version = {attr= "mtg_proxy_printer.meta_data.__version__"}
 
 [build-system]
 requires = [
-    "setuptools >=61",
-    "wheel",
+    "setuptools >= 61",
+    "wheel >= 0.45",
     "PySide6_Essentials >= 6.7.0",
     "build",
     "tox >= 4.0",
+    "pip-tools >= 7.4"
 ]
 build-backend = "setuptools.build_meta"

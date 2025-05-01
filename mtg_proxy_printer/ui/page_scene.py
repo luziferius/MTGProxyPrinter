@@ -25,8 +25,9 @@ from PySide6.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFont
 from PySide6.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene, QGraphicsPolygonItem
 
-from mtg_proxy_printer.model.carddb import Card, CardCorner
-from mtg_proxy_printer.model.document import Document, PageColumns
+from mtg_proxy_printer.model.card import CardCorner, Card
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, RESOLUTION, CardSizes, CardSize, QuantityT
@@ -36,7 +37,9 @@ del get_logger
 
 PixelCache = typing.DefaultDict[PageType, typing.List[float]]
 ItemDataRole = Qt.ItemDataRole
-
+ColorGroup = QPalette.ColorGroup
+ColorRole = QPalette.ColorRole
+SortOrder = Qt.SortOrder
 
 @enum.unique
 class RenderLayers(enum.IntEnum):
@@ -206,7 +209,7 @@ class CardItem(QGraphicsItemGroup):
         document.page_layout_changed.connect(self.on_page_layout_changed)
         self.card = card
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
-        self.card_pixmap_item.setTransformationMode(Qt.SmoothTransformation)
+        self.card_pixmap_item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
         self.bleeds = CardBleeds.from_card(card)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
@@ -285,7 +288,7 @@ class PageScene(QGraphicsScene):
         self.document.page_type_changed.connect(self.on_page_type_changed)
         self.document.page_layout_changed.connect(self.on_page_layout_changed)
         self.selected_page = self.document.get_current_page_index()
-        self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.SolidPattern))
+        self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.BrushStyle.SolidPattern))
         background_color = self.get_background_color(render_mode)
         logger.debug(f"Drawing background rectangle")
         self.background = self.addRect(0, 0, self.width(), self.height(), background_color, background_color)
@@ -311,17 +314,17 @@ class PageScene(QGraphicsScene):
     def get_background_color(self, render_mode: RenderMode) -> QColor:
         if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Transparent
-        return self.palette().color(QPalette.Active, QPalette.Base)
+        return self.palette().color(ColorGroup.Active, ColorRole.Base)
 
     def get_cut_marker_color(self, render_mode: RenderMode) -> QColor:
         if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Black
-        return self.palette().color(QPalette.Active, QPalette.WindowText)
+        return self.palette().color(ColorGroup.Active, ColorRole.WindowText)
 
     def get_text_color(self, render_mode: RenderMode) -> QColor:
         if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Black
-        return self.palette().color(QPalette.Active, QPalette.WindowText)
+        return self.palette().color(ColorGroup.Active, ColorRole.WindowText)
 
     def setPalette(self, palette: QPalette) -> None:
         logger.info("Color palette changed, updating PageScene background and cut line colors.")
@@ -344,15 +347,15 @@ class PageScene(QGraphicsScene):
 
     @property
     def card_items(self) -> typing.List[CardItem]:
-        return list(filter(is_card_item, self.items(Qt.AscendingOrder)))
+        return list(filter(is_card_item, self.items(SortOrder.AscendingOrder)))
 
     @property
     def cut_lines(self) -> typing.List[QGraphicsLineItem]:
-        return list(filter(is_cut_line_item, self.items(Qt.AscendingOrder)))
+        return list(filter(is_cut_line_item, self.items(SortOrder.AscendingOrder)))
 
     @property
     def text_items(self) -> typing.List[QGraphicsSimpleTextItem]:
-        return list(filter(is_text_item, self.items(Qt.AscendingOrder)))
+        return list(filter(is_text_item, self.items(SortOrder.AscendingOrder)))
 
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
@@ -537,7 +540,13 @@ class PageScene(QGraphicsScene):
                 self.draw_cut_markers()
 
     def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[ItemDataRole]):
-        if top_left.parent().row() == self.selected_page.row() and ItemDataRole.DisplayRole in roles:
+        if (top_left.parent().row() == self.selected_page.row()
+                and ItemDataRole.DisplayRole in roles
+                # Multiple columns changed means card replaced.
+                # Editing custom cards only changes single columns.
+                # Thes cases can be ignored, as the pixmap never changes
+                and top_left.column() < bottom_right.column()
+        ):
             page_type: PageType = top_left.parent().data(ItemDataRole.UserRole)
             card_items = self.card_items
             for row in range(top_left.row(), bottom_right.row()+1):
@@ -599,9 +608,9 @@ class PageScene(QGraphicsScene):
         left_margin = self._distance_to_rounded_px(page_layout.margin_left)
         top_margin = self._distance_to_rounded_px(page_layout.margin_top)
 
-        card_size = CardSizes.for_page_type(page_type)
-        image_height: int = card_size.height.magnitude
-        image_width: int = card_size.width.magnitude
+        card_size = CardSizes.for_page_type(page_type).as_qsize_px()
+        image_height: int = card_size.height()
+        image_width: int = card_size.width()
 
         column_spacing = self._distance_to_rounded_px(page_layout.column_spacing)
         row_spacing = self._distance_to_rounded_px(page_layout.row_spacing)

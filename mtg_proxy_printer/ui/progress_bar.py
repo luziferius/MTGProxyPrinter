@@ -34,7 +34,7 @@ __all__ = [
 
 class ProgressBar(QWidget):
 
-    def __init__(self, parent: QWidget = None, flags=Qt.WindowType()):
+    def __init__(self, parent: QWidget = None, flags=Qt.WindowType.Widget):
         super().__init__(parent, flags)
         self.ui = ui = Ui_ProgressBar()
         ui.setupUi(self)

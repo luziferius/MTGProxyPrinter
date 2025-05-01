@@ -128,7 +128,7 @@ class PDFPrinter(QPdfWriter):
             scaling = self.scene.width()/self.scene.height()
             self.painter.rotate(90)
             self.painter.translate(0, -self.scene.height())
-        self.painter.setRenderHint(QPainter.LosslessImageRendering)  # Prevent avoidable image degradation
+        self.painter.setRenderHint(QPainter.RenderHint.LosslessImageRendering)  # Prevent avoidable image degradation
         self.painter.scale(
                 scaling*self.logicalDpiX()/self.resolution(),
                 scaling*self.logicalDpiY()/self.resolution(),
@@ -173,7 +173,7 @@ class Renderer(QObject):
             painter.translate(0, -self.scene.height())
             scaling = self.scene.width()/self.scene.height()
             painter.scale(scaling, scaling)
-        painter.setRenderHint(QPainter.LosslessImageRendering)
+        painter.setRenderHint(QPainter.RenderHint.LosslessImageRendering)
         page_count = self.document.rowCount()
         for index in range(page_count):
             logger.debug(f"Printing page {index+1}/{page_count}")

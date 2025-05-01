@@ -16,6 +16,7 @@
 import dataclasses
 import math
 import typing
+from typing import Generator, Tuple
 
 import pint
 from PySide6.QtGui import QPageLayout, QPageSize
@@ -100,12 +101,12 @@ class PageLayoutSettings:
         return layout
 
     def to_save_file_data(self):
-        # TODO: With Document save file version 7, directly store values as-is
-        return (
-            # For now, don't store Quantities as strings in the database
-            (key, (value.to(unit_registry.mm).magnitude if isinstance(value, pint.Quantity) else value))
-            for key, value in dataclasses.asdict(self).items()
-        )
+        values = dataclasses.asdict(self)
+        settings = (
+            (key, str(value)) for key, value in values.items() if not isinstance(value, pint.Quantity))
+        dimensions: Generator[Tuple[str, QuantityT], None, None] = (
+            (key, value) for key, value in values.items() if isinstance(value, pint.Quantity))
+        return settings, dimensions
 
     def __lt__(self, other):
         if not isinstance(other, self.__class__):
@@ -137,7 +138,7 @@ class PageLayoutSettings:
         card_width: QuantityT = card_size.width.to("mm", "print")
         available_width: QuantityT = self.page_width - (self.margin_left + self.margin_right)
 
-        if available_width < card_width:
+        if available_width <= card_width:
             return 0
         cards = 1 + math.floor(
             (available_width - card_width) /
@@ -150,7 +151,7 @@ class PageLayoutSettings:
         card_height: QuantityT = card_size.height.to("mm", "print")
         available_height: QuantityT = self.page_height - (self.margin_top + self.margin_bottom)
 
-        if available_height < card_height:
+        if available_height <= card_height:
             return 0
         cards = 1 + math.floor(
             (available_height - card_height) /

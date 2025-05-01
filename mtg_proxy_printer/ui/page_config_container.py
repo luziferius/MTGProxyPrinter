@@ -42,8 +42,6 @@ class PageConfigContainer(QWidget):
         preview_area = ui.page_config_preview_area
         config_widget = ui.page_config_widget
 
-        self.hide_preview_button = config_widget.hide_preview_button
-
         page_layout_changed = config_widget.page_layout_changed
         page_layout_changed.connect(partial(setattr, preview_area.document, "page_layout"))
         page_layout_changed.connect(preview_area.document.page_layout_changed)

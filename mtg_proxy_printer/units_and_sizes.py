@@ -18,6 +18,7 @@
 import configparser
 import enum
 import re
+import sqlite3
 import typing
 try:
     from typing import NotRequired
@@ -89,6 +90,9 @@ class CardSize(typing.NamedTuple):
     def as_qsize_px(self):
         return QSize(round(self.width.magnitude), round(self.height.magnitude))
 
+    def to_save_data(self):
+        return f"{self.width.magnitude:.0f}x{self.height.magnitude:.0f}"
+
 
 @enum.unique
 class CardSizes(CardSize, enum.Enum):
@@ -103,6 +107,9 @@ class CardSizes(CardSize, enum.Enum):
     def from_bool(cls, value: bool) -> CardSize:
         return cls.OVERSIZED if value else cls.REGULAR
 
+
+sqlite3.register_adapter(CardSize, lambda item: item.to_save_data())
+sqlite3.register_adapter(CardSizes, lambda item: item.to_save_data())
 
 @enum.unique
 class PageType(enum.Enum):

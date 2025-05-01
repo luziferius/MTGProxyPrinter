@@ -18,7 +18,7 @@
 import sqlite3
 import typing
 
-from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock, CardDatabase
+from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
@@ -55,8 +55,7 @@ class PrintCountUpdater(Runnable):
         # in the thread that actually uses it.
         if self._db is None:
             logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
-            self._db = open_database(
-                self.db_path, SCHEMA_NAME, CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+            self._db = open_database(self.db_path, SCHEMA_NAME)
         return self._db
 
     def run(self):

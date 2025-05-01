@@ -39,7 +39,7 @@ If unchecked, append the cards found below to the document.</string>
     </widget>
    </item>
    <item>
-    <widget class="QTableView" name="parsed_cards_table">
+    <widget class="CardListTableView" name="parsed_cards_table">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
@@ -91,6 +91,13 @@ If unchecked, append the cards found below to the document.</string>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CardListTableView</class>
+   <extends>QTableView</extends>
+   <header>mtg_proxy_printer.ui.card_list_table_view</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

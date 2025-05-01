@@ -21,7 +21,8 @@ import typing
 from PySide6.QtCore import QObject, QCoreApplication
 
 from mtg_proxy_printer.decklist_parser.common import ParsedDeck, ParserBase
-from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.card import Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -184,7 +185,7 @@ class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super().__init__(
             card_db, image_db,
-            re.compile(r"(SB: {2})?(?P<copies>\d+) \[(?P<set_code>\w+)?] (?P<name>.+)"), parent
+            re.compile(r"(SB: {1,2})?(?P<copies>\d+) \[(?P<set_code>\w+)?] (?P<name>.+)"), parent
         )
 
 

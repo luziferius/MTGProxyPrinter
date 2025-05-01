@@ -2,6 +2,21 @@
 
 # Next version (in development)
 
+## New features
+
+- Improved custom card support
+  - Adding custom cards via drag & drop now opens a dialog to customize the import
+    - Allows setting the number of copies to add for each card. Vastly improves the workflow when you want
+      to print multiple copies. 
+    - Shown card name is now derived from the file name, instead of defaulting to "Custom Card"
+  - The import dialog can also be accessed from the File menu. Access to printing custom cards no longer
+    requires the use of drag & drop.
+  - It is now possible to save custom cards and empty slots in the apps save file format.
+    Custom cards are no longer lost when saving.
+- Add (a partial) French translation, which will be used automatically on French systems. 
+  Can be reverted to English by explicitly setting the application language to that.
+  - Translations now display their completion in the settings
+
 ## Changed features
 
 - The card table in the deck import wizard now has an editable Copies column to state the number of copies per card,
@@ -9,6 +24,8 @@
 - When splitting exported PDFs, zero-pad the sequence numbers appended to the file name 
   so that all have the same length. This gives a more consistent sorting of output files.
   - This avoids having output files sorted like "1.pdf", "11.pdf", "12.pdf", …, "2.pdf", "21.pdf", …
+- The page content table no longer uses a fancy multi selection behavior, as it interfered with editing entries.
+  The new behavior is in line with how other applications allow selections in tables.
 
 # Version 0.30.1 (2025-03-11)  <a name="v0_30_1"></a>
 

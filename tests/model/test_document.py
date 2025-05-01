@@ -28,8 +28,9 @@ import pytest
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, CardSizes, CardSize
-from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document import Document, PageColumns
+from mtg_proxy_printer.model.card import MTGSet, Card
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 from mtg_proxy_printer.document_controller import DocumentAction
@@ -39,7 +40,7 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
 from tests.document_controller.helpers import append_new_card_in_page
-from .document_controller.helpers import insert_card_in_page, create_card
+from ..document_controller.helpers import insert_card_in_page, create_card
 
 ItemDataRole = Qt.ItemDataRole
 mm: UnitT = unit_registry.mm
@@ -355,15 +356,14 @@ def document_custom_layout(document: Document) -> Document:
     return document
 
 
-def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custom_layout: Document):
-    default_layout = PageLayoutSettings.create_from_settings()
+def test_document_reset_clears_modified_page_layout(qtbot: QtBot, page_layout: PageLayoutSettings, document_custom_layout: Document):
     assert_that(
         document_custom_layout,
-        has_property("page_layout", not_(equal_to(default_layout)))
+        has_property("page_layout", not_(equal_to(page_layout)))
     )
     assert_that(
         document_custom_layout.page_layout.compute_page_row_count(),
-        is_not(equal_to(default_layout.compute_page_card_capacity())),
+        is_not(equal_to(page_layout.compute_page_card_capacity())),
         "Test setup failed."
     )
     with qtbot.waitSignal(document_custom_layout.page_layout_changed, timeout=1000):
@@ -371,7 +371,7 @@ def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custo
 
     assert_that(
         document_custom_layout,
-        has_property("page_layout", equal_to(default_layout))
+        has_property("page_layout", equal_to(page_layout))
     )
 
 

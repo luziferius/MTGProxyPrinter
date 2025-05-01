@@ -25,9 +25,12 @@ import typing
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
     QPersistentModelIndex
 
-from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
-from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
-from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData, Card, MTGSet
+from mtg_proxy_printer.natsort import to_list_of_ranges
+from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCustomCard
+from mtg_proxy_printer.model.document_page import CardContainer, Page, PageColumns
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -47,21 +50,11 @@ else:
 
 __all__ = [
     "Document",
-    "PageColumns",
 ]
 
 
 class DocumentColumns(enum.IntEnum):
     Page = 0
-
-
-class PageColumns(enum.IntEnum):
-    CardName = 0
-    Set = enum.auto()
-    CollectorNumber = enum.auto()
-    Language = enum.auto()
-    IsFront = enum.auto()
-    Image = enum.auto()
 
 
 INVALID_INDEX = QModelIndex()
@@ -111,7 +104,7 @@ class Document(QAbstractItemModel):
         self.loader = DocumentLoader(self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.loader.load_requested.connect(self.apply)
-        self.pages: PageList = [first_page := Page()]
+        self.pages: typing.List[Page] = [first_page := Page()]
         # Mapping from page id() to list index in the page list
         self.page_index_cache: typing.Dict[int, int] = {id(first_page): 0}
         self.currently_edited_page = first_page
@@ -229,29 +222,32 @@ class Document(QAbstractItemModel):
         else:  # Page
             return self._data_page(index, role)
 
-    def flags(self, index: AnyIndex) -> Qt.ItemFlags:
+    def flags(self, index: AnyIndex) -> Qt.ItemFlag:
         index = self._to_index(index)
         data = index.internalPointer()
         flags = super().flags(index)
-        if isinstance(data, CardContainer) and index.column() in self.EDITABLE_COLUMNS:
+        if isinstance(data, CardContainer) and (index.column() in self.EDITABLE_COLUMNS or data.card.is_custom_card):
             flags |= ItemFlag.ItemIsEditable
         return flags
 
     def setData(self, index: AnyIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
         index = self._to_index(index)
-        data = index.internalPointer()
+        data: CardContainer = index.internalPointer()
+        if not isinstance(data, CardContainer) or role != ItemDataRole.EditRole:
+            return False
         column = index.column()
-        if isinstance(data, CardContainer) \
-                and role == ItemDataRole.EditRole \
-                and column in self.EDITABLE_COLUMNS:
-            logger.debug(f"Setting model data for {column=} to {value}")
-            card = data.card
+        card = data.card
+        if card.is_custom_card:
+            self.apply(ActionEditCustomCard(index, value))
+            return True
+        elif column in self.EDITABLE_COLUMNS:
+            logger.debug(f"Setting page data on official card for {column=} to {value}")
             if column == PageColumns.CollectorNumber:
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
             elif column == PageColumns.Set:
                 card_data = CardIdentificationData(
-                    card.language, card.name, value, is_front=card.is_front
+                    card.language, card.name, value.code, is_front=card.is_front
                 )
             else:
                 replacement = self.card_db.translate_card(card, value)
@@ -293,6 +289,7 @@ class Document(QAbstractItemModel):
             return item
         elif role == ItemDataRole.UserRole:
             return item.page_type()
+        return None
 
     def _data_card(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a single Card."""
@@ -320,6 +317,7 @@ class Document(QAbstractItemModel):
             elif column == PageColumns.IsFront:
                 return card.is_front if role == ItemDataRole.EditRole else (
                     self.tr("Front") if card.is_front else self.tr("Back"))
+        return None
 
     def _get_page_preview(self, page: Page):
         names = collections.Counter(container.card.name for container in page)
@@ -376,6 +374,9 @@ class Document(QAbstractItemModel):
 
     def get_empty_card_for_current_page(self) -> Card:
         size = CardSizes.for_page_type(self.currently_edited_page.page_type())
+        return self.get_empty_card_for_size(size)
+
+    def get_empty_card_for_size(self, size: CardSize) -> Card:
         pixmap = self.image_db.get_blank(size)
         card = Card(
             self.tr("Empty Placeholder"), MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, pixmap
@@ -426,3 +427,18 @@ class Document(QAbstractItemModel):
         self.page_index_cache.update(
             (id(page), index) for index, page in enumerate(self.pages)
         )
+
+    def find_relevant_index_ranges(self, to_find: AnyCardType, column: PageColumns):
+        """Finds all indices relevant for the given card."""
+        # TODO: This runs in O(n)
+        for page_row, page in enumerate(self.pages):
+            instance_rows = to_list_of_ranges(
+                # Use is to find exact same instances
+                (row for row, container in enumerate(page) if container.card is to_find)
+            )
+            if instance_rows:
+                parent = self.index(page_row, 0)
+                if column == PageColumns.CardName:
+                    yield parent, parent
+                for lower, upper in instance_rows:
+                    yield self.index(lower, column, parent), self.index(upper, column, parent)

@@ -24,7 +24,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.app_dirs
-from mtg_proxy_printer.model.carddb import Card, CardDatabase
+from mtg_proxy_printer.model.carddb import CardDatabase
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.print

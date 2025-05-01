@@ -23,7 +23,8 @@ from hamcrest import *
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
-from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
+from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.model.imagedb_files import ImageKey
 
 from tests.hasgetter import has_getter
 

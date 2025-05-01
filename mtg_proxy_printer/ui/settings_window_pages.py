@@ -13,7 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+import json
 import logging
 from functools import partial
 import pathlib
@@ -28,7 +28,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.ui.common import highlight_widget
+from mtg_proxy_printer.ui.common import highlight_widget, load_file
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, QuantityT
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
@@ -300,10 +300,12 @@ class GeneralSettingsPage(Page):
         ui.add_card_widget_style_combo_box.addItem(self.tr("Horizontal layout"), "horizontal")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Columnar layout"), "columnar")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Tabbed layout"), "tabbed")
+        progress: typing.Dict[str, int] = json.loads(load_file("translations/progress.json", self))
         for display_text, language_code in [
             (self.tr("System default"), ""),
-            (self.tr("English (US)"), "en_US"),
-            (self.tr("German"), "de"),
+            (self.tr("English (US) [{progress}%]").format(progress=progress["en_US"]), "en_US"),
+            (self.tr("German [{progress}%]").format(progress=progress["de"]), "de"),
+            (self.tr("French [{progress}%]").format(progress=progress["fr"]), "fr"),
         ]:
             ui.application_language_combo_box.addItem(display_text, language_code)
 
@@ -505,7 +507,7 @@ class PrinterSettingsPage(Page):
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(self.tr("Printer settings"), "document-print", self.tr("Configure the printer"))
 
-    def __init__(self, parent=None, flags=Qt.WindowFlags()):
+    def __init__(self, parent=None, flags=Qt.WindowType.Widget):
         super().__init__(parent, flags)
         self.ui = ui = Ui_PrinterSettingsPage()
         ui.setupUi(self)
@@ -556,7 +558,7 @@ class PDFSettingsPage(Page):
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(self.tr("PDF export settings"), "viewpdf", self.tr("Configure the PDF export"))
 
-    def __init__(self, parent=None, flags=Qt.WindowFlags()):
+    def __init__(self, parent=None, flags=Qt.WindowType.Widget):
         super().__init__(parent, flags)
         self.ui = ui = Ui_PDFSettingsPage()
         ui.setupUi(self)

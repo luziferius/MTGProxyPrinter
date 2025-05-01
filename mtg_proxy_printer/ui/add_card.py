@@ -20,11 +20,13 @@ from PySide6.QtCore import QStringListModel, Slot, Signal, Qt, QItemSelectionMod
 from PySide6.QtWidgets import QWidget, QDialogButtonBox
 from PySide6.QtGui import QIcon
 
+import mtg_proxy_printer.model.card
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 import mtg_proxy_printer.model.string_list
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.model.card import MTGSet
 from mtg_proxy_printer.ui.common import load_ui_from_file
 
 from mtg_proxy_printer.logger import get_logger
@@ -48,6 +50,7 @@ __all__ = [
 UiTypes = Union[Type[Ui_VerticalAddCardWidget], Type[Ui_HorizontalAddCardWidget]]
 StandardButton = QDialogButtonBox.StandardButton
 ItemDataRole = Qt.ItemDataRole
+SelectionFlag = QItemSelectionModel.SelectionFlag
 
 
 class AddCardWidget(QWidget):
@@ -134,7 +137,7 @@ class AddCardWidget(QWidget):
             self.set_name_model.set_set_data(sets)
             self.ui.set_name_filter.clear()
             self.ui.set_name_list.selectionModel().select(
-                self.set_name_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect)
+                self.set_name_model.createIndex(0, 0), SelectionFlag.ClearAndSelect)
 
     @Slot(QItemSelection)
     def set_name_list_selection_changed(self, current: QItemSelection):
@@ -146,15 +149,15 @@ class AddCardWidget(QWidget):
         valid = current_model_index.isValid()
         self.ui.collector_number_box.setEnabled(valid)
         if valid:
-            set_abbr = current_model_index.data(ItemDataRole.EditRole)
+            mtg_set: MTGSet = current_model_index.data(ItemDataRole.EditRole)
             collector_numbers = self.card_database.find_collector_numbers_matching(
-                self.current_card_name, set_abbr, self.current_language
+                self.current_card_name, mtg_set.code, self.current_language
             )
             logger.debug(
-                f'Selected: "{set_abbr}", language: {self.current_language}, matching {len(collector_numbers)} prints')
+                f'Selected: "{mtg_set.code}", language: {self.current_language}, matching {len(collector_numbers)} prints')
             self.collector_number_model.setStringList(collector_numbers)
             self.ui.collector_number_list.selectionModel().select(
-                self.collector_number_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect)
+                self.collector_number_model.createIndex(0, 0), SelectionFlag.ClearAndSelect)
 
     @Slot(QItemSelection)
     def collector_number_list_selection_changed(self, current: QItemSelection):
@@ -170,7 +173,7 @@ class AddCardWidget(QWidget):
         if selected_card_name in card_names:
             self.ui.card_name_list.selectionModel().select(
                 self.card_name_model.createIndex(card_names.index(selected_card_name), 0),
-                QItemSelectionModel.ClearAndSelect
+                SelectionFlag.ClearAndSelect
             )
         else:
             self.set_name_model.set_set_data([])
@@ -237,7 +240,7 @@ class AddCardWidget(QWidget):
             self.request_action.emit(ActionAddCard(opposing_face, copies))
 
     @staticmethod
-    def _log_added_card(card: mtg_proxy_printer.model.carddb.Card, copies: int):
+    def _log_added_card(card: mtg_proxy_printer.model.card.Card, copies: int):
         logger.debug(f"Adding {copies}× [{card.set.code.upper()}:{card.collector_number}] {card.name}")
 
     @Slot()
@@ -268,7 +271,7 @@ class AddCardWidget(QWidget):
     def current_set_name(self) -> Optional[str]:
         selected = self.ui.set_name_list.selectedIndexes()
         if selected:
-            return selected[0].data(ItemDataRole.EditRole)
+            return selected[0].data(ItemDataRole.EditRole).code
         else:
             return None
 

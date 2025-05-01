@@ -18,7 +18,7 @@ import pytest
 from hamcrest import *
 from PySide6.QtGui import QPixmap, QColorConstants
 
-from mtg_proxy_printer.model.carddb import Card, CheckCard, MTGSet
+from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
 

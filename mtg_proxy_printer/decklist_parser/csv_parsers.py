@@ -21,7 +21,8 @@ import typing
 
 from PySide6.QtCore import QObject, QCoreApplication
 
-from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
+from ..model.card import Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 
 from .common import ParsedDeck, ParserBase

@@ -84,7 +84,7 @@ class ActionEditDocumentSettings(DocumentAction):
         Leading empty pages are ignored.
         """
         pages = document.pages
-        first_populated_page = sum(1 for _ in itertools.takewhile(lambda page: not page, pages))
+        first_populated_page = sum(1 for _ in itertools.takewhile(lambda p: not p, pages))
         if first_populated_page == len(pages):
             return []
 

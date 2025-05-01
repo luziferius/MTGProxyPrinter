@@ -18,8 +18,7 @@ import typing
 
 from PySide6.QtCore import QAbstractListModel, Qt, QObject, QModelIndex
 
-from mtg_proxy_printer.model.carddb import MTGSet
-
+from mtg_proxy_printer.model.card import MTGSet
 
 __all__ = [
     "PrettySetListModel",
@@ -59,3 +58,4 @@ class PrettySetListModel(QAbstractListModel):
     def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Optional[str]:
         if index.isValid():
             return self.set_data[index.row()].data(role)
+        return None
