@@ -50,7 +50,8 @@ __all__ = [
     "CacheCleanupWizard",
 ]
 INVALID_INDEX = QModelIndex()
-SelectRows = QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows
+SelectionFlag = QItemSelectionModel.SelectionFlag
+SelectRows = SelectionFlag.Select | SelectionFlag.Rows
 ItemDataRole = Qt.ItemDataRole
 Orientation = Qt.Orientation
 
@@ -152,14 +153,14 @@ class KnownCardImageModel(QAbstractTableModel):
     def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.header_data)
 
-    def headerData(self, section: KnownCardColumns, orientation: Orientation, role: ItemDataRole = None) -> str:
+    def headerData(self, section: KnownCardColumns, orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
         if role == ItemDataRole.DisplayRole \
                 and orientation == Orientation.Horizontal \
                 and 0 <= section < self.columnCount():
             return self.header_data[section]
         return super().headerData(section, orientation, role)
 
-    def data(self, index: QModelIndex, role: ItemDataRole = None) -> typing.Any:
+    def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         if 0 <= index.row() <= self.rowCount() and 0 <= index.column() < self.columnCount():
             row = self._data[index.row()]
             return row.data(index.column(), role)
@@ -269,14 +270,14 @@ class UnknownCardImageModel(QAbstractTableModel):
     def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.header_data)
 
-    def headerData(self, section: UnknownCardColumns, orientation: Orientation, role: ItemDataRole = None) -> str:
+    def headerData(self, section: UnknownCardColumns, orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
         if role == ItemDataRole.DisplayRole \
                 and orientation == Orientation.Horizontal \
                 and 0 <= section < self.columnCount():
             return self.header_data[section]
         return super().headerData(section, orientation, role)
 
-    def data(self, index: QModelIndex, role: ItemDataRole = None) -> typing.Any:
+    def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         if 0 <= index.row() < self.rowCount():
             row = self._data[index.row()]
             return row.data(index.column(), role)

@@ -38,7 +38,6 @@ from mtg_proxy_printer.settings import VALID_LANGUAGES
 # TODO: Investigate, how systems behave in locales requiring the country as disambiguation, like en or zh.
 LOCALES = {
     "de-DE": "de",
-#    "en-GB": "en_GB",
     "en-US": "en_US",
     "es-ES": "es",
     "fr-FR": "fr",
@@ -61,6 +60,7 @@ SOURCES_PATH = pathlib.Path(
         crowdin_yml_path.read_text("utf-8")
     )["path"]
 )
+
 
 class Namespace(NamedTuple):
     """Mock namespace for type hinting"""

@@ -209,7 +209,7 @@ class CardItem(QGraphicsItemGroup):
         document.page_layout_changed.connect(self.on_page_layout_changed)
         self.card = card
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
-        self.card_pixmap_item.setTransformationMode(Qt.SmoothTransformation)
+        self.card_pixmap_item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
         self.bleeds = CardBleeds.from_card(card)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
@@ -288,7 +288,7 @@ class PageScene(QGraphicsScene):
         self.document.page_type_changed.connect(self.on_page_type_changed)
         self.document.page_layout_changed.connect(self.on_page_layout_changed)
         self.selected_page = self.document.get_current_page_index()
-        self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.SolidPattern))
+        self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.BrushStyle.SolidPattern))
         background_color = self.get_background_color(render_mode)
         logger.debug(f"Drawing background rectangle")
         self.background = self.addRect(0, 0, self.width(), self.height(), background_color, background_color)

@@ -43,6 +43,7 @@ __all__ = [
 ]
 INVALID_INDEX = QModelIndex()
 
+
 @dataclasses.dataclass
 class CardListModelRow:
     card: AnyCardType
@@ -69,6 +70,7 @@ CardListToPageColumnMapping = {
     CardListColumns.Language: PageColumns.Language,
     CardListColumns.IsFront: PageColumns.IsFront,
 }
+
 
 class CardListModel(QAbstractTableModel):
     """

@@ -27,6 +27,7 @@ from mtg_proxy_printer.units_and_sizes import CardSize, PageType, CardSizes, UUI
 ItemDataRole = Qt.ItemDataRole
 RenderHint = QPainter.RenderHint
 SmoothTransformation = Qt.TransformationMode.SmoothTransformation
+IgnoreAspectRatio = Qt.AspectRatioMode.IgnoreAspectRatio
 
 @dataclasses.dataclass(frozen=True)
 class MTGSet:
@@ -96,8 +97,7 @@ class Card:
                 round(self.image_file.height() * corner.value[1])),
             QSize(10, 10)
         ))
-        average_color = sample_area.scaled(
-            1, 1, transformMode=SmoothTransformation).toImage().pixelColor(0, 0)
+        average_color = sample_area.scaledToWidth(1, SmoothTransformation).toImage().pixelColor(0, 0)
         return average_color
 
     def display_string(self):
@@ -146,8 +146,7 @@ class CustomCard:
                 round(self.image_file.height() * corner.value[1])),
             QSize(10, 10)
         ))
-        average_color = sample_area.scaled(
-            1, 1, transformMode=SmoothTransformation).toImage().pixelColor(0, 0)
+        average_color = sample_area.scaledToWidth(1, SmoothTransformation).toImage().pixelColor(0, 0)
         return average_color
 
     def display_string(self):
@@ -174,7 +173,8 @@ class CustomCard:
         source = QPixmap()
         source.loadFromData(self.source_image_file)
         target_size = self.size.as_qsize_px()
-        return source if source.size() == target_size else source.scaled(target_size, transformMode=SmoothTransformation)
+        return source if source.size() == target_size else source.scaled(
+            target_size, IgnoreAspectRatio, SmoothTransformation)
 
     @functools.cached_property
     def scryfall_id(self) -> UUID:
