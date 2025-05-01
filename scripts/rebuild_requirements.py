@@ -18,4 +18,6 @@ tasks = [
 
 if __name__ == "__main__":
     with ThreadPoolExecutor() as pool:
-        wait(pool.submit(call, args) for args in tasks)
+        # Py 3.8 workaround: wait() on 3.8 requires a List[Future] instead of Sequence[Future]
+        futures = list(pool.submit(call, args) for args in tasks)
+        wait(futures)
