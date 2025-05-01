@@ -8,6 +8,7 @@
     <file alias="License.md">../../LICENSE.md</file>
 
     <!-- Localisations -->
+    <file>translations/progress.json</file>
     <file>translations/mtgproxyprinter_de.qm</file>
     <!--file alias="translations/mtgproxyprinter_en.qm">translations/mtgproxyprinter_en_GB.qm</file-->
     <file alias="translations/mtgproxyprinter_en.qm">translations/mtgproxyprinter_en_US.qm</file>
