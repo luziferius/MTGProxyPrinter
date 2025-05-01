@@ -173,7 +173,7 @@ class CustomCard:
         source = QPixmap()
         source.loadFromData(self.source_image_file)
         target_size = self.size.as_qsize_px()
-        return source if source.size() == target_size else source.scaled(target_size, transformMode=SmoothTransformation)
+        return source if source.size() == target_size else source.scaled(target_size, SmoothTransformation)
 
     @functools.cached_property
     def scryfall_id(self) -> UUID:
