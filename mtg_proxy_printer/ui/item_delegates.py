@@ -14,10 +14,11 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import typing
+from itertools import combinations
 from typing import Union
 
 from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel, QObject, QEvent
-from PyQt5.QtGui import QKeyEvent
+from PyQt5.QtGui import QKeyEvent, QFocusEvent
 from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox, QLineEdit, \
     QApplication
 
@@ -69,9 +70,17 @@ class FastComboBoxDelegate(QStyledItemDelegate):
         editor.activated.connect(
             lambda: QApplication.sendEvent(
                 editor,
-                QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_Enter, Qt.KeyboardModifier.NoModifier)
+                QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Enter, Qt.KeyboardModifier.NoModifier)
             ))
         return editor
+
+    def eventFilter(self, editor: QComboBox, event: QFocusEvent) -> bool:
+        if editor is not None and isinstance(event, QFocusEvent) \
+                and event.type() == QEvent.Type.FocusIn \
+                and event.reason() != Qt.FocusReason.PopupFocusReason:
+            # When the editor receives focus, but not because its popup closed, show the popup to save a click.
+            editor.showPopup()
+        return super().eventFilter(editor, event)
 
 
 class BoundedCopiesSpinboxDelegate(QStyledItemDelegate):
