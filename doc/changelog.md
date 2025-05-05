@@ -1,5 +1,12 @@
 # Changelog
 
+# Next version (in development)
+
+## Changed features
+
+- Reduced click count required for switching printings from 5 to 3. Now, double-clicking editable table cells 
+  automatically opens the list with choices. Clicking an entry in the list saves immediately.
+
 # Version 0.31.0 (2025-05-01)  <a name="v0_31_0"></a>
 
 ## New features
