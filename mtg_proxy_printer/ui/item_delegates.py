@@ -56,6 +56,12 @@ def get_document_from_index(index: QModelIndex) -> Document:
     return source_model
 
 
+class FastComboBoxDelegate(QStyledItemDelegate):
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
+        editor = QComboBox(parent)
+        return editor
+
+
 class BoundedCopiesSpinboxDelegate(QStyledItemDelegate):
     """A QSpinBox delegate bounded to the inclusive range (1-100). Used for card copies."""
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QSpinBox:
@@ -65,10 +71,10 @@ class BoundedCopiesSpinboxDelegate(QStyledItemDelegate):
         return editor
 
 
-class CardSideSelectionDelegate(QStyledItemDelegate):
+class CardSideSelectionDelegate(FastComboBoxDelegate):
     """A QComboBox delegate used to switch between Front and Back face of cards"""
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QSpinBox:
-        editor = QComboBox(parent)
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
+        editor = super().createEditor(parent, option, index)
         editor.addItem(self.tr("Front"), True)
         editor.addItem(self.tr("Back"), False)
         return editor
@@ -81,7 +87,7 @@ class CardSideSelectionDelegate(QStyledItemDelegate):
             model.setData(index, new_value, ItemDataRole.EditRole)
 
 
-class SetEditorDelegate(QStyledItemDelegate):
+class SetEditorDelegate(FastComboBoxDelegate):
     """
     A set editor. For official cards, use a QComboBox with valid set choices for the given card.
     For custom cards, use the embedded editor widget to allow free-form text entry.
@@ -103,7 +109,7 @@ class SetEditorDelegate(QStyledItemDelegate):
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex):
         card: AnyCardType = index.data(ItemDataRole.UserRole)
         # Use a locked-down choice-based editor for official cards, and a free-form editor for custom cards
-        return self.CustomCardSetEditor(parent) if card.is_custom_card else QComboBox(parent)
+        return self.CustomCardSetEditor(parent) if card.is_custom_card else super().createEditor(parent, option, index)
 
     def setEditorData(self, editor: Union[QComboBox, CustomCardSetEditor], index: QModelIndex):
         card: AnyCardType = index.data(ItemDataRole.UserRole)
@@ -130,16 +136,13 @@ class SetEditorDelegate(QStyledItemDelegate):
         return isinstance(editor, QComboBox)
 
 
-class LanguageEditorDelegate(QStyledItemDelegate):
+class LanguageEditorDelegate(FastComboBoxDelegate):
     """
     A language editor. For official cards, use a QComboBox with valid language choices for the given card.
     For custom cards, populate the combo box with all known languages and also enable the edit functionality
     to allow free-form text entry.
     """
     MAX_LENGTH = 5
-
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
-        return QComboBox(parent)
 
     def setEditorData(self, editor: QComboBox, index: QModelIndex):
         model = get_document_from_index(index)
@@ -165,7 +168,7 @@ class LanguageEditorDelegate(QStyledItemDelegate):
             model.setData(index, new_value, ItemDataRole.EditRole)
 
 
-class CollectorNumberEditorDelegate(QStyledItemDelegate):
+class CollectorNumberEditorDelegate(FastComboBoxDelegate):
     """
     Editor for collector numbers. Allows free-form editing for custom cards,
     and uses a locked-down choice-based combo box for official cards
@@ -175,7 +178,7 @@ class CollectorNumberEditorDelegate(QStyledItemDelegate):
     ) -> typing.Union[QLineEdit, QComboBox]:
         card: AnyCardType = index.data(ItemDataRole.UserRole)
         # Use a locked-down choice-based editor for official cards, and a free-form editor for custom cards
-        return QLineEdit(parent) if card.is_custom_card else QComboBox(parent)
+        return QLineEdit(parent) if card.is_custom_card else super().createEditor(parent, option, index)
 
     def setEditorData(self, editor: typing.Union[QLineEdit, QComboBox], index: QModelIndex) -> None:
         model = get_document_from_index(index)
