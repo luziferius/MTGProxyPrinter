@@ -16,8 +16,10 @@
 import typing
 from typing import Union
 
-from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel
-from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox, QLineEdit
+from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel, QObject, QEvent
+from PyQt5.QtGui import QKeyEvent
+from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox, QLineEdit, \
+    QApplication
 
 from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType
 from mtg_proxy_printer.model.document import Document
@@ -57,8 +59,18 @@ def get_document_from_index(index: QModelIndex) -> Document:
 
 
 class FastComboBoxDelegate(QStyledItemDelegate):
+    """
+    A faster QComboBox-based editor delegate.
+    Immediately opens the choice popup and immediately commits when an entry is selected
+    """
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
         editor = QComboBox(parent)
+        # Automatically commit by sending an Enter key when the user selects something in the item list
+        editor.activated.connect(
+            lambda: QApplication.sendEvent(
+                editor,
+                QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_Enter, Qt.KeyboardModifier.NoModifier)
+            ))
         return editor
 
 
