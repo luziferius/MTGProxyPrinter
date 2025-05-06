@@ -13,7 +13,12 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import functools
+try:
+    from functools import lru_cache, cache
+except ImportError:
+    from functools import lru_cache
+    cache = lru_cache
+
 from pathlib import Path
 import platform
 from typing import Union, Dict
@@ -58,7 +63,7 @@ else:
     atexit.register(mtg_proxy_printer.ui.compiled_resources.qCleanupResources)
 
 
-@functools.lru_cache(maxsize=256)
+@lru_cache(maxsize=256)
 def get_card_image_tooltip(image: Union[bytes, Path], card_name: OptStr = None, scaling_factor: int = 3) -> str:
     """
     Returns a tooltip string showing a scaled down image for the given path.
@@ -144,6 +149,7 @@ def load_file(file_path_str: str, parent: QObject = None) -> bytes:
     logger.error(f"Opening {full_file_path} failed")
     return data
 
+@cache()
 def markdown_to_html(markdown: str) -> str:
     browser = QTextEdit()
     browser.setMarkdown(markdown)
