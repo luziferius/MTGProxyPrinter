@@ -128,15 +128,16 @@ def load_ui_from_file(name: str):
     return base_type
 
 def load_icon(name: str) -> QIcon:
+    """Loads a QIcon with the given name from the internal resources"""
     file_path = f"{RESOURCE_PATH_PREFIX}/icons/{name}"
     if not QFile.exists(file_path):
         error_message = f"Icon not found: {file_path}"
         logger.error(error_message)
         raise FileNotFoundError(error_message)
-    icon = QIcon(file_path)
-    return icon
+    return QIcon(file_path)
 
 def load_file(file_path_str: str, parent: QObject = None) -> bytes:
+    """Returns binary content of an arbitrary file in the Qt resources."""
     full_file_path = f"{RESOURCE_PATH_PREFIX}/{file_path_str}"
     file = QFile(full_file_path, parent)
     data = b''
@@ -149,20 +150,26 @@ def load_file(file_path_str: str, parent: QObject = None) -> bytes:
     logger.error(f"Opening {full_file_path} failed")
     return data
 
-@cache()
+
+@cache
 def markdown_to_html(markdown: str) -> str:
+    """
+    Converts markdown-formatted text to an HTML 4 snipped that Qt widgets can render natively.
+    """
     browser = QTextEdit()
     browser.setMarkdown(markdown)
     return browser.toHtml()
 
-def format_size(size: float) -> str:
+
+def format_size(size_bytes: float) -> str:
+    """Converts a file size in bytes to a human-readable string. Uses base 2 and SI prefixes."""
     template = QCoreApplication.translate(
         "format_size", "{size} {unit}", "A formatted file size in SI bytes")
     for unit in ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB'):
-        if -1024 < size < 1024:
-            return template.format(size=f"{size:3.2f}", unit=unit)
-        size /= 1024
-    return template.format(size=f"{size:.2f}", unit="YiB")
+        if -1024 < size_bytes < 1024:
+            return template.format(size=f"{size_bytes:3.2f}", unit=unit)
+        size_bytes /= 1024
+    return template.format(size=f"{size_bytes:.2f}", unit="YiB")
 
 
 class WizardBase(QWizard):

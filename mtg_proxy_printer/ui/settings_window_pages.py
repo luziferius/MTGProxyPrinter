@@ -308,7 +308,7 @@ class GeneralSettingsPage(Page):
             (self.tr("German [{progress}%]"), "de"),
             (self.tr("French [{progress}%]"), "fr"),
         ]:
-            display_text = display_text.format(progress=progress[language_code])
+            display_text = display_text.format(progress=progress.get(language_code, ""))
             ui.application_language_combo_box.addItem(display_text, language_code)
 
     @Slot()
