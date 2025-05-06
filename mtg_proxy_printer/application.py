@@ -84,7 +84,10 @@ class Application(QApplication):
         self.main_window.ui.action_download_card_data.setEnabled(False)
         self.settings_window = self._create_settings_window(
             self.language_model, self.document, self.main_window, self.card_info_downloader)
-        self.main_window.show()
+        if settings.settings["gui"].getboolean("open-maximized"):
+            self.main_window.showMaximized()
+        else:
+            self.main_window.show()
 
     def enqueue_startup_tasks(self, _: Namespace):
         """
