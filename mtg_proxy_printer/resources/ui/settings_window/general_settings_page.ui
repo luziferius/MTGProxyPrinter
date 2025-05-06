@@ -17,6 +17,16 @@
       <string>Look &amp;&amp; Feel (Changing this requires an application restart)</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="1">
+       <widget class="QComboBox" name="application_language_combo_box"/>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="application_language_label">
+        <property name="text">
+         <string>Application language</string>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="1">
        <widget class="QComboBox" name="add_card_widget_style_combo_box">
         <property name="sizePolicy">
@@ -42,13 +52,10 @@ Tabbed uses tabs to only show parts of the main window at a time. Best used with
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QComboBox" name="application_language_combo_box"/>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="application_language_label">
+      <item row="2" column="0" colspan="2">
+       <widget class="QCheckBox" name="gui_open_maximized">
         <property name="text">
-         <string>Application language</string>
+         <string>Open the main window maximized</string>
         </property>
        </widget>
       </item>
@@ -168,8 +175,7 @@ Uncheck to disable this automatism.</string>
          <string/>
         </property>
         <property name="icon">
-         <iconset theme="document-open">
-          <normaloff>.</normaloff>.</iconset>
+         <iconset theme="document-open"/>
         </property>
        </widget>
       </item>
