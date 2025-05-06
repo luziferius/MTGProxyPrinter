@@ -131,9 +131,9 @@ def load_icon(name: str) -> QIcon:
     icon = QIcon(file_path)
     return icon
 
-def load_file(path: str, parent = None) -> bytes:
-    file_path = f"{RESOURCE_PATH_PREFIX}/{path}"
-    file = QFile(file_path, parent)
+def load_file(file_path_str: str, parent: QObject = None) -> bytes:
+    full_file_path = f"{RESOURCE_PATH_PREFIX}/{file_path_str}"
+    file = QFile(full_file_path, parent)
     data = b''
     if file.open(QIODevice.OpenModeFlag.ReadOnly):
         try:
@@ -141,7 +141,7 @@ def load_file(path: str, parent = None) -> bytes:
         finally:
             file.close()
             return data
-    logger.error(f"Opening {file_path} failed")
+    logger.error(f"Opening {full_file_path} failed")
     return data
 
 def markdown_to_html(markdown: str) -> str:
