@@ -332,8 +332,8 @@ class GeneralSettingsPage(Page):
         ui.application_language_combo_box.setCurrentIndex(language_index)
 
     def _load_update_settings(self, settings: ConfigParser):
-        section = settings["update-checks"]
-        for widget, setting in self._get_update_check_settings_widgets():
+        for widget, section_name, setting in self._get_boolean_check_settings_widgets():
+            section = settings[section_name]
             widget.setCheckState(bool_to_check_state[section.getboolean(setting)])
 
     def _load_cards_settings(self, settings: ConfigParser):
@@ -354,11 +354,11 @@ class GeneralSettingsPage(Page):
         for widget, setting in widgets_with_settings:
             widget.setText(section[setting])
 
-    def _get_update_check_settings_widgets(self):
+    def _get_boolean_check_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (ui.check_application_updates_enabled, "check-for-application-updates"),
-            (ui.check_card_data_updates_enabled, "check-for-card-data-updates"),
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str, str]] = [
+            (ui.check_application_updates_enabled, "update-checks", "check-for-application-updates"),
+            (ui.check_card_data_updates_enabled, "update-checks", "check-for-card-data-updates"),
         ]
         return widgets_with_settings
 
@@ -376,8 +376,8 @@ class GeneralSettingsPage(Page):
         self._save_path_settings()
 
     def _save_update_check_settings(self):
-        section = mtg_proxy_printer.settings.settings["update-checks"]
-        for widget, setting in self._get_update_check_settings_widgets():
+        for widget, section_name, setting in self._get_boolean_check_settings_widgets():
+            section = mtg_proxy_printer.settings.settings[section_name]
             section[setting] = check_state_to_bool_str[widget.checkState()]
 
     def _save_look_and_feel_settings(self):
@@ -400,9 +400,8 @@ class GeneralSettingsPage(Page):
 
     def highlight_differing_settings(self, settings: ConfigParser):
         ui = self.ui
-
-        section = settings["update-checks"]
-        for widget, setting in self._get_update_check_settings_widgets():
+        for widget, section_name, setting in self._get_boolean_check_settings_widgets():
+            section = settings[section_name]
             if section[setting] != check_state_to_bool_str[widget.checkState()]:
                 highlight_widget(widget)
 
