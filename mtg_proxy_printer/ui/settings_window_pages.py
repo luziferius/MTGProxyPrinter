@@ -304,10 +304,11 @@ class GeneralSettingsPage(Page):
         progress: typing.Dict[str, int] = json.loads(load_file("translations/progress.json", self))
         for display_text, language_code in [
             (self.tr("System default"), ""),
-            (self.tr("English (US) [{progress}%]").format(progress=progress["en_US"]), "en_US"),
-            (self.tr("German [{progress}%]").format(progress=progress["de"]), "de"),
-            (self.tr("French [{progress}%]").format(progress=progress["fr"]), "fr"),
+            (self.tr("English (US) [{progress}%]"), "en_US"),
+            (self.tr("German [{progress}%]"), "de"),
+            (self.tr("French [{progress}%]"), "fr"),
         ]:
+            display_text = display_text.format(progress=progress[language_code])
             ui.application_language_combo_box.addItem(display_text, language_code)
 
     @Slot()
