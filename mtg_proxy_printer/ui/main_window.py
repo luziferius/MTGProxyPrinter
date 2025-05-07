@@ -19,7 +19,7 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl, Qt, QSize
 from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices, QDragEnterEvent, QDropEvent, QPixmap
-from PyQt5.QtWidgets import QApplication, QMessageBox, QAction, QWidget, QMainWindow, QDialog, QWizard
+from PyQt5.QtWidgets import QApplication, QMessageBox, QAction, QWidget, QMainWindow, QDialog
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
