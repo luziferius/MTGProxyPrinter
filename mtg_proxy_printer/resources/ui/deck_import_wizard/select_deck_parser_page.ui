@@ -323,6 +323,12 @@ You have to separate them with the “control structures”, like spaces, as use
    <slot>setEnabled(bool)</slot>
   </connection>
   <connection>
+   <sender>select_parser_card_name_list</sender>
+   <signal>clicked()</signal>
+   <receiver>SelectDeckParserPage</receiver>
+   <slot>isComplete()</slot>
+  </connection>
+  <connection>
    <sender>select_parser_mtg_arena</sender>
    <signal>clicked()</signal>
    <receiver>SelectDeckParserPage</receiver>
