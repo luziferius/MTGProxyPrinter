@@ -29,8 +29,16 @@ pytest.mark.skipif(
 
 @pytest.mark.parametrize("ui_file_path", (Path(RESOURCE_PATH_PREFIX)/"ui").rglob("*.ui"))
 def test_button_icons_do_not_have_normaloff_value(ui_file_path: Path):
+    """
+    The Qt Designer program adds invalid "normaloff" attributes to set icons when loading UI files.
+    The value defaults to the path relative to the resources/ui, so "." for most, and "settings_window" for UI files
+    present in the "settings_window" directory.
+    It is meant to be an icon variant for the "normal, disabled state", but is somehow broken.
+    This test ensures that no icons have this set.
+    """
     tree = ElementTree.parse(ui_file_path)
     assert_that(
         (items := tree.findall(".//normaloff/..")),
         is_(empty()),
-        f"Affected icons: {', '.join(item.attrib['theme'] for item in items)}")
+        f"Affected icons: {', '.join(item.attrib['theme'] for item in items)}"
+    )
