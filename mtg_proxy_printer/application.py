@@ -85,7 +85,10 @@ class Application(QApplication):
         self.main_window.ui.action_download_card_data.setEnabled(False)
         self.settings_window = self._create_settings_window(
             self.language_model, self.document, self.main_window, self.card_info_downloader)
-        self.main_window.show()
+        if settings.settings["gui"].getboolean("gui-open-maximized"):
+            self.main_window.showMaximized()
+        else:
+            self.main_window.show()
 
     def enqueue_startup_tasks(self, _: Namespace):
         """
@@ -178,7 +181,9 @@ class Application(QApplication):
         settings_window.process_updated.connect(main_window.progress_bars.set_outer_progress)
         settings_window.process_finished.connect(main_window.progress_bars.end_outer_progress)
         settings_window.error_occurred.connect(main_window.on_error_occurred)
-        main_window.ui.action_show_settings.triggered.connect(settings_window.show)
+
+        main_window.ui.action_show_settings.triggered.connect(
+            partial(mtg_proxy_printer.ui.common.show_wizard_or_dialog, settings_window))
         return settings_window
 
     def _create_document_instance(

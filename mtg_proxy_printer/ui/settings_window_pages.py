@@ -303,10 +303,11 @@ class GeneralSettingsPage(Page):
         progress: typing.Dict[str, int] = json.loads(load_file("translations/progress.json", self))
         for display_text, language_code in [
             (self.tr("System default"), ""),
-            (self.tr("English (US) [{progress}%]").format(progress=progress["en_US"]), "en_US"),
-            (self.tr("German [{progress}%]").format(progress=progress["de"]), "de"),
-            (self.tr("French [{progress}%]").format(progress=progress["fr"]), "fr"),
+            (self.tr("English (US) [{progress}%]"), "en_US"),
+            (self.tr("German [{progress}%]"), "de"),
+            (self.tr("French [{progress}%]"), "fr"),
         ]:
+            display_text = display_text.format(progress=progress.get(language_code, ""))
             ui.application_language_combo_box.addItem(display_text, language_code)
 
     @Slot()
@@ -318,7 +319,7 @@ class GeneralSettingsPage(Page):
 
     def load(self, settings: ConfigParser):
         self._load_look_and_feel_settings(settings)
-        self._load_update_settings(settings)
+        self._load_boolean_settings(settings)
         self._load_cards_settings(settings)
         self._load_path_settings(settings)
 
@@ -330,9 +331,9 @@ class GeneralSettingsPage(Page):
         language_index = ui.application_language_combo_box.findData(gui_section["language"])
         ui.application_language_combo_box.setCurrentIndex(language_index)
 
-    def _load_update_settings(self, settings: ConfigParser):
-        section = settings["update-checks"]
-        for widget, setting in self._get_update_check_settings_widgets():
+    def _load_boolean_settings(self, settings: ConfigParser):
+        for widget, section_name, setting in self._get_boolean_check_settings_widgets():
+            section = settings[section_name]
             widget.setCheckState(bool_to_check_state[section.getboolean(setting)])
 
     def _load_cards_settings(self, settings: ConfigParser):
@@ -343,9 +344,6 @@ class GeneralSettingsPage(Page):
         if not (known := list_model.stringList()) or preferred_language not in known:
             preferred_language_combo_box.addItem(preferred_language)
         preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(preferred_language))
-        self.ui.automatically_add_opposing_faces.setChecked(
-            section.getboolean("automatically-add-opposing-faces")
-        )
 
     def _load_path_settings(self, settings: ConfigParser):
         section = settings["default-filesystem-paths"]
@@ -353,11 +351,14 @@ class GeneralSettingsPage(Page):
         for widget, setting in widgets_with_settings:
             widget.setText(section[setting])
 
-    def _get_update_check_settings_widgets(self):
+    def _get_boolean_check_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (ui.check_application_updates_enabled, "check-for-application-updates"),
-            (ui.check_card_data_updates_enabled, "check-for-card-data-updates"),
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str, str]] = [
+            (ui.check_application_updates_enabled, "update-checks", "check-for-application-updates"),
+            (ui.check_card_data_updates_enabled, "update-checks", "check-for-card-data-updates"),
+            (ui.automatically_add_opposing_faces, "cards", "automatically-add-opposing-faces"),
+            (ui.gui_open_maximized, "gui", "gui-open-maximized"),
+            (ui.wizards_open_maximized, "gui", "wizards-open-maximized"),
         ]
         return widgets_with_settings
 
@@ -369,14 +370,14 @@ class GeneralSettingsPage(Page):
             return languages.index("en")
 
     def save(self):
-        self._save_update_check_settings()
+        self._save_boolean_settings()
         self._save_look_and_feel_settings()
         self._save_cards_settings()
         self._save_path_settings()
 
-    def _save_update_check_settings(self):
-        section = mtg_proxy_printer.settings.settings["update-checks"]
-        for widget, setting in self._get_update_check_settings_widgets():
+    def _save_boolean_settings(self):
+        for widget, section_name, setting in self._get_boolean_check_settings_widgets():
+            section = mtg_proxy_printer.settings.settings[section_name]
             section[setting] = check_state_to_bool_str[widget.checkState()]
 
     def _save_look_and_feel_settings(self):
@@ -389,7 +390,6 @@ class GeneralSettingsPage(Page):
     def _save_cards_settings(self):
         section = mtg_proxy_printer.settings.settings["cards"]
         section["preferred-language"] = self.ui.preferred_language_combo_box.currentText()
-        section["automatically-add-opposing-faces"] = str(self.ui.automatically_add_opposing_faces.isChecked())
 
     def _save_path_settings(self):
         section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
@@ -399,9 +399,8 @@ class GeneralSettingsPage(Page):
 
     def highlight_differing_settings(self, settings: ConfigParser):
         ui = self.ui
-
-        section = settings["update-checks"]
-        for widget, setting in self._get_update_check_settings_widgets():
+        for widget, section_name, setting in self._get_boolean_check_settings_widgets():
+            section = settings[section_name]
             if section[setting] != check_state_to_bool_str[widget.checkState()]:
                 highlight_widget(widget)
 
@@ -416,8 +415,6 @@ class GeneralSettingsPage(Page):
         section = settings["cards"]
         if section["preferred-language"] != ui.preferred_language_combo_box.currentText():
             highlight_widget(ui.preferred_language_combo_box)
-        if section.getboolean("automatically-add-opposing-faces") is not ui.automatically_add_opposing_faces.isChecked():
-            highlight_widget(ui.automatically_add_opposing_faces)
 
         section = settings["default-filesystem-paths"]
         widgets_and_settings = self._get_save_path_settings_widgets()

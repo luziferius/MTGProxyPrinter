@@ -113,7 +113,5 @@ requires = [
     "wheel >= 0.45",
     "PySide6_Essentials >= 6.7.0",
     "build",
-    "tox >= 4.0",
-    "pip-tools >= 7.4"
 ]
 build-backend = "setuptools.build_meta"

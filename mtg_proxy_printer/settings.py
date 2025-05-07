@@ -125,6 +125,8 @@ DEFAULT_SETTINGS["gui"] = {
     "central-widget-layout": "columnar",
     "show-toolbar": "True",
     "language": "",
+    "gui-open-maximized": "True",
+    "wizards-open-maximized": "False",
 }
 VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "columnar", "tabbed"}
 VALID_LANGUAGES = {
@@ -339,7 +341,8 @@ def _validate_gui_section(to_validate: ConfigParser, section_name: str = "gui"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
-    _validate_boolean(section, defaults, "show-toolbar")
+    for key in ("show-toolbar", "gui-open-maximized", "wizards-open-maximized"):
+        _validate_boolean(section, defaults, key)
     _validate_string_is_in_set(section, defaults, VALID_LANGUAGES, "language")
 
 

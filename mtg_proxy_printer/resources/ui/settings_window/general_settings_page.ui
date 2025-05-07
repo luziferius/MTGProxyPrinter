@@ -2,21 +2,37 @@
 <ui version="4.0">
  <class>GeneralSettingsPage</class>
  <widget class="QWidget" name="GeneralSettingsPage">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>398</width>
-    <height>480</height>
-   </rect>
-  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0" colspan="2">
     <widget class="QGroupBox" name="look_and_feel_settings_group_box">
      <property name="title">
-      <string>Look &amp;&amp; Feel (Changing this requires an application restart)</string>
+      <string>Look &amp;&amp; Feel (Changing most of these require an application restart)</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="application_language_label">
+        <property name="text">
+         <string>Application language</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="add_card_widget_style_label">
+        <property name="text">
+         <string>Main window layout</string>
+        </property>
+        <property name="buddy">
+         <cstring>add_card_widget_style_combo_box</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QCheckBox" name="gui_open_maximized">
+        <property name="text">
+         <string>Open the main window maximized</string>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="1">
        <widget class="QComboBox" name="add_card_widget_style_combo_box">
         <property name="sizePolicy">
@@ -32,23 +48,13 @@ Tabbed uses tabs to only show parts of the main window at a time. Best used with
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="add_card_widget_style_label">
-        <property name="text">
-         <string>Main window layout</string>
-        </property>
-        <property name="buddy">
-         <cstring>add_card_widget_style_combo_box</cstring>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="1">
        <widget class="QComboBox" name="application_language_combo_box"/>
       </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="application_language_label">
+      <item row="3" column="0" colspan="2">
+       <widget class="QCheckBox" name="wizards_open_maximized">
         <property name="text">
-         <string>Application language</string>
+         <string>Open all wizards maximized</string>
         </property>
        </widget>
       </item>
@@ -168,8 +174,7 @@ Uncheck to disable this automatism.</string>
          <string/>
         </property>
         <property name="icon">
-         <iconset theme="document-open">
-          <normaloff>.</normaloff>.</iconset>
+         <iconset theme="document-open"/>
         </property>
        </widget>
       </item>
@@ -203,14 +208,14 @@ Uncheck to disable this automatism.</string>
     </widget>
    </item>
    <item row="5" column="0" colspan="2">
-    <spacer name="spacer">
+    <spacer name="bottom_spacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>40</height>
+       <height>20</height>
       </size>
      </property>
     </spacer>

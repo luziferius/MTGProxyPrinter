@@ -265,3 +265,14 @@ class XMageParser(GenericRegularExpressionDeckParser):
             card_db, image_db,
             re.compile(r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>[^]]+)] (?P<name>.+)"), parent
         )
+
+
+class CardNameListParser(GenericRegularExpressionDeckParser):
+    """
+    A parser for plain card lists. One card name per line.
+    """
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+        super().__init__(
+            card_db, image_db,
+            re.compile(r"(?P<name>.+)"), parent
+        )
