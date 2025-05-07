@@ -364,8 +364,7 @@ otherwise you need two cuts but require less precision hitting the exact middle.
       <string>Flip</string>
      </property>
      <property name="icon">
-      <iconset theme="transform-rotate">
-       <normaloff>.</normaloff>.</iconset>
+      <iconset theme="transform-rotate"/>
      </property>
     </widget>
    </item>

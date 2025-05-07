@@ -21,7 +21,6 @@ from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListMode
 from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices, QDragEnterEvent, QDropEvent, QPixmap
 from PyQt5.QtWidgets import QApplication, QMessageBox, QAction, QWidget, QMainWindow, QDialog
 
-
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
@@ -38,6 +37,7 @@ import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
     AboutDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
+from mtg_proxy_printer.ui.common import show_wizard_or_dialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.ui.progress_bar import ProgressBar
@@ -251,14 +251,14 @@ class MainWindow(QMainWindow):
     def on_action_cleanup_local_image_cache_triggered(self):
         logger.info("User wants to clean up the local image cache")
         wizard = CacheCleanupWizard(self.card_database, self.image_db, self)
-        wizard.show()
+        show_wizard_or_dialog(wizard)
 
     @Slot()
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.document, self.language_model, self)
         wizard.request_action.connect(self.image_db.fill_batch_document_action_images)
-        wizard.show()
+        show_wizard_or_dialog(wizard)
 
     @Slot()
     def on_action_add_custom_cards_triggered(self):
@@ -266,7 +266,7 @@ class MainWindow(QMainWindow):
         self.current_dialog = dialog = CustomCardImportDialog(self.document, self)
         dialog.finished.connect(self.on_dialog_finished)
         dialog.request_action.connect(self.document.apply)
-        dialog.show()
+        show_wizard_or_dialog(dialog)
 
     @Slot()
     def on_action_print_triggered(self):
@@ -370,7 +370,7 @@ class MainWindow(QMainWindow):
         logger.info("User wants to edit the document settings. Showing the editor dialog")
         self.current_dialog = dialog = DocumentSettingsDialog(self.document, self)
         dialog.finished.connect(self.on_dialog_finished)
-        dialog.open()
+        show_wizard_or_dialog(dialog)
 
     @Slot()
     def on_action_download_missing_card_images_triggered(self):
@@ -381,14 +381,14 @@ class MainWindow(QMainWindow):
     def on_action_save_as_triggered(self):
         self.current_dialog = dialog = SaveDocumentAsDialog(self.document, self)
         dialog.finished.connect(self.on_dialog_finished)
-        dialog.open()
+        show_wizard_or_dialog(dialog)
 
     @Slot()
     def on_action_load_document_triggered(self):
         self.current_dialog = dialog = LoadDocumentDialog(self, self.document)
         dialog.accepted.connect(self.ui.central_widget.select_first_page)
         dialog.finished.connect(self.on_dialog_finished)
-        dialog.open()
+        show_wizard_or_dialog(dialog)
 
     def on_document_loading_failed(self, failed_path: pathlib.Path, reason: str):
         function_text = self.ui.action_import_deck_list.text()

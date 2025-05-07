@@ -64,6 +64,7 @@ __all__ = [
 dedent: Callable[[LiteralString], LiteralString]
 Statement = Union[LiteralString, Tuple[LiteralString, List[Tuple[Any, ...]]]]
 
+
 @dataclasses.dataclass
 class MigrationScript:
     script: List[Statement] = None
@@ -704,6 +705,7 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
     ]),
 }
 
+
 def migrate_card_database_location():
     from mtg_proxy_printer.model.carddb import DEFAULT_DATABASE_LOCATION, OLD_DATABASE_LOCATION
     if DEFAULT_DATABASE_LOCATION.exists() and OLD_DATABASE_LOCATION.exists():
@@ -812,7 +814,7 @@ class DatabaseMigrationRunner(Runnable):
 
         logger.debug(f"Starting migration from {source_version}")
         db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)
-        for statement in script.get_script(db, suffix, meter):
+        for statement in script.get_script(db, suffix, meter):  # type: Statement
             if isinstance(statement, str):
                 if is_pragma := statement.startswith("PRAGMA"):
                     db.execute("COMMIT" + suffix)

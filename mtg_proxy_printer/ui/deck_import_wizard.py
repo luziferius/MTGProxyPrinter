@@ -13,8 +13,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-
 import itertools
 import pathlib
 import re
@@ -361,6 +359,9 @@ class SelectDeckParserPage(QWizardPage):
         self.ui.select_parser_custom_re.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_generic_re_parser)
         )
+        self.ui.select_parser_card_name_list.clicked.connect(
+            lambda: setattr(self, "parser_creator", self._create_card_name_list_parser)
+        )
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def initializePage(self) -> None:
@@ -373,6 +374,7 @@ class SelectDeckParserPage(QWizardPage):
                 re_parsers.MagicWorkstationDeckDataFormatParser: ui.select_parser_magic_workstation,
                 re_parsers.MTGArenaParser: ui.select_parser_mtg_arena,
                 re_parsers.MTGOnlineParser: ui.select_parser_mtg_online,
+                re_parsers.CardNameListParser: ui.select_parser_card_name_list,
                 re_parsers.XMageParser: ui.select_parser_xmage,
                 csv_parsers.ScryfallCSVParser: ui.select_parser_scryfall_csv,
                 csv_parsers.TappedOutCSVParser: ui.select_parser_tappedout_csv,
@@ -397,6 +399,9 @@ class SelectDeckParserPage(QWizardPage):
     def _create_scryfall_csv_parser(self):
         self.selected_parser = csv_parsers.ScryfallCSVParser(self.card_db, self.image_db, self)
 
+    def _create_card_name_list_parser(self):
+        self.selected_parser = re_parsers.CardNameListParser(self.card_db, self.image_db, self)
+
     def _create_tappedout_csv_parser(self):
         self.selected_parser = csv_parsers.TappedOutCSVParser(
             self.card_db, self.image_db,
@@ -417,6 +422,7 @@ class SelectDeckParserPage(QWizardPage):
             self.ui.select_parser_xmage.isChecked(),
             self.ui.select_parser_scryfall_csv.isChecked(),
             self.ui.select_parser_tappedout_csv.isChecked(),
+            self.ui.select_parser_card_name_list.isChecked(),
         )) or all((
                 self.ui.select_parser_custom_re.isChecked(),
                 self.ui.custom_re_input.hasAcceptableInput()
@@ -441,6 +447,7 @@ class SummaryPage(QWizardPage):
     # Give the generic enum constants a semantic name
     BasicLandRemovalOption = WizardOption.HaveCustomButton1
     BasicLandRemovalButton = WizardButton.CustomButton1
+
     SelectedRemovalOption = WizardOption.HaveCustomButton2
     SelectedRemovalButton = WizardButton.CustomButton2
 

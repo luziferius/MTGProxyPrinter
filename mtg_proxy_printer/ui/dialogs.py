@@ -41,6 +41,7 @@ try:
     from mtg_proxy_printer.ui.generated.document_settings_dialog import Ui_DocumentSettingsDialog
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
+
     Ui_AboutDialog = load_ui_from_file("about_dialog")
     Ui_DocumentSettingsDialog = load_ui_from_file("document_settings_dialog")
 
@@ -213,12 +214,12 @@ class AboutDialog(QDialog):
     @Slot()
     def show_about(self):
         self.ui.tab_widget.setCurrentWidget(self.ui.tab_widget.findChild(QWidget, "tab_about"))
-        self.show()
+        mtg_proxy_printer.ui.common.show_wizard_or_dialog(self)
 
     @Slot()
     def show_changelog(self):
         self.ui.tab_widget.setCurrentWidget(self.ui.tab_widget.findChild(QTextBrowser, "changelog_text_browser"))
-        self.show()
+        mtg_proxy_printer.ui.common.show_wizard_or_dialog(self)
 
     @staticmethod
     def _get_file_path(resource_path: str, fallback_filesystem_path: str) -> str:

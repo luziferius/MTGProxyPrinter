@@ -1,5 +1,14 @@
 # Changelog
 
+# Next version (in development)
+
+## Changed features
+
+- The main window now opens maximized when starting the application. Added a setting to restore the previous behavior.
+- Added option to open wizards and dialogs maximized. Off by default.
+- Reduced click count required for switching printings from 5 to 3. Now, double-clicking editable table cells 
+  automatically opens the list with choices. Clicking an entry in the list saves immediately.
+
 # Version 0.31.0 (2025-05-01)  <a name="v0_31_0"></a>
 
 ## New features

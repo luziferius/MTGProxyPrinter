@@ -13,17 +13,23 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import functools
+try:
+    from functools import lru_cache, cache
+except ImportError:
+    from functools import lru_cache
+    cache = lru_cache
+
 from pathlib import Path
 import platform
 from typing import Union, Dict
 
 from PyQt5.QtCore import QFile, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
-from PyQt5.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit
+from PyQt5.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit, QDialog
 from PyQt5.QtGui import QIcon, QPixmap
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
 
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.units_and_sizes import OptStr
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -41,6 +47,7 @@ __all__ = [
     "format_size",
     "WizardBase",
     "get_card_image_tooltip",
+    "show_wizard_or_dialog",
 ]
 
 try:
@@ -58,7 +65,7 @@ else:
     atexit.register(mtg_proxy_printer.ui.compiled_resources.qCleanupResources)
 
 
-@functools.lru_cache(maxsize=256)
+@lru_cache(maxsize=256)
 def get_card_image_tooltip(image: Union[bytes, Path], card_name: OptStr = None, scaling_factor: int = 3) -> str:
     """
     Returns a tooltip string showing a scaled down image for the given path.
@@ -80,6 +87,16 @@ def get_card_image_tooltip(image: Union[bytes, Path], card_name: OptStr = None, 
     card_name = f'<p style="text-align:center">{card_name}</p><br>' if card_name else ""
     return f'{card_name}<img src="data:image/png;base64,{image}">'
 
+def show_wizard_or_dialog(wizard: Union[QDialog]):
+    """
+    Shows a wizard or dialog.
+    Uses the "wizards-open-maximized" setting to determine, if it should be shown as a small floating window or
+    show maximized.
+    """
+    if mtg_proxy_printer.settings.settings["gui"].getboolean("wizards-open-maximized"):
+        wizard.showMaximized()
+    else:
+        wizard.show()
 
 def highlight_widget(widget: QWidget) -> None:
     """Sets a visual highlight on the given widget to make it stand out"""
@@ -123,17 +140,18 @@ def load_ui_from_file(name: str):
     return base_type
 
 def load_icon(name: str) -> QIcon:
+    """Loads a QIcon with the given name from the internal resources"""
     file_path = f"{RESOURCE_PATH_PREFIX}/icons/{name}"
     if not QFile.exists(file_path):
         error_message = f"Icon not found: {file_path}"
         logger.error(error_message)
         raise FileNotFoundError(error_message)
-    icon = QIcon(file_path)
-    return icon
+    return QIcon(file_path)
 
-def load_file(path: str, parent = None) -> bytes:
-    file_path = f"{RESOURCE_PATH_PREFIX}/{path}"
-    file = QFile(file_path, parent)
+def load_file(file_path_str: str, parent: QObject = None) -> bytes:
+    """Returns binary content of an arbitrary file in the Qt resources."""
+    full_file_path = f"{RESOURCE_PATH_PREFIX}/{file_path_str}"
+    file = QFile(full_file_path, parent)
     data = b''
     if file.open(QIODevice.OpenModeFlag.ReadOnly):
         try:
@@ -141,22 +159,29 @@ def load_file(path: str, parent = None) -> bytes:
         finally:
             file.close()
             return data
-    logger.error(f"Opening {file_path} failed")
+    logger.error(f"Opening {full_file_path} failed")
     return data
 
+
+@cache
 def markdown_to_html(markdown: str) -> str:
+    """
+    Converts markdown-formatted text to an HTML 4 snipped that Qt widgets can render natively.
+    """
     browser = QTextEdit()
     browser.setMarkdown(markdown)
     return browser.toHtml()
 
-def format_size(size: float) -> str:
+
+def format_size(size_bytes: float) -> str:
+    """Converts a file size in bytes to a human-readable string. Uses base 2 and SI prefixes."""
     template = QCoreApplication.translate(
         "format_size", "{size} {unit}", "A formatted file size in SI bytes")
     for unit in ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB'):
-        if -1024 < size < 1024:
-            return template.format(size=f"{size:3.2f}", unit=unit)
-        size /= 1024
-    return template.format(size=f"{size:.2f}", unit="YiB")
+        if -1024 < size_bytes < 1024:
+            return template.format(size=f"{size_bytes:3.2f}", unit=unit)
+        size_bytes /= 1024
+    return template.format(size=f"{size_bytes:.2f}", unit="YiB")
 
 
 class WizardBase(QWizard):
