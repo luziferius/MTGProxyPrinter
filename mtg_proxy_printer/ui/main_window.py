@@ -19,8 +19,7 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl, Qt, QSize
 from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices, QDragEnterEvent, QDropEvent, QPixmap
-from PyQt5.QtWidgets import QApplication, QMessageBox, QAction, QWidget, QMainWindow, QDialog
-
+from PyQt5.QtWidgets import QApplication, QMessageBox, QAction, QWidget, QMainWindow, QDialog, QWizard
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
@@ -251,14 +250,14 @@ class MainWindow(QMainWindow):
     def on_action_cleanup_local_image_cache_triggered(self):
         logger.info("User wants to clean up the local image cache")
         wizard = CacheCleanupWizard(self.card_database, self.image_db, self)
-        wizard.show()
+        self.show_wizard_or_dialog(wizard)
 
     @Slot()
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.document, self.language_model, self)
         wizard.request_action.connect(self.image_db.fill_batch_document_action_images)
-        wizard.show()
+        self.show_wizard_or_dialog(wizard)
 
     @Slot()
     def on_action_add_custom_cards_triggered(self):
@@ -266,7 +265,19 @@ class MainWindow(QMainWindow):
         self.current_dialog = dialog = CustomCardImportDialog(self.document, self)
         dialog.finished.connect(self.on_dialog_finished)
         dialog.request_action.connect(self.document.apply)
-        dialog.show()
+        self.show_wizard_or_dialog(dialog)
+
+    @staticmethod
+    def show_wizard_or_dialog(wizard: typing.Union[QDialog]):
+        """
+        Shows a wizard or dialog.
+        Uses the "wizards-open-maximized" setting to determine, if it should be shown as a small floating window or
+        show maximized.
+        """
+        if mtg_proxy_printer.settings.settings["gui"].getboolean("wizards-open-maximized"):
+            wizard.showMaximized()
+        else:
+            wizard.show()
 
     @Slot()
     def on_action_print_triggered(self):

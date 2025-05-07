@@ -358,7 +358,8 @@ class GeneralSettingsPage(Page):
             (ui.check_application_updates_enabled, "update-checks", "check-for-application-updates"),
             (ui.check_card_data_updates_enabled, "update-checks", "check-for-card-data-updates"),
             (ui.automatically_add_opposing_faces, "cards", "automatically-add-opposing-faces"),
-            (ui.gui_open_maximized, "gui", "open-maximized"),
+            (ui.gui_open_maximized, "gui", "gui-open-maximized"),
+            (ui.wizards_open_maximized, "gui", "wizards-open-maximized"),
         ]
         return widgets_with_settings
 
