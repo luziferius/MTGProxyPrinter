@@ -182,7 +182,7 @@ class Application(QApplication):
         settings_window.error_occurred.connect(main_window.on_error_occurred)
 
         main_window.ui.action_show_settings.triggered.connect(
-            partial(main_window.show_wizard_or_dialog, settings_window))
+            partial(mtg_proxy_printer.ui.common.show_wizard_or_dialog, settings_window))
         return settings_window
 
     def _create_document_instance(

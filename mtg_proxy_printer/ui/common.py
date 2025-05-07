@@ -24,11 +24,12 @@ import platform
 from typing import Union, Dict
 
 from PyQt5.QtCore import QFile, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
-from PyQt5.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit
+from PyQt5.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit, QDialog
 from PyQt5.QtGui import QIcon, QPixmap
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
 
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.units_and_sizes import OptStr
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -46,6 +47,7 @@ __all__ = [
     "format_size",
     "WizardBase",
     "get_card_image_tooltip",
+    "show_wizard_or_dialog",
 ]
 
 try:
@@ -85,6 +87,16 @@ def get_card_image_tooltip(image: Union[bytes, Path], card_name: OptStr = None, 
     card_name = f'<p style="text-align:center">{card_name}</p><br>' if card_name else ""
     return f'{card_name}<img src="data:image/png;base64,{image}">'
 
+def show_wizard_or_dialog(wizard: Union[QDialog]):
+    """
+    Shows a wizard or dialog.
+    Uses the "wizards-open-maximized" setting to determine, if it should be shown as a small floating window or
+    show maximized.
+    """
+    if mtg_proxy_printer.settings.settings["gui"].getboolean("wizards-open-maximized"):
+        wizard.showMaximized()
+    else:
+        wizard.show()
 
 def highlight_widget(widget: QWidget) -> None:
     """Sets a visual highlight on the given widget to make it stand out"""
