@@ -51,6 +51,7 @@ del get_logger
 
 __all__ = [
     "SavePDFDialog",
+    "SavePNGDialog",
     "SaveDocumentAsDialog",
     "LoadDocumentDialog",
     "AboutDialog",
@@ -111,6 +112,48 @@ class SavePDFDialog(QFileDialog):
     @Slot()
     def on_reject(self):
         logger.debug("User aborted saving to PDF. Doing nothing.")
+
+
+class SavePNGDialog(QFileDialog):
+
+    def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
+        # Note: Cannot supply already translated strings to __init__,
+        # because tr() requires to have returned from super().__init__()
+        super().__init__(parent, "", self.get_preferred_file_name(document))
+        self.setWindowTitle(self.tr("Export as PNG"))
+        self.setNameFilter(self.tr("PNG images (*.png)"))
+
+        if default_path := read_path("pdf-export", "pdf-export-path"):
+            self.setDirectory(default_path)
+        self.document = document
+        self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+        self.setDefaultSuffix("png")
+        self.setFileMode(QFileDialog.FileMode.AnyFile)
+        self.accepted.connect(self.on_accept)
+        self.rejected.connect(self.on_reject)
+        logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @staticmethod
+    def get_preferred_file_name(document: mtg_proxy_printer.model.document.Document):
+        if document.save_file_path is None:
+            return ""
+        # Note: Qt automatically appends the preferred file extension (.png), if the file does not have one.
+        # So ensure it ends on ".png", if there is a dot in the name. Otherwise, let the user enter the name without
+        # pre-setting an extension for a cleaner dialog
+        stem = document.save_file_path.stem
+        return f"{stem}.png" if "." in stem else stem
+
+    @Slot()
+    def on_accept(self):
+        logger.debug("User chose a file name, about to generate the PNG image sequence")
+        path = self.selectedFiles()[0]
+        mtg_proxy_printer.print.export_png(self.document, path, self)
+        QThreadPool.globalInstance().start(PrintCountUpdater(self.document))
+        logger.info(f"Saved document to {path}")
+
+    @Slot()
+    def on_reject(self):
+        logger.debug("User aborted exporting to PNG. Doing nothing.")
 
 
 class LoadSaveDialog(QFileDialog):
