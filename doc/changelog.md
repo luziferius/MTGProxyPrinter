@@ -2,6 +2,10 @@
 
 # Next version (in development)
 
+## New features
+
+- Export documents as a lossless PNG image sequence. The export can be triggered via the File menu.
+
 ## Changed features
 
 - The main window now opens maximized when starting the application. Added a setting to restore the previous behavior.
