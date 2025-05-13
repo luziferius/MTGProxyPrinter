@@ -201,8 +201,7 @@ def card_db_with_cards(qtbot, card_db: CardDatabase):
             "Flowerfoot_Swordmaster_token",
         ],
     )
-    yield card_db
-    card_db.__dict__.clear()
+    return card_db
 
 
 def generate_test_cases_for_test_translate_card_name():

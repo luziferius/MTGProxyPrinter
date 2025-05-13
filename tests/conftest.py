@@ -19,13 +19,15 @@ This module is automatically discovered by pytest and all pytest
 fixtures defined here are available in all test modules.
 """
 import itertools
+import time
+from pathlib import Path
 import sqlite3
 import unittest.mock
-from pathlib import Path
+from typing import Tuple
 
 from PyQt5.QtGui import QColorConstants, QPixmap
 import pytest
-from hamcrest import assert_that, is_
+from hamcrest import assert_that
 
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings
@@ -39,16 +41,33 @@ from mtg_proxy_printer.model.imagedb_files import ImageKey
 from tests.helpers import fill_card_database_with_json_cards, is_dataclass_equal_to
 
 
-@pytest.fixture(params=[False, True])
-def card_db(request) -> CardDatabase:
+@pytest.fixture(scope="session")
+def card_db_static() -> Tuple[CardDatabase, sqlite3.Connection]:
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     with unittest.mock.patch.dict(section, settings_to_use):
-        card_db = CardDatabase(":memory:", check_same_thread=False)
-    if request.param:
-        card_db.db.execute("PRAGMA reverse_unordered_selects = TRUE")
+        card_db = CardDatabase(":memory:", check_same_thread=True)
     PrintingFilterUpdater(card_db, card_db.db).run()
-    return card_db
+    backup_db = sqlite3.connect(":memory:")
+    card_db.db.backup(backup_db)
+    return card_db, backup_db
+
+
+@pytest.fixture(params=[True, False], scope="function")
+def card_db(request, card_db_static) -> CardDatabase:
+    card_db, backup_db = card_db_static
+    db = card_db.db
+    if request.param:
+        db.execute("PRAGMA reverse_unordered_selects = TRUE")
+    yield card_db
+    card_db.custom_cards.clear()
+    while True:
+        try:
+            backup_db.backup(db)
+            time.sleep(0.01)
+            break
+        except sqlite3.OperationalError:
+            continue
 
 
 @pytest.fixture(params=[False, True])
@@ -87,6 +106,7 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
     document = Document(card_db, image_db)
     document.loader.db = card_db.db
     yield document
+    document.loader.db = None
     document.__dict__.clear()
 
 @pytest.fixture

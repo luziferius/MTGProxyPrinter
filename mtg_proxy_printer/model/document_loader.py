@@ -151,13 +151,14 @@ class LoaderRunner(Runnable):
         super().__init__()
         self.parent = parent
         self.path = path
-        self.worker = None
+        self.worker = None  # Is an attribute to be able to cancel it
 
     def run(self):
         try:
             self.worker = self._create_worker()
             self.worker.load_document()
         finally:
+            self.worker = None
             self.release_instance()
 
     def _create_worker(self):
