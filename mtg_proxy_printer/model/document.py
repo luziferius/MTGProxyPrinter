@@ -25,6 +25,7 @@ import typing
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, \
     QPersistentModelIndex
 
+from mtg_proxy_printer.model.imagedb_files import ImageKey
 from mtg_proxy_printer.natsort import to_list_of_ranges
 from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCustomCard
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageColumns
@@ -414,12 +415,14 @@ class Document(QAbstractItemModel):
                     yield self.index(card_number, 0, page_index)
 
     @staticmethod
-    def _get_page_content_as_scryfall_ids(page: Page) -> typing.Iterable[typing.Tuple[str, bool]]:
-        return ((container.card.scryfall_id, container.card.is_front) for container in page)
+    def _get_page_content_as_image_keys(page: Page) -> typing.Iterable[ImageKey]:
+        return (
+            ImageKey((card := container.card).scryfall_id, card.is_front, card.highres_image)
+            for container in page)
 
-    def get_all_card_keys_in_document(self) -> typing.Set[typing.Tuple[str, bool]]:
+    def get_all_image_keys_in_document(self) -> typing.Set[ImageKey]:
         return set(itertools.chain.from_iterable(
-            map(self._get_page_content_as_scryfall_ids, self.pages)
+            map(self._get_page_content_as_image_keys, self.pages)
         ))
 
     def recreate_page_index_cache(self):
