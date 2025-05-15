@@ -31,6 +31,8 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, ConfigParser
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.print_count_updater import PrintCountUpdater
@@ -116,7 +118,7 @@ class SavePDFDialog(QFileDialog):
 
 class SavePNGDialog(QFileDialog):
 
-    def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
+    def __init__(self, parent: "MainWindow", document: mtg_proxy_printer.model.document.Document):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, "", self.get_preferred_file_name(document))
@@ -147,7 +149,10 @@ class SavePNGDialog(QFileDialog):
     def on_accept(self):
         logger.debug("User chose a file name, about to generate the PNG image sequence")
         path = self.selectedFiles()[0]
-        mtg_proxy_printer.print.export_png(self.document, path, self)
+        main_window: "MainWindow" = self.parent()
+        renderer = mtg_proxy_printer.print.PNGRenderer(main_window, self.document, path)
+        main_window.progress_bars.connect_outer_progress(renderer)
+        renderer.render_document()
         QThreadPool.globalInstance().start(PrintCountUpdater(self.document))
         logger.info(f"Saved document to {path}")
 
