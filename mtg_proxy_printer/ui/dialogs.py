@@ -14,10 +14,11 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import typing
-import pathlib
-import sys
 from pathlib import Path
+import shutil
+import sys
+import typing
+from typing import Tuple
 
 from PyQt5.QtCore import QFile, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
 from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
@@ -31,6 +32,8 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
+from mtg_proxy_printer.model.imagedb_files import ImageKey
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
     from mtg_proxy_printer.model.document import Document
@@ -71,7 +74,7 @@ def read_path(section: str, setting: str) -> str:
     stored = mtg_proxy_printer.settings.settings[section][setting]
     if not stored:
         return ""
-    resolved = str(pathlib.Path(stored).resolve())
+    resolved = str(Path(stored).resolve())
     if not resolved:
         logger.warning(
             f"File system path stored in section {section} setting {setting} does not resolve to an existing path")
@@ -196,7 +199,7 @@ class SaveDocumentAsDialog(LoadSaveDialog):
     @Slot()
     def on_accept(self):
         logger.debug("User chose a file name, about to save the document to disk")
-        path = pathlib.Path(self.selectedFiles()[0])
+        path = Path(self.selectedFiles()[0])
         self.document.save_as(path)
         logger.info(f"Saved document to {path}")
 
@@ -226,7 +229,7 @@ class LoadDocumentDialog(LoadSaveDialog):
     @Slot()
     def on_accept(self):
         logger.debug("User chose a file name, about to load the document from disk")
-        path = pathlib.Path(self.selectedFiles()[0])
+        path = Path(self.selectedFiles()[0])
         self.document.loader.load_document(path)
         logger.info(f"Requested loading document from {path}")
 
@@ -427,7 +430,12 @@ class DocumentSettingsDialog(QDialog):
             item.setGraphicsEffect(None)
 
 
+UNSAFE_FILE_NAME_CHARS = r'''*"/\<>:|?^'''
+UNSAFE_FILE_NAME_MAPPING = str.maketrans(UNSAFE_FILE_NAME_CHARS, "_"*len(UNSAFE_FILE_NAME_CHARS))
+
+
 class ExportCardImagesDialog(QDialog):
+
 
     def __init__(self, document: "Document", parent: QWidget = None):
         super().__init__(parent)
@@ -437,7 +445,9 @@ class ExportCardImagesDialog(QDialog):
         bb = ui.button_box
         bb.button(bb.StandardButton.Ok).setEnabled(True)
         ui.output_path.setText(mtg_proxy_printer.app_dirs.data_directories.user_pictures_dir)
+        self.update_ok_button_enabled_state()
 
+    @Slot()
     def on_output_path_browse_button_clicked(self):
         logger.debug("User about to select a card image output path.")
         if location := QFileDialog.getExistingDirectory(self, self.tr("Select card image export location")):
@@ -449,7 +459,7 @@ class ExportCardImagesDialog(QDialog):
 
     @Slot()
     def update_ok_button_enabled_state(self):  # Slot called via connections defined in the UI file
-        """Enable the Ok button iff at least one export checkbox is checked"""
+        """Enable the Ok button iff at least one export checkbox is checked and the target location is valid"""
         ui = self.ui
         bb = ui.button_box
         bb.button(bb.StandardButton.Ok).setEnabled(
@@ -460,4 +470,31 @@ class ExportCardImagesDialog(QDialog):
         )))
         
     def accept(self):
+        logger.info("User accepted card image export")
+        self._export_images()
         super().accept()
+
+    def _export_images(self):
+        document = self.document
+        card_db = document.card_db
+        image_db_path = document.image_db.db_path
+        image_keys = document.get_all_image_keys_in_document()
+        target_path = Path(self.ui.output_path.text())
+        target_path.mkdir(parents=True, exist_ok=True)
+        for key in image_keys:
+            source_file, target_file = self._format_file_paths(card_db, image_db_path, target_path, key)
+            try:
+                shutil.copy2(source_file, target_file)
+            except (IOError, OSError):
+                break
+
+    @staticmethod
+    def _format_file_paths(
+            card_db: CardDatabase, image_db_path: Path, target_dir: Path, key: ImageKey) -> Tuple[Path, Path]:
+        card = card_db.get_card_with_scryfall_id(key.scryfall_id, key.is_front)
+        source_path = image_db_path / key.format_relative_path()
+        side = "Front" if card.is_front else "Back"
+        name = card.name.translate(UNSAFE_FILE_NAME_MAPPING)
+        target_file_name = f"{card.set_code} {card.collector_number} {side} {name}{source_path.suffix}"
+        return source_path, target_dir/target_file_name
+
