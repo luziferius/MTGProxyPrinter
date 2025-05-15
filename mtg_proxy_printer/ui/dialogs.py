@@ -41,11 +41,13 @@ from mtg_proxy_printer.logger import get_logger
 try:
     from mtg_proxy_printer.ui.generated.about_dialog import Ui_AboutDialog
     from mtg_proxy_printer.ui.generated.document_settings_dialog import Ui_DocumentSettingsDialog
+    from mtg_proxy_printer.ui.generated.export_card_images_dialog import Ui_ExportCardImagesDialog
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
 
     Ui_AboutDialog = load_ui_from_file("about_dialog")
     Ui_DocumentSettingsDialog = load_ui_from_file("document_settings_dialog")
+    Ui_ExportCardImagesDialog = load_ui_from_file("export_card_Images_dialog")
 
 EventType = QEvent.Type
 logger = get_logger(__name__)
@@ -60,6 +62,7 @@ __all__ = [
     "PrintPreviewDialog",
     "PrintDialog",
     "DocumentSettingsDialog",
+    "ExportCardImagesDialog",
 ]
 
 
@@ -421,3 +424,25 @@ class DocumentSettingsDialog(QDialog):
         """Clears all GUI widget highlights."""
         for item in self.findChildren((QWidget,), options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
             item.setGraphicsEffect(None)
+
+class ExportCardImagesDialog(QDialog):
+
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        self.ui = ui = Ui_ExportCardImagesDialog()
+        ui.setupUi(self)
+        bb = ui.button_box
+        bb.button(bb.StandardButton.Ok).setEnabled(True)
+
+    @Slot()
+    def update_ok_button_enabled_state(self):  # Slot called via connections defined in the UI file
+        """Enable the Ok button iff at least one export checkbox is checked"""
+        ui = self.ui
+        bb = ui.button_box
+        bb.button(bb.StandardButton.Ok).setEnabled(any((
+            ui.export_official_cards.isChecked(),
+            ui.export_custom_cards.isChecked(),
+        )))
+        
+    def accept(self):
+        super().accept()
