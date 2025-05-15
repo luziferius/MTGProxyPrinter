@@ -381,7 +381,7 @@ use this to reduce the initial deck shuffling required</string>
     <string>Export document as an image sequence</string>
    </property>
   </action>
-  <action name="actionExport_card_images">
+  <action name="action_export_card_images">
    <property name="icon">
     <iconset theme="document-export"/>
    </property>
