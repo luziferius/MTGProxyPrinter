@@ -17,6 +17,7 @@
 import typing
 import pathlib
 import sys
+from pathlib import Path
 
 from PyQt5.QtCore import QFile, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
 from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
@@ -25,7 +26,6 @@ from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.carddb import CardDatabase
-import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
@@ -33,6 +33,7 @@ import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
+    from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, ConfigParser
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.print_count_updater import PrintCountUpdater
@@ -47,7 +48,7 @@ except ModuleNotFoundError:
 
     Ui_AboutDialog = load_ui_from_file("about_dialog")
     Ui_DocumentSettingsDialog = load_ui_from_file("document_settings_dialog")
-    Ui_ExportCardImagesDialog = load_ui_from_file("export_card_Images_dialog")
+    Ui_ExportCardImagesDialog = load_ui_from_file("export_card_images_dialog")
 
 EventType = QEvent.Type
 logger = get_logger(__name__)
@@ -79,7 +80,7 @@ def read_path(section: str, setting: str) -> str:
 
 class SavePDFDialog(QFileDialog):
 
-    def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
+    def __init__(self, parent: QWidget, document: "Document"):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, "", self.get_preferred_file_name(document))
@@ -97,7 +98,7 @@ class SavePDFDialog(QFileDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @staticmethod
-    def get_preferred_file_name(document: mtg_proxy_printer.model.document.Document):
+    def get_preferred_file_name(document: "Document"):
         if document.save_file_path is None:
             return ""
         # Note: Qt automatically appends the preferred file extension (.pdf), if the file does not have one.
@@ -121,7 +122,7 @@ class SavePDFDialog(QFileDialog):
 
 class SavePNGDialog(QFileDialog):
 
-    def __init__(self, parent: "MainWindow", document: mtg_proxy_printer.model.document.Document):
+    def __init__(self, parent: "MainWindow", document: "Document"):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, "", self.get_preferred_file_name(document))
@@ -139,7 +140,7 @@ class SavePNGDialog(QFileDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @staticmethod
-    def get_preferred_file_name(document: mtg_proxy_printer.model.document.Document):
+    def get_preferred_file_name(document: "Document"):
         if document.save_file_path is None:
             return ""
         # Note: Qt automatically appends the preferred file extension (.png), if the file does not have one.
@@ -178,7 +179,7 @@ class LoadSaveDialog(QFileDialog):
 
 class SaveDocumentAsDialog(LoadSaveDialog):
 
-    def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
+    def __init__(self, document: "Document", parent: QWidget = None, **kwargs):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, **kwargs)
@@ -208,7 +209,7 @@ class LoadDocumentDialog(LoadSaveDialog):
 
     def __init__(
             self, parent: QWidget,
-            document: mtg_proxy_printer.model.document.Document, **kwargs):
+            document: "Document", **kwargs):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, **kwargs)
@@ -310,7 +311,7 @@ class AboutDialog(QDialog):
 
 class PrintPreviewDialog(QPrintPreviewDialog):
 
-    def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
+    def __init__(self, document: "Document", parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
         self.q_printer = mtg_proxy_printer.print.create_printer(self.renderer)
         super().__init__(self.q_printer, parent)
@@ -329,7 +330,7 @@ class PrintPreviewDialog(QPrintPreviewDialog):
 
 class PrintDialog(QPrintDialog):
 
-    def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
+    def __init__(self, document: "Document", parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
         self.q_printer = mtg_proxy_printer.print.create_printer(self.renderer)
         super().__init__(self.q_printer, parent)
@@ -362,7 +363,7 @@ class ChangedSettingsHoverEventFilter(QObject):
 
 class DocumentSettingsDialog(QDialog):
 
-    def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
+    def __init__(self, document: "Document", parent: QWidget = None):
         super().__init__(parent)
         self.ui = Ui_DocumentSettingsDialog()
         self.ui.setupUi(self)
@@ -442,6 +443,7 @@ class ExportCardImagesDialog(QDialog):
         if location := QFileDialog.getExistingDirectory(self, self.tr("Select card image export location")):
             logger.info("User selected a directory path to export to.")
             self.ui.output_path.setText(location)
+            self.update_ok_button_enabled_state()
         else:
             logger.debug("User cancelled path selection")
 
@@ -450,7 +452,9 @@ class ExportCardImagesDialog(QDialog):
         """Enable the Ok button iff at least one export checkbox is checked"""
         ui = self.ui
         bb = ui.button_box
-        bb.button(bb.StandardButton.Ok).setEnabled(any((
+        bb.button(bb.StandardButton.Ok).setEnabled(
+            Path(self.ui.output_path.text()).is_dir()
+            and any((
             ui.export_official_cards.isChecked(),
             ui.export_custom_cards.isChecked(),
         )))
