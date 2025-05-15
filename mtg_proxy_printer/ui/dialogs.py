@@ -31,6 +31,8 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, ConfigParser
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.print_count_updater import PrintCountUpdater
@@ -51,6 +53,7 @@ del get_logger
 
 __all__ = [
     "SavePDFDialog",
+    "SavePNGDialog",
     "SaveDocumentAsDialog",
     "LoadDocumentDialog",
     "AboutDialog",
@@ -111,6 +114,51 @@ class SavePDFDialog(QFileDialog):
     @Slot()
     def on_reject(self):
         logger.debug("User aborted saving to PDF. Doing nothing.")
+
+
+class SavePNGDialog(QFileDialog):
+
+    def __init__(self, parent: "MainWindow", document: mtg_proxy_printer.model.document.Document):
+        # Note: Cannot supply already translated strings to __init__,
+        # because tr() requires to have returned from super().__init__()
+        super().__init__(parent, "", self.get_preferred_file_name(document))
+        self.setWindowTitle(self.tr("Export as PNG"))
+        self.setNameFilter(self.tr("PNG images (*.png)"))
+
+        if default_path := read_path("pdf-export", "pdf-export-path"):
+            self.setDirectory(default_path)
+        self.document = document
+        self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+        self.setDefaultSuffix("png")
+        self.setFileMode(QFileDialog.FileMode.AnyFile)
+        self.accepted.connect(self.on_accept)
+        self.rejected.connect(self.on_reject)
+        logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @staticmethod
+    def get_preferred_file_name(document: mtg_proxy_printer.model.document.Document):
+        if document.save_file_path is None:
+            return ""
+        # Note: Qt automatically appends the preferred file extension (.png), if the file does not have one.
+        # So ensure it ends on ".png", if there is a dot in the name. Otherwise, let the user enter the name without
+        # pre-setting an extension for a cleaner dialog
+        stem = document.save_file_path.stem
+        return f"{stem}.png" if "." in stem else stem
+
+    @Slot()
+    def on_accept(self):
+        logger.debug("User chose a file name, about to generate the PNG image sequence")
+        path = self.selectedFiles()[0]
+        main_window: "MainWindow" = self.parent()
+        renderer = mtg_proxy_printer.print.PNGRenderer(main_window, self.document, path)
+        main_window.progress_bars.connect_outer_progress(renderer)
+        renderer.render_document()
+        QThreadPool.globalInstance().start(PrintCountUpdater(self.document))
+        logger.info(f"Saved document to {path}")
+
+    @Slot()
+    def on_reject(self):
+        logger.debug("User aborted exporting to PNG. Doing nothing.")
 
 
 class LoadSaveDialog(QFileDialog):

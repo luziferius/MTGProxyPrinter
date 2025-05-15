@@ -37,6 +37,7 @@
     <addaction name="action_print_preview"/>
     <addaction name="action_print"/>
     <addaction name="action_print_pdf"/>
+    <addaction name="action_export_png"/>
     <addaction name="separator"/>
     <addaction name="action_import_deck_list"/>
     <addaction name="action_add_custom_cards"/>
@@ -365,6 +366,17 @@ use this to reduce the initial deck shuffling required</string>
    </property>
    <property name="text">
     <string>Add custom cards</string>
+   </property>
+  </action>
+  <action name="action_export_png">
+   <property name="icon">
+    <iconset theme="document-export"/>
+   </property>
+   <property name="text">
+    <string>Create image sequence</string>
+   </property>
+   <property name="toolTip">
+    <string>Export document as an image sequence</string>
    </property>
   </action>
  </widget>
