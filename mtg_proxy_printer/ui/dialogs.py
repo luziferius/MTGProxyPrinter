@@ -425,14 +425,25 @@ class DocumentSettingsDialog(QDialog):
         for item in self.findChildren((QWidget,), options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
             item.setGraphicsEffect(None)
 
+
 class ExportCardImagesDialog(QDialog):
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, document: "Document", parent: QWidget = None):
         super().__init__(parent)
+        self.document = document
         self.ui = ui = Ui_ExportCardImagesDialog()
         ui.setupUi(self)
         bb = ui.button_box
         bb.button(bb.StandardButton.Ok).setEnabled(True)
+        ui.output_path.setText(mtg_proxy_printer.app_dirs.data_directories.user_pictures_dir)
+
+    def on_output_path_browse_button_clicked(self):
+        logger.debug("User about to select a card image output path.")
+        if location := QFileDialog.getExistingDirectory(self, self.tr("Select card image export location")):
+            logger.info("User selected a directory path to export to.")
+            self.ui.output_path.setText(location)
+        else:
+            logger.debug("User cancelled path selection")
 
     @Slot()
     def update_ok_button_enabled_state(self):  # Slot called via connections defined in the UI file

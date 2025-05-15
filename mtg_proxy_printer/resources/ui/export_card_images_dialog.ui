@@ -2,29 +2,72 @@
 <ui version="4.0">
  <class>ExportCardImagesDialog</class>
  <widget class="QDialog" name="ExportCardImagesDialog">
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>301</width>
-    <height>118</height>
+    <width>300</width>
+    <height>200</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Export settings</string>
+   <string>Export card images</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <widget class="QLabel" name="header_label">
-     <property name="text">
-      <string>Which card images should be exported?</string>
+  <layout class="QGridLayout" name="grid_layout">
+   <item row="1" column="2">
+    <widget class="QPushButton" name="output_path_browse_button">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
      </property>
-     <property name="wordWrap">
-      <bool>true</bool>
+     <property name="toolTip">
+      <string>Browse …</string>
+     </property>
+     <property name="text">
+      <string notr="true"/>
+     </property>
+     <property name="icon">
+      <iconset theme="document-open"/>
      </property>
     </widget>
    </item>
-   <item>
+   <item row="10" column="0" colspan="3">
+    <widget class="QDialogButtonBox" name="button_box">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0" colspan="3">
+    <widget class="QCheckBox" name="export_custom_cards">
+     <property name="text">
+      <string>Custom cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="3">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="output_path_label">
+     <property name="text">
+      <string>Output directory:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="3">
     <widget class="QCheckBox" name="export_official_cards">
      <property name="text">
       <string>Official cards</string>
@@ -34,22 +77,38 @@
      </property>
     </widget>
    </item>
-   <item>
-    <widget class="QCheckBox" name="export_custom_cards">
+   <item row="4" column="0" colspan="3">
+    <widget class="QLabel" name="header_label">
      <property name="text">
-      <string>Custom cards</string>
+      <string>Which card images should be exported?</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
-   <item>
-    <widget class="QDialogButtonBox" name="button_box">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="output_path">
+     <property name="placeholderText">
+      <string>Path to a directory</string>
      </property>
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     <property name="clearButtonEnabled">
+      <bool>true</bool>
      </property>
     </widget>
+   </item>
+   <item row="7" column="0" colspan="3">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>
