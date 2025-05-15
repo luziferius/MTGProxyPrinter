@@ -42,7 +42,7 @@
     <addaction name="separator"/>
     <addaction name="action_import_deck_list"/>
     <addaction name="action_add_custom_cards"/>
-    <addaction name="actionExport_card_images"/>
+    <addaction name="action_export_card_images"/>
     <addaction name="separator"/>
     <addaction name="action_quit"/>
    </widget>
