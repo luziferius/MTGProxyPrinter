@@ -20,7 +20,7 @@ import pathlib
 import typing
 from abc import abstractmethod
 
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt
 from PyQt5.QtGui import QDesktopServices, QStandardItem, QIcon
 from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox
 
@@ -28,7 +28,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.runner import Runnable, AsyncTask
+from mtg_proxy_printer.runner import AsyncTask
 from mtg_proxy_printer.ui.common import highlight_widget, load_file
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, QuantityT
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
