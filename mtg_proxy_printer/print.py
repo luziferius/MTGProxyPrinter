@@ -99,7 +99,6 @@ class PNGRenderer(AsyncTask):
         image.save(str(output_path), "PNG", 0)
         self.completed += 1
         self.advance_progress.emit()
-        self.set_progress.emit(self.completed)
         if self.completed == self.page_count:
             self.task_completed.emit()
 
