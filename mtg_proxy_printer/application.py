@@ -111,7 +111,8 @@ class Application(QApplication):
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
 
         card_db_migration_runner = DatabaseMigrationRunner(self.card_db)
-        card_db_migration_runner.connect_main_window_signals(self.main_window)
+        self.main_window.progress_bars.connect_outer_progress(card_db_migration_runner.total_update_signals)
+        self.main_window.progress_bars.connect_inner_progress(card_db_migration_runner.script_update_signals)
         card_db_migration_runner.total_update_signals.task_completed.connect(self._on_carddb_migrations_completed)
         QThreadPool.globalInstance().start(card_db_migration_runner)
 

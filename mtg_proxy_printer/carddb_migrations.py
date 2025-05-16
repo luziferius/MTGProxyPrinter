@@ -735,27 +735,6 @@ class DatabaseMigrationRunner(Runnable):
         self.migration_scripts = migration_scripts or MIGRATION_SCRIPTS
         logger.debug(f"Created {self.__class__.__name__} instance.")
 
-    def connect_main_window_signals(self, main_window: "MainWindow"):
-        progress_bars = main_window.progress_bars
-        self.connect_progress_signals(
-            self.total_update_signals,
-            progress_bars.begin_outer_progress,
-            progress_bars.set_outer_progress,
-            progress_bars.end_outer_progress,
-        )
-        self.connect_progress_signals(
-            self.script_update_signals,
-            progress_bars.begin_inner_progress,
-            progress_bars.set_inner_progress,
-            progress_bars.end_inner_progress
-        )
-
-    @staticmethod
-    def connect_progress_signals(signals: ProgressSignalContainer, begin_signal, progress_signal, end_signal):
-        signals.begin_task.connect(begin_signal, QueuedConnection)
-        signals.set_progress.connect(progress_signal, QueuedConnection)
-        signals.task_completed.connect(end_signal, QueuedConnection)
-
     @with_database_write_lock()
     def run(self):
         """
