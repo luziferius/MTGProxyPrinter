@@ -16,7 +16,8 @@
 
 import typing
 
-from PyQt5.QtCore import QRunnable, QObject, pyqtSignal as Signal
+from PyQt5.QtCore import QRunnable, QObject, pyqtSignal as Signal, QThreadPool
+from PyQt5.QtWidgets import QApplication
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -24,7 +25,9 @@ del get_logger
 
 __all__ = [
     "Runnable",
-    "ProgressSignalContainer"
+    "ProgressSignalContainer",
+    "AsyncTask",
+    "AsyncTaskRunner",
 ]
 
 
@@ -35,6 +38,12 @@ class ProgressSignalContainer(QObject):
     advance_progress = Signal()
     ui_update_required = Signal()
     error_occurred = Signal(str)
+
+
+class AsyncTask(ProgressSignalContainer):
+    """Base class for asynchronous tasks with progress reporting"""
+    def run(self):
+        pass
 
 
 class Runnable(QRunnable):
@@ -59,3 +68,16 @@ class Runnable(QRunnable):
         for item in list(cls.INSTANCES.values()):
             logger.debug(f"Cancel task {item}")
             item.cancel()
+
+
+class AsyncTaskRunner(Runnable):
+    """A QRunnable that executes an AsyncTask instance"""
+    def __init__(self, task: AsyncTask):
+        super().__init__()
+        self.task = task
+
+    def run(self):
+        try:
+            self.task.run()
+        finally:
+            self.release_instance()
