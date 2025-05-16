@@ -12,13 +12,13 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 from functools import partial
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
-from PyQt5.QtWidgets import QWidget, QLabel, QProgressBar, QHBoxLayout
+from PyQt5.QtWidgets import QWidget,QHBoxLayout
 
-from mtg_proxy_printer.runner import ProgressSignalContainer, AsyncTask
-from test_progress_meter import progress_meter
+from mtg_proxy_printer.runner import ProgressSignalContainer
 
 try:
     from mtg_proxy_printer.ui.generated.progress_bar import Ui_ProgressBar
