@@ -13,14 +13,14 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
 from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.runner import ProgressSignalContainer
 from mtg_proxy_printer.ui.progress_bar import ProgressBar, ProgressBarManager
-from tests.hasgetter import has_getters
+
+from tests.hasgetter import has_getter, has_getters
 
 
 @pytest.fixture()
@@ -105,8 +105,27 @@ def test_task_completed_hides_itself(bar: ProgressBar):
 def manager(qtbot: QtBot) -> ProgressBarManager:
     manager = ProgressBarManager()
     qtbot.add_widget(manager)
-    with qtbot.wait_exposed(manager):
-        manager.show()
     return manager
 
-# TODO: Unit tests for ProgressBarManager
+
+def test_manager_is_initially_empty(manager: ProgressBarManager):
+    assert_that(manager, has_getter("layout", has_getter("isEmpty", equal_to(True))))
+
+
+@pytest.mark.parametrize("count", [1, 5])
+def test_manager_adds_bar_for_each_task(manager: ProgressBarManager, count: int):
+    for _ in range(count):
+        task = ProgressSignalContainer()
+        manager.add_task(task)
+    assert_that(
+        manager.layout().count(), is_(count)
+    )
+
+
+def test_task_completion_removes_task(manager: ProgressBarManager):
+    manager.add_task(task1 := ProgressSignalContainer())
+    manager.add_task(task2 := ProgressSignalContainer())
+    task1.setObjectName("Completed")
+    task2.setObjectName("Still running")
+    task1.task_completed.emit()
+    assert_that(manager.findChildren(ProgressBar), contains_exactly(has_property("task", equal_to(task2))))

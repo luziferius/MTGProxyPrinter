@@ -86,4 +86,5 @@ class ProgressBarManager(QWidget):
         bar = ProgressBar(task, self)
         layout = self.layout()
         task.task_completed.connect(partial(layout.removeWidget, bar))
+        task.task_completed.connect(partial(bar.setParent, None))
         layout.addWidget(bar)
