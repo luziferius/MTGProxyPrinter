@@ -16,135 +16,97 @@
 
 from hamcrest import *
 import pytest
-from PyQt5.QtWidgets import QWidget
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.ui.progress_bar import ProgressBar
+from mtg_proxy_printer.runner import ProgressSignalContainer
+from mtg_proxy_printer.ui.progress_bar import ProgressBar, ProgressBarManager
 from tests.hasgetter import has_getters
-
-
-INNER_ELEMENTS = ["inner_progress_bar", "inner_progress_label"]
-OUTER_ELEMENTS = ["outer_progress_bar", "outer_progress_label"]
-INDEPENDENT_ELEMENTS = ["independent_bar", "independent_label"]
-ALL_ELEMENTS = INNER_ELEMENTS + OUTER_ELEMENTS + INDEPENDENT_ELEMENTS
 
 
 @pytest.fixture()
 def bar(qtbot: QtBot) -> ProgressBar:
-    progress_bar = ProgressBar()
+    task = ProgressSignalContainer()
+    progress_bar = ProgressBar(task)
     qtbot.add_widget(progress_bar)
     with qtbot.wait_exposed(progress_bar):
         progress_bar.show()
-    yield progress_bar
-    progress_bar.hide()
+    return progress_bar
 
 
-@pytest.mark.parametrize("element", ALL_ELEMENTS)
-def test___init___hides_ui(bar: ProgressBar, element: str):
-    widget: QWidget = getattr(bar.ui, element)
-    assert_that(widget.isHidden(), is_(True))
+def test___init___initializes_hidden_state(bar: ProgressBar):
+    ui = bar.ui
+    assert_that(ui.cancel_button.isHidden(), is_(True))
+    assert_that(ui.task_label.isVisible(), is_(True))
+    assert_that(ui.progress_bar.isVisible(), is_(True))
 
 
-def test_begin_outer_progress_configures_label(bar: ProgressBar):
-    bar.begin_outer_progress(10, "Test")
+@pytest.mark.parametrize("text, visible", [
+    ("Test task", True),
+    ("Other", True),
+    ("", False),
+])
+def test_begin_task_signal_sets_ui_label(bar: ProgressBar, text: str, visible: bool):
+    bar.task.begin_task.emit(123, text)
+    label = bar.ui.task_label
     assert_that(
-        bar.ui.outer_progress_label,
-        has_getters({
-            "isVisible": is_(True),
-            "text": equal_to("Test"),
+        label, has_getters({
+            "text": equal_to(text),
+            "isVisible": equal_to(visible),
         })
     )
 
 
-def test_begin_outer_progress_configures_progress_bar(bar: ProgressBar):
-    bar.begin_outer_progress(10, "Test")
+@pytest.mark.parametrize("value", [1, 10, 1000])
+def test_begin_task_signal_sets_progress_bar_maximum(bar: ProgressBar, value: int):
+    bar.task.begin_task.emit(value, "")
+    progress_bar = bar.ui.progress_bar
     assert_that(
-        bar.ui.outer_progress_bar,
-        has_getters({
-            "isVisible": is_(True),
-            "value": is_(0),
-            "maximum": is_(10),
+        progress_bar, has_getters({
+            "minimum": equal_to(0),
+            "maximum": equal_to(value),
+            "value": equal_to(0),
         })
     )
 
 
-def test_begin_outer_progress_resets_progress(bar: ProgressBar):
-    bar.ui.outer_progress_bar.setValue(5)
-    bar.begin_outer_progress(10, "Test")
-    assert_that(bar.ui.outer_progress_bar.value(), is_(0))
+def test_advance_progress_signal_advances_progress_by_1(bar: ProgressBar):
+    bar.task.begin_task.emit(10, "")
+    for value in range(1, 11):
+        bar.task.advance_progress.emit()
+        progress_bar = bar.ui.progress_bar
+        assert_that(
+            progress_bar, has_getters({
+                "minimum": equal_to(0),
+                "maximum": equal_to(10),
+                "value": equal_to(value),
+            })
+        )
 
 
-def test_begin_inner_progress_configures_label(bar: ProgressBar):
-    bar.begin_inner_progress(10, "Test")
+@pytest.mark.parametrize("value", [1, 10, 100])
+def test_set_progress_signal_sets_progress(bar: ProgressBar, value: int):
+    bar.task.begin_task.emit(1000, "")
+    bar.task.set_progress.emit(value)
+    progress_bar = bar.ui.progress_bar
     assert_that(
-        bar.ui.inner_progress_label,
-        has_getters({
-            "isVisible": is_(True),
-            "text": equal_to("Test"),
+        progress_bar, has_getters({
+            "minimum": equal_to(0),
+            "maximum": equal_to(1000),
+            "value": equal_to(value),
         })
     )
 
-
-def test_begin_inner_progress_configures_progress_bar(bar: ProgressBar):
-    bar.begin_inner_progress(10, "Test")
-    assert_that(
-        bar.ui.inner_progress_bar,
-        has_getters({
-            "isVisible": is_(True),
-            "value": is_(0),
-            "maximum": is_(10),
-        })
-    )
+def test_task_completed_hides_itself(bar: ProgressBar):
+    bar.task.task_completed.emit()
+    assert_that(bar.isHidden(), is_(True))
 
 
-def test_begin_inner_progress_resets_progress(bar: ProgressBar):
-    bar.ui.inner_progress_bar.setValue(5)
-    bar.begin_inner_progress(10, "Test")
-    assert_that(bar.ui.inner_progress_bar.value(), is_(0))
+@pytest.fixture()
+def manager(qtbot: QtBot) -> ProgressBarManager:
+    manager = ProgressBarManager()
+    qtbot.add_widget(manager)
+    with qtbot.wait_exposed(manager):
+        manager.show()
+    return manager
 
-
-def test_begin_independent_progress_configures_label(bar: ProgressBar):
-    bar.begin_independent_progress(10, "Test")
-    assert_that(
-        bar.ui.independent_label,
-        has_getters({
-            "isVisible": is_(True),
-            "text": equal_to("Test"),
-        })
-    )
-
-
-def test_begin_independent_progress_configures_progress_bar(bar: ProgressBar):
-    bar.begin_independent_progress(10, "Test")
-    assert_that(
-        bar.ui.independent_bar,
-        has_getters({
-            "isVisible": is_(True),
-            "value": is_(0),
-            "maximum": is_(10),
-        })
-    )
-
-
-def test_begin_independent_progress_resets_progress(bar: ProgressBar):
-    bar.ui.independent_bar.setValue(5)
-    bar.begin_independent_progress(10, "Test")
-    assert_that(bar.ui.independent_bar.value(), is_(0))
-
-
-@pytest.mark.parametrize("value", [0, 5, 10])
-def test_set_outer_progress(bar: ProgressBar, value: int):
-    bar.set_outer_progress(value)
-    assert_that(bar.ui.outer_progress_bar.value(), is_(equal_to(value)))
-
-
-@pytest.mark.parametrize("value", [0, 5, 10])
-def test_set_inner_progress(bar: ProgressBar, value: int):
-    bar.set_inner_progress(value)
-    assert_that(bar.ui.inner_progress_bar.value(), is_(equal_to(value)))
-
-
-@pytest.mark.parametrize("value", [0, 5, 10])
-def test_independent_progress(bar: ProgressBar, value: int):
-    bar.set_independent_progress(value)
-    assert_that(bar.ui.independent_bar.value(), is_(equal_to(value)))
+# TODO: Unit tests for ProgressBarManager

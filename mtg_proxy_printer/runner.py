@@ -16,8 +16,7 @@
 
 import typing
 
-from PyQt5.QtCore import QRunnable, QObject, pyqtSignal as Signal, QThreadPool
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QRunnable, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -39,6 +38,13 @@ class ProgressSignalContainer(QObject):
     ui_update_required = Signal()
     error_occurred = Signal(str)
 
+    @property
+    def can_cancel(self) -> bool:
+        return False
+
+    @Slot()
+    def cancel(self):
+        pass
 
 class AsyncTask(ProgressSignalContainer):
     """Base class for asynchronous tasks with progress reporting"""

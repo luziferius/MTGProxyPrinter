@@ -113,7 +113,7 @@ def export_pdf(document: Document, file_path: str, parent: "SavePDFDialog" = Non
     logger.info(f'Exporting document with {total_pages} pages as PDF to "{file_path}"')
     total_documents = math.ceil(total_pages/pages_to_print)
     export_progress = ProgressSignalContainer()
-    main_window.progress_bars.connect_outer_progress(export_progress)
+    main_window.progress_bar_manager.connect_outer_progress(export_progress)
     export_progress.begin_task.emit(
         total_pages, QApplication.translate("export_pdf", "Write PDF:", "Progress label"))
     QApplication.processEvents()

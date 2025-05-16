@@ -153,7 +153,7 @@ class SavePNGDialog(QFileDialog):
         path = self.selectedFiles()[0]
         main_window: "MainWindow" = self.parent()
         renderer = mtg_proxy_printer.print.PNGRenderer(main_window, self.document, path)
-        main_window.progress_bars.connect_outer_progress(renderer)
+        main_window.progress_bar_manager.connect_outer_progress(renderer)
         QThreadPool.globalInstance().start(AsyncTaskRunner(renderer))
         QThreadPool.globalInstance().start(PrintCountUpdater(self.document))
         logger.info(f"Saved document to {path}")
