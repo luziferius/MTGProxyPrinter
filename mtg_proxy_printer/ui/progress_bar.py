@@ -72,9 +72,9 @@ class ProgressBar(QWidget):
     @staticmethod
     def _connect_progress_slots(
             sender: ProgressSignalContainer, con_type: ConnectionType, begin_slot, progress_slot, end_slot):
-        sender.begin_update.connect(begin_slot, con_type)
-        sender.progress.connect(progress_slot, con_type)
-        sender.update_completed.connect(end_slot, con_type)
+        sender.begin_task.connect(begin_slot, con_type)
+        sender.set_progress.connect(progress_slot, con_type)
+        sender.task_completed.connect(end_slot, con_type)
 
     @staticmethod
     def _set_retain_size_policy(widget: QWidget, value: bool):

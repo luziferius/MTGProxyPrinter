@@ -112,7 +112,7 @@ class Application(QApplication):
 
         card_db_migration_runner = DatabaseMigrationRunner(self.card_db)
         card_db_migration_runner.connect_main_window_signals(self.main_window)
-        card_db_migration_runner.total_update_signals.update_completed.connect(self._on_carddb_migrations_completed)
+        card_db_migration_runner.total_update_signals.task_completed.connect(self._on_carddb_migrations_completed)
         QThreadPool.globalInstance().start(card_db_migration_runner)
 
     @Slot()
@@ -122,7 +122,7 @@ class Application(QApplication):
             "Card database migrations completed. Database re-opened. Checking if the printing filters need updates.")
         printing_filter_updater_runner = PrintingFilterUpdater(self.card_db)
         printing_filter_updater_runner.connect_main_window_signals(self.main_window)
-        printing_filter_updater_runner.signals.update_completed.connect(self._on_printing_filter_updater_completed)
+        printing_filter_updater_runner.signals.task_completed.connect(self._on_printing_filter_updater_completed)
         QThreadPool.globalInstance().start(printing_filter_updater_runner)
 
     @Slot()

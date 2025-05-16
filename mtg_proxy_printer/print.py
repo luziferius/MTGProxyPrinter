@@ -71,7 +71,7 @@ class PNGRenderer(ProgressSignalContainer):
         page_count = self.page_count
         if not page_count:  # No pages in document
             logger.error("Tried to export a document with zero pages. Aborting.")
-            self.update_completed.emit()
+            self.task_completed.emit()
             return
         logger.info(f'Exporting document with {document.rowCount()} pages as PNG image sequence to "{file_path}"')
         page_size = document.page_layout.to_page_layout(RenderMode.ON_PAPER).pageSize().sizePixels(
@@ -80,7 +80,7 @@ class PNGRenderer(ProgressSignalContainer):
         scene = PageScene(document, RenderMode.ON_PAPER, self)
         number_width = len(str(page_count))
         parent = file_path.parent
-        self.begin_update.emit(page_count, self.tr("Export as PNGs"))
+        self.begin_task.emit(page_count, self.tr("Export as PNGs"))
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
             output_path = parent / file_name
@@ -95,9 +95,9 @@ class PNGRenderer(ProgressSignalContainer):
         image.save(str(output_path), "PNG", 0)
         self.completed += 1
         self.advance_progress.emit()
-        self.progress.emit(self.completed)
+        self.set_progress.emit(self.completed)
         if self.completed == self.page_count:
-            self.update_completed.emit()
+            self.task_completed.emit()
 
 
 def export_pdf(document: Document, file_path: str, parent: QObject = None):

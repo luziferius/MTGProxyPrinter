@@ -83,13 +83,13 @@ class PrintingFilterUpdater(Runnable):
 
     def connect_progress_signals(self, begin_signal, progress_signal, end_signal):
         signals = self.signals
-        signals.begin_update.connect(begin_signal, QueuedConnection)
-        signals.progress.connect(progress_signal, QueuedConnection)
-        signals.update_completed.connect(end_signal, QueuedConnection)
+        signals.begin_task.connect(begin_signal, QueuedConnection)
+        signals.set_progress.connect(progress_signal, QueuedConnection)
+        signals.task_completed.connect(end_signal, QueuedConnection)
 
     def advance_progress(self):
         self.progress += 1
-        self.signals.progress.emit(self.progress)
+        self.signals.set_progress.emit(self.progress)
         self.signals.advance_progress.emit()
 
     @property
@@ -115,7 +115,7 @@ class PrintingFilterUpdater(Runnable):
             if self.db_passed:
                 # Passed-in connections have a running transaction, which has to be closed
                 self.db.commit()
-            self.signals.begin_update.emit(
+            self.signals.begin_task.emit(
                 self.PROGRESS_STEP_COUNT,
                 QCoreApplication.translate("PrintingFilterUpdater.store_current_printing_filters()",
                                            "Processing updated card filters:"))
@@ -128,7 +128,7 @@ class PrintingFilterUpdater(Runnable):
             self.signals.error_occurred.emit(e.sqlite_errorname)
             self.db.rollback()
         finally:
-            self.signals.update_completed.emit()
+            self.signals.task_completed.emit()
             if not self.db_passed:
                 logger.debug(f"Closing {self.__class__.__name__} connection")
                 self.db.close()

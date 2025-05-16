@@ -752,9 +752,9 @@ class DatabaseMigrationRunner(Runnable):
 
     @staticmethod
     def connect_progress_signals(signals: ProgressSignalContainer, begin_signal, progress_signal, end_signal):
-        signals.begin_update.connect(begin_signal, QueuedConnection)
-        signals.progress.connect(progress_signal, QueuedConnection)
-        signals.update_completed.connect(end_signal, QueuedConnection)
+        signals.begin_task.connect(begin_signal, QueuedConnection)
+        signals.set_progress.connect(progress_signal, QueuedConnection)
+        signals.task_completed.connect(end_signal, QueuedConnection)
 
     @with_database_write_lock()
     def run(self):
@@ -765,7 +765,7 @@ class DatabaseMigrationRunner(Runnable):
         begin_schema_version = self._get_schema_version(db)
         target_version = max(self.migration_scripts.keys())+1
         if begin_schema_version >= target_version:
-            self.total_update_signals.update_completed.emit()
+            self.total_update_signals.task_completed.emit()
             self.release_instance()
             return
         if self.migration_scripts is not MIGRATION_SCRIPTS:
@@ -792,7 +792,7 @@ class DatabaseMigrationRunner(Runnable):
         msg = QCoreApplication.translate("DatabaseMigrationRunner", "Running database migrations:", "")
         progress_meter = ProgressMeter(
             target_version-begin_schema_version+2, msg,  # ANALYZE and VACUUM (2 steps) are run as top-level tasks
-            signals.begin_update.emit, signals.progress.emit, signals.update_completed.emit)
+            signals.begin_task.emit, signals.set_progress.emit, signals.task_completed.emit)
         return progress_meter
 
     @staticmethod
@@ -810,7 +810,7 @@ class DatabaseMigrationRunner(Runnable):
             "The numeric parameter is a version number, and not countable.", source_version)
         meter = ProgressMeter(
             steps, msg,
-            signals.begin_update.emit, signals.progress.emit, signals.update_completed.emit)
+            signals.begin_task.emit, signals.set_progress.emit, signals.task_completed.emit)
 
         logger.debug(f"Starting migration from {source_version}")
         db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)

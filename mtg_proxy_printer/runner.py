@@ -32,10 +32,10 @@ __all__ = [
 
 
 class ProgressSignalContainer(QObject):
-    begin_update = Signal(int, str)
-    progress = Signal(int)
-    update_completed = Signal()
+    begin_task = Signal(int, str)
+    set_progress = Signal(int)
     advance_progress = Signal()
+    task_completed = Signal()
     ui_update_required = Signal()
     error_occurred = Signal(str)
 
