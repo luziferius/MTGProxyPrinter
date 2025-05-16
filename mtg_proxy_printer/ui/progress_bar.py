@@ -54,26 +54,29 @@ class ProgressBar(QWidget):
     def connect_inner_progress(self, sender: ProgressSignalContainer, con_type: ConnectionType = QueuedConnection):
         self._connect_progress_slots(
             sender, con_type,
-            self.begin_inner_progress, self.set_inner_progress, self.end_inner_progress
+            self.begin_inner_progress, self.set_inner_progress, self.advance_inner_progress, self.end_inner_progress
         )
 
     def connect_outer_progress(self, sender: ProgressSignalContainer, con_type: ConnectionType = QueuedConnection):
         self._connect_progress_slots(
             sender, con_type,
-            self.begin_outer_progress, self.set_outer_progress, self.end_outer_progress
+            self.begin_outer_progress, self.set_outer_progress, self.advance_outer_progress, self.end_outer_progress
         )
 
     def connect_independent_progress(self, sender: ProgressSignalContainer, con_type: ConnectionType = QueuedConnection):
         self._connect_progress_slots(
             sender, con_type,
-            self.begin_independent_progress, self.set_independent_progress, self.end_independent_progress
+            self.begin_independent_progress, self.set_independent_progress, self.advance_independent_progress,
+            self.end_independent_progress
         )
 
     @staticmethod
     def _connect_progress_slots(
-            sender: ProgressSignalContainer, con_type: ConnectionType, begin_slot, progress_slot, end_slot):
+            sender: ProgressSignalContainer, con_type: ConnectionType,
+            begin_slot, set_progress_slot, advance_progress_slot, end_slot):
         sender.begin_task.connect(begin_slot, con_type)
-        sender.set_progress.connect(progress_slot, con_type)
+        sender.set_progress.connect(set_progress_slot, con_type)
+        sender.advance_progress.connect(advance_progress_slot, con_type)
         sender.task_completed.connect(end_slot, con_type)
 
     @staticmethod
@@ -106,25 +109,42 @@ class ProgressBar(QWidget):
         progress_bar.setVisible(True)
 
     @Slot()
+    @Slot(int)
+    def advance_outer_progress(self, amount: int = 1):
+        self._advance_progress(self.ui.outer_progress_bar, amount)
+
+    @Slot()
+    @Slot(int)
+    def advance_inner_progress(self, amount: int = 1):
+        self._advance_progress(self.ui.inner_progress_bar, amount)
+
+    @Slot()
+    @Slot(int)
+    def advance_independent_progress(self, amount: int = 1):
+        self._advance_progress(self.ui.independent_bar, amount)
+
+    @staticmethod
+    def _advance_progress(progress_bar: QProgressBar, amount: int):
+        progress_bar.setValue(progress_bar.value() + amount)
+
+    @Slot()
     def end_outer_progress(self):
-        progress_bar = self.ui.outer_progress_bar
-        if (current := progress_bar.value()) != (maximum := progress_bar.maximum()):
-            logger.warning(f"Outer progress bar missed 100% upon completion. {current=}, {maximum=}")
-        progress_bar.hide()
-        self.ui.outer_progress_label.hide()
+        ui = self.ui
+        self._end_progress(ui.outer_progress_bar, ui.outer_progress_label, "Outer")
 
     @Slot()
     def end_inner_progress(self):
-        progress_bar = self.ui.inner_progress_bar
-        if (current := progress_bar.value()) != (maximum := progress_bar.maximum()):
-            logger.warning(f"Inner progress bar missed 100% upon completion. {current=}, {maximum=}")
-        progress_bar.hide()
-        self.ui.inner_progress_label.hide()
+        ui = self.ui
+        self._end_progress(ui.inner_progress_bar, ui.inner_progress_label, "Inner")
 
     @Slot()
     def end_independent_progress(self):
-        progress_bar = self.ui.independent_bar
+        ui = self.ui
+        self._end_progress(ui.independent_bar, ui.independent_label, "Independent")
+
+    @staticmethod
+    def _end_progress(progress_bar: QProgressBar, label: QLabel, log_name: str):
         if (current := progress_bar.value()) != (maximum := progress_bar.maximum()):
-            logger.warning(f"Independent progress bar missed 100% upon completion. {current=}, {maximum=}")
+            logger.warning(f"{log_name} progress bar missed 100% upon completion. {current=}, {maximum=}")
         progress_bar.hide()
-        self.ui.independent_label.hide()
+        label.hide()
