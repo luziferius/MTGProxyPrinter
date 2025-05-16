@@ -78,7 +78,7 @@ def read_path(section: str, setting: str) -> str:
 
 class SavePDFDialog(QFileDialog):
 
-    def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
+    def __init__(self, parent: "MainWindow", document: mtg_proxy_printer.model.document.Document):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, "", self.get_preferred_file_name(document))

@@ -14,26 +14,28 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import math
 from functools import partial
-
-try:
-    from os import process_cpu_count
-except ImportError:
-    from os import cpu_count as process_cpu_count
+import math
 from pathlib import Path
 from threading import BoundedSemaphore
 import typing
 
+try:
+    from os import process_cpu_count
+except ImportError:  # Py 3.8 compatibility
+    from os import cpu_count as process_cpu_count
+
+from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex, QThreadPool
 from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage
 from PyQt5.QtPrintSupport import QPrinter
 
 
-from mtg_proxy_printer.runner import ProgressSignalContainer, AsyncTask
-
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
+    from mtg_proxy_printer.ui.dialogs import SavePDFDialog
+
+from mtg_proxy_printer.runner import ProgressSignalContainer, AsyncTask
 from mtg_proxy_printer.units_and_sizes import RESOLUTION
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
@@ -101,17 +103,28 @@ class PNGRenderer(AsyncTask):
             self.task_completed.emit()
 
 
-def export_pdf(document: Document, file_path: str, parent: QObject = None):
+def export_pdf(document: Document, file_path: str, parent: "SavePDFDialog" = None):
+    main_window: "MainWindow" = parent.parent()
     pages_to_print = settings["pdf-export"].getint("pdf-page-count-limit") or document.rowCount()
     if not pages_to_print:  # No pages in document. Return now, to avoid dividing by zero
         logger.error("Tried to export a document with zero pages as a PDF. Aborting.")
         return
     logger.info(f'Exporting document with {document.rowCount()} pages as PDF to "{file_path}"')
     total_documents = math.ceil(document.rowCount()/pages_to_print)
+    outer_progress = ProgressSignalContainer()
+    main_window.progress_bars.connect_outer_progress(outer_progress)
+    outer_progress.begin_task.emit(
+        total_documents, QApplication.translate("export_pdf", "Write Documents"))
+    QApplication.processEvents()
     for document_index in range(total_documents):
         logger.info(f"Creating PDF ({document_index+1}/{total_documents}) with up to {pages_to_print} pages.")
         printer = PDFPrinter(document, file_path, parent, document_index, pages_to_print)
-        printer.print_document()
+        main_window.progress_bars.connect_inner_progress(printer.progress)
+        printer.run()
+        outer_progress.set_progress.emit(document_index+1)
+        QApplication.processEvents()
+    outer_progress.task_completed.emit()
+    QApplication.processEvents()
 
 
 def create_printer(renderer: "Renderer") -> QPrinter:
@@ -165,6 +178,7 @@ class PDFPrinter(QPdfWriter):
             path = Path(file_path)
             file_path = str(path.with_stem(f"{path.stem}-{suffix}"))
         super().__init__(file_path)
+        self.progress = ProgressSignalContainer(self)
         self.setParent(parent)
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
@@ -183,8 +197,10 @@ class PDFPrinter(QPdfWriter):
             size.transpose()
         return QPageSize(size, QPageSize.Unit.Millimeter)
 
-    def print_document(self):
+    def run(self):
         logger.info("Begin rendering PDF document.")
+        self.progress.begin_task.emit(self.pages_to_print, "Write PDF pages")
+        QApplication.processEvents()
         layout = self.document.page_layout
         scaling = 1
         self.painter.begin(self)
@@ -200,13 +216,17 @@ class PDFPrinter(QPdfWriter):
         first_index = self.document_index * self.pages_to_print
         last_index = min((self.document_index + 1) * self.pages_to_print, self.document.rowCount())
 
-        for page_number in range(first_index, last_index):
+        for progress, page_number in enumerate(range(first_index, last_index), start=1):
             logger.debug(f"Rendering page {page_number+1}/{self.document.rowCount()}")
             self._switch_to_page(page_number)
             self.scene.render(self.painter)
             if page_number + 1 < last_index:  # Avoid including a trailing, empty page
                 self.newPage()
+            self.progress.set_progress.emit(progress)
+            QApplication.processEvents()
         self.painter.end()
+        self.progress.task_completed.emit()
+        QApplication.processEvents()
         logger.info("Writing document finished.")
 
     def _switch_to_page(self, page_number: int):
