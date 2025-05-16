@@ -28,6 +28,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.runner import Runnable, AsyncTask
 from mtg_proxy_printer.ui.common import highlight_widget, load_file
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, QuantityT
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
@@ -432,14 +433,10 @@ class GeneralSettingsPage(Page):
 
 
 class HidePrintingsPage(Page):
+    request_run_async_task = Signal(AsyncTask)
 
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(self.tr("Hide printings"), "view-hidden", self.tr("Hide unwanted printings"))
-
-    error_occurred = Signal(str)
-    long_running_process_begins = Signal(int, str)
-    process_updated = Signal(int)
-    process_finished = Signal()
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -460,10 +457,7 @@ class HidePrintingsPage(Page):
         ui.card_filter_general_settings.save_settings(section)
         ui.card_filter_format_settings.save_settings(section)
         section["hidden-sets"] = ui.set_filter_settings.toPlainText()
-        updater = PrintingFilterUpdater(self.card_db)
-        updater.connect_progress_signals(self.long_running_process_begins, self.process_updated, self.process_finished)
-        updater.signals.error_occurred.connect(self.error_occurred, QueuedConnection)
-        QThreadPool.globalInstance().start(updater)
+        self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
 
     def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]

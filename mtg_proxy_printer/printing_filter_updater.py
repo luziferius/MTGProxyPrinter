@@ -22,10 +22,9 @@ from PyQt5.QtCore import Qt, QCoreApplication
 import mtg_proxy_printer.settings
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.carddb import CardDatabase
-    from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
-from mtg_proxy_printer.runner import Runnable, ProgressSignalContainer
+from mtg_proxy_printer.runner import AsyncTask
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import StringList, SectionProxy
 logger = get_logger(__name__)
@@ -34,7 +33,7 @@ del get_logger
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 
-class PrintingFilterUpdater(Runnable):
+class PrintingFilterUpdater(AsyncTask):
     """
     This class updates the printing filters stored in the database.
     Syncs the db-internal printing filters with the filters stored in the configuration file,
@@ -58,11 +57,10 @@ class PrintingFilterUpdater(Runnable):
           the cached is_hidden, as the value may change for each card, even if the filters stayed constant.
         """
         super().__init__()
-        self.signals = signals = ProgressSignalContainer()
         self.model = model
         self.progress = 0
-        signals.ui_update_required.connect(model.restart_transaction, QueuedConnection)
-        signals.ui_update_required.connect(model.card_data_updated, QueuedConnection)
+        self.ui_update_required.connect(model.restart_transaction, QueuedConnection)
+        self.ui_update_required.connect(model.card_data_updated, QueuedConnection)
         self.force_update_hidden_column = force_update_hidden_column
         self.db_passed = bool(db_connection)
         self._db = db_connection
@@ -72,25 +70,6 @@ class PrintingFilterUpdater(Runnable):
 
     def cancel(self):
         self.should_abort = True
-
-    def connect_main_window_signals(self, main_window: "MainWindow"):
-        progress_bars = main_window.progress_bars
-        self.connect_progress_signals(
-            progress_bars.begin_independent_progress,
-            progress_bars.set_independent_progress,
-            progress_bars.end_independent_progress
-        )
-
-    def connect_progress_signals(self, begin_signal, progress_signal, end_signal):
-        signals = self.signals
-        signals.begin_task.connect(begin_signal, QueuedConnection)
-        signals.set_progress.connect(progress_signal, QueuedConnection)
-        signals.task_completed.connect(end_signal, QueuedConnection)
-
-    def advance_progress(self):
-        self.progress += 1
-        self.signals.set_progress.emit(self.progress)
-        self.signals.advance_progress.emit()
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -106,16 +85,10 @@ class PrintingFilterUpdater(Runnable):
     def run(self):
         logger.debug(f"Called {self.__class__.__name__}.run()")
         try:
-            self.store_current_printing_filters()
-        finally:
-            self.release_instance()
-
-    def store_current_printing_filters(self):
-        try:
             if self.db_passed:
                 # Passed-in connections have a running transaction, which has to be closed
                 self.db.commit()
-            self.signals.begin_task.emit(
+            self.begin_task.emit(
                 self.PROGRESS_STEP_COUNT,
                 QCoreApplication.translate("PrintingFilterUpdater.store_current_printing_filters()",
                                            "Processing updated card filters:"))
@@ -125,10 +98,10 @@ class PrintingFilterUpdater(Runnable):
                 return
         except sqlite3.Error as e:
             logger.exception(e)
-            self.signals.error_occurred.emit(e.sqlite_errorname)
+            self.error_occurred.emit(e.sqlite_errorname)
             self.db.rollback()
         finally:
-            self.signals.task_completed.emit()
+            self.task_completed.emit()
             if not self.db_passed:
                 logger.debug(f"Closing {self.__class__.__name__} connection")
                 self.db.close()
@@ -136,7 +109,6 @@ class PrintingFilterUpdater(Runnable):
 
     def _store_current_printing_filters(self) -> bool:
         db = self.db
-        progress_signal = self.advance_progress
         db.execute("BEGIN IMMEDIATE TRANSACTION\n")
         section = mtg_proxy_printer.settings.settings["card-filter"]
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
@@ -158,18 +130,18 @@ class PrintingFilterUpdater(Runnable):
             )
             if self.should_abort:
                 return False
-            progress_signal()
+            self.advance_progress.emit()
         if set_code_updated := self._set_code_filters_need_update():
             self._update_set_code_filters_in_db()
         if self.should_abort:
             return False
-        progress_signal()
+        self.advance_progress.emit()
         update_ui = filters_need_update or old_filter_removed or self.force_update_hidden_column or set_code_updated
         if update_ui:
-            self._update_cached_data(progress_signal)
+            self._update_cached_data()
         db.commit()
         if update_ui:
-            self.signals.ui_update_required.emit()
+            self.ui_update_required.emit()
         return update_ui
 
     def _set_code_filters_need_update(self) -> bool:
@@ -275,7 +247,8 @@ class PrintingFilterUpdater(Runnable):
         ]
         return result
 
-    def _update_cached_data(self, progress_signal: typing.Callable[[], None]):
+    def _update_cached_data(self):
+        # TODO: Provide list with pairs of logger lines and SQL statements, then iterate over that?
         logger.debug("Update the Printing.is_hidden column")
         self.db.execute(cached_dedent("""\
         UPDATE Printing    -- _update_cached_data()
@@ -289,7 +262,7 @@ class PrintingFilterUpdater(Runnable):
         """))
         if self.should_abort:
             return
-        progress_signal()
+        self.advance_progress.emit()
         logger.debug("Update the FaceName.is_hidden column")
         self.db.execute(cached_dedent("""\
         WITH FaceNameShouldBeHidden (face_name_id, should_be_hidden) AS (    -- _update_cached_data()
@@ -313,7 +286,7 @@ class PrintingFilterUpdater(Runnable):
         """))
         if self.should_abort:
             return
-        progress_signal()
+        self.advance_progress.emit()
         logger.debug("Update the RemovedPrintings table")
         self.db.execute(cached_dedent("""\
         DELETE FROM RemovedPrintings    -- _update_cached_data()
@@ -325,7 +298,7 @@ class PrintingFilterUpdater(Runnable):
         """))
         if self.should_abort:
             return
-        progress_signal()
+        self.advance_progress.emit()
         # Performance note: Using INSERT OR IGNORE and removing the inner scryfall_id NOT IN (subquery) simplifies the
         # query plan, but takes about 40% longer to evaluate (on the card data of late April 2022)
         # than the current method that only inserts missing rows.
@@ -345,7 +318,7 @@ class PrintingFilterUpdater(Runnable):
         """))
         if self.should_abort:
             return
-        progress_signal()
+        self.advance_progress.emit()
         logger.debug("Finished maintenance tasks.")
 
     def get_currently_enabled_set_code_filters(self) -> typing.Set[str]:

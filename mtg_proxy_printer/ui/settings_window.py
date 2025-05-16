@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
 from PyQt5.QtGui import QIcon, QStandardItemModel, QResizeEvent
 
 import mtg_proxy_printer.app_dirs
+from mtg_proxy_printer.runner import AsyncTask, Runnable
 from mtg_proxy_printer.units_and_sizes import ConfigParser
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller import DocumentAction
@@ -75,14 +76,11 @@ class HighlightDifferingSettingsHoverEventFilter(QObject):
 
 class SettingsWindow(QDialog):
     """Implements the Settings window."""
+    request_run_async_task = Signal(AsyncTask)
     saved = Signal()
     preferred_language_changed = Signal(str)
     document_settings_updated = Signal(DocumentAction)
-    error_occurred = Signal(str)
     requested_card_download = Signal(pathlib.Path)
-    long_running_process_begins = Signal(int, str)
-    process_updated = Signal(int)
-    process_finished = Signal()
 
     def __init__(self, language_model: QStringListModel, document: Document, parent: QWidget = None):
         super().__init__(parent)
@@ -129,10 +127,7 @@ class SettingsWindow(QDialog):
 
     def _setup_hide_printing_page(self, page: HidePrintingsPage, card_db):
         page.card_db = card_db
-        page.error_occurred.connect(self.error_occurred)
-        page.long_running_process_begins.connect(self.long_running_process_begins)
-        page.process_updated.connect(self.process_updated)
-        page.process_finished.connect(self.process_finished)
+        page.request_run_async_task.connect(self.request_run_async_task)
 
     def _setup_button_box(self):
         button_box = self.ui.button_box

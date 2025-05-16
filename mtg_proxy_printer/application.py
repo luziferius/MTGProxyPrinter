@@ -34,7 +34,7 @@ import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.carddb_migrations
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
-from mtg_proxy_printer.carddb_migrations import DatabaseMigrationRunner
+from mtg_proxy_printer.carddb_migrations import DatabaseMigrationTask
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.update_checker import UpdateChecker
@@ -43,7 +43,7 @@ import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
 import mtg_proxy_printer.progress_meter
-from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.runner import Runnable, AsyncTask, AsyncTaskRunner
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -110,11 +110,11 @@ class Application(QApplication):
         logger.debug("Enqueueing update check")
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
 
-        card_db_migration_runner = DatabaseMigrationRunner(self.card_db)
+        card_db_migration_runner = DatabaseMigrationTask(self.card_db)
         self.main_window.progress_bars.connect_outer_progress(card_db_migration_runner.total_update_signals)
         self.main_window.progress_bars.connect_inner_progress(card_db_migration_runner.script_update_signals)
         card_db_migration_runner.total_update_signals.task_completed.connect(self._on_carddb_migrations_completed)
-        QThreadPool.globalInstance().start(card_db_migration_runner)
+        QThreadPool.globalInstance().start(AsyncTaskRunner(card_db_migration_runner))
 
     @Slot()
     def _on_carddb_migrations_completed(self):
@@ -122,9 +122,7 @@ class Application(QApplication):
         logger.debug(
             "Card database migrations completed. Database re-opened. Checking if the printing filters need updates.")
         printing_filter_updater_runner = PrintingFilterUpdater(self.card_db)
-        printing_filter_updater_runner.connect_main_window_signals(self.main_window)
-        printing_filter_updater_runner.signals.task_completed.connect(self._on_printing_filter_updater_completed)
-        QThreadPool.globalInstance().start(printing_filter_updater_runner)
+        self.run_async_task(printing_filter_updater_runner)
 
     @Slot()
     def _on_printing_filter_updater_completed(self):
@@ -166,25 +164,26 @@ class Application(QApplication):
         image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         return card_db, image_db
 
-    @staticmethod
     def _create_settings_window(
-            language_model: QStringListModel, document: mtg_proxy_printer.model.document.Document,
+            self, language_model: QStringListModel, document: mtg_proxy_printer.model.document.Document,
             main_window: mtg_proxy_printer.ui.main_window.MainWindow,
             card_info_downloader: mtg_proxy_printer.card_info_downloader.CardInfoDownloader):
         settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             language_model, document, main_window)
+        settings_window.request_run_async_task.connect(self.run_async_task)
         settings_window.document_settings_updated.connect(document.apply)
         settings_window.preferred_language_changed.connect(
             main_window.ui.central_widget.ui.add_card_widget.on_settings_preferred_language_changed)
         settings_window.requested_card_download.connect(card_info_downloader.download_to_file)
-        settings_window.long_running_process_begins.connect(main_window.progress_bars.begin_outer_progress)
-        settings_window.process_updated.connect(main_window.progress_bars.set_outer_progress)
-        settings_window.process_finished.connect(main_window.progress_bars.end_outer_progress)
-        settings_window.error_occurred.connect(main_window.on_error_occurred)
-
         main_window.ui.action_show_settings.triggered.connect(
             partial(mtg_proxy_printer.ui.common.show_wizard_or_dialog, settings_window))
         return settings_window
+
+    @Slot(AsyncTask)
+    def run_async_task(self, task: AsyncTask):
+        task.error_occurred.connect(self.main_window.on_error_occurred)
+        self.main_window.progress_bars.connect_independent_progress(task)
+        QThreadPool.globalInstance().start(AsyncTaskRunner(task))
 
     def _create_document_instance(
             self,

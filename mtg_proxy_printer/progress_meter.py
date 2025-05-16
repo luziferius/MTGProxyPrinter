@@ -22,7 +22,7 @@ logger = get_logger(__name__)
 del get_logger
 
 
-class ProgressMeter:
+class ProgressMeter:  # TODO: Deprecated
 
     def __init__(
             self, maximum: int, message: str,
