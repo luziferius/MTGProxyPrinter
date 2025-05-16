@@ -111,8 +111,9 @@ class Application(QApplication):
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
 
         card_db_migration_runner = DatabaseMigrationTask(self.card_db)
-        self.main_window.progress_bar_manager.connect_outer_progress(card_db_migration_runner.total_update_signals)
-        self.main_window.progress_bar_manager.connect_inner_progress(card_db_migration_runner.script_update_signals)
+        manager = self.main_window.progress_bar_manager
+        manager.add_task(card_db_migration_runner.total_update_signals)
+        manager.add_task(card_db_migration_runner.script_update_signals)
         card_db_migration_runner.total_update_signals.task_completed.connect(self._on_carddb_migrations_completed)
         QThreadPool.globalInstance().start(AsyncTaskRunner(card_db_migration_runner))
 
@@ -182,7 +183,7 @@ class Application(QApplication):
     @Slot(AsyncTask)
     def run_async_task(self, task: AsyncTask):
         task.error_occurred.connect(self.main_window.on_error_occurred)
-        self.main_window.progress_bar_manager.connect_independent_progress(task)
+        self.main_window.progress_bar_manager.add_task(task)
         QThreadPool.globalInstance().start(AsyncTaskRunner(task))
 
     def _create_document_instance(

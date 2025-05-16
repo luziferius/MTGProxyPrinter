@@ -12,7 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import weakref
 from functools import partial
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
@@ -39,7 +39,7 @@ __all__ = [
 class ProgressBar(QWidget):
     def __init__(self, task: ProgressSignalContainer, parent: QWidget = None, flags=Qt.WindowType()):
         super().__init__(parent, flags)
-        self.task = task
+        self.task = weakref.ref(task)
         self.ui = ui = Ui_ProgressBar()
         self.can_cancel = task.can_cancel
         ui.setupUi(self)
@@ -71,7 +71,7 @@ class ProgressBar(QWidget):
 
 
 class ProgressBarManager(QWidget):
-
+    """Displays progress bars of currently running async tasks in the status bar."""
     def __init__(self, parent: QWidget = None, flags=Qt.WindowType()):
         super().__init__(parent, flags)
         self.setLayout(self._setup_layout())
@@ -83,8 +83,9 @@ class ProgressBarManager(QWidget):
 
     @Slot(ProgressSignalContainer)
     def add_task(self, task: ProgressSignalContainer):
+        """Create a new progress bar for the given task"""
         bar = ProgressBar(task, self)
         layout = self.layout()
-        task.task_completed.connect(partial(layout.removeWidget, bar))
-        task.task_completed.connect(partial(bar.setParent, None))
+        task.task_deleted.connect(partial(layout.removeWidget, bar))
+        task.task_deleted.connect(partial(bar.setParent, None))
         layout.addWidget(bar)

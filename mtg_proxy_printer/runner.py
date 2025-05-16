@@ -37,6 +37,7 @@ class ProgressSignalContainer(QObject):
     task_completed = Signal()
     ui_update_required = Signal()
     error_occurred = Signal(str)
+    task_deleted = Signal()
 
     @property
     def can_cancel(self) -> bool:
@@ -45,6 +46,10 @@ class ProgressSignalContainer(QObject):
     @Slot()
     def cancel(self):
         pass
+
+    def __del__(self):
+        self.task_deleted.emit()
+        getattr(super(), "__del__", lambda: None)()
 
 class AsyncTask(ProgressSignalContainer):
     """Base class for asynchronous tasks with progress reporting"""

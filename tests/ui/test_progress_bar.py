@@ -122,10 +122,10 @@ def test_manager_adds_bar_for_each_task(manager: ProgressBarManager, count: int)
     )
 
 
-def test_task_completion_removes_task(manager: ProgressBarManager):
+def test_task_deletion_removes_task(manager: ProgressBarManager):
     manager.add_task(task1 := ProgressSignalContainer())
     manager.add_task(task2 := ProgressSignalContainer())
     task1.setObjectName("Completed")
     task2.setObjectName("Still running")
-    task1.task_completed.emit()
+    task1.task_deleted.emit()
     assert_that(manager.findChildren(ProgressBar), contains_exactly(has_property("task", equal_to(task2))))
