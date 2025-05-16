@@ -31,6 +31,8 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
+from mtg_proxy_printer.runner import AsyncTaskRunner
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, ConfigParser
@@ -152,7 +154,7 @@ class SavePNGDialog(QFileDialog):
         main_window: "MainWindow" = self.parent()
         renderer = mtg_proxy_printer.print.PNGRenderer(main_window, self.document, path)
         main_window.progress_bars.connect_outer_progress(renderer)
-        renderer.render_document()
+        QThreadPool.globalInstance().start(AsyncTaskRunner(renderer))
         QThreadPool.globalInstance().start(PrintCountUpdater(self.document))
         logger.info(f"Saved document to {path}")
 

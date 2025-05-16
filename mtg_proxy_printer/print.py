@@ -30,7 +30,8 @@ from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage
 from PyQt5.QtPrintSupport import QPrinter
 
 
-from mtg_proxy_printer.runner import ProgressSignalContainer
+from mtg_proxy_printer.runner import ProgressSignalContainer, AsyncTask
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.units_and_sizes import RESOLUTION
@@ -57,7 +58,7 @@ __all__ = [
 PNGEncoderThreadLimit = BoundedSemaphore(max(1, process_cpu_count()-1))
 
 
-class PNGRenderer(ProgressSignalContainer):
+class PNGRenderer(AsyncTask):
     def __init__(self, main_window: "MainWindow", document: Document, file_path: str):
         super().__init__(main_window)
         self.document = document
@@ -65,7 +66,7 @@ class PNGRenderer(ProgressSignalContainer):
         self.page_count = document.rowCount()
         self.completed = 0
 
-    def render_document(self):
+    def run(self):
         document = self.document
         file_path = self.file_path
         page_count = self.page_count

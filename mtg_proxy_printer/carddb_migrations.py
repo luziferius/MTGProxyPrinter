@@ -41,7 +41,7 @@ except ImportError:
     from typing_extensions import LiteralString
 
 from mtg_proxy_printer.progress_meter import ProgressMeter
-from mtg_proxy_printer.runner import Runnable, ProgressSignalContainer
+from mtg_proxy_printer.runner import Runnable, ProgressSignalContainer, AsyncTaskRunner
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.model.carddb import CardDatabase, with_database_write_lock
