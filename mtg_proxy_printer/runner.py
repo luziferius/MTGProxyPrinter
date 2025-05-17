@@ -50,10 +50,6 @@ class AsyncTask(QObject):
     def cancel(self):
         pass
 
-    def __del__(self):
-        self.task_deleted.emit()
-        getattr(super(), "__del__", lambda: None)()
-
     def run(self):
         pass
 
@@ -92,4 +88,5 @@ class AsyncTaskRunner(Runnable):
         try:
             self.task.run()
         finally:
+            self.task.task_deleted.emit()
             self.release_instance()
