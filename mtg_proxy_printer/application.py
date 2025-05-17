@@ -34,6 +34,7 @@ import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.carddb_migrations
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
+from mtg_proxy_printer.card_info_downloader import FileImportTask
 from mtg_proxy_printer.carddb_migrations import DatabaseMigrationTask
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer import settings
@@ -45,6 +46,8 @@ import mtg_proxy_printer.ui.settings_window
 import mtg_proxy_printer.progress_meter
 from mtg_proxy_printer.runner import Runnable, AsyncTask, AsyncTaskRunner
 from mtg_proxy_printer.logger import get_logger
+from ui.test_main_window import main_window
+
 logger = get_logger(__name__)
 del get_logger
 
@@ -75,11 +78,13 @@ class Application(QApplication):
         self.language_model = self._create_language_model()  # TODO: Can this be removed?
         self.card_db, self.image_db = self._open_databases(args)
         self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
+        self.card_info_downloader.request_run_async_task.connect(self.run_async_task)
         self.document = self._create_document_instance(self.card_db, self.image_db)
         logger.debug("Creating GUI")
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
         )
+        self.main_window.request_run_async_task.connect(self.run_async_task)
         self.update_checker = self._create_update_checker(args)
         self.main_window.ui.action_download_card_data.setEnabled(False)
         self.settings_window = self._create_settings_window(
@@ -111,8 +116,9 @@ class Application(QApplication):
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
 
         card_db_migration_runner = DatabaseMigrationTask(self.card_db)
-        self.main_window.progress_bars.connect_outer_progress(card_db_migration_runner.total_update_signals)
-        self.main_window.progress_bars.connect_inner_progress(card_db_migration_runner.script_update_signals)
+        manager = self.main_window.progress_bar_manager
+        manager.add_task(card_db_migration_runner.total_update_signals)
+        manager.add_task(card_db_migration_runner.script_update_signals)
         card_db_migration_runner.total_update_signals.task_completed.connect(self._on_carddb_migrations_completed)
         QThreadPool.globalInstance().start(AsyncTaskRunner(card_db_migration_runner))
 
@@ -136,7 +142,7 @@ class Application(QApplication):
         args = self.args
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
-            self.card_info_downloader.import_from_file(args.card_data)
+            self.run_async_task(FileImportTask(args.card_data))
         elif not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
@@ -174,7 +180,6 @@ class Application(QApplication):
         settings_window.document_settings_updated.connect(document.apply)
         settings_window.preferred_language_changed.connect(
             main_window.ui.central_widget.ui.add_card_widget.on_settings_preferred_language_changed)
-        settings_window.requested_card_download.connect(card_info_downloader.download_to_file)
         main_window.ui.action_show_settings.triggered.connect(
             partial(mtg_proxy_printer.ui.common.show_wizard_or_dialog, settings_window))
         return settings_window
@@ -182,7 +187,7 @@ class Application(QApplication):
     @Slot(AsyncTask)
     def run_async_task(self, task: AsyncTask):
         task.error_occurred.connect(self.main_window.on_error_occurred)
-        self.main_window.progress_bars.connect_independent_progress(task)
+        self.main_window.progress_bar_manager.add_task(task)
         QThreadPool.globalInstance().start(AsyncTaskRunner(task))
 
     def _create_document_instance(

@@ -6,11 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>383</width>
-    <height>34</height>
+    <width>682</width>
+    <height>182</height>
    </rect>
   </property>
   <layout class="QHBoxLayout" name="horizontal_layout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
    <property name="topMargin">
     <number>0</number>
    </property>
@@ -21,29 +24,44 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QLabel" name="inner_progress_label"/>
-   </item>
-   <item>
-    <widget class="QProgressBar" name="inner_progress_bar"/>
-   </item>
-   <item>
-    <widget class="QLabel" name="outer_progress_label"/>
-   </item>
-   <item>
-    <widget class="QProgressBar" name="outer_progress_bar"/>
-   </item>
-   <item>
-    <widget class="QLabel" name="independent_label">
+    <widget class="QLabel" name="task_label">
      <property name="text">
       <string/>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="QProgressBar" name="independent_bar"/>
+    <widget class="QPushButton" name="cancel_button">
+     <property name="toolTip">
+      <string>Cancel</string>
+     </property>
+     <property name="icon">
+      <iconset theme="dialog-cancel"/>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QProgressBar" name="progress_bar"/>
    </item>
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>cancel_button</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>cancel_button</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>29</x>
+     <y>90</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>29</x>
+     <y>90</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

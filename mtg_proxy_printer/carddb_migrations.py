@@ -39,7 +39,7 @@ try:
 except ImportError:
     from typing_extensions import LiteralString
 
-from mtg_proxy_printer.runner import ProgressSignalContainer, AsyncTask
+from mtg_proxy_printer.runner import AsyncTask, AsyncTask
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.model.carddb import CardDatabase, with_database_write_lock
@@ -64,7 +64,7 @@ Statement = Union[LiteralString, Tuple[LiteralString, List[Tuple[Any, ...]]]]
 class MigrationScript:
     script: List[Statement] = None
 
-    def get_script(self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressSignalContainer) -> List[Statement]:
+    def get_script(self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask) -> List[Statement]:
         """Returns the script to run. Can be overridden by subclasses to allow dynamic behavior"""
         if self.script is None:
             raise RuntimeError("BUG: Migration script is None. Either not provided or this function wasn't overridden")
@@ -82,12 +82,12 @@ class MigrationScript:
 class Migrate_21_to_22(MigrationScript):
 
     def get_script(
-            self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressSignalContainer) -> List[Statement]:
+            self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask) -> List[Statement]:
         return list(self._migrate_21_to_22(db, suffix, progress_meter))
 
     @staticmethod
     def _migrate_21_to_22(
-            db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressSignalContainer
+            db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask
     ) -> Generator[Statement, None, None]:
         # Full edit procedure not needed here, because the table has no indices or foreign keys associated
         # Import locally to break a cyclic dependency
@@ -724,8 +724,8 @@ class DatabaseMigrationTask(AsyncTask):
 
     def __init__(self, card_db: CardDatabase, migration_scripts: Dict[int, MigrationScript] = None):
         super().__init__()
-        self.total_update_signals = ProgressSignalContainer()
-        self.script_update_signals = ProgressSignalContainer()
+        self.total_update_signals = AsyncTask()
+        self.script_update_signals = AsyncTask()
         self.db_path = card_db.db_path
         self.migration_scripts = migration_scripts or MIGRATION_SCRIPTS
         logger.debug(f"Created {self.__class__.__name__} instance.")
