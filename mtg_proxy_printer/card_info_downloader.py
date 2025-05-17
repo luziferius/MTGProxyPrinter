@@ -108,17 +108,7 @@ class SetWackinessScore(int, enum.Enum):
     OVERSIZED = 10  # Not playable
 
 
-class DownloadProgressSignalContainer(QObject):
-    # FIXME: Deprecated. Replace with ProgressSignalContainer
-    download_progress = Signal(int)  # Emits the total number of processed data after processing each item
-    download_begins = Signal(int, str)  # Emitted when the download starts. Carries size (bytes) and description
-    download_finished = Signal()  # Emitted when the input data is exhausted and processing finished
-    working_state_changed = Signal(bool)
-    network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
-    other_error_occurred = Signal(str)  # Emitted when database population failed due to non-network issues.
-
-
-class CardInfoDownloader(DownloadProgressSignalContainer):
+class CardInfoDownloader(QObject):
     """
     Handles fetching the bulk card data from Scryfall and populates/updates the local card database.
     Also supports importing cards via a locally stored bulk card data file, mostly useful for debugging and testing
@@ -143,10 +133,12 @@ class CardInfoDownloader(DownloadProgressSignalContainer):
         self.request_run_task.emit(FileDownloadTask(download_path, self))
 
     def import_from_file(self, file_path: Path):
-        QThreadPool.globalInstance().start(FileImportRunner(file_path, self))
+        logger.debug(f"Request importing card data from file {file_path}")
+        self.request_run_task.emit(FileImportTask(file_path, self))
 
     def import_from_api(self):
-        QThreadPool.globalInstance().start(ApiImportRunner(self))
+        logger.debug("Request importing fresh card data from Scryfall")
+        self.request_run_task.emit(ApiImportTask(self))
 
 
 class CardInfoWorkerBase(DownloaderBase):
@@ -227,25 +219,23 @@ class FileDownloadTask(CardInfoWorkerBase):
             pass
 
 
-class FileImportRunner(Runnable):
+class FileImportTask(AsyncTask):
 
     def __init__(self, path: Path, parent: CardInfoDownloader):
-        super().__init__()
+        super().__init__(parent)
         self.path = path
-        self.parent = parent
         self.worker = None
 
     def run(self):
-        parent = self.parent
+        parent: CardInfoDownloader = self.parent()
         self.worker = worker = DatabaseImportWorker(parent.model)
-        worker.card_data_updated.connect(parent.card_data_updated, QueuedConnection)
-        worker.download_begins.connect(parent.download_begins, QueuedConnection)
-        worker.download_begins.connect(lambda: parent.working_state_changed.emit(True), QueuedConnection)
-        worker.download_progress.connect(parent.download_progress, QueuedConnection)
-        worker.download_finished.connect(parent.download_finished, QueuedConnection)
-        worker.download_finished.connect(lambda: parent.working_state_changed.emit(False), QueuedConnection)
-        worker.network_error_occurred.connect(parent.network_error_occurred, QueuedConnection)
-        worker.other_error_occurred.connect(parent.other_error_occurred, QueuedConnection)
+        worker.card_data_updated.connect(self.task_completed)
+        worker.download_begins.connect(self.begin_task)
+        worker.download_progress.connect(self.set_progress)
+        worker.download_finished.connect(self.task_completed)
+        worker.network_error_occurred.connect(self.network_error_occurred)
+        worker.other_error_occurred.connect(self.error_occurred)
+
         try:
             worker.import_card_data_from_local_file(self.path)
         finally:
@@ -255,7 +245,7 @@ class FileImportRunner(Runnable):
         self.worker.should_run = False
 
 
-class ApiImportRunner(Runnable):
+class ApiImportTask(AsyncTask):
 
     def __init__(self, parent: CardInfoDownloader):
         super().__init__()

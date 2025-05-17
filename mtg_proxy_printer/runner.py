@@ -30,7 +30,6 @@ __all__ = [
     "AsyncTaskRunner",
 ]
 
-
 class AsyncTask(QObject):
     """Base class for asynchronous tasks with progress reporting"""
 
@@ -38,10 +37,13 @@ class AsyncTask(QObject):
     set_progress = Signal(int)  # Progress is set to the value carried by the signal
     advance_progress = Signal()  # Progress advances by exactly one step
     task_completed = Signal()  # The work completed, but progress may restart
-    ui_update_required = Signal()  # Card database related work completed. UI needs to re-populate 
+    ui_update_required = Signal()  # Card database related work completed. UI needs to re-populate the card search
     error_occurred = Signal(str)  # A general error occurred. The signal carries the error description for display
     network_error_occurred = Signal(str)  # A network error occurred. Only applicable for network-facing tasks
     task_deleted = Signal()  # The ProgressBarManager uses this to delete the associated progress bar for this task
+    # Can be used by a task to register progress bars for sub-tasks. Carries AsyncTask,
+    # but that can't be specified here, because the name is still undefined in the static class context
+    request_register_subtask = Signal(QObject)
 
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
@@ -91,7 +93,7 @@ class Runnable(QRunnable):
 
 
 class AsyncTaskRunner(Runnable):
-    """A QRunnable that executes an AsyncTask instance"""
+    """A Runnable that executes an AsyncTask instance"""
     def __init__(self, task: AsyncTask):
         super().__init__()
         self.task = task
