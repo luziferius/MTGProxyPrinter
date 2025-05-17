@@ -15,6 +15,7 @@
 
 
 import typing
+from typing import List
 
 from PyQt5.QtCore import QRunnable, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
@@ -33,14 +34,25 @@ __all__ = [
 class AsyncTask(QObject):
     """Base class for asynchronous tasks with progress reporting"""
 
-    begin_task = Signal(int, str)
-    set_progress = Signal(int)
-    advance_progress = Signal()
-    task_completed = Signal()
-    ui_update_required = Signal()
-    error_occurred = Signal(str)
-    network_error_occurred = Signal(str)
-    task_deleted = Signal()
+    begin_task = Signal(int, str)  # Task begin. Carries the expected work steps and a UI display string
+    set_progress = Signal(int)  # Progress is set to the value carried by the signal
+    advance_progress = Signal()  # Progress advances by exactly one step
+    task_completed = Signal()  # The work completed, but progress may restart
+    ui_update_required = Signal()  # Card database related work completed. UI needs to re-populate 
+    error_occurred = Signal(str)  # A general error occurred. The signal carries the error description for display
+    network_error_occurred = Signal(str)  # A network error occurred. Only applicable for network-facing tasks
+    task_deleted = Signal()  # The ProgressBarManager uses this to delete the associated progress bar for this task
+
+    def __init__(self, parent: QObject = None):
+        super().__init__(parent)
+        self.inner_tasks: List[AsyncTask] = []
+
+    def emit_delete_recursive(self):
+        """Emits the task_deleted signal for all inner child tasks, then for itself.
+        Called by the AsyncTaskRunner to clean up the progress bars in the main window"""
+        for item in self.inner_tasks:
+            item.emit_delete_recursive()
+        self.task_deleted.emit()
 
     @property
     def can_cancel(self) -> bool:
@@ -88,5 +100,5 @@ class AsyncTaskRunner(Runnable):
         try:
             self.task.run()
         finally:
-            self.task.task_deleted.emit()
+            self.task.emit_delete_recursive()
             self.release_instance()
