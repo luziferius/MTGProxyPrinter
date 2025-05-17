@@ -26,6 +26,7 @@ from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QAppli
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.card_info_downloader import FileDownloadTask
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.runner import AsyncTask
@@ -122,8 +123,7 @@ class Page(QWidget):
 
 
 class DebugSettingsPage(Page):
-
-    requested_card_download = Signal(pathlib.Path)
+    request_run_async_task = Signal(AsyncTask)
 
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(
@@ -135,7 +135,7 @@ class DebugSettingsPage(Page):
         super().__init__(parent)
         self.ui = ui = Ui_DebugSettingsPage()
         ui.setupUi(self)
-        self.requested_card_download.connect(lambda _: ui.debug_download_card_data_as_file.setEnabled(False))
+        self.request_run_async_task.connect(lambda _: ui.debug_download_card_data_as_file.setEnabled(False))
         ui.log_level_combo_box.addItems(map(logging.getLevelName, range(10, 60, 10)))
         url = QUrl("https://github.com/busimus/cutelog", QUrl.ParsingMode.StrictMode)
         ui.open_cutelog_website_button.clicked.connect(partial(QDesktopServices.openUrl, url))
@@ -197,7 +197,7 @@ class DebugSettingsPage(Page):
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Download card data to file {path}")
-        self.requested_card_download.emit(path)
+        self.request_run_async_task.emit(FileDownloadTask(path, self))
 
     @Slot()
     def on_debug_import_card_data_from_file_clicked(self):

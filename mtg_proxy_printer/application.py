@@ -75,7 +75,7 @@ class Application(QApplication):
         self.language_model = self._create_language_model()  # TODO: Can this be removed?
         self.card_db, self.image_db = self._open_databases(args)
         self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
-        self.card_info_downloader.request_run_task.connect(self.run_async_task)
+        self.card_info_downloader.request_run_async_task.connect(self.run_async_task)
         self.document = self._create_document_instance(self.card_db, self.image_db)
         logger.debug("Creating GUI")
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
@@ -176,7 +176,6 @@ class Application(QApplication):
         settings_window.document_settings_updated.connect(document.apply)
         settings_window.preferred_language_changed.connect(
             main_window.ui.central_widget.ui.add_card_widget.on_settings_preferred_language_changed)
-        settings_window.requested_card_download.connect(card_info_downloader.download_to_file)
         main_window.ui.action_show_settings.triggered.connect(
             partial(mtg_proxy_printer.ui.common.show_wizard_or_dialog, settings_window))
         return settings_window

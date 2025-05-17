@@ -80,7 +80,6 @@ class SettingsWindow(QDialog):
     saved = Signal()
     preferred_language_changed = Signal(str)
     document_settings_updated = Signal(DocumentAction)
-    requested_card_download = Signal(pathlib.Path)
 
     def __init__(self, language_model: QStringListModel, document: Document, parent: QWidget = None):
         super().__init__(parent)
@@ -88,7 +87,6 @@ class SettingsWindow(QDialog):
         self.document = document
         self.ui = ui = Ui_SettingsWindow()
         ui.setupUi(self)
-        ui.debug_settings_page.requested_card_download.connect(self.requested_card_download)
         self.pages_model = self._setup_pages_model(ui)
         ui.general_settings_page.set_language_model(language_model)
         ui.default_document_layout_page.ui.page_config_preview_area.hide()
@@ -97,6 +95,7 @@ class SettingsWindow(QDialog):
             partial(QTimer.singleShot, 0, lambda: self._adapt_layout_to_size(self.size()))
         )
         self._setup_hide_printing_page(ui.hide_printings_page, document.card_db)
+        ui.debug_settings_page.request_run_async_task.connect(self.request_run_async_task)
         self._setup_button_box()
         logger.info(f"Created {self.__class__.__name__} instance.")
 

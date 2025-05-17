@@ -20,7 +20,6 @@ import gzip
 import itertools
 import math
 import shutil
-from asyncio import TaskGroup
 from pathlib import Path
 import re
 import sqlite3
@@ -31,7 +30,7 @@ import urllib.parse
 import urllib.request
 
 import ijson
-from PyQt5.QtCore import pyqtSignal as Signal, QObject, Qt, QThreadPool
+from PyQt5.QtCore import pyqtSignal as Signal, QObject, Qt
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock
@@ -40,7 +39,6 @@ from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID
-from mtg_proxy_printer.progress_meter import ProgressMeter
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.runner import Runnable, AsyncTask
 
@@ -119,7 +117,7 @@ class CardInfoDownloader(QObject):
     """
 
     card_data_updated = Signal()
-    request_run_task = Signal(AsyncTask)
+    request_run_async_task = Signal(AsyncTask)
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
         super().__init__(parent)
@@ -128,17 +126,13 @@ class CardInfoDownloader(QObject):
         self.model = model
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def download_to_file(self, download_path: Path):
-        logger.debug(f"Called download_to_file({download_path}). About to fetch the card data")
-        self.request_run_task.emit(FileDownloadTask(download_path, self))
-
     def import_from_file(self, file_path: Path):
         logger.debug(f"Request importing card data from file {file_path}")
-        self.request_run_task.emit(FileImportTask(file_path, self))
+        self.request_run_async_task.emit(FileImportTask(file_path, self))
 
     def import_from_api(self):
         logger.debug("Request importing fresh card data from Scryfall")
-        self.request_run_task.emit(ApiImportTask(self))
+        self.request_run_async_task.emit(ApiImportTask(self))
 
 
 class CardInfoWorkerBase(DownloaderBase):
@@ -236,10 +230,7 @@ class FileImportTask(AsyncTask):
         worker.network_error_occurred.connect(self.network_error_occurred)
         worker.other_error_occurred.connect(self.error_occurred)
 
-        try:
-            worker.import_card_data_from_local_file(self.path)
-        finally:
-            self.release_instance()
+        worker.import_card_data_from_local_file(self.path)
 
     def cancel(self):
         self.worker.should_run = False
@@ -255,18 +246,14 @@ class ApiImportTask(AsyncTask):
     def run(self):
         parent = self.parent
         self.worker = worker = DatabaseImportWorker(parent.model)
-        worker.card_data_updated.connect(parent.card_data_updated, QueuedConnection)
-        worker.download_begins.connect(parent.download_begins, QueuedConnection)
-        worker.download_begins.connect(lambda: parent.working_state_changed.emit(True), QueuedConnection)
-        worker.download_progress.connect(parent.download_progress, QueuedConnection)
-        worker.download_finished.connect(parent.download_finished, QueuedConnection)
-        worker.download_finished.connect(lambda: parent.working_state_changed.emit(False), QueuedConnection)
-        worker.network_error_occurred.connect(parent.network_error_occurred, QueuedConnection)
-        worker.other_error_occurred.connect(parent.other_error_occurred, QueuedConnection)
-        try:
-            worker.import_card_data_from_online_api()
-        finally:
-            self.release_instance()
+        worker.card_data_updated.connect(self.task_completed)
+        worker.download_begins.connect(self.begin_task)
+        worker.download_progress.connect(self.set_progress)
+        worker.download_finished.connect(self.task_completed)
+        worker.network_error_occurred.connect(self.network_error_occurred)
+        worker.other_error_occurred.connect(self.error_occurred)
+
+        worker.import_card_data_from_online_api()
 
     def cancel(self):
         self.worker.should_run = False
@@ -481,25 +468,23 @@ class DatabaseImportWorker(DownloaderBase):
                 self.download_progress.emit(index)
         logger.info(f"Skipped {skipped_cards} cards during the import")
         logger.info("Post-processing card data")
-        progress_meter = ProgressMeter(
-            9, self.tr("Post-processing card data:"),
-            self.download_begins.emit, self.download_progress.emit, self.download_finished.emit)
+        self.begin_task.emit(9, self.tr("Post-processing card data:"))
         self._insert_related_printings(related_printings)
-        progress_meter.advance()
+        self.advance_progress.emit()
         self._clean_unused_data(face_ids)
-        progress_meter.advance()
+        self.advance_progress.emit()
         updater = PrintingFilterUpdater(
             self.model, self.db, force_update_hidden_column=True)
-        updater.signals.advance_progress.connect(progress_meter.advance)
-        updater.store_current_printing_filters()
+        updater.advance_progress.connect(self.advance_progress)
+        updater.run()
         # Store the timestamp of this import.
         db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n", (index,))
-        progress_meter.advance()
+        self.advance_progress.emit()
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
         db.commit()
-        progress_meter.advance()
-        progress_meter.finish()
+        self.advance_progress.emit()
+        self.task_completed.emit()
         self.card_data_updated.emit()
         return index
 
