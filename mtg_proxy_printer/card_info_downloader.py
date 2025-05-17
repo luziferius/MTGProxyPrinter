@@ -33,7 +33,8 @@ import ijson
 from PyQt5.QtCore import pyqtSignal as Signal, QObject, Qt
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
-from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock
+from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock, \
+    DEFAULT_DATABASE_LOCATION
 from mtg_proxy_printer.sqlite_helpers import cached_dedent
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
@@ -128,11 +129,11 @@ class CardInfoDownloader(QObject):
 
     def import_from_file(self, file_path: Path):
         logger.debug(f"Request importing card data from file {file_path}")
-        self.request_run_async_task.emit(FileImportTask(file_path, self))
+        self.request_run_async_task.emit(FileImportTask(file_path))
 
     def import_from_api(self):
         logger.debug("Request importing fresh card data from Scryfall")
-        self.request_run_async_task.emit(ApiImportTask(self))
+        self.request_run_async_task.emit(ApiImportTask())
 
 
 class CardInfoWorkerBase(DownloaderBase):
@@ -153,8 +154,8 @@ class FileDownloadTask(CardInfoWorkerBase):
     """
     This class implements downloading the raw card data to a file stored in the file system.
     """
-    def __init__(self, download_path: Path, parent: QObject = None):
-        super().__init__(parent=parent)
+    def __init__(self, download_path: Path):
+        super().__init__()
         self.download_path = download_path
         self.connection = None
 
@@ -215,14 +216,15 @@ class FileDownloadTask(CardInfoWorkerBase):
 
 class FileImportTask(AsyncTask):
 
-    def __init__(self, path: Path, parent: CardInfoDownloader):
-        super().__init__(parent)
-        self.path = path
+    def __init__(self, file_to_import: Path, card_db_path: Path = DEFAULT_DATABASE_LOCATION):
+        super().__init__()
+        self.file_to_import = file_to_import
+        self.card_db_path = card_db_path
         self.worker = None
 
     def run(self):
-        parent: CardInfoDownloader = self.parent()
-        self.worker = worker = DatabaseImportWorker(parent.model)
+        card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
+        self.worker = worker = DatabaseImportWorker(card_db)
         worker.card_data_updated.connect(self.task_completed)
         worker.download_begins.connect(self.begin_task)
         worker.download_progress.connect(self.set_progress)
@@ -230,7 +232,7 @@ class FileImportTask(AsyncTask):
         worker.network_error_occurred.connect(self.network_error_occurred)
         worker.other_error_occurred.connect(self.error_occurred)
 
-        worker.import_card_data_from_local_file(self.path)
+        worker.import_card_data_from_local_file(self.file_to_import)
 
     def cancel(self):
         self.worker.should_run = False
@@ -238,14 +240,14 @@ class FileImportTask(AsyncTask):
 
 class ApiImportTask(AsyncTask):
 
-    def __init__(self, parent: CardInfoDownloader):
+    def __init__(self, card_db_path: Path = DEFAULT_DATABASE_LOCATION):
         super().__init__()
-        self.parent = parent
+        self.card_db_path = card_db_path
         self.worker = None
 
     def run(self):
-        parent = self.parent
-        self.worker = worker = DatabaseImportWorker(parent.model)
+        card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
+        self.worker = worker = DatabaseImportWorker(card_db)
         worker.card_data_updated.connect(self.task_completed)
         worker.download_begins.connect(self.begin_task)
         worker.download_progress.connect(self.set_progress)

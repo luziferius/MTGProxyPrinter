@@ -60,14 +60,12 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> ty
             unittest.mock.patch.object(
                 mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "read_json_card_data_from_url",
                 return_value=iter([10])):
-        cid = CardInfoDownloader(card_db)
-        main_window = MainWindow(card_db, cid, document.image_db, document, QStringListModel(["en"]))
+        main_window = MainWindow(card_db, document.image_db, document, QStringListModel(["en"]))
         qtbot.add_widget(main_window)
         with qtbot.wait_exposed(main_window, timeout=1000):
             main_window.show()
         yield main_window
         main_window.hide()
-        del cid
         main_window.__dict__.clear()
 
 

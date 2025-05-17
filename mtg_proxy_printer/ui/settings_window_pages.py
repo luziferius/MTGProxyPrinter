@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QAppli
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.card_info_downloader import FileDownloadTask
+from mtg_proxy_printer.card_info_downloader import FileDownloadTask, FileImportTask
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.runner import AsyncTask
@@ -197,7 +197,7 @@ class DebugSettingsPage(Page):
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Download card data to file {path}")
-        self.request_run_async_task.emit(FileDownloadTask(path, self))
+        self.request_run_async_task.emit(FileDownloadTask(path))
 
     @Slot()
     def on_debug_import_card_data_from_file_clicked(self):
@@ -218,8 +218,7 @@ class DebugSettingsPage(Page):
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Import card data from {path}")
-        app: "Application" = QApplication.instance()
-        app.card_info_downloader.import_from_file(path)
+        self.request_run_async_task.emit(FileImportTask(path))
 
 
 class DecklistImportSettingsPage(Page):

@@ -22,7 +22,7 @@ from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices, QDragEnterE
 from PyQt5.QtWidgets import QApplication, QMessageBox, QAction, QWidget, QMainWindow, QDialog
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
-from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
+from mtg_proxy_printer.card_info_downloader import CardInfoDownloader, ApiImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
@@ -31,6 +31,7 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, Ac
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.runner import AsyncTask
 from mtg_proxy_printer.ui.custom_card_import_dialog import CustomCardImportDialog
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 import mtg_proxy_printer.settings
@@ -64,10 +65,10 @@ UiElements = typing.List[typing.Union[QWidget, QAction]]
 class MainWindow(QMainWindow):
 
     loading_state_changed = Signal(bool)
+    request_run_async_task = Signal(AsyncTask)
 
     def __init__(self,
                  card_db: CardDatabase,
-                 card_info_downloader: CardInfoDownloader,
                  image_db: ImageDatabase,
                  document: Document,
                  language_model: QStringListModel,
@@ -91,8 +92,7 @@ class MainWindow(QMainWindow):
         self.document = document
         self._connect_document_signals(document)
         self.language_model = language_model
-        self.card_data_downloader = card_info_downloader
-        self._connect_card_info_downloader_signals(card_info_downloader)
+        self._setup_card_data_download_actions()
         self._setup_central_widget()
         self._setup_loading_state_connections()
         self._setup_undo_redo_actions(document)
@@ -158,13 +158,15 @@ class MainWindow(QMainWindow):
         self.ui.action_compact_document.triggered.connect(lambda: document.apply(ActionCompactDocument()))
         self.ui.action_shuffle_document.triggered.connect(lambda: document.apply(ActionShuffleDocument()))
 
-    def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
+    def _setup_card_data_download_actions(self):
         # Do not connect the card_info_downloader.working_state_changed
         # signal to not re-enable the action when completed. This action in particular should remain disabled.
         ui = self.ui
+        ui.action_download_card_data.triggered.connect(lambda: self.request_run_async_task.emit(ApiImportTask()))
         ui.action_download_card_data.triggered.connect(lambda: ui.action_download_card_data.setDisabled(True))
+
+
         downloader.download_begins.connect(lambda: ui.action_download_card_data.setDisabled(True))
-        ui.action_download_card_data.triggered.connect(downloader.import_from_api)
         downloader.card_data_updated.connect(self.update_language_model)
         downloader.download_begins.connect(self.progress_bar_manager.begin_independent_progress)
         downloader.download_progress.connect(self.progress_bar_manager.set_independent_progress)
