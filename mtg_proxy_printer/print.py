@@ -36,7 +36,7 @@ if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
     from mtg_proxy_printer.ui.dialogs import SavePDFDialog
 
-from mtg_proxy_printer.runner import ProgressSignalContainer, AsyncTask
+from mtg_proxy_printer.runner import AsyncTask, AsyncTask
 from mtg_proxy_printer.units_and_sizes import RESOLUTION
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
@@ -112,7 +112,7 @@ def export_pdf(document: Document, file_path: str, parent: "SavePDFDialog" = Non
         return
     logger.info(f'Exporting document with {total_pages} pages as PDF to "{file_path}"')
     total_documents = math.ceil(total_pages/pages_to_print)
-    export_progress = ProgressSignalContainer()
+    export_progress = AsyncTask()
     main_window.progress_bar_manager.add_task(export_progress)
     export_progress.begin_task.emit(
         total_pages, QApplication.translate("export_pdf", "Write PDF:", "Progress label"))

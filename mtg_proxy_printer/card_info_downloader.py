@@ -20,6 +20,7 @@ import gzip
 import itertools
 import math
 import shutil
+from asyncio import TaskGroup
 from pathlib import Path
 import re
 import sqlite3
@@ -41,7 +42,7 @@ from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID
 from mtg_proxy_printer.progress_meter import ProgressMeter
 from mtg_proxy_printer.sqlite_helpers import open_database
-from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.runner import Runnable, AsyncTask
 
 logger = get_logger(__name__)
 del get_logger
@@ -108,6 +109,7 @@ class SetWackinessScore(int, enum.Enum):
 
 
 class DownloadProgressSignalContainer(QObject):
+    # FIXME: Deprecated. Replace with ProgressSignalContainer
     download_progress = Signal(int)  # Emits the total number of processed data after processing each item
     download_begins = Signal(int, str)  # Emitted when the download starts. Carries size (bytes) and description
     download_finished = Signal()  # Emitted when the input data is exhausted and processing finished
@@ -127,6 +129,7 @@ class CardInfoDownloader(DownloadProgressSignalContainer):
     """
 
     card_data_updated = Signal()
+    request_run_task = Signal(AsyncTask)
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
         super().__init__(parent)
@@ -137,14 +140,7 @@ class CardInfoDownloader(DownloadProgressSignalContainer):
 
     def download_to_file(self, download_path: Path):
         logger.debug(f"Called download_to_file({download_path}). About to fetch the card data")
-        runner = FileDownloadRunner(download_path, self)
-        signals = runner.signals
-        signals.download_begins.connect(self.download_begins, QueuedConnection)
-        signals.download_progress.connect(self.download_progress, QueuedConnection)
-        signals.download_finished.connect(self.download_finished, QueuedConnection)
-        signals.network_error_occurred.connect(self.network_error_occurred, QueuedConnection)
-        signals.other_error_occurred.connect(self.other_error_occurred, QueuedConnection)
-        QThreadPool.globalInstance().start(runner)
+        self.request_run_task.emit(FileDownloadTask(download_path, self))
 
     def import_from_file(self, file_path: Path):
         QThreadPool.globalInstance().start(FileImportRunner(file_path, self))
@@ -167,7 +163,7 @@ class CardInfoWorkerBase(DownloaderBase):
         return uri, size
 
 
-class FileDownloadWorker(CardInfoWorkerBase):
+class FileDownloadTask(CardInfoWorkerBase):
     """
     This class implements downloading the raw card data to a file stored in the file system.
     """
@@ -175,6 +171,12 @@ class FileDownloadWorker(CardInfoWorkerBase):
         super().__init__(parent=parent)
         self.download_path = download_path
         self.connection = None
+
+    def run(self):
+        try:
+            self.run_download()
+        except (urllib.error.HTTPError, urllib.error.URLError, socket.timeout) as e:
+            self.error_occurred.emit(e.reason)
 
     def run_download(self):
         """
@@ -211,7 +213,7 @@ class FileDownloadWorker(CardInfoWorkerBase):
             finally:
                 self.connection.close()
                 self.connection = None
-                self.download_finished.emit()
+                self.task_completed.emit()
         if failure:
             logger.error("Download failed! Deleting incomplete download.")
             download_file_path.unlink(missing_ok=True)
@@ -222,40 +224,6 @@ class FileDownloadWorker(CardInfoWorkerBase):
         try:
             self.connection.close()
         finally:
-            pass
-
-
-class FileDownloadRunner(Runnable):
-    """This runner asynchronously downloads the card data and stores it in the given location"""
-    def __init__(self, download_path: Path, parent: CardInfoDownloader):
-        super().__init__()
-        self.parent = parent
-        self.signals = DownloadProgressSignalContainer()
-        self.download_path = download_path
-        self.worker: typing.Optional[FileDownloadWorker] = None
-
-    @with_database_write_lock()  # While it technically does not access the card db, it still shares the progress meter
-    def run(self):
-        signals = self.signals
-        # Implementation note: The actual download worker uses Qt signals, and thus is encapsulated in a class
-        # derived from QObject, and not this QRunnable.
-        self.worker = worker = FileDownloadWorker(self.download_path)
-        worker.download_begins.connect(signals.download_begins)
-        worker.download_progress.connect(signals.download_progress)
-        worker.download_finished.connect(signals.download_finished)
-        worker.network_error_occurred.connect(signals.network_error_occurred)
-        worker.other_error_occurred.connect(signals.other_error_occurred)
-        try:
-            worker.run_download()
-        except (urllib.error.HTTPError, urllib.error.URLError, socket.timeout):
-            pass
-        finally:
-            self.release_instance()
-
-    def cancel(self):
-        try:
-            self.worker.connection.close()
-        except AttributeError:
             pass
 
 

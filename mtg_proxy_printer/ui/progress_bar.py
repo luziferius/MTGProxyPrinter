@@ -18,7 +18,7 @@ from functools import partial
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtWidgets import QWidget,QHBoxLayout
 
-from mtg_proxy_printer.runner import ProgressSignalContainer
+from mtg_proxy_printer.runner import AsyncTask
 
 try:
     from mtg_proxy_printer.ui.generated.progress_bar import Ui_ProgressBar
@@ -37,7 +37,7 @@ __all__ = [
 ]
 
 class ProgressBar(QWidget):
-    def __init__(self, task: ProgressSignalContainer, parent: QWidget = None, flags=Qt.WindowType()):
+    def __init__(self, task: AsyncTask, parent: QWidget = None, flags=Qt.WindowType()):
         super().__init__(parent, flags)
         self.task = weakref.ref(task)
         self.ui = ui = Ui_ProgressBar()
@@ -81,8 +81,8 @@ class ProgressBarManager(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         return layout
 
-    @Slot(ProgressSignalContainer)
-    def add_task(self, task: ProgressSignalContainer):
+    @Slot(AsyncTask)
+    def add_task(self, task: AsyncTask):
         """Create a new progress bar for the given task"""
         bar = ProgressBar(task, self)
         layout = self.layout()

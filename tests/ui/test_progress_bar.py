@@ -17,7 +17,7 @@ from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.runner import ProgressSignalContainer
+from mtg_proxy_printer.runner import AsyncTask
 from mtg_proxy_printer.ui.progress_bar import ProgressBar, ProgressBarManager
 
 from tests.hasgetter import has_getter, has_getters
@@ -25,7 +25,7 @@ from tests.hasgetter import has_getter, has_getters
 
 @pytest.fixture()
 def bar(qtbot: QtBot) -> ProgressBar:
-    task = ProgressSignalContainer()
+    task = AsyncTask()
     progress_bar = ProgressBar(task)
     qtbot.add_widget(progress_bar)
     with qtbot.wait_exposed(progress_bar):
@@ -115,7 +115,7 @@ def test_manager_is_initially_empty(manager: ProgressBarManager):
 @pytest.mark.parametrize("count", [1, 5])
 def test_manager_adds_bar_for_each_task(manager: ProgressBarManager, count: int):
     for _ in range(count):
-        task = ProgressSignalContainer()
+        task = AsyncTask()
         manager.add_task(task)
     assert_that(
         manager.layout().count(), is_(count)
@@ -123,8 +123,8 @@ def test_manager_adds_bar_for_each_task(manager: ProgressBarManager, count: int)
 
 
 def test_task_deletion_removes_task(manager: ProgressBarManager):
-    manager.add_task(task1 := ProgressSignalContainer())
-    manager.add_task(task2 := ProgressSignalContainer())
+    manager.add_task(task1 := AsyncTask())
+    manager.add_task(task2 := AsyncTask())
     task1.setObjectName("Completed")
     task2.setObjectName("Still running")
     task1.task_deleted.emit()

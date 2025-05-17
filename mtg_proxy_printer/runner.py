@@ -24,19 +24,22 @@ del get_logger
 
 __all__ = [
     "Runnable",
-    "ProgressSignalContainer",
+    "AsyncTask",
     "AsyncTask",
     "AsyncTaskRunner",
 ]
 
 
-class ProgressSignalContainer(QObject):
+class AsyncTask(QObject):
+    """Base class for asynchronous tasks with progress reporting"""
+
     begin_task = Signal(int, str)
     set_progress = Signal(int)
     advance_progress = Signal()
     task_completed = Signal()
     ui_update_required = Signal()
     error_occurred = Signal(str)
+    network_error_occurred = Signal(str)
     task_deleted = Signal()
 
     @property
@@ -51,8 +54,6 @@ class ProgressSignalContainer(QObject):
         self.task_deleted.emit()
         getattr(super(), "__del__", lambda: None)()
 
-class AsyncTask(ProgressSignalContainer):
-    """Base class for asynchronous tasks with progress reporting"""
     def run(self):
         pass
 

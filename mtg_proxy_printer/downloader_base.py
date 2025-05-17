@@ -16,10 +16,12 @@
 
 import gzip
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal
+from PyQt5.QtCore import pyqtSignal as Signal
 
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.runner import AsyncTask
+
 logger = get_logger(__name__)
 del get_logger
 
@@ -27,7 +29,7 @@ del get_logger
 supported_encodings = ("gzip", "identity")
 
 
-class DownloaderBase(QObject):
+class DownloaderBase(AsyncTask):
     """
     Base class for classes that are able to download data from the Internet.
     """
@@ -61,6 +63,6 @@ class DownloaderBase(QObject):
         if (response_code := response.getcode()) >= 300:
             raise RuntimeError(f"Error from server! Error code: {response_code}")
         if ui_hint:  # Without a display text for the UI, there is no meaningful progress report. So skip if not given
-            response.total_bytes_processed.connect(self.download_progress)
-            response.io_begin.connect(self.download_begins)
+            response.total_bytes_processed.connect(self.set_progress)
+            response.io_begin.connect(self.begin_task)
         return response
