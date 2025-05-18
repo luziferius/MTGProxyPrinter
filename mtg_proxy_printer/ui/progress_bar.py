@@ -12,7 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-import weakref
+
 from functools import partial
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
@@ -39,7 +39,7 @@ __all__ = [
 class ProgressBar(QWidget):
     def __init__(self, task: AsyncTask, parent: QWidget = None, flags=Qt.WindowType()):
         super().__init__(parent, flags)
-        self.task = weakref.ref(task)
+        self.task = task
         self.ui = ui = Ui_ProgressBar()
         self.can_cancel = task.can_cancel
         ui.setupUi(self)
