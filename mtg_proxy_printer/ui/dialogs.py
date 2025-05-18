@@ -498,9 +498,9 @@ class ExportCardImagesDialog(QDialog):
             try:
                 shutil.copy2(source_file, target_file)
             except (IOError, OSError) as e:
-                msg = "Copy failed for {card_name}! Disk detached/full? Aborting."
-                logger.exception(msg.format(card_name=card.name))
-                self.error_occurred.emit(self.tr(msg).format(card_name=card.name))
+                logger.exception(f"Copy failed for {card.name}! Disk detached/full? Aborting.")
+                self.error_occurred.emit(
+                    self.tr("Copy failed for {card_name}! Disk detached/full? Aborting.").format(card_name=card.name))
                 raise RuntimeError() from e
 
     @staticmethod
@@ -527,9 +527,9 @@ class ExportCardImagesDialog(QDialog):
             try:
                 (target_path/target_file_name).write_bytes(card.source_image_file)
             except (IOError, OSError) as e:
-                msg = "Write failed for {card_name}! Disk detached/full? Aborting."
-                logger.exception(msg.format(card_name=card.name))
-                self.error_occurred.emit(self.tr(msg).format(card_name=card.name))
+                logger.exception(f"Write failed for {card.name}! Disk detached/full? Aborting.")
+                self.error_occurred.emit(
+                    self.tr("Write failed for {card_name}! Disk detached/full? Aborting.").format(card_name=card.name))
                 raise RuntimeError() from e
 
 
