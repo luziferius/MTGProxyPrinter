@@ -873,7 +873,7 @@ zu wechseln.</translation>
   <context>
     <name>ExportCardImagesDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="454"/>
+      <location filename="../../ui/dialogs.py" line="455"/>
       <source>Select card image export location</source>
       <translation>Speicherort für Kartenbild-Export auswählen</translation>
     </message>
@@ -911,6 +911,16 @@ zu wechseln.</translation>
       <location filename="../ui/export_card_images_dialog.ui" line="93"/>
       <source>Path to a directory</source>
       <translation>Pfad zu einem Verzeichnis</translation>
+    </message>
+    <message>
+      <location filename="../../ui/dialogs.py" line="502"/>
+      <source>Copy failed for {card_name}! Disk detached/full? Aborting.</source>
+      <translation>Kopieren von {card_name} fehlgeschlagen! Ziel entfernt/voll? Breche ab.</translation>
+    </message>
+    <message>
+      <location filename="../../ui/dialogs.py" line="531"/>
+      <source>Write failed for {card_name}! Disk detached/full? Aborting.</source>
+      <translation>Schreiben des Bilds von {card_name} fehlgeschlagen! Ziel entfernt/voll? Breche ab.</translation>
     </message>
   </context>
   <context>
@@ -1830,12 +1840,12 @@ Aktivieren kann möglicherweise Speicherplatz auf der Festplatte und Datenvolume
       <translation>dem PDF-Export</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="336"/>
+      <location filename="../../ui/main_window.py" line="337"/>
       <source>Network error</source>
       <translation>Netzwerkfehler</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="336"/>
+      <location filename="../../ui/main_window.py" line="337"/>
       <source>Operation failed, because a network error occurred.
 Check your internet connection. Reported error message:
 
@@ -1846,12 +1856,12 @@ Check your internet connection. Reported error message:
 {message}</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="344"/>
+      <location filename="../../ui/main_window.py" line="345"/>
       <source>Error</source>
       <translation>Fehler</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="344"/>
+      <location filename="../../ui/main_window.py" line="345"/>
       <source>Operation failed, because an internal error occurred.
 Reported error message:
 
@@ -1862,12 +1872,12 @@ Berichtete Fehlermeldung:
 {message}</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="353"/>
+      <location filename="../../ui/main_window.py" line="354"/>
       <source>Saving pages possible</source>
       <translation>Einsparen von Seiten möglich</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="353"/>
+      <location filename="../../ui/main_window.py" line="354"/>
       <source>It is possible to save %n pages when printing this document.
 Do you want to compact the document now to minimize the page count prior to {action}?</source>
       <translation>
@@ -1878,12 +1888,12 @@ Möchten Sie das Dokument jetzt komprimieren, um die Seitenanzahl vor {action} z
       </translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="369"/>
+      <location filename="../../ui/main_window.py" line="370"/>
       <source>Download required Card data from Scryfall?</source>
       <translation>Benötigte Kartendaten von Scryfall herunterladen?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="369"/>
+      <location filename="../../ui/main_window.py" line="370"/>
       <source>This program requires downloading additional card data from Scryfall to operate the card search.
 Download the required data from Scryfall now?
 Without the data, you can only print custom cards by drag&amp;dropping the image files onto the main window.</source>
@@ -1892,24 +1902,24 @@ Jetzt die benötigten Daten von Scryfall herunterladen?
 Ohne die Daten können Sie nur nutzererstellte Karten drucken, indem Sie die Bilddateien per Drag &amp; Drop in das Hauptfenster ziehen.</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="417"/>
+      <location filename="../../ui/main_window.py" line="418"/>
       <source>Document loading failed</source>
       <translation>Laden des Dokuments fehlgeschlagen</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="417"/>
+      <location filename="../../ui/main_window.py" line="418"/>
       <source>Loading file &quot;{failed_path}&quot; failed. The file was not recognized as a {program_name} document. If you want to load a deck list, use the &quot;{function_text}&quot; function instead.
 Reported failure reason: {reason}</source>
       <translation>Laden der Datei "{failed_path}" fehlgeschlagen. Die Datei wurde nicht als {program_name}-Dokument erkannt. Wenn Sie eine Deckliste laden möchten, verwenden Sie die "{function_text}"-Funktion stattdessen.
 Berichteter Fehlergrund: {reason}</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="430"/>
+      <location filename="../../ui/main_window.py" line="431"/>
       <source>Unavailable printings replaced</source>
       <translation>Nicht verfügbare Drucke ersetzt</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="430"/>
+      <location filename="../../ui/main_window.py" line="431"/>
       <source>The document contained %n unavailable printings of cards that were automatically replaced with other printings. The replaced printings are unavailable, because they match a configured card filter.</source>
       <translation>
         <numerusform>Das Dokument enthielt einen nicht verfügbaren Druck einer Karte, der automatisch durch einen anderen Druck ersetzt wurden. Der ausgetauschten Druck ist nicht verfügbar, da er mit einem konfigurierten Kartenfilter übereinstimmt.</numerusform>
@@ -1917,12 +1927,12 @@ Berichteter Fehlergrund: {reason}</translation>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="439"/>
+      <location filename="../../ui/main_window.py" line="440"/>
       <source>Unrecognized cards in loaded document found</source>
       <translation>Nicht erkannte Karten im geladenen Dokument gefunden</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="439"/>
+      <location filename="../../ui/main_window.py" line="440"/>
       <source>Skipped %n unrecognized cards in the loaded document. Saving the document will remove these entries permanently.
 
 The locally stored card data may be outdated or the document was tampered with.</source>
@@ -1936,12 +1946,12 @@ Die lokalen Kartendaten sind möglicherweise veraltet oder das Dokument wurde ma
       </translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="449"/>
+      <location filename="../../ui/main_window.py" line="450"/>
       <source>Application update available. Visit website?</source>
       <translation>Anwendungsaktualisierung verfügbar. Website besuchen?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="449"/>
+      <location filename="../../ui/main_window.py" line="450"/>
       <source>An application update is available: Version {newer_version}
 You are currently using version {current_version}.
 
@@ -1952,12 +1962,12 @@ Sie verwenden derzeit Version {current_version}.
 Die {program_name}-Webseite mit Ihrem Web-Browser besuchen, um die neue Version herunterzuladen?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="464"/>
+      <location filename="../../ui/main_window.py" line="465"/>
       <source>New card data available</source>
       <translation>Neue Kartendaten verfügbar</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="464"/>
+      <location filename="../../ui/main_window.py" line="465"/>
       <source>There are %n new printings available on Scryfall. Update the local data now?</source>
       <translation>
         <numerusform>Es ist %n neue Karte auf Scryfall verfügbar. Lokale Daten jetzt aktualisieren?</numerusform>
@@ -1965,27 +1975,27 @@ Die {program_name}-Webseite mit Ihrem Web-Browser besuchen, um die neue Version 
       </translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="480"/>
+      <location filename="../../ui/main_window.py" line="481"/>
       <source>Check for application updates?</source>
       <translation>Nach Anwendungsaktualisierungen suchen?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="480"/>
+      <location filename="../../ui/main_window.py" line="481"/>
       <source>Automatically check for application updates whenever you start {program_name}?</source>
       <translation>Beim Anwendungsstart automatisch nach Updates suchen?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="492"/>
+      <location filename="../../ui/main_window.py" line="493"/>
       <source>Check for card data updates?</source>
       <translation>Suche nach Kartendaten-Updates?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="492"/>
+      <location filename="../../ui/main_window.py" line="493"/>
       <source>Automatically check for card data updates on Scryfall whenever you start {program_name}?</source>
       <translation>Automatisch nach Kartenupdates auf Scryfall prüfen, wann immer Sie {program_name} starten?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="502"/>
+      <location filename="../../ui/main_window.py" line="503"/>
       <source>{question}
 You can change this later in the settings.</source>
       <translation>{question}

@@ -868,7 +868,7 @@ switch the selected printing.</translation>
   <context>
     <name>ExportCardImagesDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="454"/>
+      <location filename="../../ui/dialogs.py" line="455"/>
       <source>Select card image export location</source>
       <translation type="unfinished">Select card image export location</translation>
     </message>
@@ -906,6 +906,16 @@ switch the selected printing.</translation>
       <location filename="../ui/export_card_images_dialog.ui" line="93"/>
       <source>Path to a directory</source>
       <translation type="unfinished">Path to a directory</translation>
+    </message>
+    <message>
+      <location filename="../../ui/dialogs.py" line="502"/>
+      <source>Copy failed for {card_name}! Disk detached/full? Aborting.</source>
+      <translation type="unfinished">Copy failed for {card_name}! Disk detached/full? Aborting.</translation>
+    </message>
+    <message>
+      <location filename="../../ui/dialogs.py" line="531"/>
+      <source>Write failed for {card_name}! Disk detached/full? Aborting.</source>
+      <translation type="unfinished">Write failed for {card_name}! Disk detached/full? Aborting.</translation>
     </message>
   </context>
   <context>
@@ -1826,12 +1836,12 @@ Enabling this can potentially save disk space and download volume, based on the 
       <translation type="unfinished">exporting as a PDF</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="336"/>
+      <location filename="../../ui/main_window.py" line="337"/>
       <source>Network error</source>
       <translation>Erreur réseau</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="336"/>
+      <location filename="../../ui/main_window.py" line="337"/>
       <source>Operation failed, because a network error occurred.
 Check your internet connection. Reported error message:
 
@@ -1842,12 +1852,12 @@ Check your internet connection. Reported error message:
 {message}</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="344"/>
+      <location filename="../../ui/main_window.py" line="345"/>
       <source>Error</source>
       <translation type="unfinished">Error</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="344"/>
+      <location filename="../../ui/main_window.py" line="345"/>
       <source>Operation failed, because an internal error occurred.
 Reported error message:
 
@@ -1858,12 +1868,12 @@ Reported error message:
 {message}</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="353"/>
+      <location filename="../../ui/main_window.py" line="354"/>
       <source>Saving pages possible</source>
       <translation>Sauvegarde possible des pages</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="353"/>
+      <location filename="../../ui/main_window.py" line="354"/>
       <source>It is possible to save %n pages when printing this document.
 Do you want to compact the document now to minimize the page count prior to {action}?</source>
       <translation type="unfinished">
@@ -1874,12 +1884,12 @@ Do you want to compact the document now to minimize the page count prior to {act
       </translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="369"/>
+      <location filename="../../ui/main_window.py" line="370"/>
       <source>Download required Card data from Scryfall?</source>
       <translation type="unfinished">Download required Card data from Scryfall?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="369"/>
+      <location filename="../../ui/main_window.py" line="370"/>
       <source>This program requires downloading additional card data from Scryfall to operate the card search.
 Download the required data from Scryfall now?
 Without the data, you can only print custom cards by drag&amp;dropping the image files onto the main window.</source>
@@ -1888,24 +1898,24 @@ Download the required data from Scryfall now?
 Without the data, you can only print custom cards by drag&amp;dropping the image files onto the main window.</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="417"/>
+      <location filename="../../ui/main_window.py" line="418"/>
       <source>Document loading failed</source>
       <translation type="unfinished">Document loading failed</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="417"/>
+      <location filename="../../ui/main_window.py" line="418"/>
       <source>Loading file &quot;{failed_path}&quot; failed. The file was not recognized as a {program_name} document. If you want to load a deck list, use the &quot;{function_text}&quot; function instead.
 Reported failure reason: {reason}</source>
       <translation type="unfinished">Loading file &quot;{failed_path}&quot; failed. The file was not recognized as a {program_name} document. If you want to load a deck list, use the &quot;{function_text}&quot; function instead.
 Reported failure reason: {reason}</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="430"/>
+      <location filename="../../ui/main_window.py" line="431"/>
       <source>Unavailable printings replaced</source>
       <translation type="unfinished">Unavailable printings replaced</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="430"/>
+      <location filename="../../ui/main_window.py" line="431"/>
       <source>The document contained %n unavailable printings of cards that were automatically replaced with other printings. The replaced printings are unavailable, because they match a configured card filter.</source>
       <translation type="unfinished">
         <numerusform>The document contained %n unavailable printings of cards that were automatically replaced with other printings. The replaced printings are unavailable, because they match a configured card filter.</numerusform>
@@ -1913,12 +1923,12 @@ Reported failure reason: {reason}</translation>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="439"/>
+      <location filename="../../ui/main_window.py" line="440"/>
       <source>Unrecognized cards in loaded document found</source>
       <translation type="unfinished">Unrecognized cards in loaded document found</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="439"/>
+      <location filename="../../ui/main_window.py" line="440"/>
       <source>Skipped %n unrecognized cards in the loaded document. Saving the document will remove these entries permanently.
 
 The locally stored card data may be outdated or the document was tampered with.</source>
@@ -1932,12 +1942,12 @@ The locally stored card data may be outdated or the document was tampered with.<
       </translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="449"/>
+      <location filename="../../ui/main_window.py" line="450"/>
       <source>Application update available. Visit website?</source>
       <translation type="unfinished">Application update available. Visit website?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="449"/>
+      <location filename="../../ui/main_window.py" line="450"/>
       <source>An application update is available: Version {newer_version}
 You are currently using version {current_version}.
 
@@ -1948,12 +1958,12 @@ You are currently using version {current_version}.
 Open the {program_name} website in your web browser to download the new version?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="464"/>
+      <location filename="../../ui/main_window.py" line="465"/>
       <source>New card data available</source>
       <translation>Nouvelles données de cartes disponibles</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="464"/>
+      <location filename="../../ui/main_window.py" line="465"/>
       <source>There are %n new printings available on Scryfall. Update the local data now?</source>
       <translation type="unfinished">
         <numerusform>There are %n new printings available on Scryfall. Update the local data now?</numerusform>
@@ -1961,27 +1971,27 @@ Open the {program_name} website in your web browser to download the new version?
       </translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="480"/>
+      <location filename="../../ui/main_window.py" line="481"/>
       <source>Check for application updates?</source>
       <translation type="unfinished">Check for application updates?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="480"/>
+      <location filename="../../ui/main_window.py" line="481"/>
       <source>Automatically check for application updates whenever you start {program_name}?</source>
       <translation type="unfinished">Automatically check for application updates whenever you start {program_name}?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="492"/>
+      <location filename="../../ui/main_window.py" line="493"/>
       <source>Check for card data updates?</source>
       <translation type="unfinished">Check for card data updates?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="492"/>
+      <location filename="../../ui/main_window.py" line="493"/>
       <source>Automatically check for card data updates on Scryfall whenever you start {program_name}?</source>
       <translation type="unfinished">Automatically check for card data updates on Scryfall whenever you start {program_name}?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="502"/>
+      <location filename="../../ui/main_window.py" line="503"/>
       <source>{question}
 You can change this later in the settings.</source>
       <translation type="unfinished">{question}
