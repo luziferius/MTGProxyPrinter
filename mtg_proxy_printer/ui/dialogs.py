@@ -475,6 +475,12 @@ class ExportCardImagesDialog(QDialog):
         super().accept()
 
     def _export_images(self):
+        if self.ui.export_official_cards.isChecked():
+            self._export_official_cards()
+        if self.ui.export_custom_cards.isChecked():
+            pass
+
+    def _export_official_cards(self):
         document = self.document
         card_db = document.card_db
         image_db_path = document.image_db.db_path

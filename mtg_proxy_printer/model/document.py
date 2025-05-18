@@ -31,7 +31,7 @@ from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCus
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageColumns
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
-from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType
+from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType, CustomCard
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -417,13 +417,19 @@ class Document(QAbstractItemModel):
     @staticmethod
     def _get_page_content_as_image_keys(page: Page) -> typing.Iterable[ImageKey]:
         return (
-            ImageKey((card := container.card).scryfall_id, card.is_front, card.highres_image)
-            for container in page)
+            ImageKey(card.scryfall_id, card.is_front, card.highres_image)
+            for container in page if not (card := container.card).is_custom_card)
 
     def get_all_image_keys_in_document(self) -> typing.Set[ImageKey]:
         return set(itertools.chain.from_iterable(
             map(self._get_page_content_as_image_keys, self.pages)
         ))
+
+    def get_all_custom_cards(self) -> typing.Iterable[CustomCard]:
+        for page in self.pages:
+            for container in page:
+                if container.card.is_custom_card:
+                    yield container.card
 
     def recreate_page_index_cache(self):
         self.page_index_cache.clear()
