@@ -27,6 +27,7 @@ from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.card import AnyCardType
 import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
@@ -478,7 +479,7 @@ class ExportCardImagesDialog(QDialog):
         if self.ui.export_official_cards.isChecked():
             self._export_official_cards()
         if self.ui.export_custom_cards.isChecked():
-            pass
+            self._export_custom_cards()
 
     def _export_official_cards(self):
         document = self.document
@@ -499,8 +500,36 @@ class ExportCardImagesDialog(QDialog):
             card_db: CardDatabase, image_db_path: Path, target_dir: Path, key: ImageKey) -> Tuple[Path, Path]:
         card = card_db.get_card_with_scryfall_id(key.scryfall_id, key.is_front)
         source_path = image_db_path / key.format_relative_path()
-        side = "Front" if card.is_front else "Back"
-        name = card.name.translate(UNSAFE_FILE_NAME_MAPPING)
-        target_file_name = f"{card.set_code} {card.collector_number} {side} {name}{source_path.suffix}"
+        target_file_name = ExportCardImagesDialog._format_card_file_name(card, source_path.suffix)
         return source_path, target_dir/target_file_name
 
+    @staticmethod
+    def _format_card_file_name(card: AnyCardType, suffix: str):
+        side = "Front" if card.is_front else "Back"
+        name = card.name.translate(UNSAFE_FILE_NAME_MAPPING)
+        target_file_name = f"{card.set_code} {card.collector_number} {side} {name}{suffix}"
+        return target_file_name
+
+    def _export_custom_cards(self):
+        document = self.document
+        cards = document.get_all_custom_cards()
+        target_path = Path(self.ui.output_path.text())
+        target_path.mkdir(parents=True, exist_ok=True)
+        for card in cards:
+            suffix = guess_file_extension_from_content(card.source_image_file)
+            target_file_name = ExportCardImagesDialog._format_card_file_name(card, suffix)
+            (target_path/target_file_name).write_bytes(card.source_image_file)
+
+
+def guess_file_extension_from_content(content: bytes) -> str:
+    """Custom cards don't have file names, and may be of arbitrary image type.
+    Guess the file name extension from the content."""
+    if content.startswith(b'\x89PNG\r\n\x1a\n'):
+        return ".png"
+    elif content.startswith(b'\xff\xd8'):  # FF D8 == JFIF SOI/Start of Image marker
+        return ".jpg"
+    elif content[:4]+content[8:12] == b'RIFFWEBP':
+        return ".webp"
+    elif content[:4] in {b'IIB\x00', b'MM\x00B'}:  # Either big endian or little endian. https://docs.fileformat.com/image/tiff/
+        return '.tiff'
+    return ""
