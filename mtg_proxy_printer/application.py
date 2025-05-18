@@ -77,18 +77,16 @@ class Application(QApplication):
         self._setup_icons()
         self.language_model = self._create_language_model()  # TODO: Can this be removed?
         self.card_db, self.image_db = self._open_databases(args)
-        self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
-        self.card_info_downloader.request_run_async_task.connect(self.run_async_task)
         self.document = self._create_document_instance(self.card_db, self.image_db)
         logger.debug("Creating GUI")
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
-            self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
+            self.card_db, self.image_db, self.document, self.language_model
         )
         self.main_window.request_run_async_task.connect(self.run_async_task)
         self.update_checker = self._create_update_checker(args)
         self.main_window.ui.action_download_card_data.setEnabled(False)
         self.settings_window = self._create_settings_window(
-            self.language_model, self.document, self.main_window, self.card_info_downloader)
+            self.language_model, self.document, self.main_window)
         if settings.settings["gui"].getboolean("gui-open-maximized"):
             self.main_window.showMaximized()
         else:
@@ -172,8 +170,7 @@ class Application(QApplication):
 
     def _create_settings_window(
             self, language_model: QStringListModel, document: mtg_proxy_printer.model.document.Document,
-            main_window: mtg_proxy_printer.ui.main_window.MainWindow,
-            card_info_downloader: mtg_proxy_printer.card_info_downloader.CardInfoDownloader):
+            main_window: mtg_proxy_printer.ui.main_window.MainWindow):
         settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             language_model, document, main_window)
         settings_window.request_run_async_task.connect(self.run_async_task)

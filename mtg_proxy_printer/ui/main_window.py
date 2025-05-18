@@ -22,7 +22,7 @@ from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices, QDragEnterE
 from PyQt5.QtWidgets import QApplication, QMessageBox, QAction, QWidget, QMainWindow, QDialog
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
-from mtg_proxy_printer.card_info_downloader import CardInfoDownloader, ApiImportTask
+from mtg_proxy_printer.card_info_downloader import ApiImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document

@@ -47,11 +47,11 @@ logger = get_logger(__name__)
 del get_logger
 
 __all__ = [
-    "CardInfoDownloader",
     "CardInfoWorkerBase",
     "DatabaseImportWorker",
     "ApiStreamWorker",
     "SetWackinessScore",
+    "ApiImportTask",
 ]
 
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
@@ -105,35 +105,6 @@ class SetWackinessScore(int, enum.Enum):
     DIGITAL = 5  # MTG Arena/Online cards. Especially Arena cards aren't pleasantly looking when printed
     ART_SERIES = 8  # Not playable
     OVERSIZED = 10  # Not playable
-
-
-class CardInfoDownloader(QObject):
-    """
-    Handles fetching the bulk card data from Scryfall and populates/updates the local card database.
-    Also supports importing cards via a locally stored bulk card data file, mostly useful for debugging and testing
-    purposes.
-
-    This is the public interface. The actual implementation resides in the CardInfoDownloadWorker class, which
-    is run asynchronously in another thread.
-    """
-
-    card_data_updated = Signal()
-    request_run_async_task = Signal(AsyncTask)
-
-    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
-        super().__init__(parent)
-        logger.info(f"Creating {self.__class__.__name__} instance.")
-        logger.info(f"Using ijson backend: {ijson.backend}")
-        self.model = model
-        logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def import_from_file(self, file_path: Path):
-        logger.debug(f"Request importing card data from file {file_path}")
-        self.request_run_async_task.emit(FileImportTask(file_path))
-
-    def import_from_api(self):
-        logger.debug("Request importing fresh card data from Scryfall")
-        self.request_run_async_task.emit(ApiImportTask())
 
 
 class CardInfoWorkerBase(DownloaderBase):
