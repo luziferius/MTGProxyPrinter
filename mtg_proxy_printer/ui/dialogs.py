@@ -20,7 +20,7 @@ import sys
 import typing
 from typing import Tuple
 
-from PyQt5.QtCore import QFile, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
+from PyQt5.QtCore import QFile, pyqtSignal as Signal, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
 from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PyQt5.QtGui import QIcon
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
@@ -437,6 +437,7 @@ UNSAFE_FILE_NAME_MAPPING = str.maketrans(UNSAFE_FILE_NAME_CHARS, "_"*len(UNSAFE_
 
 class ExportCardImagesDialog(QDialog):
 
+    error_occurred = Signal(str)
 
     def __init__(self, document: "Document", parent: QWidget = None):
         super().__init__(parent)
@@ -471,37 +472,44 @@ class ExportCardImagesDialog(QDialog):
         )))
         
     def accept(self):
-        logger.info("User accepted card image export")
-        self._export_images()
+        logger.info(f"User accepted card image export. Writing card images to {self.ui.output_path.text()}")
+        try:
+            self._export_images()
+        except RuntimeError:
+            pass
         super().accept()
 
     def _export_images(self):
         if self.ui.export_official_cards.isChecked():
+            logger.info("Exporting all official cards")
             self._export_official_cards()
         if self.ui.export_custom_cards.isChecked():
+            logger.info("Exporting all custom cards")
             self._export_custom_cards()
 
     def _export_official_cards(self):
         document = self.document
         card_db = document.card_db
         image_db_path = document.image_db.db_path
-        image_keys = document.get_all_image_keys_in_document()
         target_path = Path(self.ui.output_path.text())
         target_path.mkdir(parents=True, exist_ok=True)
-        for key in image_keys:
-            source_file, target_file = self._format_file_paths(card_db, image_db_path, target_path, key)
+        for key in document.get_all_image_keys_in_document():
+            source_file, target_file, card = self._format_file_paths(card_db, image_db_path, target_path, key)
             try:
                 shutil.copy2(source_file, target_file)
-            except (IOError, OSError):
-                break
+            except (IOError, OSError) as e:
+                msg = "Copy failed for {card_name}! Disk detached/full? Aborting."
+                logger.exception(msg.format(card_name=card.name))
+                self.error_occurred.emit(self.tr(msg).format(card_name=card.name))
+                raise RuntimeError() from e
 
     @staticmethod
     def _format_file_paths(
-            card_db: CardDatabase, image_db_path: Path, target_dir: Path, key: ImageKey) -> Tuple[Path, Path]:
+            card_db: CardDatabase, image_db_path: Path, target_dir: Path, key: ImageKey) -> Tuple[Path, Path, AnyCardType]:
         card = card_db.get_card_with_scryfall_id(key.scryfall_id, key.is_front)
         source_path = image_db_path / key.format_relative_path()
         target_file_name = ExportCardImagesDialog._format_card_file_name(card, source_path.suffix)
-        return source_path, target_dir/target_file_name
+        return source_path, target_dir/target_file_name, card
 
     @staticmethod
     def _format_card_file_name(card: AnyCardType, suffix: str):
@@ -516,7 +524,13 @@ class ExportCardImagesDialog(QDialog):
         for card in self.document.get_all_custom_cards():
             suffix = guess_file_extension_from_content(card.source_image_file)
             target_file_name = ExportCardImagesDialog._format_card_file_name(card, suffix)
-            (target_path/target_file_name).write_bytes(card.source_image_file)
+            try:
+                (target_path/target_file_name).write_bytes(card.source_image_file)
+            except (IOError, OSError) as e:
+                msg = "Write failed for {card_name}! Disk detached/full? Aborting."
+                logger.exception(msg.format(card_name=card.name))
+                self.error_occurred.emit(self.tr(msg).format(card_name=card.name))
+                raise RuntimeError() from e
 
 
 def guess_file_extension_from_content(content: bytes) -> str:

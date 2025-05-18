@@ -324,6 +324,7 @@ class MainWindow(QMainWindow):
     def on_action_export_card_images_triggered(self):
         logger.info("User exports the card images in the current document to a directory")
         self.current_dialog = dialog = ExportCardImagesDialog(self.document, self)
+        dialog.error_occurred.connect(self.on_error_occurred)
         dialog.finished.connect(self.on_dialog_finished)
         dialog.open()
 
