@@ -34,6 +34,7 @@
     <addaction name="action_load_document"/>
     <addaction name="action_save_document"/>
     <addaction name="action_save_as"/>
+    <addaction name="separator"/>
     <addaction name="action_print_preview"/>
     <addaction name="action_print"/>
     <addaction name="action_print_pdf"/>
@@ -41,6 +42,7 @@
     <addaction name="separator"/>
     <addaction name="action_import_deck_list"/>
     <addaction name="action_add_custom_cards"/>
+    <addaction name="action_export_card_images"/>
     <addaction name="separator"/>
     <addaction name="action_quit"/>
    </widget>
@@ -377,6 +379,17 @@ use this to reduce the initial deck shuffling required</string>
    </property>
    <property name="toolTip">
     <string>Export document as an image sequence</string>
+   </property>
+  </action>
+  <action name="action_export_card_images">
+   <property name="icon">
+    <iconset theme="document-export"/>
+   </property>
+   <property name="text">
+    <string>Export card images</string>
+   </property>
+   <property name="toolTip">
+    <string>Export all card images to a directory</string>
    </property>
   </action>
  </widget>
