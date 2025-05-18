@@ -414,22 +414,26 @@ class Document(QAbstractItemModel):
                 if card.image_file in blanks and card.image_uri:
                     yield self.index(card_number, 0, page_index)
 
-    @staticmethod
-    def _get_page_content_as_image_keys(page: Page) -> typing.Iterable[ImageKey]:
+    def _get_page_content_as_image_keys(self, page: Page) -> typing.Iterable[ImageKey]:
+        image_db = self.image_db
         return (
             ImageKey(card.scryfall_id, card.is_front, card.highres_image)
-            for container in page if not (card := container.card).is_custom_card)
+            for container in page
+            if not (card := container.card).is_custom_card
+               and card.image_file is not image_db.get_blank(card.size))
 
     def get_all_image_keys_in_document(self) -> typing.Set[ImageKey]:
         return set(itertools.chain.from_iterable(
             map(self._get_page_content_as_image_keys, self.pages)
         ))
 
-    def get_all_custom_cards(self) -> typing.Iterable[CustomCard]:
+    def get_all_custom_cards(self) -> typing.Set[CustomCard]:
+        result = set()
         for page in self.pages:
             for container in page:
-                if container.card.is_custom_card:
-                    yield container.card
+                if isinstance(container.card, CustomCard):
+                    result.add(container.card)
+        return result
 
     def recreate_page_index_cache(self):
         self.page_index_cache.clear()

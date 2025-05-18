@@ -511,11 +511,9 @@ class ExportCardImagesDialog(QDialog):
         return target_file_name
 
     def _export_custom_cards(self):
-        document = self.document
-        cards = document.get_all_custom_cards()
         target_path = Path(self.ui.output_path.text())
         target_path.mkdir(parents=True, exist_ok=True)
-        for card in cards:
+        for card in self.document.get_all_custom_cards():
             suffix = guess_file_extension_from_content(card.source_image_file)
             target_file_name = ExportCardImagesDialog._format_card_file_name(card, suffix)
             (target_path/target_file_name).write_bytes(card.source_image_file)
