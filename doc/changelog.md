@@ -5,6 +5,9 @@
 ## New features
 
 - Export documents as a lossless PNG image sequence. The export can be triggered via the File menu.
+- Export all card images of cards in the current document to a directory.
+  - A first step towards supporting external image post-processing/filtering or (AI) upscaling tools.
+  - You can choose between exporting official cards and/or custom cards. Defaults to exporting only official cards.
 
 ## Changed features
 
