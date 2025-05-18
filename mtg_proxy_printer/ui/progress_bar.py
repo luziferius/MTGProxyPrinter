@@ -56,11 +56,13 @@ class ProgressBar(QWidget):
     @Slot(int, str)
     def begin_progress(self, upper_limit: int, ui_hint: str = ""):
         ui = self.ui
+        self.setVisible(True)  # Support re-use
         label = ui.task_label
         label.setText(ui_hint)
         label.setVisible(bool(ui_hint))
         progress_bar = ui.progress_bar
         progress_bar.setMaximum(upper_limit)
+        progress_bar.setVisible(True)  # Support re-use
         ui.cancel_button.setVisible(self.can_cancel)
 
     @Slot()

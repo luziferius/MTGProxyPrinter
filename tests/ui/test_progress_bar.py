@@ -100,6 +100,17 @@ def test_task_completed_hides_itself(bar: ProgressBar):
     bar.task.task_completed.emit()
     assert_that(bar.isHidden(), is_(True))
 
+def test_task_begin_shows_itself(bar: ProgressBar):
+    bar.task.task_completed.emit()
+    assert_that(bar.isHidden(), is_(True), "Test setup failed")
+    bar.task.begin_task.emit(123, "Test")
+    assert_that(bar.isVisible(), is_(True))
+    assert_that(bar.ui, has_properties({
+        "progress_bar": has_getter("isVisible", equal_to(True)),
+        "task_label": has_getter("isVisible", equal_to(True)),
+    }))
+
+
 
 @pytest.fixture()
 def manager(qtbot: QtBot) -> ProgressBarManager:
