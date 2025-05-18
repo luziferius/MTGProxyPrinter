@@ -75,7 +75,8 @@ class FastComboBoxDelegate(QStyledItemDelegate):
         return editor
 
     def eventFilter(self, editor: QComboBox, event: QFocusEvent) -> bool:
-        if editor is not None and isinstance(event, QFocusEvent) \
+        # Subclasses may return custom editors for some cases. Only call showPopup(), if it is present.
+        if editor is not None and hasattr(editor, "showPopup") and isinstance(event, QFocusEvent) \
                 and event.type() == QEvent.Type.FocusIn \
                 and event.reason() != Qt.FocusReason.PopupFocusReason:
             # When the editor receives focus, but not because its popup closed, show the popup to save a click.
