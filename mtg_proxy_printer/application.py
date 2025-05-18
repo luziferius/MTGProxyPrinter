@@ -46,7 +46,6 @@ import mtg_proxy_printer.ui.settings_window
 import mtg_proxy_printer.progress_meter
 from mtg_proxy_printer.runner import Runnable, AsyncTask, AsyncTaskRunner
 from mtg_proxy_printer.logger import get_logger
-from ui.test_main_window import main_window
 
 logger = get_logger(__name__)
 del get_logger

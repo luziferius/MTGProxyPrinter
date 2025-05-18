@@ -52,6 +52,8 @@ __all__ = [
     "ApiStreamWorker",
     "SetWackinessScore",
     "ApiImportTask",
+    "FileImportTask",
+    "FileDownloadTask",
 ]
 
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
