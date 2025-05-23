@@ -92,14 +92,6 @@ class ImageDatabase(QObject):
     """
     request_run_async_task = Signal(AsyncTask)
 
-    card_download_starting = Signal(int, str)
-    card_download_finished = Signal()
-    card_download_progress = Signal(int)
-
-    batch_process_starting = Signal(int, str)
-    batch_process_progress = Signal(int)
-    batch_process_finished = Signal()
-
     request_action = Signal(DocumentAction)
     missing_images_obtained = Signal()
     """
