@@ -382,7 +382,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         image_path = self.image_database.db_path / key.format_relative_path()
         blank = self.image_database.get_blank()  # TODO: needs to be size-aware?
         pixmap = self._load_from_memory(key) \
-            or self._load_from_disk(key, image_path) \
+            or self._load_from_disk(image_path) \
             or self._download_from_scryfall(card, image_path) \
             or blank
         if pixmap is not blank:
@@ -393,7 +393,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     def _load_from_memory(self, key: ImageKey) -> OptionalPixmap:
         return self.image_database.loaded_images.get(key)
 
-    def _load_from_disk(self, key: ImageKey, image_path: pathlib.Path) -> OptionalPixmap:
+    def _load_from_disk(self, image_path: pathlib.Path) -> OptionalPixmap:
         if not self.should_run:
             return None
         logger.debug("Image not in memory, requesting from disk")
