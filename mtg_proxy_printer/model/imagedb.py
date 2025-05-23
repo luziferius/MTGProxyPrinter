@@ -49,6 +49,7 @@ logger = get_logger(__name__)
 del get_logger
 
 ItemDataRole = Qt.ItemDataRole
+QueuedConnection = Qt.ConnectionType.QueuedConnection
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
 __all__ = [
     "ImageDatabase",
@@ -186,13 +187,27 @@ class ImageDatabase(QObject):
         logger.debug(f"About to obtain images for cards in batch action")
         self.request_run_async_task.emit(BatchDownloadRunner(self, action))
 
+    @Slot(ImageKey, QPixmap)
+    def on_image_obtained(self, key: ImageKey, pixmap: QPixmap):
+        """Registers downloaded images for direct use in other card instances"""
+        self.loaded_images[key] = pixmap
+        self.images_on_disk.add(key)
+
 
 class ImageDbTask(AsyncTask):
+
 
     def __init__(self, image_db: ImageDatabase):
         super().__init__()
         self.image_db = image_db
         self.downloader: typing.Optional[ImageDownloader] = None
+
+    def _create_downloader(self):
+        downloader = ImageDownloader(self.image_db)
+        downloader.image_obtained.connect(self.image_db.on_image_obtained, QueuedConnection)
+        downloader.request_register_subtask.connect(self.request_register_subtask)
+        return downloader
+
 
     def cancel(self):
         if getattr(self, "downloader", None) is None:
@@ -216,9 +231,7 @@ class ObtainMissingImagesRunner(ImageDbTask):
 
     @with_database_write_lock(download_semaphore)
     def run(self):
-        self.downloader = downloader = ImageDownloader(self.image_db)
-        downloader.request_register_subtask.connect(self.request_register_subtask)
-        downloader.connect_image_db_signals(self.image_db)
+        self.downloader = downloader = self._create_downloader()
         downloader.obtain_missing_images(self.indices)
 
 
@@ -229,9 +242,7 @@ class SingleDownloadRunner(ImageDbTask):
 
     @with_database_write_lock(download_semaphore)
     def run(self):
-        self.downloader = downloader = ImageDownloader(self.image_db)
-        downloader.request_register_subtask.connect(self.request_register_subtask)
-        downloader.connect_image_db_signals(self.image_db)
+        self.downloader = downloader = self._create_downloader()
         downloader.fill_document_action_image(self.action)
 
 
@@ -242,9 +253,7 @@ class BatchDownloadRunner(ImageDbTask):
 
     @with_database_write_lock(download_semaphore)
     def run(self):
-        self.downloader = downloader = ImageDownloader(self.image_db)
-        downloader.request_register_subtask.connect(self.request_register_subtask)
-        downloader.connect_image_db_signals(self.image_db)
+        self.downloader = downloader = self._create_downloader()
         downloader.fill_batch_document_action_images(self.action)
 
 
@@ -256,6 +265,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     It can be used synchronously, if precise, synchronous sequencing of small operations is required.
     """
+    image_obtained = Signal(ImageKey, QPixmap)
     request_action = Signal(DocumentAction)
     missing_images_obtained = Signal()
     missing_image_obtained = Signal(QModelIndex)
@@ -393,7 +403,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
                 image_path.unlink()
             else:
                 logger.debug("Image loaded from disk")
-                self.image_database.loaded_images[key] = pixmap
+                self.image_obtained.emit(key, pixmap)
                 return pixmap
         return None
 
@@ -426,6 +436,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
         # getting terminated by the user, a mid-transfer network outage, a full disk or any other failure condition.
         pixmap = None
+        key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
         try:
             with self.currently_opened_file, download_path.open("wb") as file_in_cache:
                 shutil.copyfileobj(self.currently_opened_file, file_in_cache)
@@ -439,6 +450,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         else:
             logger.debug(f"Moving downloaded image into the image cache at {image_path}")
             shutil.move(download_path, image_path)
+            self.image_obtained.emit(key, pixmap)
         finally:
             self.currently_opened_file = None
             download_path.unlink(missing_ok=True)
