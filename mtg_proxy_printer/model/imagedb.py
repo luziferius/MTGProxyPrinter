@@ -94,6 +94,7 @@ class ImageDatabase(QObject):
 
     request_action = Signal(DocumentAction)
     missing_images_obtained = Signal()
+    missing_image_obtained = Signal(QModelIndex)
     """
     Messages if the internal ImageDownloader instance performs a batch operation when it processes image requests for
     a deck list. It signals if such a long-running process starts or finishes.
@@ -195,8 +196,13 @@ class ImageDbTask(AsyncTask):
         self.downloader: typing.Optional[ImageDownloader] = None
 
     def _create_downloader(self):
-        downloader = ImageDownloader(self.image_db)
-        downloader.image_obtained.connect(self.image_db.on_image_obtained, QueuedConnection)
+        image_db = self.image_db
+        downloader = ImageDownloader(image_db)
+        downloader.image_obtained.connect(image_db.on_image_obtained, QueuedConnection)
+        downloader.missing_images_obtained.connect(image_db.missing_images_obtained, QueuedConnection)
+        downloader.missing_image_obtained.connect(image_db.missing_image_obtained, QueuedConnection)
+        downloader.network_error_occurred.connect(image_db.network_error_occurred, QueuedConnection)  # TODO: Can this indirection be removed?
+        downloader.request_action.connect(image_db.request_action, QueuedConnection)
         downloader.request_register_subtask.connect(self.request_register_subtask)
         return downloader
 
@@ -277,20 +283,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.currently_opened_file: typing.Optional[io.BytesIO] = None
         self.currently_opened_file_monitor: typing.Optional[mtg_proxy_printer.http_file.MeteredSeekableHTTPFile] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
-        
-    def connect_image_db_signals(self, image_db: ImageDatabase):
-        self.download_begins.connect(image_db.card_download_starting)
-        self.download_finished.connect(image_db.card_download_finished)
-        self.download_progress.connect(image_db.card_download_progress)
-
-        self.batch_process_starting.connect(image_db.batch_process_starting)
-        self.batch_process_progress.connect(image_db.batch_process_progress)
-        self.batch_process_finished.connect(image_db.batch_process_finished)
-        self.batch_processing_state_changed.connect(image_db.batch_processing_state_changed)
-
-        self.request_action.connect(image_db.request_action)
-        self.missing_images_obtained.connect(image_db.missing_images_obtained)
-        self.network_error_occurred.connect(image_db.network_error_occurred)
 
     def fill_document_action_image(self, action: SingleActions):
         logger.info("Got DocumentAction, filling card")

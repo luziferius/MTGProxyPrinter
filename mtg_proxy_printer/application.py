@@ -194,7 +194,7 @@ class Application(QApplication):
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
         document.request_fill_image_for_action.connect(image_db.fill_document_action_image)
         image_db.request_action.connect(document.apply)
-        image_db.download_worker.missing_image_obtained.connect(document.on_missing_image_obtained)
+        image_db.missing_image_obtained.connect(document.on_missing_image_obtained)
         return document
 
     def _create_language_model(self):
