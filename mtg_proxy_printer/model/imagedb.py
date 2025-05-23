@@ -166,18 +166,18 @@ class ImageDatabase(QObject):
     @Slot(list)
     def obtain_missing_images(self, card_indices: IndexList):
         logger.info(f"Trying to obtain {len(card_indices)} missing images.")
-        self.request_run_async_task.emit(ObtainMissingImagesRunner(self, card_indices))
+        self.request_run_async_task.emit(ObtainMissingImagesTask(self, card_indices))
 
     @Slot(ActionReplaceCard)
     @Slot(ActionAddCard)
     def fill_document_action_image(self, action: SingleActions):
         logger.debug(f"About to obtain image for card in action")
-        self.request_run_async_task.emit(SingleDownloadRunner(self, action))
+        self.request_run_async_task.emit(SingleDownloadTask(self, action))
 
     @Slot(ActionImportDeckList)
     def fill_batch_document_action_images(self, action: BatchActions):
         logger.debug(f"About to obtain images for cards in batch action")
-        self.request_run_async_task.emit(BatchDownloadRunner(self, action))
+        self.request_run_async_task.emit(BatchDownloadTask(self, action))
 
     @Slot(ImageKey, QPixmap)
     def on_image_obtained(self, key: ImageKey, pixmap: QPixmap):
@@ -200,7 +200,6 @@ class ImageDbTask(AsyncTask):
         downloader.request_register_subtask.connect(self.request_register_subtask)
         return downloader
 
-
     def cancel(self):
         if getattr(self, "downloader", None) is None:
             return
@@ -215,7 +214,7 @@ class ImageDbTask(AsyncTask):
             pass
 
 
-class ObtainMissingImagesRunner(ImageDbTask):
+class ObtainMissingImagesTask(ImageDbTask):
 
     def __init__(self, image_db: ImageDatabase, indices: IndexList):
         super().__init__(image_db)
@@ -227,7 +226,7 @@ class ObtainMissingImagesRunner(ImageDbTask):
         downloader.obtain_missing_images(self.indices)
 
 
-class SingleDownloadRunner(ImageDbTask):
+class SingleDownloadTask(ImageDbTask):
     def __init__(self, image_db: ImageDatabase, action: SingleActions):
         super().__init__(image_db)
         self.action = action
@@ -238,7 +237,7 @@ class SingleDownloadRunner(ImageDbTask):
         downloader.fill_document_action_image(self.action)
 
 
-class BatchDownloadRunner(ImageDbTask):
+class BatchDownloadTask(ImageDbTask):
     def __init__(self, image_db: ImageDatabase, action: BatchActions):
         super().__init__(image_db)
         self.action = action
