@@ -43,7 +43,7 @@ import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from .card import Card, CheckCard, AnyCardType
-from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.runner import Runnable, AsyncTask
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -89,6 +89,8 @@ class ImageDatabase(QObject):
     This class manages the on-disk PNG image cache. It can asynchronously fetch images from disk or from the Scryfall
     servers, as needed, provides an in-memory cache, and allows deletion of images on disk.
     """
+    request_run_async_task = Signal(AsyncTask)
+
     card_download_starting = Signal(int, str)
     card_download_finished = Signal()
     card_download_progress = Signal(int)
@@ -171,29 +173,29 @@ class ImageDatabase(QObject):
     @Slot(list)
     def obtain_missing_images(self, card_indices: IndexList):
         logger.info(f"Trying to obtain {len(card_indices)} missing images.")
-        QThreadPool.globalInstance().start(ObtainMissingImagesRunner(self, card_indices))
+        self.request_run_async_task.emit(ObtainMissingImagesRunner(self, card_indices))
 
     @Slot(ActionReplaceCard)
     @Slot(ActionAddCard)
     def fill_document_action_image(self, action: SingleActions):
         logger.debug(f"About to obtain image for card in action")
-        QThreadPool.globalInstance().start(SingleDownloadRunner(self, action))
+        self.request_run_async_task.emit(SingleDownloadRunner(self, action))
 
     @Slot(ActionImportDeckList)
     def fill_batch_document_action_images(self, action: BatchActions):
         logger.debug(f"About to obtain images for cards in batch action")
-        QThreadPool.globalInstance().start(BatchDownloadRunner(self, action))
+        self.request_run_async_task.emit(BatchDownloadRunner(self, action))
 
 
-class ImageDbRunnable(Runnable):
+class ImageDbTask(AsyncTask):
 
-    def __init__(self, parent: ImageDatabase):
+    def __init__(self, image_db: ImageDatabase):
         super().__init__()
-        self.parent = parent
+        self.image_db = image_db
         self.downloader: typing.Optional[ImageDownloader] = None
 
     def cancel(self):
-        if self.downloader is None:
+        if getattr(self, "downloader", None) is None:
             return
         self.downloader.should_run = False
         try:
@@ -206,50 +208,44 @@ class ImageDbRunnable(Runnable):
             pass
 
 
-class ObtainMissingImagesRunner(ImageDbRunnable):
+class ObtainMissingImagesRunner(ImageDbTask):
 
-    def __init__(self, parent: ImageDatabase, indices: IndexList):
-        super().__init__(parent)
+    def __init__(self, image_db: ImageDatabase, indices: IndexList):
+        super().__init__(image_db)
         self.indices = indices
 
     @with_database_write_lock(download_semaphore)
     def run(self):
-        try:
-            self.downloader = downloader = ImageDownloader(self.parent)
-            downloader.connect_image_db_signals(self.parent)
-            downloader.obtain_missing_images(self.indices)
-        finally:
-            self.release_instance()
+        self.downloader = downloader = ImageDownloader(self.image_db)
+        downloader.request_register_subtask.connect(self.request_register_subtask)
+        downloader.connect_image_db_signals(self.image_db)
+        downloader.obtain_missing_images(self.indices)
 
 
-class SingleDownloadRunner(ImageDbRunnable):
-    def __init__(self, parent: ImageDatabase, action: SingleActions):
-        super().__init__(parent)
+class SingleDownloadRunner(ImageDbTask):
+    def __init__(self, image_db: ImageDatabase, action: SingleActions):
+        super().__init__(image_db)
         self.action = action
 
     @with_database_write_lock(download_semaphore)
     def run(self):
-        try:
-            self.downloader = downloader = ImageDownloader(self.parent)
-            downloader.connect_image_db_signals(self.parent)
-            downloader.fill_document_action_image(self.action)
-        finally:
-            self.release_instance()
+        self.downloader = downloader = ImageDownloader(self.image_db)
+        downloader.request_register_subtask.connect(self.request_register_subtask)
+        downloader.connect_image_db_signals(self.image_db)
+        downloader.fill_document_action_image(self.action)
 
 
-class BatchDownloadRunner(ImageDbRunnable):
-    def __init__(self, parent: ImageDatabase, action: BatchActions):
-        super().__init__(parent)
+class BatchDownloadRunner(ImageDbTask):
+    def __init__(self, image_db: ImageDatabase, action: BatchActions):
+        super().__init__(image_db)
         self.action = action
 
     @with_database_write_lock(download_semaphore)
     def run(self):
-        try:
-            self.downloader = downloader = ImageDownloader(self.parent)
-            downloader.connect_image_db_signals(self.parent)
-            downloader.fill_batch_document_action_images(self.action)
-        finally:
-            self.release_instance()
+        self.downloader = downloader = ImageDownloader(self.image_db)
+        downloader.request_register_subtask.connect(self.request_register_subtask)
+        downloader.connect_image_db_signals(self.image_db)
+        downloader.fill_batch_document_action_images(self.action)
 
 
 class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):

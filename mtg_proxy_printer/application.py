@@ -165,6 +165,7 @@ class Application(QApplication):
         mtg_proxy_printer.carddb_migrations.migrate_card_database_location()
         card_db = mtg_proxy_printer.model.carddb.CardDatabase()
         image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
+        image_db.request_run_async_task.connect(self.run_async_task)
         return card_db, image_db
 
     def _create_settings_window(
