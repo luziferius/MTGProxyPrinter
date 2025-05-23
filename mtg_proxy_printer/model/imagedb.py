@@ -419,7 +419,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
         # getting terminated by the user, a mid-transfer network outage, a full disk or any other failure condition.
         pixmap = None
-        key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
         try:
             with self.currently_opened_file, download_path.open("wb") as file_in_cache:
                 shutil.copyfileobj(self.currently_opened_file, file_in_cache)
@@ -437,7 +436,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             self.currently_opened_file = None
             download_path.unlink(missing_ok=True)
             self.download_finished.emit()
-            return pixmap
+        return pixmap
 
 
 def read_disk_cache_content(db_path: pathlib.Path) -> typing.List[CacheContent]:
