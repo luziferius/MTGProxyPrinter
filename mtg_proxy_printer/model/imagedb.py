@@ -387,6 +387,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             or blank
         if pixmap is not blank:
             self._remove_outdated_low_resolution_image(card)
+            self.image_obtained.emit(key, pixmap)
         card.set_image_file(pixmap)
 
     def _load_from_memory(self, key: ImageKey) -> OptionalPixmap:
@@ -403,7 +404,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
                 image_path.unlink()
             else:
                 logger.debug("Image loaded from disk")
-                self.image_obtained.emit(key, pixmap)
                 return pixmap
         return None
 
@@ -450,7 +450,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         else:
             logger.debug(f"Moving downloaded image into the image cache at {image_path}")
             shutil.move(download_path, image_path)
-            self.image_obtained.emit(key, pixmap)
         finally:
             self.currently_opened_file = None
             download_path.unlink(missing_ok=True)
