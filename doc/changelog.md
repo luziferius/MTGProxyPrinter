@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.32.0 (2025-05-26)  <a name="v0_32_0"></a>
 
 Because it was requested multiple times, there is a mirror of the application's source code repository on [GitHub](https://github.com/luziferius/MTGProxyPrinter/).
 
