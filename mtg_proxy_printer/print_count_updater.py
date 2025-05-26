@@ -44,7 +44,9 @@ class PrintCountUpdater(Runnable):
     def __init__(self, document: "Document", db: sqlite3.Connection = None):
         super().__init__()
         self.db_path = document.card_db.db_path
-        self.data = document.get_all_card_keys_in_document()
+        # Collect the data now, so that the delayed run() does not operate on a potentially modified document,
+        # but can use the data from the time the document was printed/exported.
+        self.data = [(item.scryfall_id, item.is_front) for item in document.get_all_image_keys_in_document()]
         self.db_passed_in = bool(db)
         self._db = db
 
@@ -61,7 +63,7 @@ class PrintCountUpdater(Runnable):
     def run(self):
         """
         Increments the usage count of all cards used in the document and updates the last use timestamps.
-        Should be called after a successful PDF export and direct printing.
+        Should be called after a successful PDF/PNG export and direct printing.
         """
         try:
             self._update_image_usage()
@@ -72,10 +74,10 @@ class PrintCountUpdater(Runnable):
     def _update_image_usage(self):
         logger.info("Updating image usage for all cards in the document.")
         db = self.db
-        db.execute("BEGIN IMMEDIATE TRANSACTION")
+        db.execute("BEGIN IMMEDIATE TRANSACTION -- _update_image_usage()")
         db.executemany(
             r"""
-            INSERT INTO LastImageUseTimestamps (scryfall_id, is_front)
+            INSERT INTO LastImageUseTimestamps (scryfall_id, is_front) -- _update_image_usage()
               VALUES (?, ?)
               ON CONFLICT (scryfall_id, is_front)
               DO UPDATE SET usage_count = usage_count + 1, last_use_date = CURRENT_TIMESTAMP;

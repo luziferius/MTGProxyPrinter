@@ -110,7 +110,7 @@ class Card:
 
     @property
     def is_custom_card(self) -> bool:
-        return False
+        return not self.oracle_id
 
     @property
     def is_oversized(self) -> bool:

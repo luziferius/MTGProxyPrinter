@@ -15,16 +15,30 @@
 
 
 import math
-from pathlib import Path
+from functools import partial
 
-from PySide6.QtCore import QObject, QMarginsF, QSizeF, Slot, QPersistentModelIndex
-from PySide6.QtGui import QPainter, QPdfWriter, QPageSize
+try:
+    from os import process_cpu_count
+except ImportError:
+    from os import cpu_count as process_cpu_count
+from pathlib import Path
+from threading import BoundedSemaphore
+import typing
+
+from PySide6.QtCore import QObject, QMarginsF, QSizeF, Slot, QPersistentModelIndex, QThreadPool
+from PySide6.QtGui import QPainter, QPdfWriter, QPageSize, QImage
 from PySide6.QtPrintSupport import QPrinter
 
+
+from mtg_proxy_printer.runner import ProgressSignalContainer
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.ui.main_window import MainWindow
+from mtg_proxy_printer.units_and_sizes import RESOLUTION
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+from mtg_proxy_printer.model.carddb import with_database_write_lock
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.units_and_sizes
@@ -37,7 +51,53 @@ __all__ = [
     "export_pdf",
     "create_printer",
     "Renderer",
+    "PNGRenderer",
 ]
+
+PNGEncoderThreadLimit = BoundedSemaphore(max(1, process_cpu_count()-1))
+
+
+class PNGRenderer(ProgressSignalContainer):
+    def __init__(self, main_window: "MainWindow", document: Document, file_path: str):
+        super().__init__(main_window)
+        self.document = document
+        self.file_path = Path(file_path)
+        self.page_count = document.rowCount()
+        self.completed = 0
+
+    def render_document(self):
+        document = self.document
+        file_path = self.file_path
+        page_count = self.page_count
+        if not page_count:  # No pages in document
+            logger.error("Tried to export a document with zero pages. Aborting.")
+            self.update_completed.emit()
+            return
+        logger.info(f'Exporting document with {document.rowCount()} pages as PNG image sequence to "{file_path}"')
+        page_size = document.page_layout.to_page_layout(RenderMode.ON_PAPER).pageSize().sizePixels(
+            round(RESOLUTION.magnitude))
+        pool = QThreadPool.globalInstance()
+        scene = PageScene(document, RenderMode.ON_PAPER, self)
+        number_width = len(str(page_count))
+        parent = file_path.parent
+        self.begin_update.emit(page_count, self.tr("Export as PNGs"))
+        for page_nr in range(page_count):
+            file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
+            output_path = parent / file_name
+            image = QImage(page_size, QImage.Format.Format_RGB888)
+            painter = QPainter(image)
+            scene.on_current_page_changed(document.index(page_nr, 0))
+            scene.render(painter)
+            pool.start(partial(self._compress_single_image, image, output_path))
+
+    @with_database_write_lock(PNGEncoderThreadLimit)
+    def _compress_single_image(self, image: QImage, output_path: Path):
+        image.save(str(output_path), "PNG", 0)
+        self.completed += 1
+        self.advance_progress.emit()
+        self.progress.emit(self.completed)
+        if self.completed == self.page_count:
+            self.update_completed.emit()
 
 
 def export_pdf(document: Document, file_path: str, parent: QObject = None):
