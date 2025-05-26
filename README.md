@@ -15,12 +15,16 @@ in a paged document suitable for printing or PDF export.
 - The standard document editing features:
   - Create, save and load documents
   - Multi-level undo & redo, even across the "New document" and "Load document"
-- Export documents as PDFs
-  - Optional, automatic splitting into configurable chunks to accommodate file size limits present in various printers.
+- Multiple export options:
+  - Export as PDFs, including optional, automatic splitting into configurable chunks to accommodate file size limits 
+    present in various printers.
+  - Export as a PNG image sequence, when PDF export is unsuitable
+  - Export as individual card images
 - Direct printing using your operating system’s printing support. Can use any available and suitable printer
 - Obtains high-quality images from Scryfall (where available)
   - Images are cached locally for faster loading times when printing the same cards again
-- Basic support for printing custom cards. Drop images onto the main window to add them as custom regular-size cards.
+- Support for printing custom cards (currently regular size only). Drag & drop images onto the main window 
+  or use the import wizard in the File menu.
 - Import deck lists in various formats, like Magic Arena deck lists and XMage 
   deck files (see below for a list of supported formats)
   - Automatic download of deck lists from various deck list database websites (see below for a list)
@@ -34,7 +38,7 @@ in a paged document suitable for printing or PDF export.
   - Both front and back are searchable by all names printed on the card
   - Automatic handling of opposing card faces: MTGProxyPrinter automatically adds the same number
     of copies of the other face. (This feature can be disabled)
-  - Optional generation of check cards for double-faced cards. Those combine both sides on a single side
+  - Optional generation of check cards for double-faced cards. Those combine both sides on a single side.
 - Hide cards using various card and printing filters. Hidden cards are treated as though they do not exist.
   - Bans in various formats supported by Scryfall
   - Border color (white-bordered, gold-bordered)
@@ -62,9 +66,10 @@ in a paged document suitable for printing or PDF export.
 
 ### Supported deck list formats
 
+- Simple list with one card name per line, treated as a list of singletons.
 - Magic Arena
 - Magic Online (MTGO)
-- [XMage](http://xmage.today)
+- [XMage](http://xmage.today) deck files
 - [Tappedout.net](https://tappedout.net) deck lists (choose CSV export)
 - [Scryfall.com](https://scryfall.com) deck lists (choose CSV export)
 - Magic Workstation Deck Data (`.mwDeck` files)
