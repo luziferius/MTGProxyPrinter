@@ -2,12 +2,14 @@
 
 # Next version (in development)
 
+Because it was requested multiple times, there is a mirror of the application's source code repository on [GitHub](https://github.com/luziferius/MTGProxyPrinter/).
+
 ## New features
 
-- Export documents as a lossless PNG image sequence. The export can be triggered via the File menu.
+- Export documents as lossless PNG image sequences. The export can be triggered via the File menu.
 - Export all card images of cards in the current document to a directory.
   - A first step towards supporting external image post-processing/filtering or (AI) upscaling tools.
-  - You can choose between exporting official cards and/or custom cards. Defaults to exporting only official cards.
+  - You can choose between exporting official cards and/or custom cards. Defaults to exporting official cards only.
 
 ## Changed features
 
