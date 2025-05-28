@@ -1,17 +1,18 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 import datetime
 import pathlib
@@ -27,7 +28,7 @@ import pytest
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.sqlite_helpers import get_target_database_schema_version
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.carddb_migrations import DatabaseMigrationRunner, MIGRATION_SCRIPTS, Migrate_21_to_22
+from mtg_proxy_printer.carddb_migrations import DatabaseMigrationRunner, MIGRATION_SCRIPTS
 
 # Pulled from check-in [43d8e4f754efc85d7f52ce9f8c87e93a6ed31e39de862a44a18d28b0590c113c].
 # NOTE: Removed all SQL comments present in the original file.
@@ -98,7 +99,7 @@ def test_migrated_card_database_contains_expected_tables_and_views(old_db: pathl
     runner = DatabaseMigrationRunner(card_db)
     runner.run()
     migrated_db = card_db.db
-    fresh_db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+    fresh_db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", "carddb")
     assert_that(
         migrated_db.execute("PRAGMA user_version").fetchone()[0],
         is_(equal_to(get_target_database_schema_version("carddb"))),
@@ -129,7 +130,7 @@ def test_migrated_card_database_contains_expected_indices(old_db: pathlib.Path):
     runner = DatabaseMigrationRunner(card_db)
     runner.run()
     migrated_db = card_db.db
-    fresh_db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+    fresh_db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", "carddb")
     assert_that(
         migrated_db.execute("PRAGMA user_version").fetchone()[0],
         is_(equal_to(get_target_database_schema_version("carddb"))),
@@ -158,7 +159,7 @@ def card_db_at_version_21(old_db) -> pathlib.Path:
     card_db = CardDatabase(old_db)
     runner = DatabaseMigrationRunner(card_db, {src: script for src, script in MIGRATION_SCRIPTS.items() if src < 21})
     runner.run()
-    db = mtg_proxy_printer.sqlite_helpers.open_database(old_db, "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+    db = mtg_proxy_printer.sqlite_helpers.open_database(old_db, "carddb")
     assert_that(db.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(21)), "Setup failed")
     today_tuple = str(datetime.date.today()),
     db.execute("INSERT INTO LastDatabaseUpdate (newest_card_timestamp) values (?)", today_tuple)
@@ -175,8 +176,7 @@ def test_patch_21_to_22_applies_correctly_without_network_access_using_dummy_val
         mock.side_effect = possible_error
         runner = DatabaseMigrationRunner(card_db, {21: MIGRATION_SCRIPTS[21]})
         runner.run()
-    db = mtg_proxy_printer.sqlite_helpers.open_database(
-        card_db.db_path, "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+    db = mtg_proxy_printer.sqlite_helpers.open_database(card_db.db_path, "carddb")
     assert_that(db.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(22)))
     mock.assert_called_once()
     assert_that(
@@ -194,8 +194,7 @@ def test_patch_21_to_22_applies_with_network_access_and_requests_card_count_from
         mock.return_value = iter((expected,))
         runner = DatabaseMigrationRunner(card_db, {21: MIGRATION_SCRIPTS[21]})
         runner.run()
-    db = mtg_proxy_printer.sqlite_helpers.open_database(
-        card_db.db_path, "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+    db = mtg_proxy_printer.sqlite_helpers.open_database(card_db.db_path, "carddb")
     assert_that(db.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(22)))
     mock.assert_called_once()
     assert_that(

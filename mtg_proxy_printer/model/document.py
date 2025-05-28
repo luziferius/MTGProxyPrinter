@@ -1,17 +1,18 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 import collections
 import enum
@@ -19,24 +20,26 @@ import itertools
 import math
 import pathlib
 import sys
-import textwrap
 import typing
 
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, \
     QPersistentModelIndex
 
-import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
-from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
-from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData, Card, MTGSet
-from mtg_proxy_printer.model.card_list import PageColumns
-from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings, \
-    CardType, migrate_database
+from mtg_proxy_printer.model.imagedb_files import ImageKey
+from mtg_proxy_printer.natsort import to_list_of_ranges
+from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCustomCard
+from mtg_proxy_printer.model.document_page import CardContainer, Page, PageColumns
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType, CustomCard
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
+from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 
 logger = get_logger(__name__)
 del get_logger
@@ -102,7 +105,7 @@ class Document(QAbstractItemModel):
         self.loader = DocumentLoader(self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.loader.load_requested.connect(self.apply)
-        self.pages: PageList = [first_page := Page()]
+        self.pages: typing.List[Page] = [first_page := Page()]
         # Mapping from page id() to list index in the page list
         self.page_index_cache: typing.Dict[int, int] = {id(first_page): 0}
         self.currently_edited_page = first_page
@@ -224,25 +227,28 @@ class Document(QAbstractItemModel):
         index = self._to_index(index)
         data = index.internalPointer()
         flags = super().flags(index)
-        if isinstance(data, CardContainer) and index.column() in self.EDITABLE_COLUMNS:
+        if isinstance(data, CardContainer) and (index.column() in self.EDITABLE_COLUMNS or data.card.is_custom_card):
             flags |= ItemFlag.ItemIsEditable
         return flags
 
     def setData(self, index: AnyIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
         index = self._to_index(index)
-        data = index.internalPointer()
+        data: CardContainer = index.internalPointer()
+        if not isinstance(data, CardContainer) or role != ItemDataRole.EditRole:
+            return False
         column = index.column()
-        if isinstance(data, CardContainer) \
-                and role == ItemDataRole.EditRole \
-                and column in self.EDITABLE_COLUMNS:
-            logger.debug(f"Setting model data for {column=} to {value}")
-            card = data.card
+        card = data.card
+        if card.is_custom_card:
+            self.apply(ActionEditCustomCard(index, value))
+            return True
+        elif column in self.EDITABLE_COLUMNS:
+            logger.debug(f"Setting page data on official card for {column=} to {value}")
             if column == PageColumns.CollectorNumber:
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
             elif column == PageColumns.Set:
                 card_data = CardIdentificationData(
-                    card.language, card.name, value, is_front=card.is_front
+                    card.language, card.name, value.code, is_front=card.is_front
                 )
             else:
                 replacement = self.card_db.translate_card(card, value)
@@ -284,6 +290,7 @@ class Document(QAbstractItemModel):
             return item
         elif role == ItemDataRole.UserRole:
             return item.page_type()
+        return None
 
     def _data_card(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a single Card."""
@@ -311,6 +318,7 @@ class Document(QAbstractItemModel):
             elif column == PageColumns.IsFront:
                 return card.is_front if role == ItemDataRole.EditRole else (
                     self.tr("Front") if card.is_front else self.tr("Back"))
+        return None
 
     def _get_page_preview(self, page: Page):
         names = collections.Counter(container.card.name for container in page)
@@ -328,48 +336,13 @@ class Document(QAbstractItemModel):
     def save_as(self, path: pathlib.Path):
         """Save the document at the given path, overwriting any previously stored save path."""
         self.save_file_path = path
-        self.save_to_disk()
+        ActionSaveDocument(path).apply(self)
 
     def save_to_disk(self):
         """Save the document at the internally remembered save path. Raises a RuntimeError, if no such path is set."""
         if self.save_file_path is None:
             raise RuntimeError("Cannot save without a file path!")
-        pages = enumerate(self.pages, start=1)
-        cards = (
-            zip(itertools.repeat(page_index), enumerate((
-                container.card for container in page), start=1))
-            for page_index, page in pages
-        )
-        flattened_data: DocumentSaveFormat = [
-            (page, slot, card.scryfall_id, card.is_front, CardType.from_card(card))
-            for (page, (slot, card))
-            in itertools.chain.from_iterable(cards)
-            # TODO: For now, custom cards have an empty id. Until saving them is implemented, skip custom cards
-            #   so that the document can still be loaded
-            if card.scryfall_id
-        ]
-        with mtg_proxy_printer.sqlite_helpers.open_database(
-                self.save_file_path, "document-v6", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
-            db.execute("BEGIN TRANSACTION -- save_to_disk()\n")
-            migrate_database(db, self.page_layout)
-            db.execute("DELETE FROM Card -- save_to_disk()\n")
-            db.executemany(
-                "INSERT INTO Card (page, slot, scryfall_id, is_front, type) "
-                "VALUES (?, ?, ?, ?, ?)-- save_to_disk()\n",
-                flattened_data
-            )
-            logger.debug(f"Written {db.execute('SELECT count() FROM Card -- save_to_disk()').fetchone()[0]} cards.")
-            settings =  self.page_layout.to_save_file_data()
-            db.executemany(
-                textwrap.dedent("""\
-                    INSERT OR REPLACE INTO DocumentSettings (key, value)
-                      VALUES (?, ?) -- save_to_disk()
-                    """),
-                settings)
-            logger.debug("Written document settings")
-            db.commit()
-            db.execute("VACUUM -- save_to_disk()\n")
-        logger.debug("Database saved and closed.")
+        ActionSaveDocument(self.save_file_path).apply(self.loader.MIN_SUPPORTED_SQLITE_VERSION)
 
     def compute_pages_saved_by_compacting(self) -> int:
         """
@@ -402,6 +375,9 @@ class Document(QAbstractItemModel):
 
     def get_empty_card_for_current_page(self) -> Card:
         size = CardSizes.for_page_type(self.currently_edited_page.page_type())
+        return self.get_empty_card_for_size(size)
+
+    def get_empty_card_for_size(self, size: CardSize) -> Card:
         pixmap = self.image_db.get_blank(size)
         card = Card(
             self.tr("Empty Placeholder"), MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, pixmap
@@ -438,17 +414,44 @@ class Document(QAbstractItemModel):
                 if card.image_file in blanks and card.image_uri:
                     yield self.index(card_number, 0, page_index)
 
-    @staticmethod
-    def _get_page_content_as_scryfall_ids(page: Page) -> typing.Iterable[typing.Tuple[str, bool]]:
-        return ((container.card.scryfall_id, container.card.is_front) for container in page)
+    def _get_page_content_as_image_keys(self, page: Page) -> typing.Iterable[ImageKey]:
+        image_db = self.image_db
+        return (
+            ImageKey(card.scryfall_id, card.is_front, card.highres_image)
+            for container in page
+            if not (card := container.card).is_custom_card
+               and card.image_file is not image_db.get_blank(card.size))
 
-    def get_all_card_keys_in_document(self) -> typing.Set[typing.Tuple[str, bool]]:
+    def get_all_image_keys_in_document(self) -> typing.Set[ImageKey]:
         return set(itertools.chain.from_iterable(
-            map(self._get_page_content_as_scryfall_ids, self.pages)
+            map(self._get_page_content_as_image_keys, self.pages)
         ))
+
+    def get_all_custom_cards(self) -> typing.Set[CustomCard]:
+        result = set()
+        for page in self.pages:
+            for container in page:
+                if isinstance(container.card, CustomCard):
+                    result.add(container.card)
+        return result
 
     def recreate_page_index_cache(self):
         self.page_index_cache.clear()
         self.page_index_cache.update(
             (id(page), index) for index, page in enumerate(self.pages)
         )
+
+    def find_relevant_index_ranges(self, to_find: AnyCardType, column: PageColumns):
+        """Finds all indices relevant for the given card."""
+        # TODO: This runs in O(n)
+        for page_row, page in enumerate(self.pages):
+            instance_rows = to_list_of_ranges(
+                # Use is to find exact same instances
+                (row for row, container in enumerate(page) if container.card is to_find)
+            )
+            if instance_rows:
+                parent = self.index(page_row, 0)
+                if column == PageColumns.CardName:
+                    yield parent, parent
+                for lower, upper in instance_rows:
+                    yield self.index(lower, column, parent), self.index(upper, column, parent)

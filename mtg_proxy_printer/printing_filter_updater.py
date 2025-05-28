@@ -1,22 +1,23 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 import sqlite3
 import typing
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, Qt, QCoreApplication
+from PyQt5.QtCore import Qt, QCoreApplication
 
 import mtg_proxy_printer.settings
 if typing.TYPE_CHECKING:
@@ -98,8 +99,7 @@ class PrintingFilterUpdater(Runnable):
         # in the thread that actually uses it.
         if self._db is None:
             logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
-            self._db = open_database(
-                self.model.db_path, SCHEMA_NAME, self.model.MIN_SUPPORTED_SQLITE_VERSION)
+            self._db = open_database(self.model.db_path, SCHEMA_NAME)
         return self._db
 
     @with_database_write_lock()

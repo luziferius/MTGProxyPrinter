@@ -1,24 +1,26 @@
-# Copyright (C) 2021, 2022 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 from abc import abstractmethod
 import typing
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal
 
-from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.card import Card, AnyCardType
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
@@ -28,6 +30,7 @@ del get_logger
 __all__ = [
     "ParsedDeck",
     "ParserBase",
+    "CardCounter",
 ]
 
 try:
@@ -40,7 +43,8 @@ except NameError:
     def profile(func):
         return func
 
-ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
+CardCounter = typing.Counter[AnyCardType]
+ParsedDeck = typing.Tuple[CardCounter, typing.List[str]]
 
 
 class ParserBase(QObject):
@@ -76,6 +80,15 @@ class ParserBase(QObject):
                    print_guessing: bool,
                    print_guessing_prefer_already_downloaded: bool,
                    language_override: str = None) -> ParsedDeck:
+        """
+        Parses the deck list
+        :param deck: The input deck list as a multi-line string
+        :param print_guessing: Enable guessing a printing, if a line doesn’t identify a unique printing
+        :param print_guessing_prefer_already_downloaded: Enable preferring printings with downloaded images when choosing
+        :param language_override: Optional two-letter language code. If given, translate all cards into the given
+          language.
+        :return: A Counter that contains the parsed cards and a list of strings with unmatched lines
+        """
         logger.info("About to parse deck")
         # Implementation note: If a language is given, force print_guessing_prefer_already_downloaded to False,
         # Because it would operate on the cards in the source language. The card choice gets overwritten by the
@@ -95,9 +108,9 @@ class ParserBase(QObject):
         :param print_guessing: Enable guessing a printing, if a line doesn’t identify a unique printing
         :param language_override: Optional two-letter language code. If given, translate all cards into the given
           language.
-        :returns: A Counter that contains the parsed cards and a list of strings with unmatched lines
+        :return: A Counter that contains the parsed cards and a list of strings with unmatched lines
         """
-        pass
+        raise NotImplementedError("BUG: Deck list parser did not implement parse_deck_internal()")
 
     @property
     def requires_automatic_print_selection(self) -> bool:
@@ -151,6 +164,7 @@ class ParserBase(QObject):
                 f"Matching using language and card name. Found {len(possible_matches)} matches."
             )
             return self._determine_best_match(possible_matches)
+        return None
 
     def _determine_best_match(self, possible_matches: typing.List[Card]) -> Card:
         if self.print_guessing_prefer_already_downloaded and \

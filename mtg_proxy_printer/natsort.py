@@ -1,22 +1,24 @@
-# Copyright (C) 2017-2019, 2021-2022 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 """
 Natural sorting for lists or other iterables of strings.
 """
 
+import itertools
 import re
 import typing
 
@@ -26,6 +28,7 @@ __all__ = [
     "natural_sorted",
     "str_less_than",
     "NaturallySortedSortFilterProxyModel",
+    "to_list_of_ranges"
 ]
 
 _NUMBER_GROUP_REG_EXP = re.compile(r"(\d+)")
@@ -78,3 +81,17 @@ class NaturallySortedSortFilterProxyModel(QSortFilterProxyModel):
         return [
             self.mapToSource(self.index(row, 0)).row() for row in range(self.rowCount())
         ]
+
+
+def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[typing.Tuple[int, int]]:
+    sequence = sorted(sequence)
+    ranges: typing.List[typing.Tuple[int, int]] = []
+    sequence = itertools.chain(sequence, (sentinel := object(),))
+    lower = upper = next(sequence)
+    for item in sequence:
+        if item is sentinel or upper != item-1:
+            ranges.append((lower, upper))
+            lower = upper = item
+        else:
+            upper = item
+    return ranges

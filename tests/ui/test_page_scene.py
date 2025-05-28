@@ -1,17 +1,18 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 
 import itertools
@@ -777,6 +778,6 @@ def test_card_bleed_with_two_cards(page_scene: PageScene, column_spacing: Quanti
     assert_that(rendered.pixelColor(right_center + h_12 - h_1), has_right_color)
     assert_that(rendered.pixelColor(bottom_right + h_12 - h_1), has_right_color)
     # Outside bleed
-    assert_that(rendered.pixelColor(top_right + h_13 - h_1), has_background_color)
-    assert_that(rendered.pixelColor(right_center + h_13 - h_1), has_background_color)
-    assert_that(rendered.pixelColor(bottom_right + h_13 - h_1), has_background_color)
+    assert_that(rendered.pixelColor(top_right + h_13), has_background_color)
+    assert_that(rendered.pixelColor(right_center + h_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_right + h_13), has_background_color)

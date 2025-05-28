@@ -1,17 +1,18 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 import functools
 from functools import partial
@@ -26,7 +27,7 @@ from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLine
 
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, \
     PageType, unit_registry, ConfigParser, PageSizeManager, QuantityT
 
@@ -49,7 +50,6 @@ class PageConfigWidget(QGroupBox):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigWidget()
         ui.setupUi(self)
-        self.hide_preview_button = ui.show_preview_button.hide
         self.page_layout = self._setup_page_layout(ui)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -113,10 +113,11 @@ class PageConfigWidget(QGroupBox):
     @Slot(int)
     def _on_paper_size_changed(self, index: int):
         ui = self.ui
-        ui.paper_orientation.setEnabled(index)
-        ui.custom_page_width.setDisabled(index)
-        ui.custom_page_height.setDisabled(index)
-        ui.flip_page_dimensions.setDisabled(index)
+        custom_paper_size_selected = not index
+        ui.paper_orientation.setDisabled(custom_paper_size_selected)  # Only valid for predefined paper sizes
+        ui.custom_page_width.setEnabled(custom_paper_size_selected)  # 3 UI elements for custom paper sizes
+        ui.custom_page_height.setEnabled(custom_paper_size_selected)
+        ui.flip_page_dimensions.setEnabled(custom_paper_size_selected)
         selected_paper_size_item: QPageSize.PageSizeId = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
         self.page_layout.paper_size = PageSizeManager.PageSizeReverse[selected_paper_size_item]
 
@@ -208,7 +209,7 @@ class PageConfigWidget(QGroupBox):
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
                 if isinstance(widget, QDoubleSpinBox):
                     widget.setValue(value.to("mm").magnitude)
-                    value: QuantityT = widget.value()*unit_registry.mm
+                    value = widget.value()*unit_registry.mm
                 elif isinstance(widget, QLineEdit):
                     widget.setText(value)
                 elif isinstance(widget, QComboBox):

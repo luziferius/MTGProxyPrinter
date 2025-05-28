@@ -1,17 +1,18 @@
-# Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 """
 This module contains the database migration logic that is used to upgrade the schema of existing card databases
@@ -30,13 +31,13 @@ import typing
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import List, Dict, Union, Tuple, Any, Generator, Callable
+from typing import List, Dict, Union, Tuple, Any, Generator, Callable, Iterable
 
 from PyQt5.QtCore import QCoreApplication, Qt
 
 try:
     from typing import LiteralString
-except AttributeError:
+except ImportError:
     from typing_extensions import LiteralString
 
 from mtg_proxy_printer.progress_meter import ProgressMeter
@@ -62,6 +63,7 @@ __all__ = [
 # allowing the type checker to detect SQL injections
 dedent: Callable[[LiteralString], LiteralString]
 Statement = Union[LiteralString, Tuple[LiteralString, List[Tuple[Any, ...]]]]
+
 
 @dataclasses.dataclass
 class MigrationScript:
@@ -96,7 +98,8 @@ class Migrate_21_to_22(MigrationScript):
         # Import locally to break a cyclic dependency
         import mtg_proxy_printer.card_info_downloader
         aw = mtg_proxy_printer.card_info_downloader.ApiStreamWorker()
-        updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate"+suffix)
+        updates: Iterable[Tuple[int, datetime.datetime]] = db.execute(
+            "SELECT update_id, update_timestamp FROM LastDatabaseUpdate"+suffix)
         data = []
         for id_, timestamp in updates:
             url_parameters = urllib.parse.urlencode({
@@ -104,7 +107,7 @@ class Migrate_21_to_22(MigrationScript):
                 "include_variations": "true",
                 "include_extras": "true",
                 "unique": "prints",
-                "q": f"date>1970-01-01 date<={datetime.datetime.fromisoformat(timestamp).date()}"
+                "q": f"date>1970-01-01 date<={timestamp.date()}"
             })
             try:
                 card_count = next(aw.read_json_card_data_from_url(
@@ -112,7 +115,7 @@ class Migrate_21_to_22(MigrationScript):
                 ))
             except (urllib.error.URLError, socket.error):
                 card_count = 0
-            data.append((id_, timestamp, card_count))
+            data.append((id_, timestamp.isoformat(), card_count))
             # Rate limit the requests to 10 per second, according to the Scryfall API usage recommendations
             time.sleep(0.1)
             progress_meter.advance()
@@ -702,6 +705,7 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
     ]),
 }
 
+
 def migrate_card_database_location():
     from mtg_proxy_printer.model.carddb import DEFAULT_DATABASE_LOCATION, OLD_DATABASE_LOCATION
     if DEFAULT_DATABASE_LOCATION.exists() and OLD_DATABASE_LOCATION.exists():
@@ -757,8 +761,7 @@ class DatabaseMigrationRunner(Runnable):
         """
         Run the database update.
         """
-        db = mtg_proxy_printer.sqlite_helpers.open_database(
-            self.db_path, "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+        db = mtg_proxy_printer.sqlite_helpers.open_database(self.db_path, "carddb")
         begin_schema_version = self._get_schema_version(db)
         target_version = max(self.migration_scripts.keys())+1
         if begin_schema_version >= target_version:
@@ -811,7 +814,7 @@ class DatabaseMigrationRunner(Runnable):
 
         logger.debug(f"Starting migration from {source_version}")
         db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)
-        for statement in script.get_script(db, suffix, meter):
+        for statement in script.get_script(db, suffix, meter):  # type: Statement
             if isinstance(statement, str):
                 if is_pragma := statement.startswith("PRAGMA"):
                     db.execute("COMMIT" + suffix)

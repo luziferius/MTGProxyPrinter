@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 """
 Management script for application translations
@@ -21,17 +22,22 @@ Management script for application translations
 
 import argparse
 import itertools
+import json
+import math
 import pathlib
 import re
 import subprocess
-from typing import Callable, NamedTuple
+import sys
+from typing import Callable, Dict, NamedTuple
+from xml.etree import ElementTree
 
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.resolve()))
+from mtg_proxy_printer.settings import VALID_LANGUAGES
 
 # Mapping between source locales, as provided by Crowdin, and the target, as expected/loaded by Qt.
 # TODO: Investigate, how systems behave in locales requiring the country as disambiguation, like en or zh.
 LOCALES = {
     "de-DE": "de",
-#    "en-GB": "en_GB",
     "en-US": "en_US",
     "es-ES": "es",
     "fr-FR": "fr",
@@ -43,7 +49,8 @@ LOCALES = {
     "zh-CN": "zh_CN",
     "zh-TW": "zh_TW",
 }
-TRANSLATIONS_DIR = pathlib.Path("mtg_proxy_printer/resources/translations/")
+
+TRANSLATIONS_DIR = pathlib.Path(__file__, "..", "..", "mtg_proxy_printer/resources/translations/").resolve()
 crowdin_yml_path = pathlib.Path(__file__).parent.parent/"crowdin.yml"
 SOURCES_PATH = pathlib.Path(
     # Fetch the name of the sources .ts file from crowdin.yml.
@@ -53,6 +60,7 @@ SOURCES_PATH = pathlib.Path(
         crowdin_yml_path.read_text("utf-8")
     )["path"]
 )
+
 
 class Namespace(NamedTuple):
     """Mock namespace for type hinting"""
@@ -68,10 +76,10 @@ def parse_args() -> Namespace:
     }
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(required=True, dest="command", help="Action to perform")
-    upload_parser = commands.add_parser("upload", help="Run Qt lupdate to extract new strings and upload them to Crowdin. Requires an API key")
-    download_parser = commands.add_parser("download", help="Download translation updates from Crowdin. Requires an API key")
-    compile_parser = commands.add_parser("compile", help="Compile translations into the importable binary format for distribution")
-    clean_parser = commands.add_parser("clean", help="Delete compiled, binary translation files")
+    commands.add_parser("upload", help="Run Qt lupdate to extract new strings and upload them to Crowdin. Requires an API key")
+    commands.add_parser("download", help="Download translation updates from Crowdin. Requires an API key")
+    commands.add_parser("compile", help="Compile translations into the importable binary format for distribution")
+    commands.add_parser("clean", help="Delete compiled, binary translation files")
     args = parser.parse_args()
     # It seems that it is not possible to set the subcommand entry function directly,
     # (like in store_const=<function_object>)
@@ -120,11 +128,29 @@ def upload_raw_strings(args: Namespace):
 
 
 def download_new_translations(args: Namespace):
-    """Downloads translated .ts files from Crowdin via the API"""
+    """Downloads translated .ts files from Crowdin via the API, and updates the translation progress dict"""
     verify_crowdin_cli_present()
     subprocess.call([
         "crowdin", "download"
     ])
+    translation_progress: Dict[str, int] = {}
+    for file in TRANSLATIONS_DIR.glob("*.ts"):  # type: pathlib.Path
+        # Use get() to keep the mtgproxyprinter_sources.ts file by mapping it to the "System locale" value (empty str)
+        if (locale := LOCALES.get(file.stem.split("_")[1], "")) not in VALID_LANGUAGES:
+            # Strip all translations that are not registered as valid locale setting
+            file.unlink()
+        elif locale:
+            translation_progress[locale] = read_translation_progress(file)
+    with (TRANSLATIONS_DIR / "progress.json").open("wt") as progress_file:
+        json.dump(translation_progress, progress_file, indent=4, sort_keys=True, allow_nan=False)
+        progress_file.write("\n")
+
+
+def read_translation_progress(file):
+    tree = ElementTree.parse(file)
+    all_translations = sum(1 for _ in tree.iterfind(".//translation"))
+    finished = all_translations -  sum(1 for _ in tree.iterfind(".//translation[@type='unfinished']"))
+    return math.floor(100 * finished / all_translations)
 
 
 def get_lrelease():

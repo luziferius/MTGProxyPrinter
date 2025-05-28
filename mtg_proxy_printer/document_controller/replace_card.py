@@ -1,25 +1,26 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 import functools
 import typing
 
 from PyQt5.QtCore import Qt
 
-from mtg_proxy_printer.model.carddb import Card
-from mtg_proxy_printer.model.card_list import PageColumns
+from ..model.card import Card
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document_page import CardContainer
     from mtg_proxy_printer.model.document import Document
@@ -72,8 +73,8 @@ class ActionReplaceCard(DocumentAction):
         return self
 
     def _replace_card_in_document_with(self, document: "Document", replacement: Card):
-        rightmost_column = len(PageColumns)-1
         page_index = document.index(self.page, 0)
+        rightmost_column = document.columnCount(page_index) - 1
         top_left = document.index(self.slot, 0, page_index)
         bottom_right = top_left.siblingAtColumn(rightmost_column)
         container: "CardContainer" = top_left.internalPointer()

@@ -2,6 +2,8 @@
 
 # Next version (in development)
 
+Because it was requested multiple times, there is a mirror of the application's source code repository on [GitHub](https://github.com/luziferius/MTGProxyPrinter/).
+
 ## Changed features
 
 - Reworked paper size configuration: The document settings now provide a list of pre-defined paper sizes to choose from.
@@ -9,7 +11,58 @@
     - Arbitrary page sizes are still supported by selecting the "Custom" paper size and entering the paper dimensions 
       as in previous versions.
 
-# Next version (in development)
+# Version 0.32.0 (2025-05-26)  <a name="v0_32_0"></a>
+
+## New features
+
+- Export documents as lossless PNG image sequences. The export can be triggered via the File menu.
+- Export all card images of cards in the current document to a directory.
+  - A first step towards supporting external image post-processing/filtering or (AI) upscaling tools.
+  - You can choose between exporting official cards and/or custom cards. Defaults to exporting official cards only.
+
+## Changed features
+
+- The main window now opens maximized when starting the application. Added a setting to restore the previous behavior.
+- Added option to open wizards and dialogs maximized. Off by default.
+- Reduced click count required for switching printings from 5 to 3. Now, double-clicking editable table cells 
+  automatically opens the list with choices. Clicking an entry in the list saves immediately.
+
+# Version 0.31.0 (2025-05-01)  <a name="v0_31_0"></a>
+
+## New features
+
+- Improved custom card support
+  - Adding custom cards via drag & drop now opens a dialog to customize the import
+    - Allows setting the number of copies to add for each card. Vastly improves the workflow when you want
+      to print multiple copies. 
+    - Shown card name is now derived from the file name, instead of defaulting to "Custom Card"
+  - The import dialog can also be accessed from the File menu. Access to printing custom cards no longer
+    requires the use of drag & drop.
+  - It is now possible to save custom cards and empty slots in the apps save file format.
+    Custom cards are no longer lost when saving.
+- Add (a partial) French translation, which will be used automatically on French systems. 
+  Can be reverted to English by explicitly setting the application language to that.
+  - Translations now display their completion in the settings
+
+## Changed features
+
+- The card table in the deck import wizard now has an editable Copies column to state the number of copies per card,
+  instead of duplicating the card for that many rows. This makes it possible to edit the number of copies per card
+- When splitting exported PDFs, zero-pad the sequence numbers appended to the file name 
+  so that all have the same length. This gives a more consistent sorting of output files.
+  - This avoids having output files sorted like "1.pdf", "11.pdf", "12.pdf", …, "2.pdf", "21.pdf", …
+- The page content table no longer uses a fancy multi selection behavior, as it interfered with editing entries.
+  The new behavior is in line with how other applications allow selections in tables.
+
+# Version 0.30.1 (2025-03-11)  <a name="v0_30_1"></a>
+
+## Fixed issues
+
+- Fixed that some start-up tasks were not run on the Windows 10+ build. Fixes that the deck list translation and 
+  default card language setting in the application settings did not offer any language choices.
+  - The pure Python package distributed via PyPI and the Windows 7+ build were not affected.
+
+# Version 0.30.0 (2025-02-28)  <a name="v0_30_0"></a>
 
 ## New features
 
@@ -20,6 +73,12 @@
   documents.
   - For now, the setting affects both direct printing and PDF exports
 
+## Changed features
+
+- Updated the Moxfield.com downloader to use the new Moxfield API version. Downloaded decks now include additional
+  deck parts if present, including Companions, Signature Spells (Oathbreaker), Planes or Schemes,
+  used attractions, contraptions or sticker sheets. Not included is the maybe-board. 
+
 ## Fixed issues
 
 - Fix crash at application start when upgrading from version 0.26.1 or older
@@ -28,8 +87,8 @@
   The app no longer appears hanging when starting for the first time after installing updates.
 - Fixed deck list downloader for Archidekt, CubeCobra and Manabox.app 
   falsely rejecting valid URLs starting with `https://www.`. These are now accepted and work as intended.
-- Fixed deck list downloader for Moxfield.com. Moxfield removed the "www." part in their URLS, 
-  and now the internal validator now handles that
+- Fixed deck list downloader for Moxfield.com rejecting URLs not containing `www.`,
+  which Moxfield recently removed from their website URLs.
 - Fixed a missing button in the "Default document settings" page in the application settings
 
 # Version 0.29.1 (2024-09-14)  <a name="v0_29_1"></a>

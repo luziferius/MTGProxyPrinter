@@ -1,17 +1,18 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QLineEdit
 
@@ -19,17 +20,17 @@ import pytest
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import QuantityT, unit_registry
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
 from tests.helpers import quantity_close_to
 
 
-@pytest.fixture
-def container(qtbot: QtBot):
+@pytest.fixture()
+def container(qtbot: QtBot, page_layout: PageLayoutSettings):
     container = PageConfigContainer()
-    container.ui.page_config_widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
+    container.ui.page_config_widget.load_from_page_layout(page_layout)
     qtbot.add_widget(container)
     return container
 

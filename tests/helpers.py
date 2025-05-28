@@ -1,26 +1,29 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 import dataclasses
 import functools
 import json
 import numbers
 import os
+import sqlite3
 import typing
-from functools import partial
 from numbers import Real
+from pathlib import Path
+from typing import List, Tuple, Union, Literal
 from unittest.mock import patch, MagicMock
 
 from hamcrest.core.base_matcher import BaseMatcher
@@ -33,12 +36,14 @@ from pytestqt.qtbot import QtBot
 import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
+from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
+from mtg_proxy_printer.model.document_loader import CardType
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
-from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict, QuantityT
+from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict, QuantityT, CardSize
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.sqlite_helpers import read_resource_text
-
+from mtg_proxy_printer.sqlite_helpers import read_resource_text, open_database
 
 
 def _should_skip_network_tests() -> bool:
@@ -132,6 +137,24 @@ def fill_card_database_with_json_card(
         filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], filter_settings)
 
+
+def create_save_database_with(
+        path_or_connection: Union[Path, Literal[":memory:"], sqlite3.Connection],
+        pages: List[Tuple[int, CardSize]],
+        cards: List[Tuple[int, int, bool, str, CardType]],
+        settings: PageLayoutSettings) -> sqlite3.Connection:
+    save = path_or_connection if isinstance(path_or_connection, sqlite3.Connection) \
+        else open_database(path_or_connection, "document-v7")
+    ActionSaveDocument.save_settings(save, settings)
+    save.executemany(
+        "INSERT INTO Page (page, image_size) VALUES (?, ?)",
+        pages
+    )
+    save.executemany(
+        'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)',
+        cards
+    )
+    return save
 
 def assert_relation_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, name: str):
     assert_that(

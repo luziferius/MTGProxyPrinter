@@ -1,18 +1,19 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import logging
 from functools import partial
 import pathlib
@@ -27,7 +28,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.ui.common import highlight_widget
+from mtg_proxy_printer.ui.common import highlight_widget, load_file
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, QuantityT
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
@@ -60,6 +61,9 @@ bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
 check_state_to_bool_str: typing.Dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 ItemDataRole = Qt.ItemDataRole
+StandardLocation = QStandardPaths.StandardLocation
+LocateOption = QStandardPaths.LocateOption
+StandardButton = QMessageBox.StandardButton
 logger = get_logger(__name__)
 del get_logger
 mm: QuantityT = unit_registry.mm
@@ -75,6 +79,7 @@ class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
 
     def display_item(self) -> typing.Sequence[QStandardItem]:
+        """Returns a list model item for this page, used to represent the page in the settings page selection UI."""
         data = self.display_metadata()
         item = QStandardItem(data.text)
         if data.icon_name:
@@ -88,6 +93,10 @@ class Page(QWidget):
 
     @abstractmethod
     def display_metadata(self) -> PageMetadata:
+        """
+        Returns the data shown by the page selection UI for this page. Must be overridden by subclasses.
+        This is a method, and not a class attribute to allow runtime translation of UI strings.
+        """
         return PageMetadata("FIXME: FILL DATA", None, "FIXME: FILL DATA")
 
     @abstractmethod
@@ -173,7 +182,7 @@ class DebugSettingsPage(Page):
         logger.debug("User about to download the card data from Scryfall to a file.")
         location = QFileDialog.getExistingDirectory(
             self, self.tr("Select download location"),
-            QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory))
+            QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory))
         if not location:
             logger.debug("User cancelled location selection. Not downloading.")
             return
@@ -194,7 +203,7 @@ class DebugSettingsPage(Page):
         logger.debug("User about to import card tata from a previously downloaded file.")
         location, _ = QFileDialog.getOpenFileName(
             self, self.tr("Import previously downloaded card data obtained from Scryfall"),
-            QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
+            QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory),
             self.tr("Scryfall card data (*.json, *.json.gz)"))
         logger.info(f"{location=}")
         if not location:
@@ -287,21 +296,20 @@ class GeneralSettingsPage(Page):
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.ui = ui = Ui_GeneralSettingsPage()
-        self.language_model = QStringListModel([], self)
         ui.setupUi(self)
+        self.set_language_model = ui.preferred_language_combo_box.setModel
         ui.add_card_widget_style_combo_box.addItem(self.tr("Horizontal layout"), "horizontal")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Columnar layout"), "columnar")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Tabbed layout"), "tabbed")
+        progress: typing.Dict[str, int] = json.loads(load_file("translations/progress.json", self))
         for display_text, language_code in [
             (self.tr("System default"), ""),
-            (self.tr("English (US)"), "en_US"),
-            (self.tr("German"), "de"),
+            (self.tr("English (US) [{progress}%]"), "en_US"),
+            (self.tr("German [{progress}%]"), "de"),
+            (self.tr("French [{progress}%]"), "fr"),
         ]:
+            display_text = display_text.format(progress=progress.get(language_code, ""))
             ui.application_language_combo_box.addItem(display_text, language_code)
-
-    def set_language_model(self, model: QStringListModel):
-        self.language_model = model
-        self.ui.preferred_language_combo_box.setModel(model)
 
     @Slot()
     def on_document_save_path_browse_button_clicked(self):
@@ -312,7 +320,7 @@ class GeneralSettingsPage(Page):
 
     def load(self, settings: ConfigParser):
         self._load_look_and_feel_settings(settings)
-        self._load_update_settings(settings)
+        self._load_boolean_settings(settings)
         self._load_cards_settings(settings)
         self._load_path_settings(settings)
 
@@ -324,21 +332,19 @@ class GeneralSettingsPage(Page):
         language_index = ui.application_language_combo_box.findData(gui_section["language"])
         ui.application_language_combo_box.setCurrentIndex(language_index)
 
-    def _load_update_settings(self, settings: ConfigParser):
-        section = settings["update-checks"]
-        for widget, setting in self._get_update_check_settings_widgets():
+    def _load_boolean_settings(self, settings: ConfigParser):
+        for widget, section_name, setting in self._get_boolean_check_settings_widgets():
+            section = settings[section_name]
             widget.setCheckState(bool_to_check_state[section.getboolean(setting)])
 
     def _load_cards_settings(self, settings: ConfigParser):
         section = settings["cards"]
         preferred_language_combo_box = self.ui.preferred_language_combo_box
         preferred_language = section.get("preferred-language")
-        if not (known := preferred_language_combo_box.model().stringList()) or preferred_language not in known:
+        list_model: QStringListModel = preferred_language_combo_box.model()
+        if not (known := list_model.stringList()) or preferred_language not in known:
             preferred_language_combo_box.addItem(preferred_language)
         preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(preferred_language))
-        self.ui.automatically_add_opposing_faces.setChecked(
-            section.getboolean("automatically-add-opposing-faces")
-        )
 
     def _load_path_settings(self, settings: ConfigParser):
         section = settings["default-filesystem-paths"]
@@ -346,30 +352,33 @@ class GeneralSettingsPage(Page):
         for widget, setting in widgets_with_settings:
             widget.setText(section[setting])
 
-    def _get_update_check_settings_widgets(self):
+    def _get_boolean_check_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (ui.check_application_updates_enabled, "check-for-application-updates"),
-            (ui.check_card_data_updates_enabled, "check-for-card-data-updates"),
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str, str]] = [
+            (ui.check_application_updates_enabled, "update-checks", "check-for-application-updates"),
+            (ui.check_card_data_updates_enabled, "update-checks", "check-for-card-data-updates"),
+            (ui.automatically_add_opposing_faces, "cards", "automatically-add-opposing-faces"),
+            (ui.gui_open_maximized, "gui", "gui-open-maximized"),
+            (ui.wizards_open_maximized, "gui", "wizards-open-maximized"),
         ]
         return widgets_with_settings
 
     def get_index_for_language_code(self, language: str) -> int:
-        languages = self.language_model.stringList()
+        languages = self.ui.preferred_language_combo_box.model().stringList()
         if language in languages:
             return languages.index(language)
         else:
             return languages.index("en")
 
     def save(self):
-        self._save_update_check_settings()
+        self._save_boolean_settings()
         self._save_look_and_feel_settings()
         self._save_cards_settings()
         self._save_path_settings()
 
-    def _save_update_check_settings(self):
-        section = mtg_proxy_printer.settings.settings["update-checks"]
-        for widget, setting in self._get_update_check_settings_widgets():
+    def _save_boolean_settings(self):
+        for widget, section_name, setting in self._get_boolean_check_settings_widgets():
+            section = mtg_proxy_printer.settings.settings[section_name]
             section[setting] = check_state_to_bool_str[widget.checkState()]
 
     def _save_look_and_feel_settings(self):
@@ -382,7 +391,6 @@ class GeneralSettingsPage(Page):
     def _save_cards_settings(self):
         section = mtg_proxy_printer.settings.settings["cards"]
         section["preferred-language"] = self.ui.preferred_language_combo_box.currentText()
-        section["automatically-add-opposing-faces"] = str(self.ui.automatically_add_opposing_faces.isChecked())
 
     def _save_path_settings(self):
         section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
@@ -392,9 +400,8 @@ class GeneralSettingsPage(Page):
 
     def highlight_differing_settings(self, settings: ConfigParser):
         ui = self.ui
-
-        section = settings["update-checks"]
-        for widget, setting in self._get_update_check_settings_widgets():
+        for widget, section_name, setting in self._get_boolean_check_settings_widgets():
+            section = settings[section_name]
             if section[setting] != check_state_to_bool_str[widget.checkState()]:
                 highlight_widget(widget)
 
@@ -409,8 +416,6 @@ class GeneralSettingsPage(Page):
         section = settings["cards"]
         if section["preferred-language"] != ui.preferred_language_combo_box.currentText():
             highlight_widget(ui.preferred_language_combo_box)
-        if section.getboolean("automatically-add-opposing-faces") is not ui.automatically_add_opposing_faces.isChecked():
-            highlight_widget(ui.automatically_add_opposing_faces)
 
         section = settings["default-filesystem-paths"]
         widgets_and_settings = self._get_save_path_settings_widgets()

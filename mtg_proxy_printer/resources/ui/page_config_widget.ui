@@ -6,91 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>489</width>
-    <height>697</height>
+    <width>676</width>
+    <height>649</height>
    </rect>
   </property>
   <property name="title">
    <string>Default settings for new documents</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="17" column="4" rowspan="3">
-    <widget class="QPushButton" name="flip_page_dimensions">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>Switch between portrait and landscape mode</string>
-     </property>
-     <property name="text">
-      <string>Flip</string>
-     </property>
-     <property name="icon">
-      <iconset theme="transform-rotate">
-       <normaloff>.</normaloff>.</iconset>
-     </property>
-    </widget>
-   </item>
-   <item row="23" column="1">
-    <widget class="QLabel" name="margin_left_label">
-     <property name="text">
-      <string>Left margin</string>
-     </property>
-     <property name="textInteractionFlags">
-      <set>Qt::NoTextInteraction</set>
-     </property>
-     <property name="buddy">
-      <cstring>margin_left</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="3" colspan="2">
-    <widget class="QCheckBox" name="draw_sharp_corners">
-     <property name="text">
-      <string>Draw 90° card corners, instead of round ones</string>
-     </property>
-    </widget>
-   </item>
-   <item row="20" column="1">
-    <widget class="QLabel" name="margin_top_label">
-     <property name="text">
-      <string>Top margin</string>
-     </property>
-     <property name="textInteractionFlags">
-      <set>Qt::NoTextInteraction</set>
-     </property>
-     <property name="buddy">
-      <cstring>margin_top</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="3" colspan="2">
-    <widget class="QCheckBox" name="draw_page_numbers">
-     <property name="toolTip">
-      <string>If enabled, the page number is printed on each page. Makes it easier to notice missing pages in a stack.</string>
-     </property>
-     <property name="text">
-      <string>Print page numbers</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="3" colspan="2">
-    <widget class="QCheckBox" name="draw_cut_markers">
-     <property name="toolTip">
-      <string>Enable printing additional lines to aid cutting the printed sheets.</string>
-     </property>
-     <property name="text">
-      <string>Print cut markers</string>
-     </property>
-    </widget>
-   </item>
-   <item row="16" column="4">
-    <widget class="QComboBox" name="paper_orientation"/>
-   </item>
-   <item row="28" column="3" colspan="2">
+   <item row="32" column="3" colspan="2">
     <widget class="QLabel" name="page_capacity">
      <property name="toolTip">
       <string>Number of cards fitting on each page,
@@ -101,176 +25,7 @@ based on the page size and spacings configured</string>
      </property>
     </widget>
    </item>
-   <item row="26" column="3" colspan="2">
-    <widget class="QDoubleSpinBox" name="column_spacing">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>Space between image columns in mm.
-If set to zero, you only need one cut to separate two images,
-otherwise you need two cuts but require less precision hitting the exact middle.</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <double>10000.000000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="16" column="3">
-    <widget class="QComboBox" name="paper_size"/>
-   </item>
-   <item row="19" column="3">
-    <widget class="QDoubleSpinBox" name="custom_page_width">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>Paper width in millimeters.
-Must match the size of the sheets in the printer.
-Otherwise, scaling may be applied by the printer driver.</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="minimum">
-      <double>88.000000000000000</double>
-     </property>
-     <property name="maximum">
-      <double>10000.000000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="26" column="1">
-    <widget class="QLabel" name="column_spacing_label">
-     <property name="text">
-      <string>Column spacing</string>
-     </property>
-     <property name="textInteractionFlags">
-      <set>Qt::NoTextInteraction</set>
-     </property>
-     <property name="buddy">
-      <cstring>column_spacing</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="27" column="1">
-    <widget class="QLabel" name="card_bleed_label">
-     <property name="text">
-      <string>Card bleed</string>
-     </property>
-     <property name="textInteractionFlags">
-      <set>Qt::NoTextInteraction</set>
-     </property>
-     <property name="buddy">
-      <cstring>card_bleed</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="15" column="1" colspan="4">
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="19" column="1">
-    <widget class="QLabel" name="custom_page_width_label">
-     <property name="text">
-      <string>Page width</string>
-     </property>
-     <property name="textInteractionFlags">
-      <set>Qt::NoTextInteraction</set>
-     </property>
-     <property name="buddy">
-      <cstring>custom_page_width</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="21" column="3" colspan="2">
-    <widget class="QDoubleSpinBox" name="margin_bottom">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <double>10000.000000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="20" column="3" colspan="2">
-    <widget class="QDoubleSpinBox" name="margin_top">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <double>10000.000000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="17" column="3">
-    <widget class="QDoubleSpinBox" name="custom_page_height">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>Paper height in millimeters.
-Must match the size of the sheets in the printer.
-Otherwise, scaling may be applied by the printer driver.</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="minimum">
-      <double>126.000000000000000</double>
-     </property>
-     <property name="maximum">
-      <double>10000.000000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="24" column="1">
-    <widget class="QLabel" name="margin_right_label">
-     <property name="text">
-      <string>Right margin</string>
-     </property>
-     <property name="textInteractionFlags">
-      <set>Qt::NoTextInteraction</set>
-     </property>
-     <property name="buddy">
-      <cstring>margin_right</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="30" column="1" colspan="4">
+   <item row="35" column="1" colspan="4">
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -283,65 +38,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
      </property>
     </spacer>
    </item>
-   <item row="27" column="3" colspan="2">
-    <widget class="QDoubleSpinBox" name="card_bleed">
-     <property name="toolTip">
-      <string>Draw an additional border around cards to ease cutting.</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <double>1000.000000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="21" column="1">
-    <widget class="QLabel" name="margin_bottom_label">
-     <property name="text">
-      <string>Bottom Margin</string>
-     </property>
-     <property name="textInteractionFlags">
-      <set>Qt::NoTextInteraction</set>
-     </property>
-     <property name="buddy">
-      <cstring>margin_bottom</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="17" column="1">
-    <widget class="QLabel" name="custom_page_height_label">
-     <property name="text">
-      <string>Page height</string>
-     </property>
-     <property name="textInteractionFlags">
-      <set>Qt::NoTextInteraction</set>
-     </property>
-     <property name="buddy">
-      <cstring>custom_page_height</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="23" column="3" colspan="2">
-    <widget class="QDoubleSpinBox" name="margin_left">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <double>10000.000000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="24" column="3" colspan="2">
+   <item row="28" column="3" colspan="2">
     <widget class="QDoubleSpinBox" name="margin_right">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -360,87 +57,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
      </property>
     </widget>
    </item>
-   <item row="28" column="1">
-    <widget class="QLabel" name="page_capacity_label">
-     <property name="text">
-      <string>Resulting page capacity:</string>
-     </property>
-     <property name="textInteractionFlags">
-      <set>Qt::NoTextInteraction</set>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="3" colspan="2">
-    <widget class="QLineEdit" name="document_name">
-     <property name="toolTip">
-      <string>The document name is printed on each page and can help you keep track
-of different printed sheets and to which deck they belong.
-
-Leave empty to disable.</string>
-     </property>
-     <property name="maxLength">
-      <number>200</number>
-     </property>
-     <property name="placeholderText">
-      <string>Document/deck name</string>
-     </property>
-     <property name="clearButtonEnabled">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="16" column="1">
-    <widget class="QLabel" name="paper_size_label">
-     <property name="text">
-      <string>Paper size</string>
-     </property>
-    </widget>
-   </item>
-   <item row="25" column="1">
-    <widget class="QLabel" name="row_spacing_label">
-     <property name="text">
-      <string>Row spacing</string>
-     </property>
-     <property name="textInteractionFlags">
-      <set>Qt::NoTextInteraction</set>
-     </property>
-     <property name="buddy">
-      <cstring>row_spacing</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QLabel" name="document_name_label">
-     <property name="text">
-      <string>Document name</string>
-     </property>
-     <property name="buddy">
-      <cstring>document_name</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="25" column="3" colspan="2">
-    <widget class="QDoubleSpinBox" name="row_spacing">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>Space between image rows in mm.
-If set to zero, you only need one cut to separate two images,
-otherwise you need two cuts but require less precision hitting the exact middle.</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <double>10000.000000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="29" column="1" colspan="4">
+   <item row="33" column="1" colspan="4">
     <layout class="QHBoxLayout" name="preview_button_alignment_layout">
      <item>
       <spacer name="preview_button_spacer">
@@ -467,6 +84,388 @@ otherwise you need two cuts but require less precision hitting the exact middle.
      </item>
     </layout>
    </item>
+   <item row="30" column="3" colspan="2">
+    <widget class="QDoubleSpinBox" name="column_spacing">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Space between image columns in mm.
+If set to zero, you only need one cut to separate two images,
+otherwise you need two cuts but require less precision hitting the exact middle.</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <double>10000.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="21" column="4" rowspan="3">
+    <widget class="QPushButton" name="flip_page_dimensions">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Switch between portrait and landscape mode</string>
+     </property>
+     <property name="text">
+      <string>Flip</string>
+     </property>
+     <property name="icon">
+      <iconset theme="transform-rotate"/>
+     </property>
+    </widget>
+   </item>
+   <item row="30" column="1">
+    <widget class="QLabel" name="column_spacing_label">
+     <property name="text">
+      <string>Column spacing</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
+     <property name="buddy">
+      <cstring>column_spacing</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="19" column="1">
+    <widget class="QLabel" name="paper_size_label">
+     <property name="text">
+      <string>Paper size</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="3" colspan="2">
+    <widget class="QCheckBox" name="draw_page_numbers">
+     <property name="toolTip">
+      <string>If enabled, the page number is printed on each page. Makes it easier to notice missing pages in a stack.</string>
+     </property>
+     <property name="text">
+      <string>Print page numbers</string>
+     </property>
+    </widget>
+   </item>
+   <item row="27" column="1">
+    <widget class="QLabel" name="margin_left_label">
+     <property name="text">
+      <string>Left margin</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
+     <property name="buddy">
+      <cstring>margin_left</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="27" column="3" colspan="2">
+    <widget class="QDoubleSpinBox" name="margin_left">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <double>10000.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="21" column="1">
+    <widget class="QLabel" name="custom_page_height_label">
+     <property name="text">
+      <string>Page height</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
+     <property name="buddy">
+      <cstring>custom_page_height</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="25" column="3" colspan="2">
+    <widget class="QDoubleSpinBox" name="margin_bottom">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <double>10000.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="29" column="1">
+    <widget class="QLabel" name="row_spacing_label">
+     <property name="text">
+      <string>Row spacing</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
+     <property name="buddy">
+      <cstring>row_spacing</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="15" column="1" colspan="4">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="29" column="3" colspan="2">
+    <widget class="QDoubleSpinBox" name="row_spacing">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Space between image rows in mm.
+If set to zero, you only need one cut to separate two images,
+otherwise you need two cuts but require less precision hitting the exact middle.</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <double>10000.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="25" column="1">
+    <widget class="QLabel" name="margin_bottom_label">
+     <property name="text">
+      <string>Bottom Margin</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
+     <property name="buddy">
+      <cstring>margin_bottom</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="32" column="1">
+    <widget class="QLabel" name="page_capacity_label">
+     <property name="text">
+      <string>Resulting page capacity:</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
+    </widget>
+   </item>
+   <item row="28" column="1">
+    <widget class="QLabel" name="margin_right_label">
+     <property name="text">
+      <string>Right margin</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
+     <property name="buddy">
+      <cstring>margin_right</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3" colspan="2">
+    <widget class="QCheckBox" name="draw_cut_markers">
+     <property name="toolTip">
+      <string>Enable printing additional lines to aid cutting the printed sheets.</string>
+     </property>
+     <property name="text">
+      <string>Print cut markers</string>
+     </property>
+    </widget>
+   </item>
+   <item row="24" column="1">
+    <widget class="QLabel" name="margin_top_label">
+     <property name="text">
+      <string>Top margin</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
+     <property name="buddy">
+      <cstring>margin_top</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="21" column="3">
+    <widget class="QDoubleSpinBox" name="custom_page_height">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Paper height in millimeters.
+Must match the size of the sheets in the printer.
+Otherwise, scaling may be applied by the printer driver.</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="minimum">
+      <double>126.000000000000000</double>
+     </property>
+     <property name="maximum">
+      <double>10000.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="24" column="3" colspan="2">
+    <widget class="QDoubleSpinBox" name="margin_top">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <double>10000.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="3" colspan="2">
+    <widget class="QLineEdit" name="document_name">
+     <property name="toolTip">
+      <string>The document name is printed on each page and can help you keep track
+of different printed sheets and to which deck they belong.
+
+Leave empty to disable.</string>
+     </property>
+     <property name="maxLength">
+      <number>200</number>
+     </property>
+     <property name="placeholderText">
+      <string>Document/deck name</string>
+     </property>
+     <property name="clearButtonEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QLabel" name="document_name_label">
+     <property name="text">
+      <string>Document name</string>
+     </property>
+     <property name="buddy">
+      <cstring>document_name</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="31" column="1">
+    <widget class="QLabel" name="card_bleed_label">
+     <property name="text">
+      <string>Card bleed</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
+     <property name="buddy">
+      <cstring>card_bleed</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="3" colspan="2">
+    <widget class="QCheckBox" name="draw_sharp_corners">
+     <property name="text">
+      <string>Draw 90° card corners, instead of round ones</string>
+     </property>
+    </widget>
+   </item>
+   <item row="31" column="3" colspan="2">
+    <widget class="QDoubleSpinBox" name="card_bleed">
+     <property name="toolTip">
+      <string>Draw an additional border around cards to ease cutting.</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <double>1000.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="23" column="1">
+    <widget class="QLabel" name="custom_page_width_label">
+     <property name="text">
+      <string>Page width</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
+     <property name="buddy">
+      <cstring>custom_page_width</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="23" column="3">
+    <widget class="QDoubleSpinBox" name="custom_page_width">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Paper width in millimeters.
+Must match the size of the sheets in the printer.
+Otherwise, scaling may be applied by the printer driver.</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="minimum">
+      <double>88.000000000000000</double>
+     </property>
+     <property name="maximum">
+      <double>10000.000000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="19" column="3">
+    <widget class="QComboBox" name="paper_size"/>
+   </item>
+   <item row="19" column="4">
+    <widget class="QComboBox" name="paper_orientation"/>
+   </item>
   </layout>
  </widget>
  <tabstops>
@@ -474,11 +473,8 @@ otherwise you need two cuts but require less precision hitting the exact middle.
   <tabstop>draw_page_numbers</tabstop>
   <tabstop>draw_cut_markers</tabstop>
   <tabstop>draw_sharp_corners</tabstop>
-  <tabstop>paper_size</tabstop>
-  <tabstop>paper_orientation</tabstop>
   <tabstop>custom_page_height</tabstop>
   <tabstop>custom_page_width</tabstop>
-  <tabstop>flip_page_dimensions</tabstop>
   <tabstop>margin_top</tabstop>
   <tabstop>margin_bottom</tabstop>
   <tabstop>margin_left</tabstop>
@@ -486,7 +482,6 @@ otherwise you need two cuts but require less precision hitting the exact middle.
   <tabstop>row_spacing</tabstop>
   <tabstop>column_spacing</tabstop>
   <tabstop>card_bleed</tabstop>
-  <tabstop>show_preview_button</tabstop>
  </tabstops>
  <resources/>
  <connections/>

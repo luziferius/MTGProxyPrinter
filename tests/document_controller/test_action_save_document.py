@@ -1,0 +1,239 @@
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+import copy
+import dataclasses
+from pathlib import Path
+import textwrap
+
+from hamcrest import *
+from PyQt5.QtCore import QModelIndex, Qt
+import pytest
+from pytestqt.qtbot import QtBot
+
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
+from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT
+from mtg_proxy_printer.model.card import CheckCard
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_loader import CardType
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
+from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
+
+from tests.model.test_document import document_custom_layout
+from tests.helpers import quantity_close_to
+
+ItemDataRole = Qt.ItemDataRole
+mm: UnitT = unit_registry.mm
+
+
+def validate_qt_model_signal_parameter(
+        expected_first: int, expected_last: int,
+        parent: QModelIndex, first: int, last: int) -> bool:
+    return not parent.isValid() and first == expected_first and last == expected_last
+
+
+@pytest.mark.parametrize("source_version", [2, 3, 4, 5, 6])
+def test_save_migration(tmp_path: Path, document: Document, source_version: int):
+    """Tests migration of existing saves to the newest schema revision on save."""
+    card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
+    document.apply(ActionAddCard(card, capacity))
+    action = ActionSaveDocument(_create_save_file(Path(tmp_path), source_version))
+    action.apply(document)
+    _validate_database_schema(action.file_path)
+    _validate_saved_document_settings(document.page_layout, action.file_path)
+
+
+def test_create_save(tmp_path: Path, document_custom_layout: Document):
+    """Tests that saving a new document uses the newest database schema version"""
+    layout = document_custom_layout.page_layout
+    card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    capacity = layout.compute_page_card_capacity(card.requested_page_type())
+    document_custom_layout.apply(ActionAddCard(card, capacity))
+    save_file = tmp_path / "test.mtgproxies"
+    action = ActionSaveDocument(save_file)
+    action.apply(document_custom_layout)
+    _validate_database_schema(save_file)
+    _validate_saved_document_settings(layout, save_file)
+
+
+@pytest.mark.parametrize("is_front", [True, False])
+def test_save_as_saves_regular_card(tmp_path: Path, document: Document, is_front: bool):
+    card = document.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front)
+    document.apply(ActionAddCard(card))
+    save_file = tmp_path/"test.mtgproxies"
+    action = ActionSaveDocument(save_file)
+    action.apply(document)
+    with open_database(save_file, "document-v7") as con:
+        content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
+    del con
+    assert_that(
+        content, contains_exactly(
+            contains_exactly(1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front, CardType.REGULAR.value)
+        )
+    )
+
+
+def test_save_as_saves_check_card(tmp_path: Path, document: Document):
+    card = CheckCard(
+        document.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),
+        document.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", False),
+    )
+    document.apply(ActionAddCard(card))
+    save_file = tmp_path / "test.mtgproxies"
+    action = ActionSaveDocument(save_file)
+    action.apply(document)
+    with open_database(save_file, "document-v7") as con:
+        content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
+    del con
+    assert_that(
+        content, contains_exactly(
+            contains_exactly(1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True, CardType.CHECK_CARD.value)
+        )
+    )
+
+
+def test_subsequent_save_updates_settings(tmp_path: Path, qtbot: QtBot, document_custom_layout: Document):
+    save_file = tmp_path / "test.mtgproxies"
+    save_action = ActionSaveDocument(save_file)
+    save_action.apply(document_custom_layout)
+
+    modified_layout = copy.copy(document_custom_layout.page_layout)
+    modified_layout.custom_page_width = modified_layout.custom_page_width = 1000*mm
+    modified_layout.margin_top = modified_layout.margin_bottom = 13*mm
+    modified_layout.margin_left = modified_layout.margin_right= 14*mm
+    modified_layout.column_spacing = modified_layout.row_spacing = 2*mm
+    modified_layout.draw_page_numbers = not modified_layout.draw_page_numbers
+    modified_layout.draw_cut_markers = not modified_layout.draw_cut_markers
+    modified_layout.draw_sharp_corners = not modified_layout.draw_sharp_corners
+    modified_layout.document_name = "New"
+
+    with qtbot.waitSignal(document_custom_layout.page_layout_changed, timeout=100):
+        document_custom_layout.apply(ActionEditDocumentSettings(modified_layout))
+    save_action.apply(document_custom_layout)
+    _validate_saved_document_settings(modified_layout, save_file)
+
+
+def _create_save_file(temp_path: Path, source_version: int):
+    """Creates an empty document save file at the given path and using the given schema version."""
+    save_file_path = temp_path/"test.mtgproxies"
+    open_database(save_file_path, f"document-v{source_version}").close()
+    return save_file_path
+
+
+def _validate_database_schema(db_path: Path):
+    """
+    Validates the database schema of the user-provided file against a known-good schema.
+
+    :raises AssertionError: If the provided file contains an invalid schema
+    :returns: Database schema version
+    """
+    target_schema_version = 7
+    db_unsafe = open_database(db_path, f"document-v{target_schema_version}")
+    assert_that(
+        db_unsafe.execute("PRAGMA application_id").fetchone(), contains_exactly(41325044),
+        "Not an MTGProxyPrinter save file!"
+    )
+    assert_that(db_unsafe.execute("PRAGMA user_version").fetchone(), contains_exactly(target_schema_version))
+    db_known_good = create_in_memory_database(f"document-v{target_schema_version}")
+    tables_and_views_query = textwrap.dedent("""\
+        SELECT   s.type, s.name,
+                 p.cid AS column_id, p.name AS column_name, p.type AS column_type,
+                 p."notnull" AS column_not_null_constraint_enabled, p.dflt_value AS column_default_value,
+                 p.pk AS column_primary_key_component
+          FROM   sqlite_schema AS s
+          JOIN   pragma_table_info(s.name) AS p
+         WHERE   s.type IN ('table', 'view')
+           AND   s.name NOT LIKE 'sqlite_%'
+        ORDER BY s.name, column_id
+        ;""")
+    indices_query = textwrap.dedent("""\
+        -- Note: Also include the “sqlite_autoindex*” indices that are
+        -- automatically created for UNIQUE and PRIMARY KEY constraints.
+        SELECT   s.name AS index_name,
+                 p.seqno AS index_column_sequence_number,
+                 p.cid AS column_id,
+                 p.name AS column_name
+          FROM   sqlite_schema AS s
+          JOIN   pragma_index_info(s.name) AS p
+         WHERE   s.type = 'index'
+        ORDER BY index_name ASC, index_column_sequence_number ASC
+        ;""")
+    with db_known_good:
+        assert_that(
+            db_unsafe.execute(tables_and_views_query).fetchall(),
+            contains_exactly(*db_known_good.execute(tables_and_views_query).fetchall()),
+            "Given save file inconsistent: Unexpected tables or views")
+        assert_that(
+            db_unsafe.execute(indices_query).fetchall(),
+            contains_exactly(*db_known_good.execute(indices_query).fetchall()),
+            "Given save file inconsistent: Unexpected indices")
+
+
+def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Path):
+    with open_database(save_file, "document-v7") as save:
+        assert_that(
+            save.execute(textwrap.dedent("""
+            SELECT sum(cnt) FROM (
+              SELECT COUNT(1) AS cnt FROM DocumentSettings
+              UNION ALL 
+              SELECT COUNT(1) AS cnt FROM DocumentDimensions
+            )""")).fetchone(),
+            contains_exactly(len(dataclasses.astuple(layout)))
+        )
+        keys = ", ".join(map("'{}'".format, layout.__annotations__.keys()))
+        query = textwrap.dedent(f"""\
+            SELECT value
+              FROM DocumentSettings
+              WHERE key IN ({keys})
+              ORDER BY key ASC
+            """)
+        values = [value for value, in save.execute(query)]
+        assert_that(
+            values,
+            contains_exactly(
+                layout.document_name,
+                str(layout.draw_cut_markers),
+                str(layout.draw_page_numbers),
+                str(layout.draw_sharp_corners),
+                layout.paper_orientation,
+                layout.paper_size,
+            ),
+            f"Obtained: {values}"
+        )
+        query = textwrap.dedent(f"""\
+                    SELECT value
+                      FROM DocumentDimensions
+                      WHERE key IN ({keys})
+                      ORDER BY key ASC
+                    """)
+        values = [value for value, in save.execute(query)]
+        assert_that(
+            values,
+            contains_exactly(
+                quantity_close_to(layout.card_bleed),
+                quantity_close_to(layout.column_spacing),
+                quantity_close_to(layout.custom_page_height),
+                quantity_close_to(layout.custom_page_width),
+                quantity_close_to(layout.margin_bottom),
+                quantity_close_to(layout.margin_left),
+                quantity_close_to(layout.margin_right),
+                quantity_close_to(layout.margin_top),
+                quantity_close_to(layout.row_spacing),
+            ),
+            f"Obtained: {values}"
+        )

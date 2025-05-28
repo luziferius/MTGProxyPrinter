@@ -1,17 +1,18 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 import atexit
 from functools import partial
@@ -83,10 +84,12 @@ class Application(QApplication):
         self.main_window.ui.action_download_card_data.setEnabled(False)
         self.settings_window = self._create_settings_window(
             self.language_model, self.document, self.main_window, self.card_info_downloader)
-        self.main_window.show()
+        if settings.settings["gui"].getboolean("gui-open-maximized"):
+            self.main_window.showMaximized()
+        else:
+            self.main_window.show()
 
-
-    def enqueue_startup_tasks(self, args: Namespace):
+    def enqueue_startup_tasks(self, _: Namespace):
         """
         Enqueues all tasks that should run in the Qt event loop at application start.
         Includes
@@ -105,31 +108,33 @@ class Application(QApplication):
             settings.write_settings_to_file()
             QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
         logger.debug("Enqueueing update check")
-        start = QThreadPool.globalInstance().start
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
 
         card_db_migration_runner = DatabaseMigrationRunner(self.card_db)
         card_db_migration_runner.connect_main_window_signals(self.main_window)
+        card_db_migration_runner.total_update_signals.update_completed.connect(self._on_carddb_migrations_completed)
+        QThreadPool.globalInstance().start(card_db_migration_runner)
+
+    @Slot()
+    def _on_carddb_migrations_completed(self):
+        self.card_db.reopen_database()
+        logger.debug(
+            "Card database migrations completed. Database re-opened. Checking if the printing filters need updates.")
         printing_filter_updater_runner = PrintingFilterUpdater(self.card_db)
         printing_filter_updater_runner.connect_main_window_signals(self.main_window)
+        printing_filter_updater_runner.signals.update_completed.connect(self._on_printing_filter_updater_completed)
+        QThreadPool.globalInstance().start(printing_filter_updater_runner)
 
-        card_db_migration_runner.total_update_signals.update_completed.connect(self.card_db.reopen_database)
-        card_db_migration_runner.total_update_signals.update_completed.connect(
-            partial(start, printing_filter_updater_runner)
-        )
+    @Slot()
+    def _on_printing_filter_updater_completed(self):
+        logger.debug("Printing filters synchronized with settings.")
+        self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
+        self.main_window.update_language_model()
+        self.update_checker.check_for_updates()
+        self._handle_command_line_argument_files()
 
-        printing_filter_updater_runner.signals.update_completed.connect(
-            lambda: self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
-        )
-        printing_filter_updater_runner.signals.update_completed.connect(
-            self.main_window.should_update_languages
-        )
-        printing_filter_updater_runner.signals.update_completed.connect(self.update_checker.check_for_updates)
-        printing_filter_updater_runner.signals.update_completed.connect(partial(self._handle_command_line_argument_files, args))
-        
-        start(card_db_migration_runner)
-
-    def _handle_command_line_argument_files(self, args: Namespace):
+    def _handle_command_line_argument_files(self):
+        args = self.args
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
             self.card_info_downloader.import_from_file(args.card_data)
@@ -175,7 +180,9 @@ class Application(QApplication):
         settings_window.process_updated.connect(main_window.progress_bars.set_outer_progress)
         settings_window.process_finished.connect(main_window.progress_bars.end_outer_progress)
         settings_window.error_occurred.connect(main_window.on_error_occurred)
-        main_window.ui.action_show_settings.triggered.connect(settings_window.show)
+
+        main_window.ui.action_show_settings.triggered.connect(
+            partial(mtg_proxy_printer.ui.common.show_wizard_or_dialog, settings_window))
         return settings_window
 
     def _create_document_instance(
@@ -190,7 +197,8 @@ class Application(QApplication):
 
     def _create_language_model(self):
         preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
-        return QStringListModel([preferred_language], self)
+        available = sorted({preferred_language, "en"})
+        return QStringListModel(available, self)
 
     def _create_update_checker(self, args: Namespace) -> UpdateChecker:
         update_checker = UpdateChecker(self.card_db, args, self)
@@ -258,7 +266,7 @@ class Application(QApplication):
         else:
             logger.debug(f"Using system-provided icon theme '{fallback_icon_theme}'")
 
-        self.setAttribute(Qt.AA_UseHighDpiPixmaps)
+        self.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
 
     @Slot()
     def quit(self):

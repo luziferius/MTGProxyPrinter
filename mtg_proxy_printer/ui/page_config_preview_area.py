@@ -1,35 +1,35 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 import enum
 from unittest.mock import MagicMock
 
 from PyQt5.QtCore import pyqtSlot as Slot, QPersistentModelIndex
 from PyQt5.QtGui import QColorConstants, QPainter, QPixmap
+from PyQt5.QtWidgets import QWidget
 
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.carddb import Card, MTGSet
+from mtg_proxy_printer.model.card import MTGSet, Card
 from mtg_proxy_printer.ui.common import load_ui_from_file
 from mtg_proxy_printer.logger import get_logger
-
-from PyQt5.QtWidgets import QWidget
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_preview_area import Ui_PageConfigPreviewArea

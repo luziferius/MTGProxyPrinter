@@ -1,27 +1,30 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 import functools
 import itertools
 import math
 import typing
 
-from mtg_proxy_printer.model.carddb import Card, AnyCardType
+from ..model.card import Card, AnyCardType
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import Page
+from mtg_proxy_printer.natsort import to_list_of_ranges
 from ._interface import DocumentAction, IllegalStateError, Self, split_iterable
 from .page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.logger import get_logger
@@ -217,17 +220,3 @@ class ActionRemoveCards(DocumentAction):
             "ActionRemoveCards", "Remove %n card(s) from page {page_number}",
             "Undo/redo tooltip text", card_count
         ).format(page_number=page_number)
-
-
-def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[typing.Tuple[int, int]]:
-    sequence = sorted(sequence)
-    ranges: typing.List[typing.Tuple[int, int]] = []
-    sequence = itertools.chain(sequence, (sentinel := object(),))
-    lower = upper = next(sequence)
-    for item in sequence:
-        if item is sentinel or upper != item-1:
-            ranges.append((lower, upper))
-            lower = upper = item
-        else:
-            upper = item
-    return ranges

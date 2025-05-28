@@ -1,27 +1,28 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 import functools
 import pathlib
 import typing
 
 if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+    from mtg_proxy_printer.model.page_layout import PageLayoutSettings
     from mtg_proxy_printer.model.document import Document
 
-from mtg_proxy_printer.model.carddb import CardList
+from mtg_proxy_printer.model.card import CardList
 from ._interface import DocumentAction, IllegalStateError, ActionList, Self
 from .page_actions import ActionNewPage
 from .card_actions import ActionAddCard
@@ -52,10 +53,11 @@ class ActionLoadDocument(DocumentAction):
         self.actions.append(ActionNewDocument().apply(document))
         self.actions.append(ActionEditDocumentSettings(self.page_layout).apply(document))
         document.set_currently_edited_page(document.pages[0])
-        for card in self.loaded_cards[0]:
-            self.actions.append(ActionAddCard(card).apply(document))
-        if page_count := len(self.loaded_cards)-1:
-            self.actions.append(ActionNewPage(count=page_count, content=self.loaded_cards[1:]).apply(document))
+        if self.loaded_cards:
+            for card in self.loaded_cards[0]:
+                self.actions.append(ActionAddCard(card).apply(document))
+            if page_count := len(self.loaded_cards)-1:
+                self.actions.append(ActionNewPage(count=page_count, content=self.loaded_cards[1:]).apply(document))
         return super().apply(document)
 
     def undo(self, document: "Document") -> Self:

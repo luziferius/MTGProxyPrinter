@@ -23,7 +23,7 @@
      <x>0</x>
      <y>0</y>
      <width>1050</width>
-     <height>30</height>
+     <height>28</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
@@ -34,11 +34,15 @@
     <addaction name="action_load_document"/>
     <addaction name="action_save_document"/>
     <addaction name="action_save_as"/>
+    <addaction name="separator"/>
     <addaction name="action_print_preview"/>
     <addaction name="action_print"/>
     <addaction name="action_print_pdf"/>
+    <addaction name="action_export_png"/>
     <addaction name="separator"/>
     <addaction name="action_import_deck_list"/>
+    <addaction name="action_add_custom_cards"/>
+    <addaction name="action_export_card_images"/>
     <addaction name="separator"/>
     <addaction name="action_quit"/>
    </widget>
@@ -273,7 +277,7 @@
     <iconset theme="document-import"/>
    </property>
    <property name="text">
-    <string>Import Deck list</string>
+    <string>Import deck list</string>
    </property>
    <property name="toolTip">
     <string>Import a deck list from online sources</string>
@@ -356,6 +360,36 @@ use this to reduce the initial deck shuffling required</string>
    </property>
    <property name="toolTip">
     <string>Add an empty spacer filling a card slot</string>
+   </property>
+  </action>
+  <action name="action_add_custom_cards">
+   <property name="icon">
+    <iconset theme="list-add"/>
+   </property>
+   <property name="text">
+    <string>Add custom cards</string>
+   </property>
+  </action>
+  <action name="action_export_png">
+   <property name="icon">
+    <iconset theme="document-export"/>
+   </property>
+   <property name="text">
+    <string>Create image sequence</string>
+   </property>
+   <property name="toolTip">
+    <string>Export document as an image sequence</string>
+   </property>
+  </action>
+  <action name="action_export_card_images">
+   <property name="icon">
+    <iconset theme="document-export"/>
+   </property>
+   <property name="text">
+    <string>Export card images</string>
+   </property>
+   <property name="toolTip">
+    <string>Export all card images to a directory</string>
    </property>
   </action>
  </widget>

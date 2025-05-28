@@ -1,17 +1,18 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 from typing import Union, Type, Optional
 
@@ -19,11 +20,13 @@ from PyQt5.QtCore import QStringListModel, pyqtSlot as Slot, pyqtSignal as Signa
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox
 from PyQt5.QtGui import QIcon
 
+import mtg_proxy_printer.model.card
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 import mtg_proxy_printer.model.string_list
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.model.card import MTGSet
 from mtg_proxy_printer.ui.common import load_ui_from_file
 
 from mtg_proxy_printer.logger import get_logger
@@ -47,6 +50,7 @@ __all__ = [
 UiTypes = Union[Type[Ui_VerticalAddCardWidget], Type[Ui_HorizontalAddCardWidget]]
 StandardButton = QDialogButtonBox.StandardButton
 ItemDataRole = Qt.ItemDataRole
+SelectionFlag = QItemSelectionModel.SelectionFlag
 
 
 class AddCardWidget(QWidget):
@@ -108,8 +112,8 @@ class AddCardWidget(QWidget):
 
     def _setup_collector_number_box(self) -> QStringListModel:
         model = QStringListModel([], self.ui.collector_number_list)
-        self.set_name_model.rowsRemoved.connect(lambda: self.ui.collector_number_box.setEnabled(False))
-        self.set_name_model.rowsRemoved.connect(lambda: model.setStringList([]))
+        self.set_name_model.modelReset.connect(lambda: self.ui.collector_number_box.setEnabled(False))
+        self.set_name_model.modelReset.connect(lambda: model.setStringList([]))
 
         self.ui.collector_number_list.setModel(model)
         self.ui.collector_number_list.selectionModel().selectionChanged.connect(
@@ -133,7 +137,7 @@ class AddCardWidget(QWidget):
             self.set_name_model.set_set_data(sets)
             self.ui.set_name_filter.clear()
             self.ui.set_name_list.selectionModel().select(
-                self.set_name_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect)
+                self.set_name_model.createIndex(0, 0), SelectionFlag.ClearAndSelect)
 
     @Slot(QItemSelection)
     def set_name_list_selection_changed(self, current: QItemSelection):
@@ -145,15 +149,15 @@ class AddCardWidget(QWidget):
         valid = current_model_index.isValid()
         self.ui.collector_number_box.setEnabled(valid)
         if valid:
-            set_abbr = current_model_index.data(ItemDataRole.EditRole)
+            mtg_set: MTGSet = current_model_index.data(ItemDataRole.EditRole)
             collector_numbers = self.card_database.find_collector_numbers_matching(
-                self.current_card_name, set_abbr, self.current_language
+                self.current_card_name, mtg_set.code, self.current_language
             )
             logger.debug(
-                f'Selected: "{set_abbr}", language: {self.current_language}, matching {len(collector_numbers)} prints')
+                f'Selected: "{mtg_set.code}", language: {self.current_language}, matching {len(collector_numbers)} prints')
             self.collector_number_model.setStringList(collector_numbers)
             self.ui.collector_number_list.selectionModel().select(
-                self.collector_number_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect)
+                self.collector_number_model.createIndex(0, 0), SelectionFlag.ClearAndSelect)
 
     @Slot(QItemSelection)
     def collector_number_list_selection_changed(self, current: QItemSelection):
@@ -169,7 +173,7 @@ class AddCardWidget(QWidget):
         if selected_card_name in card_names:
             self.ui.card_name_list.selectionModel().select(
                 self.card_name_model.createIndex(card_names.index(selected_card_name), 0),
-                QItemSelectionModel.ClearAndSelect
+                SelectionFlag.ClearAndSelect
             )
         else:
             self.set_name_model.set_set_data([])
@@ -236,7 +240,7 @@ class AddCardWidget(QWidget):
             self.request_action.emit(ActionAddCard(opposing_face, copies))
 
     @staticmethod
-    def _log_added_card(card: mtg_proxy_printer.model.carddb.Card, copies: int):
+    def _log_added_card(card: mtg_proxy_printer.model.card.Card, copies: int):
         logger.debug(f"Adding {copies}× [{card.set.code.upper()}:{card.collector_number}] {card.name}")
 
     @Slot()
@@ -267,7 +271,7 @@ class AddCardWidget(QWidget):
     def current_set_name(self) -> Optional[str]:
         selected = self.ui.set_name_list.selectedIndexes()
         if selected:
-            return selected[0].data(ItemDataRole.EditRole)
+            return selected[0].data(ItemDataRole.EditRole).code
         else:
             return None
 

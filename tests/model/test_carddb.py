@@ -1,17 +1,18 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 import datetime
 import itertools
@@ -25,17 +26,17 @@ from hamcrest import *
 import pytest
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, \
-    Card, MTGSet
-from mtg_proxy_printer.model.imagedb import CacheContent
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY
+from mtg_proxy_printer.model.card import MTGSet, Card, CardList
+from mtg_proxy_printer.model.imagedb_files import CacheContent
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.units_and_sizes import UUID
 
-from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
+from ..helpers import assert_model_is_empty, fill_card_database_with_json_card, \
     fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation, update_database_printing_filters
-from .test_card_info_downloader import TestCaseData
+from ..test_card_info_downloader import TestCaseData
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]

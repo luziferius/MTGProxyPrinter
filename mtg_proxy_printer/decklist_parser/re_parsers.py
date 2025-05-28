@@ -1,17 +1,18 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import copy
 from collections import Counter
 import re
@@ -20,7 +21,8 @@ import typing
 from PyQt5.QtCore import QObject, QCoreApplication
 
 from mtg_proxy_printer.decklist_parser.common import ParsedDeck, ParserBase
-from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.card import Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -174,15 +176,15 @@ class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
     @staticmethod
     def supported_file_types() -> typing.Dict[str, typing.List[str]]:
         return {
-        QCoreApplication.translate(
-            "MagicWorkstationDeckDataFormatParser", "Magic Workstation Deck Data Format"): ["mwDeck"],
-    }
+            QCoreApplication.translate(
+                "MagicWorkstationDeckDataFormatParser", "Magic Workstation Deck Data Format"): ["mwDeck"],
+        }
     PREFIXES_TO_SKIP = frozenset({"//"})
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super().__init__(
             card_db, image_db,
-            re.compile(r"(SB: {2})?(?P<copies>\d+) \[(?P<set_code>\w+)?] (?P<name>.+)"), parent
+            re.compile(r"(SB: {1,2})?(?P<copies>\d+) \[(?P<set_code>\w+)?] (?P<name>.+)"), parent
         )
 
 
@@ -254,10 +256,22 @@ class XMageParser(GenericRegularExpressionDeckParser):
         return {
             QCoreApplication.translate("XMageParser", "XMage Deck file"): ["dck"],
         }
+
     PREFIXES_TO_SKIP = frozenset(("NAME", "LAYOUT"))
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super().__init__(
             card_db, image_db,
             re.compile(r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>[^]]+)] (?P<name>.+)"), parent
+        )
+
+
+class CardNameListParser(GenericRegularExpressionDeckParser):
+    """
+    A parser for plain card lists. One card name per line.
+    """
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+        super().__init__(
+            card_db, image_db,
+            re.compile(r"(?P<name>.+)"), parent
         )

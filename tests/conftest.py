@@ -1,17 +1,18 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 """
 This module is automatically discovered by pytest and all pytest
@@ -24,15 +25,18 @@ from pathlib import Path
 
 from PyQt5.QtGui import QColorConstants, QPixmap
 import pytest
+from hamcrest import assert_that, is_
 
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import CardSizes
-from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
-from tests.helpers import fill_card_database_with_json_cards
+from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.model.imagedb_files import ImageKey
+from tests.helpers import fill_card_database_with_json_cards, is_dataclass_equal_to
 
 
 @pytest.fixture(params=[False, True])
@@ -49,8 +53,7 @@ def card_db(request) -> CardDatabase:
 
 @pytest.fixture(params=[False, True])
 def empty_save_database(request) -> sqlite3.Connection:
-    db = mtg_proxy_printer.sqlite_helpers.open_database(
-            ":memory:", "document-v6", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION, check_same_thread=False)
+    db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", "document-v7", check_same_thread=False)
     if request.param:
         db.execute("PRAGMA reverse_unordered_selects = TRUE")
     return db
@@ -102,8 +105,16 @@ def mock_imagedb():
 def document_light(qtbot, mock_imagedb) -> Document:
     mock_card_db = unittest.mock.NonCallableMagicMock()
     mock_card_db.db = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
-        "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION, check_same_thread=False)
+        "carddb", check_same_thread=False)
     document = Document(mock_card_db, mock_imagedb)
     document.loader.db = mock_card_db.db
     yield document
     document.__dict__.clear()
+
+
+@pytest.fixture
+def page_layout() -> PageLayoutSettings:
+    layout = PageLayoutSettings.create_from_settings()
+    defaults = PageLayoutSettings.create_from_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
+    assert_that(layout, is_dataclass_equal_to(defaults))
+    return layout

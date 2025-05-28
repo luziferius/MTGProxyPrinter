@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>DocumentSettingsDialog</class>
  <widget class="QDialog" name="DocumentSettingsDialog">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>501</width>
-    <height>300</height>
-   </rect>
-  </property>
   <property name="windowTitle">
    <string>Set Document settings</string>
   </property>
@@ -44,32 +36,12 @@
    <signal>accepted()</signal>
    <receiver>DocumentSettingsDialog</receiver>
    <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>button_box</sender>
    <signal>rejected()</signal>
    <receiver>DocumentSettingsDialog</receiver>
    <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
-    </hint>
-   </hints>
   </connection>
  </connections>
 </ui>

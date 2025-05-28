@@ -1,22 +1,24 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 """Contains some constants, type definitions and the unit parsing support code"""
 import configparser
 import enum
 import re
+import sqlite3
 import typing
 from typing import Type, Dict, List, Optional, Set, TypeVar, NamedTuple, TypedDict, Union
 
@@ -40,7 +42,7 @@ if typing.TYPE_CHECKING:
 import mtg_proxy_printer.natsort
 
 def _setup_units() -> typing.Tuple[pint.UnitRegistry, QuantityT]:
-    registry = pint.UnitRegistry()
+    registry = pint.UnitRegistry(cache_folder=":auto:")
     resolution = registry.parse_expression("300dots/inch")
     print_context = pint.Context("print")
     print_context.add_transformation("[length]", "[printing_unit]", lambda _, x: x*RESOLUTION)
@@ -99,6 +101,9 @@ class CardSize(NamedTuple):
     def as_qsize_px(self):
         return QSize(round(self.width.magnitude), round(self.height.magnitude))
 
+    def to_save_data(self):
+        return f"{self.width.magnitude:.0f}x{self.height.magnitude:.0f}"
+
 
 @enum.unique
 class CardSizes(CardSize, enum.Enum):
@@ -113,6 +118,9 @@ class CardSizes(CardSize, enum.Enum):
     def from_bool(cls, value: bool) -> CardSize:
         return cls.OVERSIZED if value else cls.REGULAR
 
+
+sqlite3.register_adapter(CardSize, lambda item: item.to_save_data())
+sqlite3.register_adapter(CardSizes, lambda item: item.to_save_data())
 
 @enum.unique
 class PageType(enum.Enum):

@@ -1,23 +1,28 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import itertools
 import unittest.mock
+from multiprocessing.context import assert_spawning
+
+import pint
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
+from mtg_proxy_printer.model.card import CustomCard
 from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, QuantityT, UnitT, unit_registry, StrDict
 from mtg_proxy_printer.ui.page_scene import RenderMode
 
@@ -31,11 +36,6 @@ from tests.helpers import quantity_close_to, close_to_
 
 PageLayoutSettings = mtg_proxy_printer.model.document_loader.PageLayoutSettings
 mm: UnitT = unit_registry.mm
-
-@pytest.fixture
-def page_layout():
-    layout = PageLayoutSettings.create_from_settings()
-    return layout
 
 
 @pytest.mark.parametrize("page_type, expected", [
@@ -82,6 +82,9 @@ def test_page_layout_compute_page_card_capacity_default_value(page_layout: PageL
 ])
 def test_page_layout_compute_page_row_count(
         page_layout: PageLayoutSettings, page_type: PageType, row_spacing: QuantityT, expected: int):
+    assert_that(page_layout.page_height, quantity_close_to(297*mm), "Setup failed: Environment altered")
+    assert_that(page_layout.margin_top, quantity_close_to(5*mm), "Setup failed: Environment altered")
+    assert_that(page_layout.margin_bottom, quantity_close_to(5*mm), "Setup failed: Environment altered")
     page_layout.row_spacing = row_spacing
     assert_that(page_layout.compute_page_row_count(page_type), is_(equal_to(expected)))
 
@@ -133,17 +136,17 @@ def test_page_layout_lt_raises_type_error_on_incompatible_types(page_layout: Pag
     assert_that(calling(page_layout.__lt__).with_args(1), raises(TypeError))
 
 
-def test_page_layout_gt():
-    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings()
-    layout.page_height = 300*mm
-    assert_that(layout.compute_page_card_capacity(PageType.REGULAR), is_(0))
-    assert_that(layout, is_not(greater_than(layout)))
+def test_page_layout_gt(page_layout: PageLayoutSettings):
+    page_layout.paper_size = "Custom"
+    page_layout.paper_orientation = "Portrait"
+    page_layout.custom_page_width = 10*mm
+    assert_that(page_layout.compute_page_card_capacity(PageType.REGULAR), is_(0))
+    assert_that(page_layout, is_not(greater_than(page_layout)))
 
 
-def test_page_layout_lt():
-    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
-    assert_that(layout.compute_page_card_capacity(PageType.REGULAR), is_(9))
-    assert_that(layout, is_not(less_than(layout)))
+def test_page_layout_lt(page_layout: PageLayoutSettings):
+    assert_that(page_layout.compute_page_card_capacity(PageType.REGULAR), is_(9))
+    assert_that(page_layout, is_not(less_than(page_layout)))
 
 
 @pytest.mark.parametrize("values", [
@@ -244,16 +247,22 @@ def test_to_page_layout(
         width=close_to(min(height.to(mm).magnitude, width.to(mm).magnitude), 0.01),
     ))
 
+
 def test_to_save_file_data_contains_all_keys(page_layout: PageLayoutSettings):
-    data = [key for key, value in page_layout.to_save_file_data()]
+    data = [key for key, value in itertools.chain.from_iterable(page_layout.to_save_file_data())]
     assert_that(
         data,
         contains_inanyorder(*PageLayoutSettings.__annotations__.keys()),
     )
 
+
 def test_to_save_file_data_returns_only_acceptable_types(page_layout: PageLayoutSettings):
-    data = [value for key, value in page_layout.to_save_file_data()]
+    settings, dimensions = page_layout.to_save_file_data()
     assert_that(
-        data,
-        only_contains(instance_of(str), instance_of(float), instance_of(bool), instance_of(int)),
+        [value for key, value in settings],
+        only_contains(instance_of(str)),
+    )
+    assert_that(
+        [value for key, value in dimensions],
+        only_contains(instance_of(pint.Quantity)),
     )

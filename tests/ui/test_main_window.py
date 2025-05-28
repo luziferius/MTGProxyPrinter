@@ -1,20 +1,22 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import dataclasses
+
+from collections import Counter
 import pathlib
+import typing
 import unittest.mock
 
 
@@ -26,24 +28,27 @@ import pytest
 
 import mtg_proxy_printer.http_file
 import mtg_proxy_printer.downloader_base
+from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
+from mtg_proxy_printer.model.document_loader import CardType
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
 from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.ui.central_widget import Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, \
     Ui_TabbedCentralWidget
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
+from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
-from tests.helpers import fill_card_database_with_json_cards
+from tests.helpers import fill_card_database_with_json_cards, create_save_database_with
 from tests.document_controller.helpers import insert_card_in_page
 StandardButton = QMessageBox.StandardButton
 
 
 @pytest.fixture(params=[Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, Ui_TabbedCentralWidget])
-def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> MainWindow:
+def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> typing.Generator[MainWindow, None, None]:
     fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
     with unittest.mock.patch(
             "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",
@@ -64,72 +69,6 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Ma
         main_window.hide()
         del cid
         main_window.__dict__.clear()
-
-
-def test_main_window_hides_progress_bar_after_downloading_image_during_load(
-        qtbot: QtBot, main_window: MainWindow):
-    with unittest.mock.patch.object(  # Mock all HTTP-specific I/O calls
-                mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
-                "_read_content_length") as cl_mock, \
-            unittest.mock.patch.object(
-                mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
-                "getcode", return_value=200), \
-            unittest.mock.patch.object(
-                mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
-                "content_encoding", return_value="identity"), \
-            unittest.mock.patch.object(
-                mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
-                "seekable", return_value=True), \
-            unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.warning") as mb1, \
-            unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.critical") as mb2:
-        temp_path = main_window.image_db.db_path
-        mock_image_path = _create_mock_image(main_window.image_db, temp_path)
-        cl_mock.return_value = mock_image_path.stat().st_size
-        main_window.card_database.db.execute("UPDATE CardFace SET png_image_uri = ?", (mock_image_path.as_uri(),))
-        save_file_path = _create_save_file(temp_path)
-
-        assert_that(main_window.progress_bars.ui.inner_progress_bar.isVisible(), is_(False))
-        assert_that(main_window.progress_bars.ui.outer_progress_bar.isVisible(), is_(False))
-        assert_that(main_window.progress_bars.ui.inner_progress_label.isVisible(), is_(False))
-        assert_that(main_window.progress_bars.ui.outer_progress_label.isVisible(), is_(False))
-
-        with qtbot.wait_signals(
-                [(main_window.loading_state_changed, "loading_state_changed(True)"),
-                 (main_window.loading_state_changed, "loading_state_changed(False)"),
-                 (main_window.document.loader.finished, "finished"),], timeout=1000,
-                check_params_cbs=[lambda value: value, lambda value: not value, lambda: True]):
-            main_window.document.loader.load_document(save_file_path)
-            
-    assert_that(main_window.progress_bars.ui.inner_progress_bar.isVisible(), is_(False))
-    assert_that(main_window.progress_bars.ui.outer_progress_bar.isVisible(), is_(False))
-    assert_that(main_window.progress_bars.ui.inner_progress_label.isVisible(), is_(False))
-    assert_that(main_window.progress_bars.ui.outer_progress_label.isVisible(), is_(False))
-    mb1.assert_not_called()
-    mb2.assert_not_called()
-
-
-def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> pathlib.Path:
-    mock_image_path = temp_path / 'temp' / "0000579f-7b35-4ed3-b44c-db2a538066fe.png"
-    mock_image_path.parent.mkdir(parents=True, exist_ok=False)
-    image_db.get_blank().save(str(mock_image_path), "PNG", 100)
-    assert_that(mock_image_path.is_file(), is_(True))
-    return mock_image_path
-
-
-def _create_save_file(temp_path: pathlib.Path):
-    save_file_path = temp_path/"test.mtgproxies"
-    settings = PageLayoutSettings.create_from_settings().to_save_file_data()
-    #settings = dataclasses.asdict(PageLayoutSettings.create_from_settings()).items()
-    with open_database(save_file_path, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save_file:
-        save_file.execute(
-            "INSERT INTO Card (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)",
-            (1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r")
-        )
-        save_file.executemany(
-            "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
-            settings
-        )
-    return save_file_path
 
 
 def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
@@ -308,7 +247,7 @@ def test_undo_import_deck_list_with_last_page_selected_works_without_raising_exc
     page_capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
     card.image_file = main_window.image_db.get_blank()
     action = ActionImportDeckList(
-        [card]*page_capacity*2,
+        Counter({card: page_capacity*2}),
         False
     )
     document.apply(action)

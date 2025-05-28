@@ -1,17 +1,18 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 import logging
 import math
@@ -30,6 +31,9 @@ import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import \
     CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT, PageSizeManager, is_acceptable_page_size
+
+StandardLocation = QStandardPaths.StandardLocation
+LocateOption = QStandardPaths.LocateOption
 
 __all__ = [
     "settings",
@@ -130,17 +134,19 @@ DEFAULT_SETTINGS["documents"] = {
     "default-document-name": "",
 }
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
-    "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
-    "deck-list-search-path": QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
+    "document-save-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
+    "deck-list-search-path": QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory),
 }
 DEFAULT_SETTINGS["gui"] = {
     "central-widget-layout": "columnar",
     "show-toolbar": "True",
     "language": "",
+    "gui-open-maximized": "True",
+    "wizards-open-maximized": "False",
 }
 VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "columnar", "tabbed"}
 VALID_LANGUAGES = {
-    "", "de", "en_US",
+    "", "de", "en_US", "fr",
 }
 DEFAULT_SETTINGS["debug"] = {
     "cutelog-integration": "False",
@@ -167,7 +173,7 @@ DEFAULT_SETTINGS["printer"] = {
     "horizontal-offset": "0 mm",
 }
 DEFAULT_SETTINGS["pdf-export"] = {
-    "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
+    "pdf-export-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
     "pdf-page-count-limit": "0",
     "landscape-compatibility-workaround": "False",
 }
@@ -355,7 +361,8 @@ def _validate_gui_section(to_validate: ConfigParser, section_name: str = "gui"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
-    _validate_boolean(section, defaults, "show-toolbar")
+    for key in ("show-toolbar", "gui-open-maximized", "wizards-open-maximized"):
+        _validate_boolean(section, defaults, key)
     _validate_string_is_in_set(section, defaults, VALID_LANGUAGES, "language")
 
 

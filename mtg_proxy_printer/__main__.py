@@ -1,17 +1,18 @@
-# Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 # Import and implicitly load the settings first, before importing any modules that pull in GUI classes.
 import mtg_proxy_printer.settings
@@ -62,7 +63,7 @@ def main():
     handle_ssl_certificates()
     # According to https://doc.qt.io/qt-5/qt.html#ApplicationAttribute-enum,
     # Qt.AA_EnableHighDpiScaling has to be set prior to creating the QApplication instance
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
     _app = Application(arguments, sys.argv)
     if arguments.test_exit_on_launch:
         logger.info("Skipping startup tasks, because immediate application exit was requested.")

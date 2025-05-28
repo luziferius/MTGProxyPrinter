@@ -1,17 +1,18 @@
-# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#  You should have received a copy of the GNU General Public License
+#  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 
 """
 This module is responsible for downloading deck lists from a known list of deckbuilder websites.
@@ -240,9 +241,11 @@ class MoxfieldDownloader(DecklistDownloader):
 
     @staticmethod
     def post_process(data: bytes) -> str:
-        cards = MoxfieldDownloader._read_board(data, "mainboard")
-        cards += MoxfieldDownloader._read_board(data, "sideboard")
-        cards += MoxfieldDownloader._read_board(data, "commanders")
+        cards = []
+        for board in (
+                "mainboard", "sideboard", "commanders", "companions", "signatureSpells",
+                "attractions", "stickers", "contraptions", "planes", "schemes"):
+            cards += MoxfieldDownloader._read_board(data, f"boards.{board}.cards")
         buffer = StringIO(newline="")
         writer = csv.writer(buffer, MoxfieldDownloader.PARSER_CLASS.Dialect)
         writer.writerow(("count", "scryfall_id", "lang", "name", "set_code", "collector_number"))
@@ -261,8 +264,7 @@ class MoxfieldDownloader(DecklistDownloader):
     def map_to_download_url(self, decklist_url: str) -> str:
         match = self.DECKLIST_PATH_RE.match(decklist_url)
         moxfield_id = match.group("moxfield_id")
-        # TODO: Update to API version 3
-        return f"https://api.moxfield.com/v2/decks/all/{moxfield_id}"
+        return f"https://api.moxfield.com/v3/decks/all/{moxfield_id}"
 
 
 class DeckstatsDownloader(DecklistDownloader):
