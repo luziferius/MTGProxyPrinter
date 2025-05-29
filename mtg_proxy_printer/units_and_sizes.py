@@ -319,6 +319,7 @@ def is_acceptable_page_size(page_size: Union[PageSizeId, QPageSize]) -> bool:
 def read_page_size_enum() -> Dict[str, PageSizeId]:
     result = _read_enum(QPageSize, PageSizeId, {"Custom": PageSizeId.Custom})
     del result["LastPageSize"]
+
     for item, value in list(result.items()):
         if not is_acceptable_page_size(value):
             del result[item]

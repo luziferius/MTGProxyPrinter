@@ -35,7 +35,7 @@ from mtg_proxy_printer.units_and_sizes import \
 
 StandardLocation = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
-Territory = QLocale.Country
+Territory = QLocale.Country  # TODO: Adjust for PySide6
 PageSizeId = QPageSize.PageSizeId
 
 __all__ = [
