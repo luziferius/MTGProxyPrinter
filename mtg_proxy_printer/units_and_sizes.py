@@ -308,12 +308,18 @@ def _read_enum(container: Type, enum_class: Type[T], accumulator: Dict[str, T] =
 
 
 def is_acceptable_page_size(page_size: Union[PageSizeId, QPageSize]) -> bool:
+    """
+    To be acceptable, the paper must support at least one oversized card and margins
+    in both portrait and landscape orientation.
+    """
     if page_size == PageSizeId.Custom:
         return True
     size = QPageSize.size(page_size, QPageSize.Unit.Millimeter) \
         if isinstance(page_size, PageSizeId) else page_size.size(QPageSize.Unit.Millimeter)
-    return size.height() >= CardSizes.OVERSIZED.height.to(mm, "print").magnitude \
-        and size.width() >= CardSizes.OVERSIZED.width.to(mm, "print").magnitude
+    # TODO: Find a better way than this hack that adds 10mm of hard-coded margins.
+    card_height = CardSizes.OVERSIZED.height.to(mm, "print").magnitude + 10  # Add 10mm for margins
+    return size.height() >= card_height <= size.width() \
+        and size.height() >= card_height <= size.width()
 
 
 def read_page_size_enum() -> Dict[str, PageSizeId]:

@@ -37,6 +37,7 @@ StandardLocation = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
 Territory = QLocale.Country  # TODO: Adjust for PySide6
 PageSizeId = QPageSize.PageSizeId
+Orientation = QPageLayout.Orientation
 
 __all__ = [
     "settings",
@@ -106,7 +107,7 @@ VERSION_CHECK_RE = re.compile(
 
 # Below are the default application settings. How to define new ones:
 # - Add a key-value pair (String keys and values only) to a section or add a new section
-# - If adding a new section, also add a validator function for that section.
+#   - If adding a new section, also add a validator function for that section.
 # - Add the new key to the validator of the section it’s in. The validator has to check that the value can be properly
 #   cast into the expected type and perform a value range check.
 # - Add the option to the Settings window UI
@@ -143,16 +144,18 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-art-series-cards": "False",
     "hidden-sets": "",
 }
+
+DEFAULT_MARGINS = 5*mm
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed": "0 mm",
-    "paper-orientation": PageSizeManager.PageOrientationReverse[QPageLayout.Orientation.Portrait],
+    "paper-orientation": PageSizeManager.PageOrientationReverse[Orientation.Portrait],
     "paper-size": get_default_paper_size(),
     "paper-height": "297 mm",
     "paper-width": "210 mm",
-    "margin-top": "5 mm",
-    "margin-bottom": "5 mm",
-    "margin-left": "5 mm",
-    "margin-right": "5 mm",
+    "margin-top": str(DEFAULT_MARGINS),
+    "margin-bottom": str(DEFAULT_MARGINS),
+    "margin-left": str(DEFAULT_MARGINS),
+    "margin-right": str(DEFAULT_MARGINS),
     "row-spacing": "0 mm",
     "column-spacing": "0 mm",
     "print-cut-marker": "False",
