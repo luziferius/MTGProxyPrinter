@@ -20,9 +20,10 @@ import pathlib
 import re
 import typing
 import tokenize
+from collections import defaultdict
 
 import pint
-from PyQt5.QtCore import QStandardPaths
+from PyQt5.QtCore import QStandardPaths, QLocale
 from PyQt5.QtGui import QPageSize, QPageLayout
 from PyQt5.QtPrintSupport import QPrinterInfo
 
@@ -34,6 +35,8 @@ from mtg_proxy_printer.units_and_sizes import \
 
 StandardLocation = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
+Territory = QLocale.Country
+PageSizeId = QPageSize.PageSizeId
 
 __all__ = [
     "settings",
@@ -47,8 +50,32 @@ __all__ = [
 ]
 
 
+Letter = QPageSize.PageSizeId.Letter
+# https://www.unicode.org/cldr/charts/47/supplemental/territory_information.html
+LOCATION_PAPER_SIZE_TABLE = defaultdict(lambda:PageSizeId.A4, {
+    Territory.Belize: Letter,
+    Territory.Canada: Letter,
+    Territory.Chile: Letter,
+    Territory.Colombia: Letter,
+    Territory.CostaRica: Letter,
+    Territory.DominicanRepublic: Letter,
+    Territory.ElSalvador: Letter,
+    Territory.Guatemala: Letter,
+    Territory.Guyana: Letter,
+    Territory.Nicaragua: Letter,
+    Territory.Panama: Letter,
+    Territory.Philippines: Letter,
+    Territory.PuertoRico: Letter,
+    Territory.UnitedStates: Letter,
+    Territory.UnitedStatesMinorOutlyingIslands: Letter,
+    Territory.UnitedStatesVirginIslands: Letter,
+    Territory.Venezuela: Letter,
+})
+
+
 def get_default_paper_size() -> str:
-    default = PageSizeManager.PageSizeReverse[QPageSize.PageSizeId.A4]
+    system_country = QLocale.system().country()
+    default = PageSizeManager.PageSizeReverse[LOCATION_PAPER_SIZE_TABLE[system_country]]
     printer_info = QPrinterInfo.defaultPrinter()
     if printer_info.isNull():
         return default
