@@ -658,16 +658,17 @@ class PageScene(QGraphicsScene):
         )
 
     def update_card_bleeds(self):
-        full_bleed = distance_to_rounded_px(self.document.page_layout.card_bleed)
-        inner_bleed_h = distance_to_rounded_px(min(self.document.page_layout.row_spacing/2, full_bleed))
-        inner_bleed_v = distance_to_rounded_px(min(self.document.page_layout.column_spacing/2, full_bleed))
+        full_bleed = self.document.page_layout.card_bleed
+        full_bleed_px = distance_to_rounded_px(full_bleed)
+        inner_bleed_h_px = distance_to_rounded_px(min(self.document.page_layout.row_spacing/2, full_bleed))
+        inner_bleed_v_px = distance_to_rounded_px(min(self.document.page_layout.column_spacing/2, full_bleed))
         for item in self.card_items:
             neighbors = self._has_neighbors(item)
             item.bleeds.update_bleeds(
-                inner_bleed_h if neighbors.top else full_bleed,
-                inner_bleed_h if neighbors.bottom else full_bleed,
-                inner_bleed_v if neighbors.left else full_bleed,
-                inner_bleed_v if neighbors.right else full_bleed,
+                inner_bleed_h_px if neighbors.top else full_bleed_px,
+                inner_bleed_h_px if neighbors.bottom else full_bleed_px,
+                inner_bleed_v_px if neighbors.left else full_bleed_px,
+                inner_bleed_v_px if neighbors.right else full_bleed_px,
             )
 
     def _has_neighbors(self, item: CardItem) -> NeighborsPresent:
