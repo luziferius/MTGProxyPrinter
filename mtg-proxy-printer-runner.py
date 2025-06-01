@@ -27,33 +27,51 @@ root_path = pathlib.Path(__file__).parent.absolute().resolve()
 sys.path.insert(0, str(root_path))
 
 import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.ui.page_scene
 from mtg_proxy_printer.__main__ import main
 
 
 # These methods are wrapped by the profile() function
 # if this script is run using the kernprof line profiler.
 to_be_profiled_functions = {
-    mtg_proxy_printer.model.carddb.CardDatabase: [
-        "get_all_languages",
-        "get_card_names",
-        "is_valid_and_unique_card",
-        "get_cards_from_data",
-        "get_replacement_card_for_unknown_printing",
-        "_get_cards_from_data",
-        "find_collector_numbers_matching",
-        "find_sets_matching",
-        "find_related_cards",
-        "get_card_with_scryfall_id",
-        "get_opposing_face",
-        "guess_language_from_name",
-        "translate_card_name",
-        "is_removed_printing",
-        "cards_not_used_since",
-        "cards_used_less_often_then",
-        "_translate_card",
-        "store_current_printing_filters",
-        "_update_cached_data",
-        "get_all_cards_from_image_cache",
+    #mtg_proxy_printer.model.carddb.CardDatabase: [
+    #    "get_all_languages",
+    #    "get_card_names",
+    #    "is_valid_and_unique_card",
+    #    "get_cards_from_data",
+    #    "get_replacement_card_for_unknown_printing",
+    #    "_get_cards_from_data",
+    #    "find_collector_numbers_matching",
+    #    "find_sets_matching",
+    #    "find_related_cards",
+    #    "get_card_with_scryfall_id",
+    #    "get_opposing_face",
+    #    "guess_language_from_name",
+    #    "translate_card_name",
+    #    "is_removed_printing",
+    #    "cards_not_used_since",
+    #    "cards_used_less_often_then",
+    #    "_translate_card",
+    #    "store_current_printing_filters",
+    #    "_update_cached_data",
+    #    "get_all_cards_from_image_cache",
+    #],
+    mtg_proxy_printer.ui.page_scene.CardBleeds: [
+        "update_bleeds",
+        "from_card",
+    ],
+    mtg_proxy_printer.ui.page_scene.CardItem: [
+        "__init__",
+    ],
+    mtg_proxy_printer.ui.page_scene.PageScene: [
+        "remove_cut_markers",
+        "draw_cut_markers",
+        "_draw_cards",
+        "update_card_bleeds",
+        "draw_card",
+        "_compute_position_for_image",
+        "compute_page_column_count",
+        "_has_neighbors",
     ],
 }
 
