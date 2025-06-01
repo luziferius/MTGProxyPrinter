@@ -677,6 +677,7 @@ class PageScene(QGraphicsScene):
         )
 
     @staticmethod
+    @functools.lru_cache()
     def _distance_to_rounded_px(value: QuantityT) -> int:
         return round(value.to("pixel", "print").magnitude)
 
