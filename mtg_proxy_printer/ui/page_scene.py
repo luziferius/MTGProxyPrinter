@@ -74,6 +74,11 @@ class CutMarkerParameters(typing.NamedTuple):
     image_spacing: QuantityT
 
 
+@functools.lru_cache(None)
+def distance_to_rounded_px(value: QuantityT) -> int:
+    return round(value.to("pixel", "print").magnitude)
+
+
 def scale_to_pixel(value: float) -> float:
     value: float = (RESOLUTION*value*unit_registry.millimeter).to("pixel").magnitude
     return value
@@ -344,7 +349,7 @@ class PageScene(QGraphicsScene):
     @property
     def x_offset(self) -> int:
         return 0 if RenderMode.ON_SCREEN in self.render_mode \
-            else self._distance_to_rounded_px(settings["printer"].get_quantity("horizontal-offset"))
+            else distance_to_rounded_px(settings["printer"].get_quantity("horizontal-offset"))
 
     @property
     def card_items(self) -> typing.List[CardItem]:
@@ -448,7 +453,7 @@ class PageScene(QGraphicsScene):
         page_layout = self.document.page_layout
         font_metrics = QFontMetrics(self.document_title_text.font())
         space_width_px = font_metrics.horizontalAdvance(" ")
-        margins_px = self._distance_to_rounded_px(page_layout.margin_left + page_layout.margin_right)
+        margins_px = distance_to_rounded_px(page_layout.margin_left + page_layout.margin_right)
         width = self.width()-margins_px-4
         available_widths_px = itertools.chain(
             [width-QFontMetrics(self.page_number_text.font()).horizontalAdvance("999/999")],
@@ -603,18 +608,18 @@ class PageScene(QGraphicsScene):
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
         page_layout: PageLayoutSettings = self.document.page_layout
-        page_width = self._distance_to_rounded_px(page_layout.page_width)
-        page_height = self._distance_to_rounded_px(page_layout.page_height)
+        page_width = distance_to_rounded_px(page_layout.page_width)
+        page_height = distance_to_rounded_px(page_layout.page_height)
 
-        left_margin = self._distance_to_rounded_px(page_layout.margin_left)
-        top_margin = self._distance_to_rounded_px(page_layout.margin_top)
+        left_margin = distance_to_rounded_px(page_layout.margin_left)
+        top_margin = distance_to_rounded_px(page_layout.margin_top)
 
         card_size = CardSizes.for_page_type(page_type).as_qsize_px()
         image_height: int = card_size.height()
         image_width: int = card_size.width()
 
-        column_spacing = self._distance_to_rounded_px(page_layout.column_spacing)
-        row_spacing = self._distance_to_rounded_px(page_layout.row_spacing)
+        column_spacing = distance_to_rounded_px(page_layout.column_spacing)
+        row_spacing = distance_to_rounded_px(page_layout.row_spacing)
 
         column_count = page_layout.compute_page_column_count(page_type)
         row_count = page_layout.compute_page_row_count(page_type)
@@ -677,11 +682,6 @@ class PageScene(QGraphicsScene):
             self.itemAt(center_pos+horizontal, identity) not in nothing,
         )
 
-    @staticmethod
-    @functools.lru_cache(None)
-    def _distance_to_rounded_px(value: QuantityT) -> int:
-        return round(value.to("pixel", "print").magnitude)
-
     def remove_cut_markers(self):
         for line in self.cut_lines:
             self.removeItem(line)
@@ -716,17 +716,17 @@ class PageScene(QGraphicsScene):
             ))
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> typing.Generator[float, None, None]:
-        spacing = self._distance_to_rounded_px(parameters.image_spacing)
+        spacing = distance_to_rounded_px(parameters.image_spacing)
         card_size: int = round(parameters.card_size.magnitude)
 
         # Excessively large margins may shift the page content off-center. Clamp the border to the non-negative range
         # to avoid placing marker lines out of the drawing range
         border = (
-            self._distance_to_rounded_px(parameters.total_space)
+            distance_to_rounded_px(parameters.total_space)
             - card_size * parameters.item_count
             - spacing * (parameters.item_count - 1)
         ) / 2
-        margin = self._distance_to_rounded_px(parameters.margin)
+        margin = distance_to_rounded_px(parameters.margin)
         border = max(border, margin)
         if RenderMode.IMPLICIT_MARGINS in self.render_mode:
             border -= margin

@@ -65,6 +65,9 @@ to_be_profiled_functions = {
     mtg_proxy_printer.ui.page_scene.CardItem: [
         "__init__",
     ],
+    mtg_proxy_printer.ui.page_scene: [
+        "distance_to_rounded_px",
+    ],
     mtg_proxy_printer.ui.page_scene.PageScene: [
         "remove_cut_markers",
         "draw_cut_markers",
