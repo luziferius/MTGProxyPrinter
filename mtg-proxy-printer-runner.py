@@ -63,6 +63,14 @@ to_be_profiled_functions = {
         "update_bleeds",
         "from_card",
     ],
+    mtg_proxy_printer.ui.page_scene.CardBleedItem: [
+        "__init__",
+        "update_bleed_size",
+    ],
+    mtg_proxy_printer.ui.page_scene.CardBleedCornerItem: [
+        "__init__",
+        "update_bleed_size",
+    ],
     mtg_proxy_printer.ui.page_scene.CardItem: [
         "__init__",
     ],

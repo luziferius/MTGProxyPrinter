@@ -92,8 +92,7 @@ class CardBleedItem(QGraphicsPixmapItem):
         self.setPos(pos)
         self.setZValue(RenderLayers.BLEEDS.value)
 
-    def update_bleed_size(self, bleed_width: QuantityT):
-        size_px: float = distance_to_rounded_px(bleed_width)
+    def update_bleed_size(self, size_px: int):
         transformation = self.transform()
         transformation.reset()
         sx, sy = (self.sign*size_px, 1.0) \
@@ -128,9 +127,7 @@ class CardBleedCornerItem(QGraphicsPolygonItem):
         self.setBrush(card.corner_color(corner))
         self.setZValue(RenderLayers.BLEEDS.value+0.1)
 
-    def update_bleed_size(self, h_width_mm: QuantityT, v_width_mm: QuantityT):
-        h_px: float = distance_to_rounded_px(h_width_mm)
-        v_px: float = distance_to_rounded_px(v_width_mm)
+    def update_bleed_size(self, h_px: int, v_px: int):
         left = -v_px
         top = -h_px
         bottom = self.corner_length
@@ -182,10 +179,10 @@ class CardBleeds(typing.NamedTuple):
             CardBleedCornerItem(card, CardCorner.BOTTOM_LEFT),
             CardBleedCornerItem(card, CardCorner.BOTTOM_RIGHT),
         )
-        bleeds.update_bleeds(ZERO_WIDTH, ZERO_WIDTH, ZERO_WIDTH, ZERO_WIDTH)
+        bleeds.update_bleeds(0, 0, 0, 0)
         return bleeds
 
-    def update_bleeds(self, top: QuantityT, bottom: QuantityT, left: QuantityT, right: QuantityT):
+    def update_bleeds(self, top: int, bottom: int, left: int, right: int):
         self.top.update_bleed_size(top)
         self.bottom.update_bleed_size(bottom)
         self.left.update_bleed_size(left)
@@ -661,9 +658,9 @@ class PageScene(QGraphicsScene):
         )
 
     def update_card_bleeds(self):
-        full_bleed = self.document.page_layout.card_bleed
-        inner_bleed_h: QuantityT = min(self.document.page_layout.row_spacing/2, full_bleed)
-        inner_bleed_v: QuantityT = min(self.document.page_layout.column_spacing/2, full_bleed)
+        full_bleed = distance_to_rounded_px(self.document.page_layout.card_bleed)
+        inner_bleed_h = distance_to_rounded_px(min(self.document.page_layout.row_spacing/2, full_bleed))
+        inner_bleed_v = distance_to_rounded_px(min(self.document.page_layout.column_spacing/2, full_bleed))
         for item in self.card_items:
             neighbors = self._has_neighbors(item)
             item.bleeds.update_bleeds(
