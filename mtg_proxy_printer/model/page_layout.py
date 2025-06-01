@@ -31,8 +31,8 @@ except ImportError:
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, QuantityT
-
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, QuantityT, \
+    distance_to_mm
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.page_scene import RenderMode
 logger = get_logger(__name__)
@@ -80,8 +80,8 @@ class PageLayoutSettings:
 
     def to_page_layout(self, render_mode: "RenderMode") -> QPageLayout:
         margins = QMarginsF(
-            self.margin_left.to("mm").magnitude, self.margin_top.to("mm").magnitude,
-            self.margin_right.to("mm").magnitude, self.margin_bottom.to("mm").magnitude) \
+            distance_to_mm(self.margin_left), distance_to_mm(self.margin_top),
+            distance_to_mm(self.margin_right), distance_to_mm(self.margin_bottom)) \
             if render_mode.IMPLICIT_MARGINS in render_mode else QMarginsF(0, 0, 0, 0)
         landscape_workaround = mtg_proxy_printer.settings.settings["printer"].getboolean(
             "landscape-compatibility-workaround")
@@ -89,7 +89,7 @@ class PageLayoutSettings:
             if self.page_width < self.page_height or landscape_workaround \
             else QPageLayout.Orientation.Landscape
         page_size = QPageSize(
-            QSizeF(*sorted([self.page_width.to("mm").magnitude, self.page_height.to("mm").magnitude])),
+            QSizeF(*sorted([distance_to_mm(self.page_width), distance_to_mm(self.page_height)])),
             QPageSize.Unit.Millimeter,
         )
         layout = QPageLayout(
@@ -135,27 +135,27 @@ class PageLayoutSettings:
     def compute_page_column_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card columns that fit on this page."""
         card_size: CardSize = CardSizes.for_page_type(page_type)
-        card_width: QuantityT = card_size.width.to("mm", "print")
-        available_width: QuantityT = self.page_width - (self.margin_left + self.margin_right)
+        card_width = distance_to_mm(card_size.width)
+        available_width = distance_to_mm(self.page_width - (self.margin_left + self.margin_right))
 
         if available_width <= card_width:
             return 0
         cards = 1 + math.floor(
             (available_width - card_width) /
-            (card_width + self.column_spacing))
+            (card_width + distance_to_mm(self.column_spacing)))
         return cards
 
     def compute_page_row_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card rows that fit on this page."""
         card_size: CardSize = CardSizes.for_page_type(page_type)
-        card_height: QuantityT = card_size.height.to("mm", "print")
-        available_height: QuantityT = self.page_height - (self.margin_top + self.margin_bottom)
+        card_height = distance_to_mm(card_size.height)
+        available_height = distance_to_mm(self.page_height - (self.margin_top + self.margin_bottom))
 
         if available_height <= card_height:
             return 0
         cards = 1 + math.floor(
             (available_height - card_height) /
-            (card_height + self.row_spacing)
+                (card_height + distance_to_mm(self.row_spacing))
         )
         return cards
 
