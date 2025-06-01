@@ -40,6 +40,8 @@ ItemDataRole = Qt.ItemDataRole
 ColorGroup = QPalette.ColorGroup
 ColorRole = QPalette.ColorRole
 SortOrder = Qt.SortOrder
+ZERO_WIDTH: QuantityT = 0 * unit_registry.mm
+
 
 @enum.unique
 class RenderLayers(enum.IntEnum):
@@ -184,8 +186,7 @@ class CardBleeds(typing.NamedTuple):
             CardBleedCornerItem(card, CardCorner.BOTTOM_LEFT),
             CardBleedCornerItem(card, CardCorner.BOTTOM_RIGHT),
         )
-        zero_width = unit_registry("0 mm")
-        bleeds.update_bleeds(zero_width, zero_width, zero_width, zero_width)
+        bleeds.update_bleeds(ZERO_WIDTH, ZERO_WIDTH, ZERO_WIDTH, ZERO_WIDTH)
         return bleeds
 
     def update_bleeds(self, top: QuantityT, bottom: QuantityT, left: QuantityT, right: QuantityT):
@@ -677,7 +678,7 @@ class PageScene(QGraphicsScene):
         )
 
     @staticmethod
-    @functools.lru_cache()
+    @functools.lru_cache(None)
     def _distance_to_rounded_px(value: QuantityT) -> int:
         return round(value.to("pixel", "print").magnitude)
 
