@@ -205,6 +205,7 @@ class CardItem(QGraphicsItemGroup):
         super().__init__(parent)
         document.page_layout_changed.connect(self.on_page_layout_changed)
         card: Card = index.data(ItemDataRole.UserRole)
+        self.index = QPersistentModelIndex(index)
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
         self.card_pixmap_item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
         self.bleeds = CardBleeds.from_card(card)
@@ -659,19 +660,18 @@ class PageScene(QGraphicsScene):
             )
 
     def _has_neighbors(self, item: CardItem) -> NeighborsPresent:
-        item_rect = item.boundingRect()
-        center_pos = item.pos() + QPointF(item_rect.width(), item_rect.height())/2
-        identity = QTransform()  # TODO: Is this okay to do?
-        vertical = QPointF(0, item_rect.height())
-        horizontal = QPointF(item_rect.width(), 0)
-        # Values to ignore by itemAt(). ON_PAPER, or outside the scene rect, results are None.
-        # ON_SCREEN, the background is returned for empty spaces, so ignore both.
-        nothing = (self.background, None)
+        index_row = item.index.row()
+        cards_on_page = self.document.rowCount(self.selected_page)
+        column_count = self.document.page_layout.compute_page_column_count(self.selected_page.data(ItemDataRole.UserRole))
         return NeighborsPresent(
-            self.itemAt(center_pos - vertical, identity) not in nothing,
-            self.itemAt(center_pos + vertical, identity) not in nothing,
-            self.itemAt(center_pos-horizontal, identity) not in nothing,
-            self.itemAt(center_pos+horizontal, identity) not in nothing,
+            # Cards in all rows except the top row have cards above them
+            index_row >= column_count,
+            # There is a card below, iff there are at least column_count more cards on the page
+            index_row + column_count < cards_on_page,
+            # There is a card on the left, iff the row modulo column_count is non-zero
+            index_row % column_count > 0,
+            # There is a card on the right, iff there is an additional card, and this is not on the right-most column.
+            index_row % column_count == column_count - 1 and index_row + 1 < cards_on_page
         )
 
     def remove_cut_markers(self):
