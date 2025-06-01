@@ -201,35 +201,35 @@ class CardItem(QGraphicsItemGroup):
 
     CORNER_SIZE_PX = 50
 
-    def __init__(self, card: Card, document: Document, parent: QGraphicsItem = None):
+    def __init__(self, index: QModelIndex, document: Document, parent: QGraphicsItem = None):
         super().__init__(parent)
         document.page_layout_changed.connect(self.on_page_layout_changed)
-        self.card = card
+        card: Card = index.data(ItemDataRole.UserRole)
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
         self.card_pixmap_item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
         self.bleeds = CardBleeds.from_card(card)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
-        self.corners = self.create_corners(document.page_layout.draw_sharp_corners)
+        self.corners = self.create_corners(card, document.page_layout.draw_sharp_corners)
         self._draw_content()
         self.setZValue(RenderLayers.CARDS.value)
 
-    def create_corners(self, draw_corners: bool) -> typing.List[QGraphicsRectItem]:
-        image = self.card.image_file
+    def create_corners(self, card: Card, draw_corners: bool) -> typing.List[QGraphicsRectItem]:
+        image = card.image_file
         card_height, card_width = image.height(), image.width()
         card_width = image.width()
         left, right = 0, card_width-self.CORNER_SIZE_PX
         top, bottom = 0, card_height-self.CORNER_SIZE_PX
         return [
-            self._create_corner(CardCorner.TOP_LEFT, QPointF(left, top), draw_corners),
-            self._create_corner(CardCorner.TOP_RIGHT, QPointF(right, top), draw_corners),
-            self._create_corner(CardCorner.BOTTOM_LEFT, QPointF(left, bottom), draw_corners),
-            self._create_corner(CardCorner.BOTTOM_RIGHT, QPointF(right, bottom), draw_corners),
+            self._create_corner(card, CardCorner.TOP_LEFT, QPointF(left, top), draw_corners),
+            self._create_corner(card, CardCorner.TOP_RIGHT, QPointF(right, top), draw_corners),
+            self._create_corner(card, CardCorner.BOTTOM_LEFT, QPointF(left, bottom), draw_corners),
+            self._create_corner(card, CardCorner.BOTTOM_RIGHT, QPointF(right, bottom), draw_corners),
         ]
 
-    def _create_corner(self, corner: CardCorner, position: QPointF, opaque: bool) -> QGraphicsRectItem:
+    def _create_corner(self, card: Card, corner: CardCorner, position: QPointF, opaque: bool) -> QGraphicsRectItem:
         rect = QGraphicsRectItem(0, 0, self.CORNER_SIZE_PX, self.CORNER_SIZE_PX)
-        color = self.card.corner_color(corner)
+        color = card.corner_color(corner)
         rect.setPos(position)
         rect.setPen(self.corner_pen)
         rect.setBrush(color)
@@ -496,19 +496,19 @@ class PageScene(QGraphicsScene):
         return page_size
 
     def _draw_cards(self):
-        index = self.selected_page.sibling(self.selected_page.row(), 0)
+        parent = self.selected_page.sibling(self.selected_page.row(), 0)
+        document = self.selected_page.model()
         page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
-        images_to_draw = self.selected_page.model().rowCount(index)
+        images_to_draw = document.rowCount(parent)
         logger.info(f"Drawing {images_to_draw} cards")
         for row in range(images_to_draw):
-            self.draw_card(row, page_type)
+            self.draw_card(document.index(row, PageColumns.Image, parent), page_type)
 
-    def draw_card(self, row: int, page_type: PageType, next_item: CardItem = None):
-        index = self.document.index(row, PageColumns.Image, self.selected_page)
-        position = self._compute_position_for_image(row, page_type)
+    def draw_card(self, index: QModelIndex, page_type: PageType, next_item: CardItem = None):
+        position = self._compute_position_for_image(index.row(), page_type)
         if index.data(ItemDataRole.DisplayRole) is not None:  # Card has a QPixmap set
             card: Card = index.data(ItemDataRole.UserRole)
-            card_item = CardItem(card, self.document)
+            card_item = CardItem(index, self.document)
             self.addItem(card_item)
             card_item.setPos(position)
             if next_item is not None:
@@ -544,12 +544,13 @@ class PageScene(QGraphicsScene):
                 # Thes cases can be ignored, as the pixmap never changes
                 and top_left.column() < bottom_right.column()
         ):
-            page_type: PageType = top_left.parent().data(ItemDataRole.UserRole)
+            parent = top_left.parent()
+            page_type: PageType = parent.data(ItemDataRole.UserRole)
             card_items = self.card_items
             for row in range(top_left.row(), bottom_right.row()+1):
                 logger.debug(f"Card {row} on the current page was replaced, replacing image.")
                 current_item = card_items[row]
-                self.draw_card(row, page_type, current_item)
+                self.draw_card(top_left.siblingAtRow(row), page_type, current_item)
                 self.removeItem(current_item)
 
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
@@ -560,7 +561,7 @@ class PageScene(QGraphicsScene):
             page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
             logger.debug(f"Added {inserted_cards} cards to the currently shown page, drawing them.")
             for new in range(first, last+1):
-                self.draw_card(new, page_type, next_item)
+                self.draw_card(parent.child(new, PageColumns.Image), page_type, next_item)
             if needs_reorder:
                 logger.debug("Cards added in the middle of the page, re-order existing cards.")
                 self.update_card_positions()
@@ -595,7 +596,7 @@ class PageScene(QGraphicsScene):
             logger.debug("Cards moved onto the currently shown page, calling card insertion handler.")
             self.on_rows_inserted(destination, row, row+end-start)
 
-    @functools.lru_cache
+    @functools.lru_cache(None)
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
         page_layout: PageLayoutSettings = self.document.page_layout

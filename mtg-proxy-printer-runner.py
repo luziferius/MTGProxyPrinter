@@ -67,8 +67,6 @@ to_be_profiled_functions = {
         "__init__",
     ],
     mtg_proxy_printer.ui.page_scene.PageScene: [
-        "remove_cut_markers",
-        "draw_cut_markers",
         "_draw_cards",
         "update_card_bleeds",
         "draw_card",
