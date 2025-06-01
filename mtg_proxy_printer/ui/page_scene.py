@@ -277,15 +277,10 @@ class PageScene(QGraphicsScene):
         page_layout = document.page_layout
         super().__init__(self.get_document_page_size(page_layout), parent)
         self.document = document
-        self.document.rowsInserted.connect(self.on_rows_inserted)
-        self.document.rowsRemoved.connect(self.on_rows_removed)
-        self.document.rowsAboutToBeRemoved.connect(self.on_rows_about_to_be_removed)
-        self.document.rowsMoved.connect(self.on_rows_moved)
-        self.document.current_page_changed.connect(self.on_current_page_changed)
-        self.document.dataChanged.connect(self.on_data_changed)
-        self.document.page_type_changed.connect(self.on_page_type_changed)
-        self.document.page_layout_changed.connect(self.on_page_layout_changed)
+        self._connect_document_signals(document)
         self.selected_page = self.document.get_current_page_index()
+        self.row_count = self.column_count = 1
+        self._update_row_and_column_counts(document)
         self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.BrushStyle.SolidPattern))
         background_color = self.get_background_color(render_mode)
         logger.debug(f"Drawing background rectangle")
@@ -300,6 +295,23 @@ class PageScene(QGraphicsScene):
         if page_layout.draw_cut_markers:
             self.draw_cut_markers()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {render_mode}")
+        
+    def _connect_document_signals(self, document: Document):
+        document.rowsInserted.connect(self.on_rows_inserted)
+        document.rowsRemoved.connect(self.on_rows_removed)
+        document.rowsAboutToBeRemoved.connect(self.on_rows_about_to_be_removed)
+        document.rowsMoved.connect(self.on_rows_moved)
+        document.current_page_changed.connect(self.on_current_page_changed)
+        document.dataChanged.connect(self.on_data_changed)
+        document.page_type_changed.connect(self.on_page_type_changed)
+        document.page_layout_changed.connect(self.on_page_layout_changed)
+
+    def _update_row_and_column_counts(self, document: Document):
+        page_type = document.currently_edited_page.page_type()
+        layout = document.page_layout
+        self.column_count = layout.compute_page_column_count(page_type)
+        self.row_count = layout.compute_page_row_count(page_type)
+        self._compute_position_for_image.cache_clear()
 
     @staticmethod
     def _create_text_item(font_size: float = 40) -> QGraphicsSimpleTextItem:
@@ -367,6 +379,7 @@ class PageScene(QGraphicsScene):
 
         if PageType.OVERSIZED in page_types and len(page_types) > 1:  # Switching to or from an oversized page
             logger.debug("New page contains cards of different size, re-drawing cut markers")
+            self._update_row_and_column_counts(self.document)
             self.remove_cut_markers()
             self.draw_cut_markers()
         for item in self.card_items:
@@ -413,6 +426,7 @@ class PageScene(QGraphicsScene):
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
         logger.info("Applying new document settings …")
         new_page_size = self.get_document_page_size(new_page_layout)
+        self._update_row_and_column_counts(self.document)
         old_size = self.sceneRect()
         size_changed = old_size != new_page_size
         if size_changed:
@@ -427,6 +441,7 @@ class PageScene(QGraphicsScene):
         self.update_card_positions()
         self.update_card_bleeds()
         self._update_text_items(new_page_layout)
+
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
             # in the available space or is now too small, so emit a notification to allow the display widget to adjust.
@@ -532,6 +547,7 @@ class PageScene(QGraphicsScene):
     @Slot(QModelIndex)
     def on_page_type_changed(self, page: QModelIndex):
         if page.row() == self.selected_page.row():
+            self._update_row_and_column_counts(self.document)
             self.update_card_positions()
             if self.document.page_layout.draw_cut_markers:
                 self.remove_cut_markers()
@@ -614,22 +630,20 @@ class PageScene(QGraphicsScene):
         column_spacing = distance_to_rounded_px(page_layout.column_spacing)
         row_spacing = distance_to_rounded_px(page_layout.row_spacing)
 
-        column_count = page_layout.compute_page_column_count(page_type)
-        row_count = page_layout.compute_page_row_count(page_type)
-        row, column = divmod(index_row, column_count)
+        row, column = divmod(index_row, self.column_count)
 
         # Excessively large margins may shift the page content off-center. Clamp the borders to the non-negative range
         # to avoid clipping images off
         left_border = max(
             page_width
-            - image_width * column_count
-            - column_spacing * (column_count - 1),
+            - image_width * self.column_count
+            - column_spacing * (self.column_count - 1),
             0
         ) / 2
         top_border = max(
             page_height
-            - image_height * row_count
-            - row_spacing * (row_count - 1),
+            - image_height * self.row_count
+            - row_spacing * (self.row_count - 1),
             0
         ) / 2
 
@@ -662,16 +676,15 @@ class PageScene(QGraphicsScene):
     def _has_neighbors(self, item: CardItem) -> NeighborsPresent:
         index_row = item.index.row()
         cards_on_page = self.document.rowCount(self.selected_page)
-        column_count = self.document.page_layout.compute_page_column_count(self.selected_page.data(ItemDataRole.UserRole))
         return NeighborsPresent(
             # Cards in all rows except the top row have cards above them
-            index_row >= column_count,
+            index_row >= self.column_count,
             # There is a card below, iff there are at least column_count more cards on the page
-            index_row + column_count < cards_on_page,
+            index_row + self.column_count < cards_on_page,
             # There is a card on the left, iff the row modulo column_count is non-zero
-            index_row % column_count > 0,
+            index_row % self.column_count > 0,
             # There is a card on the right, iff there is an additional card, and this is not on the right-most column.
-            index_row % column_count == column_count - 1 and index_row + 1 < cards_on_page
+            index_row % self.column_count + 1 == self.column_count and index_row + 1 < cards_on_page
         )
 
     def remove_cut_markers(self):

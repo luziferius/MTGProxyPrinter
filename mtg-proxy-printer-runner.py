@@ -67,7 +67,6 @@ to_be_profiled_functions = {
         "__init__",
     ],
     mtg_proxy_printer.ui.page_scene.PageScene: [
-        "_draw_cards",
         "update_card_bleeds",
         "draw_card",
         "_compute_position_for_image",
