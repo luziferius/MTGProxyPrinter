@@ -17,6 +17,7 @@
 """Contains some constants, type definitions and the unit parsing support code"""
 import configparser
 import enum
+import functools
 import re
 import sqlite3
 import typing
@@ -41,6 +42,21 @@ def _setup_units() -> typing.Tuple[pint.UnitRegistry, QuantityT]:
     print_context.add_transformation("[printing_unit]", "[length]", lambda _, x: x/RESOLUTION)
     registry.add_context(print_context)
     return registry, resolution
+
+
+@functools.lru_cache(None)
+def distance_to_rounded_px(value: QuantityT) -> int:
+    return round(value.to("pixel", "print").magnitude)
+
+
+@functools.lru_cache(None)
+def distance_to_px(value: QuantityT) -> float:
+    return value.to("pixel", "print").magnitude
+
+
+@functools.lru_cache(None)
+def distance_to_mm(value: QuantityT) -> float:
+    return value.to("mm", "print").magnitude
 
 
 unit_registry, RESOLUTION = _setup_units()

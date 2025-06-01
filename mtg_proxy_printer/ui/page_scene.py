@@ -30,7 +30,8 @@ from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.settings import settings
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, RESOLUTION, CardSizes, CardSize, QuantityT
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, distance_to_rounded_px, CardSizes, CardSize, \
+    QuantityT
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -74,16 +75,6 @@ class CutMarkerParameters(typing.NamedTuple):
     image_spacing: QuantityT
 
 
-@functools.lru_cache(None)
-def distance_to_rounded_px(value: QuantityT) -> int:
-    return round(value.to("pixel", "print").magnitude)
-
-
-def scale_to_pixel(value: float) -> float:
-    value: float = (RESOLUTION*value*unit_registry.millimeter).to("pixel").magnitude
-    return value
-
-
 class CardBleedItem(QGraphicsPixmapItem):
 
     def __init__(self, image: QPixmap, rect: QRect, pos: QPoint = QPoint(0, 0), parent=None):
@@ -102,7 +93,7 @@ class CardBleedItem(QGraphicsPixmapItem):
         self.setZValue(RenderLayers.BLEEDS.value)
 
     def update_bleed_size(self, bleed_width: QuantityT):
-        size_px: float = bleed_width.to("pixel", "print").magnitude
+        size_px: float = distance_to_rounded_px(bleed_width)
         transformation = self.transform()
         transformation.reset()
         sx, sy = (self.sign*size_px, 1.0) \
@@ -138,8 +129,8 @@ class CardBleedCornerItem(QGraphicsPolygonItem):
         self.setZValue(RenderLayers.BLEEDS.value+0.1)
 
     def update_bleed_size(self, h_width_mm: QuantityT, v_width_mm: QuantityT):
-        h_px: float = h_width_mm.to("pixel", "print").magnitude
-        v_px: float = v_width_mm.to("pixel", "print").magnitude
+        h_px: float = distance_to_rounded_px(h_width_mm)
+        v_px: float = distance_to_rounded_px(v_width_mm)
         left = -v_px
         top = -h_px
         bottom = self.corner_length
@@ -387,8 +378,8 @@ class PageScene(QGraphicsScene):
             self.update_card_bleeds()
 
     def _update_page_text_y(self):
-        # Put the text labels below the
-        y = 2 + self.document.page_layout.card_bleed.to("pixel", "print").magnitude + round(max(
+        # Put the text labels below the bleed
+        y = 2 + distance_to_rounded_px(self.document.page_layout.card_bleed) + round(max(
             self.horizontal_cut_line_locations[PageType.REGULAR][-1],
             self.horizontal_cut_line_locations[PageType.OVERSIZED][-1]
         ))
@@ -490,17 +481,16 @@ class PageScene(QGraphicsScene):
 
     def get_document_page_size(self, page_layout: PageLayoutSettings) -> QRectF:
         without_margins = RenderMode.IMPLICIT_MARGINS in self.render_mode
-        zero_width = unit_registry("0mm")
-        vertical_margins = (page_layout.margin_top + page_layout.margin_bottom) if without_margins else zero_width
-        horizontal_margins = (page_layout.margin_left + page_layout.margin_right) if without_margins else zero_width
+        vertical_margins = (page_layout.margin_top + page_layout.margin_bottom) if without_margins else ZERO_WIDTH
+        horizontal_margins = (page_layout.margin_left + page_layout.margin_right) if without_margins else ZERO_WIDTH
 
         height: QuantityT = page_layout.page_height - vertical_margins
         width: QuantityT = page_layout.page_width - horizontal_margins
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
-                width.to("pixel", "print").magnitude,
-                height.to("pixel", "print").magnitude,
+                distance_to_rounded_px(width),
+               distance_to_rounded_px( height),
             )
         )
         return page_size
@@ -518,7 +508,8 @@ class PageScene(QGraphicsScene):
         position = self._compute_position_for_image(row, page_type)
         if index.data(ItemDataRole.DisplayRole) is not None:  # Card has a QPixmap set
             card: Card = index.data(ItemDataRole.UserRole)
-            self.addItem(card_item := CardItem(card, self.document))
+            card_item = CardItem(card, self.document)
+            self.addItem(card_item)
             card_item.setPos(position)
             if next_item is not None:
                 # See https://doc.qt.io/qt-6/qgraphicsitem.html#sorting

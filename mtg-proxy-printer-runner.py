@@ -29,6 +29,7 @@ sys.path.insert(0, str(root_path))
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.ui.page_scene
 import mtg_proxy_printer.model.document_loader
+import mtg_proxy_printer.units_and_sizes
 import mtg_proxy_printer.model.page_layout
 from mtg_proxy_printer.__main__ import main
 
@@ -64,9 +65,6 @@ to_be_profiled_functions = {
     ],
     mtg_proxy_printer.ui.page_scene.CardItem: [
         "__init__",
-    ],
-    mtg_proxy_printer.ui.page_scene: [
-        "distance_to_rounded_px",
     ],
     mtg_proxy_printer.ui.page_scene.PageScene: [
         "remove_cut_markers",
