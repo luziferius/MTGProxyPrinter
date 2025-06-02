@@ -6,7 +6,11 @@ Because it was requested multiple times, there is a mirror of the application's 
 
 ## Changed features
 
-- Reworked paper size configuration: The document settings now provide a list of pre-defined paper sizes to choose from.
+- Reworked paper size configuration: 
+    - The document settings now provide a list of pre-defined paper sizes to choose from. Only paper sizes that can
+      fit an oversized card in both landscape and portrait orientation are available.
+    - Default paper size is read from the system default printer if available, or based on the system locale otherwise.
+      Regions using US Letter should get that as the default, instead of A4.
     - For the pre-defined paper sizes, there is an additional toggle for the choice between Portrait and Landscape mode.
     - Arbitrary page sizes are still supported by selecting the "Custom" paper size and entering the paper dimensions 
       as in previous versions.
