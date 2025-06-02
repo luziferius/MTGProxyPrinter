@@ -165,8 +165,8 @@ class PageConfigWidget(QGroupBox):
         """
         ui = self.ui
         oversized = CardSizes.OVERSIZED
-        available_width = ui.custom_page_width.value() - oversized.width.to("mm", "print").magnitude
-        available_height = ui.custom_page_height.value() - oversized.height.to("mm", "print").magnitude
+        available_width = self._current_page_width() - oversized.width.to("mm", "print").magnitude - 1
+        available_height = self._current_page_height() - oversized.height.to("mm", "print").magnitude - 1
         ui.margin_left.setMaximum(
             max(0, available_width - ui.margin_right.value())
         )
@@ -179,6 +179,26 @@ class PageConfigWidget(QGroupBox):
         ui.margin_bottom.setMaximum(
             max(0, available_height - ui.margin_top.value())
         )
+
+    def _current_page_height(self) -> float:
+        """Returns the current page height in mm as set via GUI elements. Used for validations"""
+        ui = self.ui
+        if not ui.paper_size.currentIndex():
+            return ui.custom_page_height.value()
+        page_size: QPageSize.PageSizeId = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
+        size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
+        orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)]
+        return size.height() if orientation == "Portrait" else size.width()
+
+    def _current_page_width(self) -> float:
+        """Returns the current page width in mm as set via GUI elements. Used for validations"""
+        ui = self.ui
+        if not ui.paper_size.currentIndex():
+            return ui.custom_page_width.value()
+        page_size: QPageSize.PageSizeId = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
+        size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
+        orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)]
+        return size.width() if orientation == "Portrait" else size.height()
 
     def load_document_settings_from_config(self, new_config: ConfigParser):
         logger.debug(f"About to load document settings from the global settings")

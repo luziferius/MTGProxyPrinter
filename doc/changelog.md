@@ -14,7 +14,7 @@ Because it was requested multiple times, there is a mirror of the application's 
 ## Fixed issues
 
 - Performance optimization in the page renderer. The app no longer lags massively when working with
-  large paper sizes (like A0, ANSI D)
+  large paper sizes (like A0, ANSI E)
 
 # Version 0.32.0 (2025-05-26)  <a name="v0_32_0"></a>
 
