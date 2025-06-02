@@ -2,13 +2,25 @@
 
 # Next version (in development)
 
+Because it was requested multiple times, there is a mirror of the application's source code repository on [GitHub](https://github.com/luziferius/MTGProxyPrinter/).
+
+## Changed features
+
+- Reworked paper size configuration: 
+    - The document settings now provide a list of pre-defined paper sizes to choose from. Only paper sizes that can
+      fit an oversized card in both landscape and portrait orientation are available.
+    - Default paper size is read from the system default printer if available, or based on the system locale otherwise.
+      Regions using US Letter should get that as the default, instead of A4.
+    - For the pre-defined paper sizes, there is an additional toggle for the choice between Portrait and Landscape mode.
+    - Arbitrary page sizes are still supported by selecting the "Custom" paper size and entering the paper dimensions 
+      as in previous versions.
+
 ## Fixed issues
 
-- Performance optimization in the page renderer. The app no longer lags massively when working with large paper sizes (like A0, ANSI D)
+- Performance optimization in the page renderer. The app no longer lags massively when working with
+  large paper sizes (like A0, ANSI E)
 
 # Version 0.32.0 (2025-05-26)  <a name="v0_32_0"></a>
-
-Because it was requested multiple times, there is a mirror of the application's source code repository on [GitHub](https://github.com/luziferius/MTGProxyPrinter/).
 
 ## New features
 
@@ -123,7 +135,7 @@ Because it was requested multiple times, there is a mirror of the application's 
 ## Changed features
 
 - The deck list import wizard now supports downloading links from the Scryfall API card search at 
-  [https://api.scryfall.com/cards/search](https://scryfall.com/docs/api/cards/search) 
+  [https://api.scryfall.com/cards/search](https://scryfall.com/docs/api/cards/search)
 - Support decimal values in document settings, like margins, image spacings and the card bleed width.
 - As a safety measure against DoS-attacks via loading malicious documents, the app now limits
   numerical document settings to 10000mm. Limiting the paper size to 10m (~394in) in each direction prevents the creation

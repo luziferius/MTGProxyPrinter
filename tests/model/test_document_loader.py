@@ -14,7 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import contextlib
-from itertools import chain, repeat, product
+from itertools import chain, repeat
 from pathlib import Path
 import sqlite3
 import unittest.mock
@@ -27,7 +27,6 @@ import pytest
 from hamcrest import *
 
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 from tests.helpers import quantity_close_to
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, CardSizes, QuantityT
 from mtg_proxy_printer.model.card import CheckCard
@@ -41,13 +40,15 @@ from tests.helpers import create_save_database_with
 CardType = mtg_proxy_printer.model.document_loader.CardType
 mm: UnitT = unit_registry.mm
 
+
 @pytest.fixture()
 def page_layout() -> PageLayoutSettings:
     page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
-        page_height=300*mm, page_width=200*mm,
+        custom_page_height=300*mm, custom_page_width=200*mm,
         margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
         row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
-        draw_cut_markers=True, draw_sharp_corners=False, draw_page_numbers=True
+        draw_cut_markers=True, draw_sharp_corners=False, draw_page_numbers=True,
+        paper_size="Custom", paper_orientation="Portrait",
     )
     assert_that(
         page_layout.compute_page_card_capacity(PageType.OVERSIZED), is_(greater_than_or_equal_to(1)), "Setup failed"

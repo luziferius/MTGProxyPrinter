@@ -37,6 +37,7 @@ from mtg_proxy_printer.model.document import Document
 from ..document_controller.helpers import create_card
 from tests.helpers import close_to_
 from tests.hasgetter import has_getters, has_getter
+from tests.helpers import close_to_
 
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer.PageScene."
 RenderHint = QPainter.RenderHint

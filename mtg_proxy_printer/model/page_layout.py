@@ -42,6 +42,7 @@ __all__ = [
     "PageLayoutSettings",
 ]
 
+
 @dataclasses.dataclass
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
@@ -56,8 +57,38 @@ class PageLayoutSettings:
     margin_left: QuantityT = 0 * unit_registry.mm
     margin_right: QuantityT = 0 * unit_registry.mm
     margin_top: QuantityT = 0 * unit_registry.mm
-    page_height: QuantityT = 0 * unit_registry.mm
-    page_width: QuantityT = 0 * unit_registry.mm
+    custom_page_height: QuantityT = 0 * unit_registry.mm
+    custom_page_width: QuantityT = 0 * unit_registry.mm
+    paper_orientation: str = "Portrait"
+    paper_size: str = "Custom"
+
+    @property
+    def page_height(self) -> QuantityT:
+        if self.paper_size == "Custom":
+            return self.custom_page_height
+        page_size = mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size]
+        size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
+        value = size.height() if self.paper_orientation == "Portrait" else size.width()
+        return value*unit_registry.mm
+
+    @page_height.setter
+    def page_height(self, value: QuantityT):
+        assert isinstance(value, pint.Quantity)
+        self.custom_page_height = value
+
+    @property
+    def page_width(self) -> QuantityT:
+        if self.paper_size == "Custom":
+            return self.custom_page_width
+        page_size = mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size]
+        size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
+        value = size.width() if self.paper_orientation == "Portrait" else size.height()
+        return value*unit_registry.mm
+
+    @page_width.setter
+    def page_width(self, value: QuantityT):
+        assert isinstance(value, pint.Quantity)
+        self.custom_page_width = value
 
     @classmethod
     def create_from_settings(cls, settings: ConfigParser = mtg_proxy_printer.settings.settings):
@@ -76,6 +107,8 @@ class PageLayoutSettings:
             document_settings.get_quantity("margin-top"),
             document_settings.get_quantity("paper-height"),
             document_settings.get_quantity("paper-width"),
+            document_settings["paper-orientation"],
+            document_settings["paper-size"],
         )
 
     def to_page_layout(self, render_mode: "RenderMode") -> QPageLayout:
@@ -85,26 +118,37 @@ class PageLayoutSettings:
             if render_mode.IMPLICIT_MARGINS in render_mode else QMarginsF(0, 0, 0, 0)
         landscape_workaround = mtg_proxy_printer.settings.settings["printer"].getboolean(
             "landscape-compatibility-workaround")
-        orientation = QPageLayout.Orientation.Portrait \
-            if self.page_width < self.page_height or landscape_workaround \
-            else QPageLayout.Orientation.Landscape
-        page_size = QPageSize(
-            QSizeF(*sorted([distance_to_mm(self.page_width), distance_to_mm(self.page_height)])),
-            QPageSize.Unit.Millimeter,
-        )
-        layout = QPageLayout(
-            page_size,
-            orientation,
-            margins,
-            QPageLayout.Unit.Millimeter,
-        )
+        if self.paper_size == "Custom":
+            logger.debug(
+                f"Creating custom QPageLayout for a custom paper size of {self.page_width}mm×{self.page_height}mm")
+            orientation = QPageLayout.Orientation.Portrait \
+                if self.page_width < self.page_height or landscape_workaround \
+                else QPageLayout.Orientation.Landscape
+            page_size = QPageSize(
+                QSizeF(*sorted([distance_to_mm(self.page_width), distance_to_mm(self.page_height)])),
+                QPageSize.Unit.Millimeter,
+            )
+            layout = QPageLayout(
+                page_size,
+                orientation,
+                margins,
+                QPageLayout.Unit.Millimeter,
+            )
+        else:
+            logger.debug(
+                f"Creating QPageLayout for paper size {self.paper_size} and orientation {self.paper_orientation}")
+            layout = QPageLayout(
+                QPageSize(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size]),
+                mtg_proxy_printer.units_and_sizes.PageSizeManager.PageOrientation[self.paper_orientation],
+                margins,
+            )
         return layout
 
     def to_save_file_data(self):
         values = dataclasses.asdict(self)
         settings = (
             (key, str(value)) for key, value in values.items() if not isinstance(value, pint.Quantity))
-        dimensions: Generator[Tuple[str, QuantityT], None, None] = (
+        dimensions: Generator[Tuple[str, pint.Quantity], None, None] = (
             (key, value) for key, value in values.items() if isinstance(value, pint.Quantity))
         return settings, dimensions
 

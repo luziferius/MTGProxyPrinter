@@ -16,6 +16,7 @@
 import sqlite3
 from typing import Callable
 
+import pint
 import pytest
 from hamcrest import *
 
@@ -23,13 +24,14 @@ import mtg_proxy_printer.model.document_loader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.document_loader import SAVE_FILE_MAGIC_NUMBER, DocumentLoader, CardType
+from mtg_proxy_printer.model.document_loader import SAVE_FILE_MAGIC_NUMBER, CardType
 import mtg_proxy_printer.save_file_migrations
-from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT
+from mtg_proxy_printer.units_and_sizes import unit_registry
 
 from tests.helpers import quantity_close_to
 
-mm: UnitT = unit_registry.mm
+mm: pint.Unit = unit_registry.mm
+
 
 def validate_save_database_schema(db: sqlite3.Connection, schema_version: int):
     mtg_proxy_printer.sqlite_helpers.validate_database_schema(
@@ -195,3 +197,6 @@ def test_migration_6_to_7_transforms_data(page_layout: PageLayoutSettings):
     )
     assert_that(db.execute("SELECT * FROM CustomCardData").fetchall(), is_(empty()))
 
+
+def test__migrate_paper_size_settings_passes_on_empty_settings_table(empty_save_database):
+    mtg_proxy_printer.save_file_migrations._migrate_paper_size_settings(empty_save_database)
