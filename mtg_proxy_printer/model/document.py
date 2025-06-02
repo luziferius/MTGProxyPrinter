@@ -336,13 +336,13 @@ class Document(QAbstractItemModel):
     def save_as(self, path: pathlib.Path):
         """Save the document at the given path, overwriting any previously stored save path."""
         self.save_file_path = path
-        ActionSaveDocument(path).apply(self)
+        ActionSaveDocument(path).apply(self)  # Note: Not using the action stack. Saving cannot be undone
 
     def save_to_disk(self):
         """Save the document at the internally remembered save path. Raises a RuntimeError, if no such path is set."""
         if self.save_file_path is None:
             raise RuntimeError("Cannot save without a file path!")
-        ActionSaveDocument(self.save_file_path).apply(self.loader.MIN_SUPPORTED_SQLITE_VERSION)
+        ActionSaveDocument(self.save_file_path).apply(self)  # Note: Not using the action stack. Saving cannot be undone
 
     def compute_pages_saved_by_compacting(self) -> int:
         """
