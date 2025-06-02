@@ -30,7 +30,8 @@ from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.settings import settings
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, RESOLUTION, CardSizes, CardSize, QuantityT
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, distance_to_rounded_px, CardSizes, CardSize, \
+    QuantityT
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -40,6 +41,8 @@ ItemDataRole = Qt.ItemDataRole
 ColorGroup = QPalette.ColorGroup
 ColorRole = QPalette.ColorRole
 SortOrder = Qt.SortOrder
+ZERO_WIDTH: QuantityT = 0 * unit_registry.mm
+
 
 @enum.unique
 class RenderLayers(enum.IntEnum):
@@ -72,11 +75,6 @@ class CutMarkerParameters(typing.NamedTuple):
     image_spacing: QuantityT
 
 
-def scale_to_pixel(value: float) -> float:
-    value: float = (RESOLUTION*value*unit_registry.millimeter).to("pixel").magnitude
-    return value
-
-
 class CardBleedItem(QGraphicsPixmapItem):
 
     def __init__(self, image: QPixmap, rect: QRect, pos: QPoint = QPoint(0, 0), parent=None):
@@ -94,8 +92,7 @@ class CardBleedItem(QGraphicsPixmapItem):
         self.setPos(pos)
         self.setZValue(RenderLayers.BLEEDS.value)
 
-    def update_bleed_size(self, bleed_width: QuantityT):
-        size_px: float = bleed_width.to("pixel", "print").magnitude
+    def update_bleed_size(self, size_px: int):
         transformation = self.transform()
         transformation.reset()
         sx, sy = (self.sign*size_px, 1.0) \
@@ -130,9 +127,7 @@ class CardBleedCornerItem(QGraphicsPolygonItem):
         self.setBrush(card.corner_color(corner))
         self.setZValue(RenderLayers.BLEEDS.value+0.1)
 
-    def update_bleed_size(self, h_width_mm: QuantityT, v_width_mm: QuantityT):
-        h_px: float = h_width_mm.to("pixel", "print").magnitude
-        v_px: float = v_width_mm.to("pixel", "print").magnitude
+    def update_bleed_size(self, h_px: int, v_px: int):
         left = -v_px
         top = -h_px
         bottom = self.corner_length
@@ -184,11 +179,10 @@ class CardBleeds(typing.NamedTuple):
             CardBleedCornerItem(card, CardCorner.BOTTOM_LEFT),
             CardBleedCornerItem(card, CardCorner.BOTTOM_RIGHT),
         )
-        zero_width = unit_registry("0 mm")
-        bleeds.update_bleeds(zero_width, zero_width, zero_width, zero_width)
+        bleeds.update_bleeds(0, 0, 0, 0)
         return bleeds
 
-    def update_bleeds(self, top: QuantityT, bottom: QuantityT, left: QuantityT, right: QuantityT):
+    def update_bleeds(self, top: int, bottom: int, left: int, right: int):
         self.top.update_bleed_size(top)
         self.bottom.update_bleed_size(bottom)
         self.left.update_bleed_size(left)
@@ -204,35 +198,36 @@ class CardItem(QGraphicsItemGroup):
 
     CORNER_SIZE_PX = 50
 
-    def __init__(self, card: Card, document: Document, parent: QGraphicsItem = None):
+    def __init__(self, index: QModelIndex, document: Document, parent: QGraphicsItem = None):
         super().__init__(parent)
         document.page_layout_changed.connect(self.on_page_layout_changed)
-        self.card = card
+        card: Card = index.data(ItemDataRole.UserRole)
+        self.index = QPersistentModelIndex(index)
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
         self.card_pixmap_item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
         self.bleeds = CardBleeds.from_card(card)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
-        self.corners = self.create_corners(document.page_layout.draw_sharp_corners)
+        self.corners = self.create_corners(card, document.page_layout.draw_sharp_corners)
         self._draw_content()
         self.setZValue(RenderLayers.CARDS.value)
 
-    def create_corners(self, draw_corners: bool) -> typing.List[QGraphicsRectItem]:
-        image = self.card.image_file
+    def create_corners(self, card: Card, draw_corners: bool) -> typing.List[QGraphicsRectItem]:
+        image = card.image_file
         card_height, card_width = image.height(), image.width()
         card_width = image.width()
         left, right = 0, card_width-self.CORNER_SIZE_PX
         top, bottom = 0, card_height-self.CORNER_SIZE_PX
         return [
-            self._create_corner(CardCorner.TOP_LEFT, QPointF(left, top), draw_corners),
-            self._create_corner(CardCorner.TOP_RIGHT, QPointF(right, top), draw_corners),
-            self._create_corner(CardCorner.BOTTOM_LEFT, QPointF(left, bottom), draw_corners),
-            self._create_corner(CardCorner.BOTTOM_RIGHT, QPointF(right, bottom), draw_corners),
+            self._create_corner(card, CardCorner.TOP_LEFT, QPointF(left, top), draw_corners),
+            self._create_corner(card, CardCorner.TOP_RIGHT, QPointF(right, top), draw_corners),
+            self._create_corner(card, CardCorner.BOTTOM_LEFT, QPointF(left, bottom), draw_corners),
+            self._create_corner(card, CardCorner.BOTTOM_RIGHT, QPointF(right, bottom), draw_corners),
         ]
 
-    def _create_corner(self, corner: CardCorner, position: QPointF, opaque: bool) -> QGraphicsRectItem:
+    def _create_corner(self, card: Card, corner: CardCorner, position: QPointF, opaque: bool) -> QGraphicsRectItem:
         rect = QGraphicsRectItem(0, 0, self.CORNER_SIZE_PX, self.CORNER_SIZE_PX)
-        color = self.card.corner_color(corner)
+        color = card.corner_color(corner)
         rect.setPos(position)
         rect.setPen(self.corner_pen)
         rect.setBrush(color)
@@ -279,15 +274,10 @@ class PageScene(QGraphicsScene):
         page_layout = document.page_layout
         super().__init__(self.get_document_page_size(page_layout), parent)
         self.document = document
-        self.document.rowsInserted.connect(self.on_rows_inserted)
-        self.document.rowsRemoved.connect(self.on_rows_removed)
-        self.document.rowsAboutToBeRemoved.connect(self.on_rows_about_to_be_removed)
-        self.document.rowsMoved.connect(self.on_rows_moved)
-        self.document.current_page_changed.connect(self.on_current_page_changed)
-        self.document.dataChanged.connect(self.on_data_changed)
-        self.document.page_type_changed.connect(self.on_page_type_changed)
-        self.document.page_layout_changed.connect(self.on_page_layout_changed)
+        self._connect_document_signals(document)
         self.selected_page = self.document.get_current_page_index()
+        self.row_count = self.column_count = 1
+        self._update_row_and_column_counts(document)
         self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.BrushStyle.SolidPattern))
         background_color = self.get_background_color(render_mode)
         logger.debug(f"Drawing background rectangle")
@@ -302,6 +292,23 @@ class PageScene(QGraphicsScene):
         if page_layout.draw_cut_markers:
             self.draw_cut_markers()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {render_mode}")
+        
+    def _connect_document_signals(self, document: Document):
+        document.rowsInserted.connect(self.on_rows_inserted)
+        document.rowsRemoved.connect(self.on_rows_removed)
+        document.rowsAboutToBeRemoved.connect(self.on_rows_about_to_be_removed)
+        document.rowsMoved.connect(self.on_rows_moved)
+        document.current_page_changed.connect(self.on_current_page_changed)
+        document.dataChanged.connect(self.on_data_changed)
+        document.page_type_changed.connect(self.on_page_type_changed)
+        document.page_layout_changed.connect(self.on_page_layout_changed)
+
+    def _update_row_and_column_counts(self, document: Document):
+        page_type = document.currently_edited_page.page_type()
+        layout = document.page_layout
+        self.column_count = layout.compute_page_column_count(page_type)
+        self.row_count = layout.compute_page_row_count(page_type)
+        self._compute_position_for_image.cache_clear()
 
     @staticmethod
     def _create_text_item(font_size: float = 40) -> QGraphicsSimpleTextItem:
@@ -343,7 +350,7 @@ class PageScene(QGraphicsScene):
     @property
     def x_offset(self) -> int:
         return 0 if RenderMode.ON_SCREEN in self.render_mode \
-            else self._distance_to_rounded_px(settings["printer"].get_quantity("horizontal-offset"))
+            else distance_to_rounded_px(settings["printer"].get_quantity("horizontal-offset"))
 
     @property
     def card_items(self) -> typing.List[CardItem]:
@@ -369,6 +376,7 @@ class PageScene(QGraphicsScene):
 
         if PageType.OVERSIZED in page_types and len(page_types) > 1:  # Switching to or from an oversized page
             logger.debug("New page contains cards of different size, re-drawing cut markers")
+            self._update_row_and_column_counts(self.document)
             self.remove_cut_markers()
             self.draw_cut_markers()
         for item in self.card_items:
@@ -381,8 +389,8 @@ class PageScene(QGraphicsScene):
             self.update_card_bleeds()
 
     def _update_page_text_y(self):
-        # Put the text labels below the
-        y = 2 + self.document.page_layout.card_bleed.to("pixel", "print").magnitude + round(max(
+        # Put the text labels below the bleed
+        y = 2 + distance_to_rounded_px(self.document.page_layout.card_bleed) + round(max(
             self.horizontal_cut_line_locations[PageType.REGULAR][-1],
             self.horizontal_cut_line_locations[PageType.OVERSIZED][-1]
         ))
@@ -415,6 +423,7 @@ class PageScene(QGraphicsScene):
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
         logger.info("Applying new document settings …")
         new_page_size = self.get_document_page_size(new_page_layout)
+        self._update_row_and_column_counts(self.document)
         old_size = self.sceneRect()
         size_changed = old_size != new_page_size
         if size_changed:
@@ -429,6 +438,7 @@ class PageScene(QGraphicsScene):
         self.update_card_positions()
         self.update_card_bleeds()
         self._update_text_items(new_page_layout)
+
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
             # in the available space or is now too small, so emit a notification to allow the display widget to adjust.
@@ -447,7 +457,7 @@ class PageScene(QGraphicsScene):
         page_layout = self.document.page_layout
         font_metrics = QFontMetrics(self.document_title_text.font())
         space_width_px = font_metrics.horizontalAdvance(" ")
-        margins_px = self._distance_to_rounded_px(page_layout.margin_left + page_layout.margin_right)
+        margins_px = distance_to_rounded_px(page_layout.margin_left + page_layout.margin_right)
         width = self.width()-margins_px-4
         available_widths_px = itertools.chain(
             [width-QFontMetrics(self.page_number_text.font()).horizontalAdvance("999/999")],
@@ -484,35 +494,35 @@ class PageScene(QGraphicsScene):
 
     def get_document_page_size(self, page_layout: PageLayoutSettings) -> QRectF:
         without_margins = RenderMode.IMPLICIT_MARGINS in self.render_mode
-        zero_width = unit_registry("0mm")
-        vertical_margins = (page_layout.margin_top + page_layout.margin_bottom) if without_margins else zero_width
-        horizontal_margins = (page_layout.margin_left + page_layout.margin_right) if without_margins else zero_width
+        vertical_margins = (page_layout.margin_top + page_layout.margin_bottom) if without_margins else ZERO_WIDTH
+        horizontal_margins = (page_layout.margin_left + page_layout.margin_right) if without_margins else ZERO_WIDTH
 
         height: QuantityT = page_layout.page_height - vertical_margins
         width: QuantityT = page_layout.page_width - horizontal_margins
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
-                width.to("pixel", "print").magnitude,
-                height.to("pixel", "print").magnitude,
+                distance_to_rounded_px(width),
+               distance_to_rounded_px( height),
             )
         )
         return page_size
 
     def _draw_cards(self):
-        index = self.selected_page.sibling(self.selected_page.row(), 0)
+        parent = self.selected_page.sibling(self.selected_page.row(), 0)
+        document = self.selected_page.model()
         page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
-        images_to_draw = self.selected_page.model().rowCount(index)
+        images_to_draw = document.rowCount(parent)
         logger.info(f"Drawing {images_to_draw} cards")
         for row in range(images_to_draw):
-            self.draw_card(row, page_type)
+            self.draw_card(document.index(row, PageColumns.Image, parent), page_type)
 
-    def draw_card(self, row: int, page_type: PageType, next_item: CardItem = None):
-        index = self.document.index(row, PageColumns.Image, self.selected_page)
-        position = self._compute_position_for_image(row, page_type)
+    def draw_card(self, index: QModelIndex, page_type: PageType, next_item: CardItem = None):
+        position = self._compute_position_for_image(index.row(), page_type)
         if index.data(ItemDataRole.DisplayRole) is not None:  # Card has a QPixmap set
             card: Card = index.data(ItemDataRole.UserRole)
-            self.addItem(card_item := CardItem(card, self.document))
+            card_item = CardItem(index, self.document)
+            self.addItem(card_item)
             card_item.setPos(position)
             if next_item is not None:
                 # See https://doc.qt.io/qt-6/qgraphicsitem.html#sorting
@@ -534,6 +544,7 @@ class PageScene(QGraphicsScene):
     @Slot(QModelIndex)
     def on_page_type_changed(self, page: QModelIndex):
         if page.row() == self.selected_page.row():
+            self._update_row_and_column_counts(self.document)
             self.update_card_positions()
             if self.document.page_layout.draw_cut_markers:
                 self.remove_cut_markers()
@@ -547,12 +558,13 @@ class PageScene(QGraphicsScene):
                 # Thes cases can be ignored, as the pixmap never changes
                 and top_left.column() < bottom_right.column()
         ):
-            page_type: PageType = top_left.parent().data(ItemDataRole.UserRole)
+            parent = top_left.parent()
+            page_type: PageType = parent.data(ItemDataRole.UserRole)
             card_items = self.card_items
             for row in range(top_left.row(), bottom_right.row()+1):
                 logger.debug(f"Card {row} on the current page was replaced, replacing image.")
                 current_item = card_items[row]
-                self.draw_card(row, page_type, current_item)
+                self.draw_card(top_left.siblingAtRow(row), page_type, current_item)
                 self.removeItem(current_item)
 
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
@@ -563,7 +575,7 @@ class PageScene(QGraphicsScene):
             page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
             logger.debug(f"Added {inserted_cards} cards to the currently shown page, drawing them.")
             for new in range(first, last+1):
-                self.draw_card(new, page_type, next_item)
+                self.draw_card(parent.child(new, PageColumns.Image), page_type, next_item)
             if needs_reorder:
                 logger.debug("Cards added in the middle of the page, re-order existing cards.")
                 self.update_card_positions()
@@ -598,39 +610,37 @@ class PageScene(QGraphicsScene):
             logger.debug("Cards moved onto the currently shown page, calling card insertion handler.")
             self.on_rows_inserted(destination, row, row+end-start)
 
-    @functools.lru_cache
+    @functools.lru_cache(None)
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
         page_layout: PageLayoutSettings = self.document.page_layout
-        page_width = self._distance_to_rounded_px(page_layout.page_width)
-        page_height = self._distance_to_rounded_px(page_layout.page_height)
+        page_width = distance_to_rounded_px(page_layout.page_width)
+        page_height = distance_to_rounded_px(page_layout.page_height)
 
-        left_margin = self._distance_to_rounded_px(page_layout.margin_left)
-        top_margin = self._distance_to_rounded_px(page_layout.margin_top)
+        left_margin = distance_to_rounded_px(page_layout.margin_left)
+        top_margin = distance_to_rounded_px(page_layout.margin_top)
 
         card_size = CardSizes.for_page_type(page_type).as_qsize_px()
         image_height: int = card_size.height()
         image_width: int = card_size.width()
 
-        column_spacing = self._distance_to_rounded_px(page_layout.column_spacing)
-        row_spacing = self._distance_to_rounded_px(page_layout.row_spacing)
+        column_spacing = distance_to_rounded_px(page_layout.column_spacing)
+        row_spacing = distance_to_rounded_px(page_layout.row_spacing)
 
-        column_count = page_layout.compute_page_column_count(page_type)
-        row_count = page_layout.compute_page_row_count(page_type)
-        row, column = divmod(index_row, column_count)
+        row, column = divmod(index_row, self.column_count)
 
         # Excessively large margins may shift the page content off-center. Clamp the borders to the non-negative range
         # to avoid clipping images off
         left_border = max(
             page_width
-            - image_width * column_count
-            - column_spacing * (column_count - 1),
+            - image_width * self.column_count
+            - column_spacing * (self.column_count - 1),
             0
         ) / 2
         top_border = max(
             page_height
-            - image_height * row_count
-            - row_spacing * (row_count - 1),
+            - image_height * self.row_count
+            - row_spacing * (self.row_count - 1),
             0
         ) / 2
 
@@ -649,36 +659,31 @@ class PageScene(QGraphicsScene):
 
     def update_card_bleeds(self):
         full_bleed = self.document.page_layout.card_bleed
-        inner_bleed_h: QuantityT = min(self.document.page_layout.row_spacing/2, full_bleed)
-        inner_bleed_v: QuantityT = min(self.document.page_layout.column_spacing/2, full_bleed)
+        full_bleed_px = distance_to_rounded_px(full_bleed)
+        inner_bleed_h_px = distance_to_rounded_px(min(self.document.page_layout.row_spacing/2, full_bleed))
+        inner_bleed_v_px = distance_to_rounded_px(min(self.document.page_layout.column_spacing/2, full_bleed))
         for item in self.card_items:
             neighbors = self._has_neighbors(item)
             item.bleeds.update_bleeds(
-                inner_bleed_h if neighbors.top else full_bleed,
-                inner_bleed_h if neighbors.bottom else full_bleed,
-                inner_bleed_v if neighbors.left else full_bleed,
-                inner_bleed_v if neighbors.right else full_bleed,
+                inner_bleed_h_px if neighbors.top else full_bleed_px,
+                inner_bleed_h_px if neighbors.bottom else full_bleed_px,
+                inner_bleed_v_px if neighbors.left else full_bleed_px,
+                inner_bleed_v_px if neighbors.right else full_bleed_px,
             )
 
     def _has_neighbors(self, item: CardItem) -> NeighborsPresent:
-        item_rect = item.boundingRect()
-        center_pos = item.pos() + QPointF(item_rect.width(), item_rect.height())/2
-        identity = QTransform()  # TODO: Is this okay to do?
-        vertical = QPointF(0, item_rect.height())
-        horizontal = QPointF(item_rect.width(), 0)
-        # Values to ignore by itemAt(). ON_PAPER, or outside the scene rect, results are None.
-        # ON_SCREEN, the background is returned for empty spaces, so ignore both.
-        nothing = (self.background, None)
+        index_row = item.index.row()
+        cards_on_page = self.document.rowCount(self.selected_page)
         return NeighborsPresent(
-            self.itemAt(center_pos - vertical, identity) not in nothing,
-            self.itemAt(center_pos + vertical, identity) not in nothing,
-            self.itemAt(center_pos-horizontal, identity) not in nothing,
-            self.itemAt(center_pos+horizontal, identity) not in nothing,
+            # Cards in all rows except the top row have cards above them
+            index_row >= self.column_count,
+            # There is a card below, iff there are at least column_count more cards on the page
+            index_row + self.column_count < cards_on_page,
+            # There is a card on the left, iff the row modulo column_count is non-zero
+            index_row % self.column_count > 0,
+            # There is a card on the right, iff there is an additional card, and this is not on the right-most column.
+            index_row % self.column_count + 1 == self.column_count and index_row + 1 < cards_on_page
         )
-
-    @staticmethod
-    def _distance_to_rounded_px(value: QuantityT) -> int:
-        return round(value.to("pixel", "print").magnitude)
 
     def remove_cut_markers(self):
         for line in self.cut_lines:
@@ -714,17 +719,17 @@ class PageScene(QGraphicsScene):
             ))
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> typing.Generator[float, None, None]:
-        spacing = self._distance_to_rounded_px(parameters.image_spacing)
+        spacing = distance_to_rounded_px(parameters.image_spacing)
         card_size: int = round(parameters.card_size.magnitude)
 
         # Excessively large margins may shift the page content off-center. Clamp the border to the non-negative range
         # to avoid placing marker lines out of the drawing range
         border = (
-            self._distance_to_rounded_px(parameters.total_space)
+            distance_to_rounded_px(parameters.total_space)
             - card_size * parameters.item_count
             - spacing * (parameters.item_count - 1)
         ) / 2
-        margin = self._distance_to_rounded_px(parameters.margin)
+        margin = distance_to_rounded_px(parameters.margin)
         border = max(border, margin)
         if RenderMode.IMPLICIT_MARGINS in self.render_mode:
             border -= margin
