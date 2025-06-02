@@ -165,8 +165,8 @@ class PageConfigWidget(QGroupBox):
         """
         ui = self.ui
         oversized = CardSizes.OVERSIZED
-        available_width = self._current_page_width() - oversized.width.to("mm", "print").magnitude - 1
-        available_height = self._current_page_height() - oversized.height.to("mm", "print").magnitude - 1
+        available_width = self._current_page_width() - oversized.width.to("mm", "print").magnitude
+        available_height = self._current_page_height() - oversized.height.to("mm", "print").magnitude
         ui.margin_left.setMaximum(
             max(0, available_width - ui.margin_right.value())
         )
