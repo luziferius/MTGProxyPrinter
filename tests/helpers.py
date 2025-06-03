@@ -17,6 +17,7 @@
 import dataclasses
 import functools
 import json
+import numbers
 import os
 import sqlite3
 import typing
@@ -252,11 +253,16 @@ class matches_type_annotation(BaseMatcher):
         description.append_text(f"dataclass instance containing correct types")
 
 
+close_to_: typing.Callable[[numbers.Real], Matcher[numbers.Real]] = functools.partial(close_to, delta=0.005)
+
+
 def quantity_close_to(value: QuantityT):
     return has_properties(units=equal_to(value.units), magnitude=close_to(value.magnitude, 0.001))
 
+
 def number_between(lower: float, upper: float):
     return all_of(greater_than_or_equal_to(lower), less_than_or_equal_to(upper))
+
 
 def quantity_between(lower: QuantityT, upper: QuantityT):
     assert_that(lower.units, equal_to(upper.units), "Setup failed. Bounds have different units!")

@@ -37,7 +37,7 @@ from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
-    AboutDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog, SavePNGDialog
+    AboutDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog, SavePNGDialog, ExportCardImagesDialog
 from mtg_proxy_printer.ui.common import show_wizard_or_dialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
@@ -199,6 +199,7 @@ class MainWindow(QMainWindow):
             ui.action_show_settings,
             ui.action_add_custom_cards,
             ui.action_download_missing_card_images,
+            ui.action_export_card_images,
         ]
 
     def _connect_image_database_signals(self, image_db: ImageDatabase):
@@ -322,10 +323,17 @@ class MainWindow(QMainWindow):
         self.missing_images_manager.obtain_missing_images(dialog.open)
 
     @Slot()
+    def on_action_export_card_images_triggered(self):
+        logger.info("User exports the card images in the current document to a directory")
+        self.current_dialog = dialog = ExportCardImagesDialog(self.document, self)
+        dialog.error_occurred.connect(self.on_error_occurred)
+        dialog.finished.connect(self.on_dialog_finished)
+        dialog.open()
+
+    @Slot()
     def on_action_add_empty_card_triggered(self):
         empty_card = self.document.get_empty_card_for_current_page()
-        action = ActionAddCard(empty_card)
-        self.document.apply(action)
+        self.document.apply(ActionAddCard(empty_card))
 
     def on_network_error_occurred(self, message: str):
         QMessageBox.warning(

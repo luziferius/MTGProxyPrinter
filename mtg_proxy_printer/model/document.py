@@ -25,12 +25,13 @@ import typing
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, \
     QPersistentModelIndex
 
+from mtg_proxy_printer.model.imagedb_files import ImageKey
 from mtg_proxy_printer.natsort import to_list_of_ranges
 from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCustomCard
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageColumns
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
-from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType
+from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType, CustomCard
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -335,13 +336,13 @@ class Document(QAbstractItemModel):
     def save_as(self, path: pathlib.Path):
         """Save the document at the given path, overwriting any previously stored save path."""
         self.save_file_path = path
-        ActionSaveDocument(path).apply(self)
+        ActionSaveDocument(path).apply(self)  # Note: Not using the action stack. Saving cannot be undone
 
     def save_to_disk(self):
         """Save the document at the internally remembered save path. Raises a RuntimeError, if no such path is set."""
         if self.save_file_path is None:
             raise RuntimeError("Cannot save without a file path!")
-        ActionSaveDocument(self.save_file_path).apply(self)
+        ActionSaveDocument(self.save_file_path).apply(self)  # Note: Not using the action stack. Saving cannot be undone
 
     def compute_pages_saved_by_compacting(self) -> int:
         """
@@ -413,14 +414,26 @@ class Document(QAbstractItemModel):
                 if card.image_file in blanks and card.image_uri:
                     yield self.index(card_number, 0, page_index)
 
-    @staticmethod
-    def _get_page_content_as_scryfall_ids(page: Page) -> typing.Iterable[typing.Tuple[str, bool]]:
-        return ((container.card.scryfall_id, container.card.is_front) for container in page)
+    def _get_page_content_as_image_keys(self, page: Page) -> typing.Iterable[ImageKey]:
+        image_db = self.image_db
+        return (
+            ImageKey(card.scryfall_id, card.is_front, card.highres_image)
+            for container in page
+            if not (card := container.card).is_custom_card
+               and card.image_file is not image_db.get_blank(card.size))
 
-    def get_all_card_keys_in_document(self) -> typing.Set[typing.Tuple[str, bool]]:
+    def get_all_image_keys_in_document(self) -> typing.Set[ImageKey]:
         return set(itertools.chain.from_iterable(
-            map(self._get_page_content_as_scryfall_ids, self.pages)
+            map(self._get_page_content_as_image_keys, self.pages)
         ))
+
+    def get_all_custom_cards(self) -> typing.Set[CustomCard]:
+        result = set()
+        for page in self.pages:
+            for container in page:
+                if isinstance(container.card, CustomCard):
+                    result.add(container.card)
+        return result
 
     def recreate_page_index_cache(self):
         self.page_index_cache.clear()

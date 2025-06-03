@@ -17,6 +17,12 @@
 import sqlite3
 import textwrap
 
+from PyQt5.QtCore import QSizeF
+from PyQt5.QtGui import QPageSize, QPageLayout
+from pint.registry import Quantity
+
+from mtg_proxy_printer.units_and_sizes import PageSizeManager
+
 try:
     from hamcrest import contains_exactly
 except ImportError:
@@ -28,7 +34,8 @@ from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 logger = get_logger(__name__)
 del get_logger
-
+Orientation = QPageLayout.Orientation
+Millimeter = QPageSize.Unit.Millimeter
 __all__ = [
     "migrate_database",
 ]
@@ -42,6 +49,7 @@ def migrate_database(db: sqlite3.Connection, settings: PageLayoutSettings):
     _migrate_5_to_6(db, settings)
     _migrate_image_spacing_settings(db)
     _migrate_6_to_7(db)
+    _migrate_paper_size_settings(db)
     logger.debug("Finished running migration tasks")
 
 
@@ -202,6 +210,7 @@ def _migrate_image_spacing_settings(db: sqlite3.Connection):
     ]:
         db.execute(f"{statement};\n")
 
+
 def _migrate_6_to_7(db: sqlite3.Connection, _: PageLayoutSettings = None):
     if db.execute("PRAGMA user_version").fetchone()[0] != 6:
         return
@@ -288,3 +297,63 @@ def _migrate_6_to_7(db: sqlite3.Connection, _: PageLayoutSettings = None):
         "PRAGMA user_version = 7"
     ]:
         db.execute(f"{statement};\n")
+
+
+def _migrate_paper_size_settings(db: sqlite3.Connection):
+    user_version, = db.execute("PRAGMA user_version -- _migrate_paper_size_settings()").fetchone()
+    if user_version != 7:
+        return
+    logger.debug("Migrating save file paper size settings")
+    for statement in [
+        textwrap.dedent("""\
+        UPDATE DocumentDimensions SET key = 'custom_page_height' -- _migrate_paper_size_settings()
+          WHERE key == 'page_height' 
+          AND NOT EXISTS (
+            SELECT key FROM DocumentDimensions
+            WHERE key == 'custom_page_height')
+        """),
+        textwrap.dedent("""\
+        UPDATE DocumentDimensions SET key = 'custom_page_width' -- _migrate_paper_size_settings()
+          WHERE key == 'page_width' 
+          AND NOT EXISTS (
+            SELECT key FROM DocumentDimensions
+            WHERE key == 'custom_page_width')
+        """),
+        "DELETE FROM DocumentDimensions WHERE key = 'page_height' -- _migrate_paper_size_settings()\n",
+        "DELETE FROM DocumentDimensions WHERE key = 'page_width' -- _migrate_paper_size_settings()\n",
+        # Not updating the user_version
+    ]:
+        db.execute(f"{statement}\n")
+    stored_width, stored_height, paper_size_present_exists = db.execute(textwrap.dedent("""\
+    SELECT ( -- _migrate_paper_size_settings()
+      SELECT value FROM DocumentDimensions WHERE key = 'custom_page_width'
+    ) AS width, (
+      SELECT value FROM DocumentDimensions WHERE key = 'custom_page_height'
+    ) AS height, (
+      SELECT EXISTS(SELECT key FROM DocumentSettings WHERE key = 'paper_size')
+    )
+    """)).fetchone()  # type: QuantityT, QuantityT, bool
+    if not paper_size_present_exists and stored_width is not None and stored_height is not None:
+        size = QSizeF(stored_width.to("mm").magnitude, stored_height.to("mm").magnitude)
+        orientation = Orientation.Portrait if stored_height >= stored_width else Orientation.Landscape
+        if orientation == Orientation.Landscape:
+            size.transpose()
+
+        paper_size = QPageSize(size, Millimeter)
+        paper_size_id = paper_size.id()
+        paper_size_name = PageSizeManager.PageSizeReverse[paper_size_id]
+        orientation_name = PageSizeManager.PageOrientationReverse[orientation]
+        logger.debug(f"Detected paper sizes: {paper_size_name} ({orientation_name})")
+        db.executemany(
+            # paper_orientation *may* be present on crafted documents.
+            # so use REPLACE to not fail in that case, as presence of the key is unchecked.
+            "INSERT OR REPLACE INTO DocumentSettings VALUES (?, ?) -- _migrate_paper_size_settings()\n",
+            [
+                ("paper_size", paper_size_name),
+                ("paper_orientation", orientation_name)]
+        )
+        if paper_size_id != QPageSize.PageSizeId.Custom:
+            logger.debug("Deleting numerical size values")
+            db.executemany(
+                "DELETE FROM DocumentDimensions WHERE key = ? -- _migrate_paper_size_settings()\n",
+                [('custom_page_width',), ('custom_page_height',)])

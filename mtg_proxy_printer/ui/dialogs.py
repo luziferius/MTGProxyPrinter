@@ -14,18 +14,20 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import typing
-import pathlib
+from pathlib import Path
+import shutil
 import sys
+import typing
+from typing import Tuple
 
-from PyQt5.QtCore import QFile, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
+from PyQt5.QtCore import QFile, pyqtSignal as Signal, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
 from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PyQt5.QtGui import QIcon
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.carddb import CardDatabase
-import mtg_proxy_printer.model.document
+from mtg_proxy_printer.model.card import AnyCardType
 import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
@@ -33,8 +35,11 @@ import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.runner import AsyncTaskRunner
 
+from mtg_proxy_printer.model.imagedb_files import ImageKey
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
+    from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, ConfigParser
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.print_count_updater import PrintCountUpdater
@@ -43,11 +48,13 @@ from mtg_proxy_printer.logger import get_logger
 try:
     from mtg_proxy_printer.ui.generated.about_dialog import Ui_AboutDialog
     from mtg_proxy_printer.ui.generated.document_settings_dialog import Ui_DocumentSettingsDialog
+    from mtg_proxy_printer.ui.generated.export_card_images_dialog import Ui_ExportCardImagesDialog
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
 
     Ui_AboutDialog = load_ui_from_file("about_dialog")
     Ui_DocumentSettingsDialog = load_ui_from_file("document_settings_dialog")
+    Ui_ExportCardImagesDialog = load_ui_from_file("export_card_images_dialog")
 
 EventType = QEvent.Type
 logger = get_logger(__name__)
@@ -62,6 +69,7 @@ __all__ = [
     "PrintPreviewDialog",
     "PrintDialog",
     "DocumentSettingsDialog",
+    "ExportCardImagesDialog",
 ]
 
 
@@ -69,7 +77,7 @@ def read_path(section: str, setting: str) -> str:
     stored = mtg_proxy_printer.settings.settings[section][setting]
     if not stored:
         return ""
-    resolved = str(pathlib.Path(stored).resolve())
+    resolved = str(Path(stored).resolve())
     if not resolved:
         logger.warning(
             f"File system path stored in section {section} setting {setting} does not resolve to an existing path")
@@ -78,7 +86,7 @@ def read_path(section: str, setting: str) -> str:
 
 class SavePDFDialog(QFileDialog):
 
-    def __init__(self, parent: "MainWindow", document: mtg_proxy_printer.model.document.Document):
+    def __init__(self, parent: "MainWindow", document: "Document"):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, "", self.get_preferred_file_name(document))
@@ -96,7 +104,7 @@ class SavePDFDialog(QFileDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @staticmethod
-    def get_preferred_file_name(document: mtg_proxy_printer.model.document.Document):
+    def get_preferred_file_name(document: "Document"):
         if document.save_file_path is None:
             return ""
         # Note: Qt automatically appends the preferred file extension (.pdf), if the file does not have one.
@@ -120,7 +128,7 @@ class SavePDFDialog(QFileDialog):
 
 class SavePNGDialog(QFileDialog):
 
-    def __init__(self, parent: "MainWindow", document: mtg_proxy_printer.model.document.Document):
+    def __init__(self, parent: "MainWindow", document: "Document"):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, "", self.get_preferred_file_name(document))
@@ -138,7 +146,7 @@ class SavePNGDialog(QFileDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @staticmethod
-    def get_preferred_file_name(document: mtg_proxy_printer.model.document.Document):
+    def get_preferred_file_name(document: "Document"):
         if document.save_file_path is None:
             return ""
         # Note: Qt automatically appends the preferred file extension (.png), if the file does not have one.
@@ -177,7 +185,7 @@ class LoadSaveDialog(QFileDialog):
 
 class SaveDocumentAsDialog(LoadSaveDialog):
 
-    def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
+    def __init__(self, document: "Document", parent: QWidget = None, **kwargs):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, **kwargs)
@@ -194,7 +202,7 @@ class SaveDocumentAsDialog(LoadSaveDialog):
     @Slot()
     def on_accept(self):
         logger.debug("User chose a file name, about to save the document to disk")
-        path = pathlib.Path(self.selectedFiles()[0])
+        path = Path(self.selectedFiles()[0])
         self.document.save_as(path)
         logger.info(f"Saved document to {path}")
 
@@ -207,7 +215,7 @@ class LoadDocumentDialog(LoadSaveDialog):
 
     def __init__(
             self, parent: QWidget,
-            document: mtg_proxy_printer.model.document.Document, **kwargs):
+            document: "Document", **kwargs):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, **kwargs)
@@ -224,7 +232,7 @@ class LoadDocumentDialog(LoadSaveDialog):
     @Slot()
     def on_accept(self):
         logger.debug("User chose a file name, about to load the document from disk")
-        path = pathlib.Path(self.selectedFiles()[0])
+        path = Path(self.selectedFiles()[0])
         self.document.loader.load_document(path)
         logger.info(f"Requested loading document from {path}")
 
@@ -309,7 +317,7 @@ class AboutDialog(QDialog):
 
 class PrintPreviewDialog(QPrintPreviewDialog):
 
-    def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
+    def __init__(self, document: "Document", parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
         self.q_printer = mtg_proxy_printer.print.create_printer(self.renderer)
         super().__init__(self.q_printer, parent)
@@ -328,7 +336,7 @@ class PrintPreviewDialog(QPrintPreviewDialog):
 
 class PrintDialog(QPrintDialog):
 
-    def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
+    def __init__(self, document: "Document", parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
         self.q_printer = mtg_proxy_printer.print.create_printer(self.renderer)
         super().__init__(self.q_printer, parent)
@@ -361,7 +369,7 @@ class ChangedSettingsHoverEventFilter(QObject):
 
 class DocumentSettingsDialog(QDialog):
 
-    def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
+    def __init__(self, document: "Document", parent: QWidget = None):
         super().__init__(parent)
         self.ui = Ui_DocumentSettingsDialog()
         self.ui.setupUi(self)
@@ -423,3 +431,119 @@ class DocumentSettingsDialog(QDialog):
         """Clears all GUI widget highlights."""
         for item in self.findChildren((QWidget,), options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
             item.setGraphicsEffect(None)
+
+
+UNSAFE_FILE_NAME_CHARS = r'''*"/\<>:|?^'''
+UNSAFE_FILE_NAME_MAPPING = str.maketrans(UNSAFE_FILE_NAME_CHARS, "_"*len(UNSAFE_FILE_NAME_CHARS))
+
+
+class ExportCardImagesDialog(QDialog):
+
+    error_occurred = Signal(str)
+
+    def __init__(self, document: "Document", parent: QWidget = None):
+        super().__init__(parent)
+        self.document = document
+        self.ui = ui = Ui_ExportCardImagesDialog()
+        ui.setupUi(self)
+        bb = ui.button_box
+        bb.button(bb.StandardButton.Ok).setEnabled(True)
+        ui.output_path.setText(mtg_proxy_printer.app_dirs.data_directories.user_pictures_dir)
+        self.update_ok_button_enabled_state()
+
+    @Slot()
+    def on_output_path_browse_button_clicked(self):
+        logger.debug("User about to select a card image output path.")
+        if location := QFileDialog.getExistingDirectory(self, self.tr("Select card image export location")):
+            logger.info("User selected a directory path to export to.")
+            self.ui.output_path.setText(location)
+            self.update_ok_button_enabled_state()
+        else:
+            logger.debug("User cancelled path selection")
+
+    @Slot()
+    def update_ok_button_enabled_state(self):  # Slot called via connections defined in the UI file
+        """Enable the Ok button iff at least one export checkbox is checked and the target location is valid"""
+        ui = self.ui
+        bb = ui.button_box
+        bb.button(bb.StandardButton.Ok).setEnabled(
+            Path(self.ui.output_path.text()).is_dir()
+            and any((
+            ui.export_official_cards.isChecked(),
+            ui.export_custom_cards.isChecked(),
+        )))
+        
+    def accept(self):
+        logger.info(f"User accepted card image export. Writing card images to {self.ui.output_path.text()}")
+        try:
+            self._export_images()
+        except RuntimeError:
+            pass
+        super().accept()
+
+    def _export_images(self):
+        if self.ui.export_official_cards.isChecked():
+            logger.info("Exporting all official cards")
+            self._export_official_cards()
+        if self.ui.export_custom_cards.isChecked():
+            logger.info("Exporting all custom cards")
+            self._export_custom_cards()
+
+    def _export_official_cards(self):
+        document = self.document
+        card_db = document.card_db
+        image_db_path = document.image_db.db_path
+        target_path = Path(self.ui.output_path.text())
+        target_path.mkdir(parents=True, exist_ok=True)
+        for key in document.get_all_image_keys_in_document():
+            source_file, target_file, card = self._format_file_paths(card_db, image_db_path, target_path, key)
+            try:
+                shutil.copy2(source_file, target_file)
+            except (IOError, OSError) as e:
+                logger.exception(f"Copy failed for {card.name}! Disk detached/full? Aborting.")
+                self.error_occurred.emit(
+                    self.tr("Copy failed for {card_name}! Disk detached/full? Aborting.").format(card_name=card.name))
+                raise RuntimeError() from e
+
+    @staticmethod
+    def _format_file_paths(
+            card_db: CardDatabase, image_db_path: Path, target_dir: Path, key: ImageKey) -> Tuple[Path, Path, AnyCardType]:
+        card = card_db.get_card_with_scryfall_id(key.scryfall_id, key.is_front)
+        source_path = image_db_path / key.format_relative_path()
+        target_file_name = ExportCardImagesDialog._format_card_file_name(card, source_path.suffix)
+        return source_path, target_dir/target_file_name, card
+
+    @staticmethod
+    def _format_card_file_name(card: AnyCardType, suffix: str):
+        side = "Front" if card.is_front else "Back"
+        name = card.name.translate(UNSAFE_FILE_NAME_MAPPING)
+        target_file_name = f"{card.set_code} {card.collector_number} {side} {name}{suffix}"
+        return target_file_name
+
+    def _export_custom_cards(self):
+        target_path = Path(self.ui.output_path.text())
+        target_path.mkdir(parents=True, exist_ok=True)
+        for card in self.document.get_all_custom_cards():
+            suffix = guess_file_extension_from_content(card.source_image_file)
+            target_file_name = ExportCardImagesDialog._format_card_file_name(card, suffix)
+            try:
+                (target_path/target_file_name).write_bytes(card.source_image_file)
+            except (IOError, OSError) as e:
+                logger.exception(f"Write failed for {card.name}! Disk detached/full? Aborting.")
+                self.error_occurred.emit(
+                    self.tr("Write failed for {card_name}! Disk detached/full? Aborting.").format(card_name=card.name))
+                raise RuntimeError() from e
+
+
+def guess_file_extension_from_content(content: bytes) -> str:
+    """Custom cards don't have file names, and may be of arbitrary image type.
+    Guess the file name extension from the content."""
+    if content.startswith(b'\x89PNG\r\n\x1a\n'):
+        return ".png"
+    elif content.startswith(b'\xff\xd8'):  # FF D8 == JFIF SOI/Start of Image marker
+        return ".jpg"
+    elif content[:4]+content[8:12] == b'RIFFWEBP':
+        return ".webp"
+    elif content[:4] in {b'IIB\x00', b'MM\x00B'}:  # Either big endian or little endian. https://docs.fileformat.com/image/tiff/
+        return '.tiff'
+    return ""

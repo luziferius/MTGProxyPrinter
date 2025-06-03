@@ -15,12 +15,16 @@ in a paged document suitable for printing or PDF export.
 - The standard document editing features:
   - Create, save and load documents
   - Multi-level undo & redo, even across the "New document" and "Load document"
-- Export documents as PDFs
-  - Optional, automatic splitting into configurable chunks to accommodate file size limits present in various printers.
+- Multiple export options:
+  - Export as PDFs, including optional, automatic splitting into configurable chunks to accommodate file size limits 
+    present in various printers.
+  - Export as a PNG image sequence, when PDF export is unsuitable
+  - Export as individual card images
 - Direct printing using your operating system’s printing support. Can use any available and suitable printer
 - Obtains high-quality images from Scryfall (where available)
   - Images are cached locally for faster loading times when printing the same cards again
-- Basic support for printing custom cards. Drop images onto the main window to add them as custom regular-size cards.
+- Support for printing custom cards (currently regular size only). Drag & drop images onto the main window 
+  or use the import wizard in the File menu.
 - Import deck lists in various formats, like Magic Arena deck lists and XMage 
   deck files (see below for a list of supported formats)
   - Automatic download of deck lists from various deck list database websites (see below for a list)
@@ -34,7 +38,7 @@ in a paged document suitable for printing or PDF export.
   - Both front and back are searchable by all names printed on the card
   - Automatic handling of opposing card faces: MTGProxyPrinter automatically adds the same number
     of copies of the other face. (This feature can be disabled)
-  - Optional generation of check cards for double-faced cards. Those combine both sides on a single side
+  - Optional generation of check cards for double-faced cards. Those combine both sides on a single side.
 - Hide cards using various card and printing filters. Hidden cards are treated as though they do not exist.
   - Bans in various formats supported by Scryfall
   - Border color (white-bordered, gold-bordered)
@@ -62,9 +66,10 @@ in a paged document suitable for printing or PDF export.
 
 ### Supported deck list formats
 
+- Simple list with one card name per line, treated as a list of singletons.
 - Magic Arena
 - Magic Online (MTGO)
-- [XMage](http://xmage.today)
+- [XMage](http://xmage.today) deck files
 - [Tappedout.net](https://tappedout.net) deck lists (choose CSV export)
 - [Scryfall.com](https://scryfall.com) deck lists (choose CSV export)
 - Magic Workstation Deck Data (`.mwDeck` files)
@@ -136,16 +141,32 @@ in which all other dependencies will be installed.
 - The `venv` Python module to create environments
 - `pip` to install dependencies
 
-## Installation
+## Building packages
 
-To install from a fossil checkout or a downloaded and unpacked source code archive, 
-execute `pipx install .` or `pip install .` from the repository root directory 
-(where `pyproject.toml` is located).
+The top level of the checked-out repository or unpacked source code archive contains scripts to build the packages.
+These create a virtual environment, if not already present, and then use `tox`, to build the packages in dedicated virtual environments.
 
+Building the packages first 
+- calls the Qt UI file compiler to generate GUI classes from the included `.ui`-files,
+- builds importable locale files using the Qt locale compiler
+- compiles locales and the icon theme into an importable module using the Qt resource compiler
+
+The exact steps can be seen by inspecting `tox.ini`
+
+It then bundles that up with the source code into an installable Python Wheel, and, if run on Windows,
+the installable MSI package. Built artifacts are placed in the `dist` directory.
+
+## Installing from a source checkout
+
+Because the package contains compiled data that must be built before installation,
+the source checkout is not directly installable via `pip install .`. 
+
+You first must build an installable package (see above), and then install the generated Python Wheel using `pip` or better yet using `pipx`.
+The compiled data is cross-platform, so a built wheel will install on any operating system and compatible Python version.
 
 ## Usage
 
-Execute `mtg-proxy-printer` to start the GUI. The Windows MSI package places a starter in the Start menu.
+On Linux/macOS, execute `mtg-proxy-printer` to start the GUI. The Windows MSI package places a starter in the Start menu.
 
 At first start and at somewhat regular intervals, MTGProxyPrinter requires downloading the MTG card data
 from the Scryfall API. This dataset containing the information about the available 400k+ printings
@@ -156,7 +177,8 @@ The left-most panel in the main window shows an overview over all pages with a s
 Click on a page to show it’s content in detail and select it for editing.
 The top-right area is used to find cards by name or set and add them to the current page.
 Below is a preview rendering of the current page, and a table with details about the cards in the opened page.
-You can select images and remove them, if you accidentally added the wrong cards.
+You can select images and remove them, if you accidentally added the wrong cards. 
+Double-clicking table cells allows re-selecting printings, or editing data of custom cards.
 
 If you don’t want to use the built-in card search, MTGProxyPrinter can import deck lists from disk and from a set of
 card database websites. The import wizard is available from the File menu in the main window. After loading the list,
