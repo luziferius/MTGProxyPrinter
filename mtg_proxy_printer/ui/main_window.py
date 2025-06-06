@@ -136,45 +136,26 @@ class MainWindow(QMainWindow):
             self.loading_state_changed.connect(widget_or_action.setDisabled)
 
     def _setup_undo_redo_actions(self, document: Document):
-        self.ui.action_undo.triggered.connect(document.undo)
-        self.ui.action_redo.triggered.connect(document.redo)
+        ui = self.ui
+        ui.action_undo.triggered.connect(document.undo)
+        ui.action_redo.triggered.connect(document.redo)
         document.action_applied.connect(self.on_document_action_applied_or_undone)
         document.action_undone.connect(self.on_document_action_applied_or_undone)
-        document.undo_available_changed.connect(self.ui.action_undo.setEnabled)
-        document.redo_available_changed.connect(self.ui.action_redo.setEnabled)
+        document.undo_available_changed.connect(ui.action_undo.setEnabled)
+        document.redo_available_changed.connect(ui.action_redo.setEnabled)
 
     def _connect_document_signals(self, document: Document):
-        document.loading_state_changed.connect(self.loading_state_changed)
-        loader = document.loader
-        loader.loading_file_failed.connect(self.on_document_loading_failed)
-        loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
-        loader.network_error_occurred.connect(self.on_network_error_occurred)
-        loader.begin_loading_loop.connect(self.progress_bar_manager.begin_outer_progress)
-        loader.progress_loading_loop.connect(self.progress_bar_manager.set_outer_progress)
-        loader.finished.connect(self.progress_bar_manager.end_outer_progress)
-        self.ui.action_new_page.triggered.connect(lambda: document.apply(ActionNewPage()))
-        self.ui.action_discard_page.triggered.connect(lambda: document.apply(ActionRemovePage()))
-        self.ui.action_new_document.triggered.connect(lambda: document.apply(ActionNewDocument()))
-        self.ui.action_compact_document.triggered.connect(lambda: document.apply(ActionCompactDocument()))
-        self.ui.action_shuffle_document.triggered.connect(lambda: document.apply(ActionShuffleDocument()))
+        ui = self.ui
+        ui.action_new_page.triggered.connect(lambda: document.apply(ActionNewPage()))
+        ui.action_discard_page.triggered.connect(lambda: document.apply(ActionRemovePage()))
+        ui.action_new_document.triggered.connect(lambda: document.apply(ActionNewDocument()))
+        ui.action_compact_document.triggered.connect(lambda: document.apply(ActionCompactDocument()))
+        ui.action_shuffle_document.triggered.connect(lambda: document.apply(ActionShuffleDocument()))
 
     def _setup_card_data_download_actions(self):
-        # Do not connect the card_info_downloader.working_state_changed
-        # signal to not re-enable the action when completed. This action in particular should remain disabled.
         ui = self.ui
         ui.action_download_card_data.triggered.connect(lambda: self.request_run_async_task.emit(ApiImportTask()))
         ui.action_download_card_data.triggered.connect(lambda: ui.action_download_card_data.setDisabled(True))
-
-
-        downloader.download_begins.connect(lambda: ui.action_download_card_data.setDisabled(True))
-        downloader.card_data_updated.connect(self.update_language_model)
-        downloader.download_begins.connect(self.progress_bar_manager.begin_independent_progress)
-        downloader.download_progress.connect(self.progress_bar_manager.set_independent_progress)
-        downloader.download_finished.connect(self.progress_bar_manager.end_independent_progress)
-        downloader.network_error_occurred.connect(self.on_network_error_occurred)
-        downloader.network_error_occurred.connect(lambda _: ui.action_download_card_data.setEnabled(True))
-        downloader.other_error_occurred.connect(self.on_error_occurred)
-        downloader.other_error_occurred.connect(lambda _: ui.action_download_card_data.setEnabled(True))
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> UiElements:
         ui = self.ui
@@ -203,12 +184,7 @@ class MainWindow(QMainWindow):
         ]
 
     def _connect_image_database_signals(self, image_db: ImageDatabase):
-        image_db.card_download_starting.connect(self.progress_bar_manager.begin_inner_progress)
-        image_db.card_download_finished.connect(self.progress_bar_manager.end_inner_progress)
-        image_db.card_download_progress.connect(self.progress_bar_manager.set_inner_progress)
-        image_db.batch_process_starting.connect(self.progress_bar_manager.begin_outer_progress)
-        image_db.batch_process_progress.connect(self.progress_bar_manager.set_outer_progress)
-        image_db.batch_process_finished.connect(self.progress_bar_manager.end_outer_progress)
+        image_db.request_run_async_task.connect(self.request_run_async_task)
         image_db.batch_processing_state_changed.connect(self.loading_state_changed)
         image_db.network_error_occurred.connect(self.on_network_error_occurred)
 

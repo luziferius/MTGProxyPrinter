@@ -13,6 +13,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Helper classes used in the ImageDatabase API. Extracted here to have them available as type hints,
+while decouple them from introducing a hard dependency on the actual ImageDatabase class.
+"""
 
 import dataclasses
 import pathlib
