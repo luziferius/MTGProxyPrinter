@@ -85,7 +85,6 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
     fill_card_database_with_json_cards(qtbot, card_db, [
         "regular_english_card", "oversized_card", "english_double_faced_card"])
     document = Document(card_db, image_db)
-    document.loader.db = card_db.db
     yield document
     document.__dict__.clear()
 
@@ -107,7 +106,6 @@ def document_light(qtbot, mock_imagedb) -> Document:
     mock_card_db.db = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
         "carddb", check_same_thread=False)
     document = Document(mock_card_db, mock_imagedb)
-    document.loader.db = mock_card_db.db
     yield document
     document.__dict__.clear()
 

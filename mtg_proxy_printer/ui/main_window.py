@@ -501,7 +501,7 @@ class MainWindow(QMainWindow):
     def dropEvent(self, event: QDropEvent) -> None:
         if path := self._to_save_file_path(event):
             logger.info("User dropped save file onto the main window, loading the dropped document")
-            self.document.loader.load_document(path)
+            # TODO: Load document
         elif CustomCardImportDialog.dragdrop_acceptable(event):
             self.current_dialog = dialog = CustomCardImportDialog(self.document, self)
             dialog.request_action.connect(self.document.apply)

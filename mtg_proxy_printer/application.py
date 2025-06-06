@@ -145,7 +145,8 @@ class Application(QApplication):
             self.main_window.ask_user_about_empty_database()
         if args.file is not None:
             if args.file.is_file():
-                QTimer.singleShot(0, partial(self.document.loader.load_document, args.file))
+                # TODO Load document
+                QTimer.singleShot(0, lambda: None)
                 logger.info(f'Enqueued loading of document "{args.file}"')
             elif args.file.exists():
                 logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')

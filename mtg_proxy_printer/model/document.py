@@ -33,7 +33,6 @@ from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType, CustomCard
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 
@@ -73,7 +72,6 @@ class Document(QAbstractItemModel):
     """
     INVALID_INDEX = INVALID_INDEX
 
-    loading_state_changed = Signal(bool)
     current_page_changed = Signal(QPersistentModelIndex)
     page_layout_changed = Signal(PageLayoutSettings)
     page_type_changed = Signal(QModelIndex)
@@ -102,9 +100,6 @@ class Document(QAbstractItemModel):
         self.save_file_path: typing.Optional[pathlib.Path] = None
         self.card_db = card_db
         self.image_db = image_db
-        self.loader = DocumentLoader(self)
-        self.loader.loading_state_changed.connect(self.loading_state_changed)
-        self.loader.load_requested.connect(self.apply)
         self.pages: typing.List[Page] = [first_page := Page()]
         # Mapping from page id() to list index in the page list
         self.page_index_cache: typing.Dict[int, int] = {id(first_page): 0}

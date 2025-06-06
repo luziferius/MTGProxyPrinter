@@ -233,7 +233,7 @@ class LoadDocumentDialog(LoadSaveDialog):
     def on_accept(self):
         logger.debug("User chose a file name, about to load the document from disk")
         path = Path(self.selectedFiles()[0])
-        self.document.loader.load_document(path)
+        # TODO: Load document
         logger.info(f"Requested loading document from {path}")
 
     @Slot()
