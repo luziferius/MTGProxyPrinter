@@ -267,7 +267,7 @@ class DocumentLoader(AsyncTask):
                         continue
 
             elif scryfall_id:
-                loaded = self._load_official_card_from_card_db(card_row)
+                loaded = self._load_official_card_from_save(card_row)
                 result.append(loaded.card)
                 if loaded.was_migrated:
                     self.migrated_ids += 1
@@ -293,7 +293,7 @@ class DocumentLoader(AsyncTask):
             (scryfall_id, custom_card_id), has_item(none()),
             "Scryfall ID and custom card ID must not be both present")
 
-    def _load_official_card_from_card_db(self, data: CardRow) -> Optional[DatabaseLoadResult]:
+    def _load_official_card_from_save(self, data: CardRow) -> Optional[DatabaseLoadResult]:
         if data.card_type == CardType.CHECK_CARD:
             return self._load_check_card(data)
         else:
@@ -301,7 +301,7 @@ class DocumentLoader(AsyncTask):
 
     def _load_check_card(self, data: CardRow) -> Optional[DatabaseLoadResult]:
         """
-        Loads a check card. Retuns None if the given scryfall id does not belong to a DFC.
+        Loads a check card. Returns None if the given scryfall id does not belong to a DFC.
         If the front is unavailable, try to find a replacement.
         Returns None, if the back of the found replacement is unavailable.
         """
@@ -312,7 +312,7 @@ class DocumentLoader(AsyncTask):
             return None
         front = self.card_db.get_card_with_scryfall_id(scryfall_id, True)
         if front is None:
-            front = self._find_replacement_card(scryfall_id, True, self.prefer_already_downloaded)
+            front = self._find_replacement_card_for_hidden_official_card(scryfall_id, True, self.prefer_already_downloaded)
             if front is None:
                 logger.info("Unable to find suitable replacement card. Skipping it.")
                 return None
@@ -333,7 +333,8 @@ class DocumentLoader(AsyncTask):
         scryfall_id = data.scryfall_id
         is_front = data.is_front
         if (card := self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)) is None:
-            card = self._find_replacement_card(scryfall_id, is_front, self.prefer_already_downloaded)
+            card = self._find_replacement_card_for_hidden_official_card(
+                scryfall_id, is_front, self.prefer_already_downloaded)
             migrated = True
         if card is None:
             logger.info("Unable to find suitable replacement card. Skipping it.")
@@ -341,7 +342,8 @@ class DocumentLoader(AsyncTask):
         self.image_loader.get_image_synchronous(card)
         return DatabaseLoadResult(card, migrated)
 
-    def _find_replacement_card(self, scryfall_id: str, is_front: bool, prefer_already_downloaded: bool):
+    def _find_replacement_card_for_hidden_official_card(
+            self, scryfall_id: str, is_front: bool, prefer_already_downloaded: bool):
         logger.info(f"Unknown card scryfall ID found in document:  {scryfall_id=}, {is_front=}")
         card = None
         identification_data = CardIdentificationData(scryfall_id=scryfall_id, is_front=is_front)
@@ -355,7 +357,8 @@ class DocumentLoader(AsyncTask):
             logger.info(f"Found suitable replacement card: {card}")
         return card
 
-    def _load_custom_card_from_save(self, save_db: sqlite3.Connection, card_size: CardSize, card_row: CardRow) -> CustomCard:
+    def _load_custom_card_from_save(
+            self, save_db: sqlite3.Connection, card_size: CardSize, card_row: CardRow) -> CustomCard:
         query = cached_dedent("""\
         SELECT name, set_code, set_name, collector_number, image
           FROM CustomCardData 
