@@ -150,7 +150,7 @@ Icône du projet par [islanders2013](https://www.reddit.com/user/islanders2013/)
   <context>
     <name>ActionLoadDocument</name>
     <message numerus="yes">
-      <location filename="../../document_controller/load_document.py" line="77"/>
+      <location filename="../../document_controller/load_document.py" line="94"/>
       <source>Load document from &apos;{save_path}&apos;,
 containing %n page(s) {cards_total}</source>
       <comment>Undo/redo tooltip text.</comment>
@@ -163,7 +163,7 @@ containing %n page(s) {cards_total}</source>
   <context>
     <name>ActionLoadDocument. Card total</name>
     <message numerus="yes">
-      <location filename="../../document_controller/load_document.py" line="73"/>
+      <location filename="../../document_controller/load_document.py" line="90"/>
       <source>with %n card(s) total</source>
       <comment>Undo/redo tooltip text. Will be inserted as {cards_total}</comment>
       <translation>
@@ -361,12 +361,12 @@ switch the selected printing.</translation>
   <context>
     <name>CardSideSelectionDelegate</name>
     <message>
-      <location filename="../../ui/item_delegates.py" line="99"/>
+      <location filename="../../ui/item_delegates.py" line="100"/>
       <source>Front</source>
       <translation type="unfinished">Front</translation>
     </message>
     <message>
-      <location filename="../../ui/item_delegates.py" line="100"/>
+      <location filename="../../ui/item_delegates.py" line="101"/>
       <source>Back</source>
       <translation type="unfinished">Back</translation>
     </message>
@@ -2423,7 +2423,7 @@ So only enable this, if actually required.</translation>
   <context>
     <name>PageConfigWidget</name>
     <message numerus="yes">
-      <location filename="../../ui/page_config_widget.py" line="101"/>
+      <location filename="../../ui/page_config_widget.py" line="137"/>
       <source>%n regular card(s)</source>
       <comment>Display of the resulting page capacity for regular-sized cards</comment>
       <translation type="unfinished">
@@ -2432,7 +2432,7 @@ So only enable this, if actually required.</translation>
       </translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/page_config_widget.py" line="105"/>
+      <location filename="../../ui/page_config_widget.py" line="141"/>
       <source>%n oversized card(s)</source>
       <comment>Display of the resulting page capacity for oversized cards</comment>
       <translation type="unfinished">
@@ -2441,7 +2441,7 @@ So only enable this, if actually required.</translation>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/page_config_widget.py" line="110"/>
+      <location filename="../../ui/page_config_widget.py" line="146"/>
       <source>{regular_text}, {oversized_text}</source>
       <comment>Combination of the page capacities for regular, and oversized cards</comment>
       <translation type="unfinished">{regular_text}, {oversized_text}</translation>
@@ -2459,17 +2459,17 @@ based on the page size and spacings configured</source>
 based on the page size and spacings configured</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="57"/>
+      <location filename="../ui/page_config_widget.ui" line="179"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="422"/>
+      <location filename="../ui/page_config_widget.ui" line="453"/>
       <source> mm</source>
       <translation type="unfinished"> mm</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="76"/>
+      <location filename="../ui/page_config_widget.ui" line="330"/>
       <source>Paper height in millimeters.
 Must match the size of the sheets in the printer.
 Otherwise, scaling may be applied by the printer driver.</source>
@@ -2478,37 +2478,37 @@ Must match the size of the sheets in the printer.
 Otherwise, scaling may be applied by the printer driver.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="94"/>
+      <location filename="../ui/page_config_widget.ui" line="311"/>
       <source>Top margin</source>
       <translation>Marge supérieure</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="113"/>
+      <location filename="../ui/page_config_widget.ui" line="50"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the right paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the right paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="126"/>
+      <location filename="../ui/page_config_widget.ui" line="150"/>
       <source>If enabled, the page number is printed on each page. Makes it easier to notice missing pages in a stack.</source>
       <translation type="unfinished">If enabled, the page number is printed on each page. Makes it easier to notice missing pages in a stack.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="129"/>
+      <location filename="../ui/page_config_widget.ui" line="153"/>
       <source>Print page numbers</source>
       <translation>Imprimer les numéros de pages</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="136"/>
+      <location filename="../ui/page_config_widget.ui" line="278"/>
       <source>Resulting page capacity:</source>
       <translation>Capacité de page résultante :</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="146"/>
+      <location filename="../ui/page_config_widget.ui" line="396"/>
       <source>Card bleed</source>
       <translation>Marge supplémentaire</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="165"/>
+      <location filename="../ui/page_config_widget.ui" line="448"/>
       <source>Paper width in millimeters.
 Must match the size of the sheets in the printer.
 Otherwise, scaling may be applied by the printer driver.</source>
@@ -2517,17 +2517,17 @@ Must match the size of the sheets in the printer.
 Otherwise, scaling may be applied by the printer driver.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="183"/>
+      <location filename="../ui/page_config_widget.ui" line="301"/>
       <source>Enable printing additional lines to aid cutting the printed sheets.</source>
       <translation type="unfinished">Enable printing additional lines to aid cutting the printed sheets.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="186"/>
+      <location filename="../ui/page_config_widget.ui" line="304"/>
       <source>Print cut markers</source>
       <translation>Imprimer les marqueurs de coupe</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="199"/>
+      <location filename="../ui/page_config_widget.ui" line="250"/>
       <source>Space between image rows in mm.
 If set to zero, you only need one cut to separate two images,
 otherwise you need two cuts but require less precision hitting the exact middle.</source>
@@ -2536,27 +2536,27 @@ If set to zero, you only need one cut to separate two images,
 otherwise you need two cuts but require less precision hitting the exact middle.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="214"/>
+      <location filename="../ui/page_config_widget.ui" line="409"/>
       <source>Draw 90° card corners, instead of round ones</source>
       <translation>Dessiner les coins des cartes à 90°, au lieu de coins arrondis</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="227"/>
+      <location filename="../ui/page_config_widget.ui" line="354"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="240"/>
+      <location filename="../ui/page_config_widget.ui" line="386"/>
       <source>Document name</source>
       <translation>Nom du document</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="250"/>
+      <location filename="../ui/page_config_widget.ui" line="224"/>
       <source>Row spacing</source>
       <translation>Espacement des lignes</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="263"/>
+      <location filename="../ui/page_config_widget.ui" line="367"/>
       <source>The document name is printed on each page and can help you keep track
 of different printed sheets and to which deck they belong.
 
@@ -2567,32 +2567,27 @@ of different printed sheets and to which deck they belong.
 Leave empty to disable.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="272"/>
+      <location filename="../ui/page_config_widget.ui" line="376"/>
       <source>Document/deck name</source>
       <translation>Document/Nom de la liste de carte</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="282"/>
-      <source>Page height</source>
-      <translation>Hauteur de page</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="295"/>
+      <location filename="../ui/page_config_widget.ui" line="416"/>
       <source>Draw an additional border around cards to ease cutting.</source>
       <translation type="unfinished">Draw an additional border around cards to ease cutting.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="308"/>
+      <location filename="../ui/page_config_widget.ui" line="265"/>
       <source>Bottom Margin</source>
       <translation>Marge inférieure</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="321"/>
+      <location filename="../ui/page_config_widget.ui" line="160"/>
       <source>Left margin</source>
       <translation>Marge de gauche</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="340"/>
+      <location filename="../ui/page_config_widget.ui" line="96"/>
       <source>Space between image columns in mm.
 If set to zero, you only need one cut to separate two images,
 otherwise you need two cuts but require less precision hitting the exact middle.</source>
@@ -2601,39 +2596,49 @@ If set to zero, you only need one cut to separate two images,
 otherwise you need two cuts but require less precision hitting the exact middle.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="361"/>
+      <location filename="../ui/page_config_widget.ui" line="117"/>
       <source>Switch between portrait and landscape mode</source>
       <translation type="unfinished">Switch between portrait and landscape mode</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="364"/>
+      <location filename="../ui/page_config_widget.ui" line="120"/>
       <source>Flip</source>
       <translation>Inverser</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="374"/>
+      <location filename="../ui/page_config_widget.ui" line="130"/>
       <source>Column spacing</source>
       <translation>Espacement des colonnes</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="387"/>
+      <location filename="../ui/page_config_widget.ui" line="288"/>
       <source>Right margin</source>
       <translation>Marge de droite</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="400"/>
-      <source>Page width</source>
-      <translation>Largeur de page</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="419"/>
+      <location filename="../ui/page_config_widget.ui" line="211"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="447"/>
+      <location filename="../ui/page_config_widget.ui" line="78"/>
       <source>Show Preview</source>
       <translation type="unfinished">Show Preview</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="143"/>
+      <source>Paper size</source>
+      <translation type="unfinished">Paper size</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="192"/>
+      <source>Paper height</source>
+      <translation type="unfinished">Paper height</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="429"/>
+      <source>Paper width</source>
+      <translation type="unfinished">Paper width</translation>
     </message>
   </context>
   <context>
