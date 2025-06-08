@@ -67,6 +67,9 @@ class AsyncTask(QObject):
     def run(self):
         pass
 
+    def __str__(self):
+        return self.__class__.__name__
+
 
 class Runnable(QRunnable):
     INSTANCES: typing.Dict[int, "Runnable"] = {}

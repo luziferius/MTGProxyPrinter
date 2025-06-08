@@ -387,6 +387,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_load_document_triggered(self):
         self.current_dialog = dialog = LoadDocumentDialog(self, self.document)
+        dialog.request_run_async_task.connect(self.request_run_async_task)
         dialog.accepted.connect(self.ui.central_widget.select_first_page)
         dialog.finished.connect(self.on_dialog_finished)
         show_wizard_or_dialog(dialog)

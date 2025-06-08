@@ -86,8 +86,10 @@ class ProgressBarManager(QWidget):
     @Slot(AsyncTask)
     def add_task(self, task: AsyncTask):
         """Create a new progress bar for the given task"""
+        logger.debug(f"Adding progress bar for task {task}")
         bar = ProgressBar(task, self)
         layout = self.layout()
+        task.task_deleted.connect(partial(logger.debug, f"Deleting progress bar for task {task}"))
         task.task_deleted.connect(partial(layout.removeWidget, bar))
         task.task_deleted.connect(partial(bar.setParent, None))
         layout.addWidget(bar)

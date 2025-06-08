@@ -111,6 +111,7 @@ class DocumentLoader(AsyncTask):
     def __init__(self, document: "Document", path: pathlib.Path):
         super().__init__(None)
         self.document = document
+        self.load_requested.connect(document.apply)
         self.save_path = path
         self.card_db: CardDatabase = None
         # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.

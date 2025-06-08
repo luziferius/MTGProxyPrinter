@@ -36,6 +36,7 @@ import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 from mtg_proxy_printer.card_info_downloader import FileImportTask
 from mtg_proxy_printer.carddb_migrations import DatabaseMigrationTask
+from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.update_checker import UpdateChecker
@@ -145,8 +146,7 @@ class Application(QApplication):
             self.main_window.ask_user_about_empty_database()
         if args.file is not None:
             if args.file.is_file():
-                # TODO Load document
-                QTimer.singleShot(0, lambda: None)
+                QTimer.singleShot(0, lambda: self.run_async_task(DocumentLoader(self.document, args.file)))
                 logger.info(f'Enqueued loading of document "{args.file}"')
             elif args.file.exists():
                 logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')

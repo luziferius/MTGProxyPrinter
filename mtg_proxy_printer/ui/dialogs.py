@@ -33,7 +33,8 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
-from mtg_proxy_printer.runner import AsyncTaskRunner
+from mtg_proxy_printer.model.document_loader import DocumentLoader
+from mtg_proxy_printer.runner import AsyncTaskRunner, AsyncTask
 
 from mtg_proxy_printer.model.imagedb_files import ImageKey
 
@@ -213,6 +214,8 @@ class SaveDocumentAsDialog(LoadSaveDialog):
 
 class LoadDocumentDialog(LoadSaveDialog):
 
+    request_run_async_task = Signal(AsyncTask)
+
     def __init__(
             self, parent: QWidget,
             document: "Document", **kwargs):
@@ -233,7 +236,8 @@ class LoadDocumentDialog(LoadSaveDialog):
     def on_accept(self):
         logger.debug("User chose a file name, about to load the document from disk")
         path = Path(self.selectedFiles()[0])
-        # TODO: Load document
+        task = DocumentLoader(self.document, path)
+        self.request_run_async_task.emit(task)
         logger.info(f"Requested loading document from {path}")
 
     @Slot()
