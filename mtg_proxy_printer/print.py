@@ -26,13 +26,14 @@ from threading import BoundedSemaphore
 import typing
 
 from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex, QThreadPool
-from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage
+from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage, QColorConstants
 from PyQt5.QtPrintSupport import QPrinter
 
 
 from mtg_proxy_printer.runner import ProgressSignalContainer
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
+
 from mtg_proxy_printer.units_and_sizes import RESOLUTION
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
@@ -84,7 +85,8 @@ class PNGRenderer(ProgressSignalContainer):
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
             output_path = parent / file_name
-            image = QImage(page_size, QImage.Format.Format_RGB888)
+            image = QImage(page_size, QImage.Format.Format_RGBA8888)
+            image.fill(QColorConstants.Transparent)
             painter = QPainter(image)
             scene.on_current_page_changed(document.index(page_nr, 0))
             scene.render(painter)
