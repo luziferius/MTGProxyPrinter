@@ -112,13 +112,7 @@ class Application(QApplication):
             QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
         logger.debug("Enqueueing update check")
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
-
-        card_db_migration_runner = DatabaseMigrationTask(self.card_db)
-        manager = self.main_window.progress_bar_manager
-        manager.add_task(card_db_migration_runner.total_update_signals)
-        manager.add_task(card_db_migration_runner.script_update_signals)
-        card_db_migration_runner.total_update_signals.task_completed.connect(self._on_carddb_migrations_completed)
-        QThreadPool.globalInstance().start(AsyncTaskRunner(card_db_migration_runner))
+        self.run_async_task(DatabaseMigrationTask(self.card_db))
 
     @Slot()
     def _on_carddb_migrations_completed(self):

@@ -39,7 +39,7 @@ try:
 except ImportError:
     from typing_extensions import LiteralString
 
-from mtg_proxy_printer.runner import AsyncTask, AsyncTask
+from mtg_proxy_printer.runner import AsyncTask
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.model.carddb import CardDatabase, with_database_write_lock
@@ -724,8 +724,8 @@ class DatabaseMigrationTask(AsyncTask):
 
     def __init__(self, card_db: CardDatabase, migration_scripts: Dict[int, MigrationScript] = None):
         super().__init__()
-        self.total_update_signals = AsyncTask()
         self.script_update_signals = AsyncTask()
+        self.inner_tasks.append(self.script_update_signals)
         self.db_path = card_db.db_path
         self.migration_scripts = migration_scripts or MIGRATION_SCRIPTS
         logger.debug(f"Created {self.__class__.__name__} instance.")
@@ -739,31 +739,31 @@ class DatabaseMigrationTask(AsyncTask):
         begin_schema_version = self._get_schema_version(db)
         target_version = max(self.migration_scripts.keys())+1
         if begin_schema_version >= target_version:
-            self.total_update_signals.task_completed.emit()
+            self.task_completed.emit()
             return
         if self.migration_scripts is not MIGRATION_SCRIPTS:
             logger.debug(f"Custom migration scripts passed: {self.migration_scripts}")
         logger.info(f"Migrating database from version {begin_schema_version} to {target_version}. "
                     f"About to run {target_version-begin_schema_version} migration scripts.")
         self._begin_top_level_progress(begin_schema_version, target_version)
+        self.request_register_subtask.emit(self.script_update_signals)
         for source_version in range(begin_schema_version, target_version):
             script = self.migration_scripts[source_version]
             self._migrate_version(db, source_version, script)
-            self.total_update_signals.advance_progress.emit()
+            self.advance_progress.emit()
         current_schema_version = self._get_schema_version(db)
         logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
         db.execute("ANALYZE\n")
-        self.total_update_signals.advance_progress.emit()
+        self.advance_progress.emit()
         db.execute("VACUUM\n")
-        self.total_update_signals.advance_progress.emit()
-        self.total_update_signals.task_completed.emit()
+        self.advance_progress.emit()
+        self.task_completed.emit()
         logger.info("Rebuild done.")
 
     def _begin_top_level_progress(self, begin_schema_version: int, target_version: int):
-        signals = self.total_update_signals
         steps = target_version - begin_schema_version + 2  # ANALYZE and VACUUM (2 steps) are run as top-level tasks
         msg = QCoreApplication.translate("DatabaseMigrationRunner", "Running database migrations:", "")
-        signals.begin_task.emit(steps, msg)
+        self.begin_task.emit(steps, msg)
 
     @staticmethod
     def _get_schema_version(db: sqlite3.Connection) -> int:
