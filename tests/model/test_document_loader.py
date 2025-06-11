@@ -28,7 +28,7 @@ from hamcrest import *
 
 import mtg_proxy_printer.model.document_loader
 from tests.helpers import quantity_close_to
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, CardSizes, QuantityT
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, Unit, CardSizes, Quantity
 from mtg_proxy_printer.model.card import CheckCard
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document import Document
@@ -38,7 +38,7 @@ from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from tests.helpers import create_save_database_with
 
 CardType = mtg_proxy_printer.model.document_loader.CardType
-mm: UnitT = unit_registry.mm
+mm: Unit = unit_registry.mm
 
 
 @pytest.fixture()
@@ -389,7 +389,7 @@ def test_load_settings_from_legacy_save_file_is_successful(
     assert_that(
         document.page_layout,
         has_properties({
-            item: instance_of(pint.Quantity if value is QuantityT else value)
+            item: instance_of(pint.Quantity if value is Quantity else value)
             for item, value in annotations.items()
         })
     )

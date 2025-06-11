@@ -453,7 +453,7 @@ debugging such modifications, if you also do each of the following:
        the Linked Version to produce a modified Combined Work, in the
        manner specified by section 6 of the GNU GPL for conveying
        Corresponding Source.
-    1) Use a suitable shared library mechanism for linking with
+    2) Use a suitable shared library mechanism for linking with
        the Library. A suitable mechanism is one that (a) uses at run
        time a copy of the Library already present on the user's
        computer system, and (b) will operate properly with a modified
