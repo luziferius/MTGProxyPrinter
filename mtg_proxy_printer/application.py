@@ -112,7 +112,9 @@ class Application(QApplication):
             QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
         logger.debug("Enqueueing update check")
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
-        self.run_async_task(DatabaseMigrationTask(self.card_db))
+        task = DatabaseMigrationTask(self.card_db)
+        task.task_completed.connect(self._on_carddb_migrations_completed)
+        self.run_async_task(task)
 
     @Slot()
     def _on_carddb_migrations_completed(self):
@@ -120,6 +122,7 @@ class Application(QApplication):
         logger.debug(
             "Card database migrations completed. Database re-opened. Checking if the printing filters need updates.")
         printing_filter_updater_runner = PrintingFilterUpdater(self.card_db)
+        printing_filter_updater_runner.task_completed.connect(self._on_printing_filter_updater_completed)
         self.run_async_task(printing_filter_updater_runner)
 
     @Slot()
