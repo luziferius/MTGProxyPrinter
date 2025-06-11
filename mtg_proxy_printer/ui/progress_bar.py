@@ -88,8 +88,9 @@ class ProgressBarManager(QWidget):
         """Create a new progress bar for the given task"""
         logger.debug(f"Adding progress bar for task {task}")
         bar = ProgressBar(task, self)
-        layout = self.layout()
+        layout: QHBoxLayout = self.layout()
+        task.request_register_subtask.connect(self.add_task)
         task.task_deleted.connect(partial(logger.debug, f"Deleting progress bar for task {task}"))
         task.task_deleted.connect(partial(layout.removeWidget, bar))
         task.task_deleted.connect(partial(bar.setParent, None))
-        layout.addWidget(bar)
+        layout.insertWidget(0, bar)
