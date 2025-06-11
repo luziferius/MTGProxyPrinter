@@ -31,7 +31,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import \
-    CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT, PageSizeManager, is_acceptable_page_size
+    CardSizes, ConfigParser, SectionProxy, unit_registry, T, Quantity, PageSizeManager, is_acceptable_page_size
 
 StandardLocation = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
@@ -86,7 +86,7 @@ def get_default_paper_size() -> str:
     return default
 
 
-mm: QuantityT = unit_registry.mm
+mm: Quantity = unit_registry.mm
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = ConfigParser()
 DEFAULT_SETTINGS = ConfigParser()
@@ -210,7 +210,7 @@ DEFAULT_SETTINGS["pdf-export"] = {
 MAX_DOCUMENT_NAME_LENGTH = 200
 MIN_SIZE = 0 * mm
 MAX_SIZE = 10000 * mm
-ALLOWED_LENGTH_UNITS: typing.Set[QuantityT] = {mm}
+ALLOWED_LENGTH_UNITS: typing.Set[Quantity] = {mm}
 
 
 def round_to_nearest_multiple(value: T, multiple: T) -> T:
@@ -218,7 +218,7 @@ def round_to_nearest_multiple(value: T, multiple: T) -> T:
     return round(value/multiple)*multiple
 
 
-def clamp_to_supported_range(value: QuantityT, minimum: QuantityT, maximum: QuantityT) -> QuantityT:
+def clamp_to_supported_range(value: Quantity, minimum: Quantity, maximum: Quantity) -> Quantity:
     """Clamps numerical document settings to the supported value range"""
     return min(max(value, minimum),  maximum)
 
@@ -468,7 +468,7 @@ def _validate_non_negative_int(section: SectionProxy, defaults: SectionProxy, ke
         _restore_default(section, defaults, key)
 
 
-def _validate_length(section: SectionProxy, defaults: SectionProxy, key: str, minimum: QuantityT, maximum: QuantityT):
+def _validate_length(section: SectionProxy, defaults: SectionProxy, key: str, minimum: Quantity, maximum: Quantity):
     try:
         value = section.get_quantity(key)
         if unit_conversion_required := (value.units not in ALLOWED_LENGTH_UNITS):

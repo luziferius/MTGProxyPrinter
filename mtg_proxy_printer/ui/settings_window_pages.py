@@ -22,7 +22,7 @@ from abc import abstractmethod
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt
 from PyQt5.QtGui import QDesktopServices, QStandardItem, QIcon
-from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox
+from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QLineEdit, QDoubleSpinBox
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
@@ -31,11 +31,8 @@ from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.runner import AsyncTask
 from mtg_proxy_printer.ui.common import highlight_widget, load_file
-from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, QuantityT
+from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
-
-if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.application import Application
 
 try:
     from mtg_proxy_printer.ui.generated.settings_window.debug_settings_page import Ui_DebugSettingsPage
@@ -68,7 +65,7 @@ LocateOption = QStandardPaths.LocateOption
 StandardButton = QMessageBox.StandardButton
 logger = get_logger(__name__)
 del get_logger
-mm: QuantityT = unit_registry.mm
+mm: Quantity = unit_registry.mm
 
 
 class PageMetadata(typing.NamedTuple):

@@ -59,12 +59,11 @@ class MeteredFile(QObject):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> Optional[bool]:
-        result = None
         try:
             result = self.file.__exit__(exc_type, exc_val, exc_tb)
         finally:
             self.io_end.emit()
-            return result
+        return result
 
     def _processed(self, byte_count: int):
         self._total_bytes_processed += byte_count

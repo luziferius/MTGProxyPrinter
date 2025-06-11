@@ -31,7 +31,7 @@ except ImportError:
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, QuantityT, \
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, Quantity, \
     distance_to_mm
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.page_scene import RenderMode
@@ -46,24 +46,24 @@ __all__ = [
 @dataclasses.dataclass
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
-    card_bleed: QuantityT = 0 * unit_registry.mm
+    card_bleed: Quantity = 0 * unit_registry.mm
     document_name: str = ""
     draw_cut_markers: bool = False
     draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
-    row_spacing: QuantityT = 0 * unit_registry.mm
-    column_spacing: QuantityT = 0 * unit_registry.mm
-    margin_bottom: QuantityT = 0 * unit_registry.mm
-    margin_left: QuantityT = 0 * unit_registry.mm
-    margin_right: QuantityT = 0 * unit_registry.mm
-    margin_top: QuantityT = 0 * unit_registry.mm
-    custom_page_height: QuantityT = 0 * unit_registry.mm
-    custom_page_width: QuantityT = 0 * unit_registry.mm
+    row_spacing: Quantity = 0 * unit_registry.mm
+    column_spacing: Quantity = 0 * unit_registry.mm
+    margin_bottom: Quantity = 0 * unit_registry.mm
+    margin_left: Quantity = 0 * unit_registry.mm
+    margin_right: Quantity = 0 * unit_registry.mm
+    margin_top: Quantity = 0 * unit_registry.mm
+    custom_page_height: Quantity = 0 * unit_registry.mm
+    custom_page_width: Quantity = 0 * unit_registry.mm
     paper_orientation: str = "Portrait"
     paper_size: str = "Custom"
 
     @property
-    def page_height(self) -> QuantityT:
+    def page_height(self) -> Quantity:
         if self.paper_size == "Custom":
             return self.custom_page_height
         page_size = mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size]
@@ -72,12 +72,12 @@ class PageLayoutSettings:
         return value*unit_registry.mm
 
     @page_height.setter
-    def page_height(self, value: QuantityT):
+    def page_height(self, value: Quantity):
         assert isinstance(value, pint.Quantity)
         self.custom_page_height = value
 
     @property
-    def page_width(self) -> QuantityT:
+    def page_width(self) -> Quantity:
         if self.paper_size == "Custom":
             return self.custom_page_width
         page_size = mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size]
@@ -86,7 +86,7 @@ class PageLayoutSettings:
         return value*unit_registry.mm
 
     @page_width.setter
-    def page_width(self, value: QuantityT):
+    def page_width(self, value: Quantity):
         assert isinstance(value, pint.Quantity)
         self.custom_page_width = value
 

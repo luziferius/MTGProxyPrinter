@@ -36,7 +36,7 @@ if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
     from mtg_proxy_printer.ui.dialogs import SavePDFDialog
 
-from mtg_proxy_printer.runner import AsyncTask, AsyncTask
+from mtg_proxy_printer.runner import AsyncTask
 from mtg_proxy_printer.units_and_sizes import RESOLUTION
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
@@ -104,7 +104,7 @@ class PNGRenderer(AsyncTask):
 
 
 def export_pdf(document: Document, file_path: str, parent: "SavePDFDialog" = None):
-    main_window: "MainWindow" = parent.parent()
+    main_window = parent.parent()
     total_pages = document.rowCount()
     pages_to_print = settings["pdf-export"].getint("pdf-page-count-limit") or total_pages
     if not pages_to_print:  # No pages in document. Return now, to avoid dividing by zero

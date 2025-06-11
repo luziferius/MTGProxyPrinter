@@ -156,10 +156,10 @@ def load_file(file_path_str: str, parent: QObject = None) -> bytes:
     if file.open(QIODevice.OpenModeFlag.ReadOnly):
         try:
             data = file.readAll().data()
+        except Exception:
+            logger.exception(f"Opening {full_file_path} failed")
         finally:
             file.close()
-            return data
-    logger.error(f"Opening {full_file_path} failed")
     return data
 
 

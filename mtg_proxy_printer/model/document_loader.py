@@ -42,7 +42,7 @@ from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import  PageType, CardSize, CardSizes, unit_registry, \
-    QuantityT, T, UUID, OptStr
+    Quantity, T, UUID, OptStr
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import AsyncTask
 from mtg_proxy_printer.save_file_migrations import migrate_database
@@ -89,7 +89,7 @@ class CardRow(NamedTuple):
 
 
 sqlite3.register_adapter(CardType, lambda item: item.value)
-CustomCards = Dict[str, Card]
+CustomCards = Dict[str, CustomCard]
 
 
 def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[Tuple[T, ...]]:
@@ -416,7 +416,7 @@ class DocumentLoader(AsyncTask):
         settings = PageLayoutSettings.create_from_settings()
         logger.debug("Reading document settings …")
         keys =  ", ".join(
-            f"'{key}'" for key, value in settings.__annotations__.items() if value is not QuantityT)
+            f"'{key}'" for key, value in settings.__annotations__.items() if value is not Quantity)
         document_settings_query = textwrap.dedent(f"""\
             SELECT "key", value
                 FROM DocumentSettings
@@ -424,7 +424,7 @@ class DocumentLoader(AsyncTask):
             """)
         settings.update(db.execute(document_settings_query))
         keys = ", ".join(
-            f"'{key}'" for key, value in settings.__annotations__.items() if value is QuantityT)
+            f"'{key}'" for key, value in settings.__annotations__.items() if value is Quantity)
         document_dimensions_query = textwrap.dedent(f"""\
             SELECT "key", value
                 FROM DocumentDimensions
@@ -460,7 +460,7 @@ class DocumentLoader(AsyncTask):
             value = getattr(settings, key)
             if annotated_type is bool:
                 value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
-            elif annotated_type is QuantityT:
+            elif annotated_type is Quantity:
                 # Ensure all floats are within the allowed bounds.
                 value = mtg_proxy_printer.settings.clamp_to_supported_range(
                     value, mtg_proxy_printer.settings.MIN_SIZE, mtg_proxy_printer.settings.MAX_SIZE)

@@ -14,6 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from functools import partial
+from typing import Callable
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtWidgets import QWidget,QHBoxLayout
@@ -74,6 +75,8 @@ class ProgressBar(QWidget):
 
 class ProgressBarManager(QWidget):
     """Displays progress bars of currently running async tasks in the status bar."""
+    layout: Callable[[], QHBoxLayout]
+
     def __init__(self, parent: QWidget = None, flags=Qt.WindowType()):
         super().__init__(parent, flags)
         self.setLayout(self._setup_layout())
@@ -88,7 +91,7 @@ class ProgressBarManager(QWidget):
         """Create a new progress bar for the given task"""
         logger.debug(f"Adding progress bar for task {task}")
         bar = ProgressBar(task, self)
-        layout: QHBoxLayout = self.layout()
+        layout = self.layout()
         task.request_register_subtask.connect(self.add_task)
         task.task_deleted.connect(partial(logger.debug, f"Deleting progress bar for task {task}"))
         task.task_deleted.connect(partial(layout.removeWidget, bar))

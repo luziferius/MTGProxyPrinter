@@ -18,7 +18,7 @@ from pathlib import Path
 import shutil
 import sys
 import typing
-from typing import Tuple
+from typing import Tuple, Callable
 
 from PyQt5.QtCore import QFile, pyqtSignal as Signal, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
 from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
@@ -86,6 +86,7 @@ def read_path(section: str, setting: str) -> str:
 
 
 class SavePDFDialog(QFileDialog):
+    parent: Callable[[], "MainWindow"]
 
     def __init__(self, parent: "MainWindow", document: "Document"):
         # Note: Cannot supply already translated strings to __init__,

@@ -21,7 +21,7 @@ import functools
 import re
 import sqlite3
 import typing
-from typing import Type, Dict, List, Optional, Set, TypeVar, NamedTuple, TypedDict, Union
+from typing import Type, Dict, List, Optional, Set, NamedTuple, TypedDict, Union
 
 try:
     from typing import NotRequired
@@ -31,39 +31,46 @@ except ImportError:  # Compatibility with Python < 3.11
 
 from PyQt5.QtGui import QPageSize, QPageLayout
 try:
-    from pint.facets.plain.registry import QuantityT, UnitT
+    from pint import Quantity, Unit
 except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
-    QuantityT = UnitT = typing.Any
-from PyQt5.QtCore import QSize, QObject, pyqtSignal as Signal
+    Quantity = Unit = typing.Any
+from PyQt5.QtCore import QSize, QObject
 import pint
-
-if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+import pint.facets.context.objects
 
 import mtg_proxy_printer.natsort
 
-def _setup_units() -> typing.Tuple[pint.UnitRegistry, QuantityT]:
+class ToDots(pint.facets.context.objects.Transformation):
+    def __call__(self, _: pint.UnitRegistry, value: Quantity, **kwargs: typing.Any) -> Quantity:
+        return value*RESOLUTION
+
+class ToLength(pint.facets.context.objects.Transformation):
+    def __call__(self, _: pint.UnitRegistry, value: Quantity, **kwargs: typing.Any) -> Quantity:
+        return value/RESOLUTION
+
+
+def _setup_units() -> typing.Tuple[pint.UnitRegistry, Quantity]:
     registry = pint.UnitRegistry(cache_folder=":auto:")
     resolution = registry.parse_expression("300dots/inch")
     print_context = pint.Context("print")
-    print_context.add_transformation("[length]", "[printing_unit]", lambda _, x: x*RESOLUTION)
-    print_context.add_transformation("[printing_unit]", "[length]", lambda _, x: x/RESOLUTION)
+    print_context.add_transformation("[length]", "[printing_unit]", ToDots())
+    print_context.add_transformation("[printing_unit]", "[length]", ToLength())
     registry.add_context(print_context)
     return registry, resolution
 
 
 @functools.lru_cache(None)
-def distance_to_rounded_px(value: QuantityT) -> int:
+def distance_to_rounded_px(value: Quantity) -> int:
     return round(value.to("pixel", "print").magnitude)
 
 
 @functools.lru_cache(None)
-def distance_to_px(value: QuantityT) -> float:
+def distance_to_px(value: Quantity) -> float:
     return value.to("pixel", "print").magnitude
 
 
 @functools.lru_cache(None)
-def distance_to_mm(value: QuantityT) -> float:
+def distance_to_mm(value: Quantity) -> float:
     return value.to("mm", "print").magnitude
 
 
@@ -79,20 +86,20 @@ IntList = List[int]
 StrDict = Dict[str, str]
 T = typing.TypeVar("T")
 PageSizeId = QPageSize.PageSizeId
-mm: UnitT = unit_registry.mm
+mm: Unit = unit_registry.mm
 
 
 class SectionProxy(configparser.SectionProxy):
-    def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars=None) -> QuantityT:
-        raw_value = self.get(option, fallback, raw=raw, vars=vars)
+    def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars_=None) -> Quantity:
+        raw_value = self.get(option, fallback, raw=raw, vars=vars_)
         return unit_registry.parse_expression(raw_value)
 
 class ConfigParser(configparser.ConfigParser):
 
     __getitem__: typing.Callable[[str], SectionProxy]  # Type hint that [] returns a SectionProxy having get_quantity()
 
-    def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> QuantityT:
-        raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
+    def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars_=None) -> Quantity:
+        raw_value = self.get(section, option, raw=raw, vars=vars_, fallback=fallback)
         return unit_registry.parse_expression(raw_value)
 
 
@@ -111,8 +118,8 @@ class UUID(str):
 
 
 class CardSize(NamedTuple):
-    width: QuantityT
-    height: QuantityT
+    width: Quantity
+    height: Quantity
 
     def as_qsize_px(self):
         return QSize(round(self.width.magnitude), round(self.height.magnitude))
@@ -353,10 +360,3 @@ class PageSizeManager(QObject):
     PageSizeReverse = {value: key for key, value in read_page_size_enum().items()}
     PageOrientation = _read_enum(QPageLayout, QPageLayout.Orientation)
     PageOrientationReverse = {value: key for key, value in _read_enum(QPageLayout, QPageLayout.Orientation).items()}
-
-    available_page_sizes_changed = Signal(dict)
-
-    def on_margins_updated(self, page_layout: "PageLayoutSettings"):
-        # TODO: actually check the page layout margins
-        PageSizeManager.PageSize.clear()
-        PageSizeManager.PageSize.update(read_page_size_enum())

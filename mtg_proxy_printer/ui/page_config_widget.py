@@ -29,7 +29,7 @@ from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, \
-    PageType, unit_registry, ConfigParser, PageSizeManager, QuantityT
+    PageType, unit_registry, ConfigParser, PageSizeManager, Quantity
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -224,7 +224,7 @@ class PageConfigWidget(QGroupBox):
         ui = self.ui
         layout = self.page_layout
         for key in layout.__annotations__.keys():
-            value: Union[QuantityT, bool, str] = getattr(other, key)
+            value: Union[Quantity, bool, str] = getattr(other, key)
             widget = getattr(ui, key)
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
                 if isinstance(widget, QDoubleSpinBox):

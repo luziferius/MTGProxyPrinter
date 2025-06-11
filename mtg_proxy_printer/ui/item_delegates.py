@@ -14,10 +14,9 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import typing
-from itertools import combinations
 from typing import Union
 
-from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel, QObject, QEvent
+from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel, QEvent
 from PyQt5.QtGui import QKeyEvent, QFocusEvent
 from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox, QLineEdit, \
     QApplication
