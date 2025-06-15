@@ -91,7 +91,7 @@ class SavePDFDialog(QFileDialog):
         self.setWindowTitle(self.tr("Export as PDF"))
         self.setNameFilter(self.tr("PDF documents (*.pdf)"))
 
-        if default_path := read_path("pdf-export", "pdf-export-path"):
+        if default_path := read_path("export", "export-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
@@ -133,7 +133,7 @@ class SavePNGDialog(QFileDialog):
         self.setWindowTitle(self.tr("Export as PNG"))
         self.setNameFilter(self.tr("PNG images (*.png)"))
 
-        if default_path := read_path("pdf-export", "pdf-export-path"):
+        if default_path := read_path("export", "export-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)

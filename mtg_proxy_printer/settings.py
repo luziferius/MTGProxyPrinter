@@ -202,8 +202,8 @@ DEFAULT_SETTINGS["printer"] = {
     "landscape-compatibility-workaround": "False",
     "horizontal-offset": "0 mm",
 }
-DEFAULT_SETTINGS["pdf-export"] = {
-    "pdf-export-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
+DEFAULT_SETTINGS["export"] = {
+    "export-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
     "pdf-page-count-limit": "0",
     "landscape-compatibility-workaround": "False",
 }
@@ -429,10 +429,10 @@ def _validate_printer_section(to_validate: ConfigParser, section_name: str = "pr
             _validate_length(section, defaults, key, -100*mm, 100*mm)
 
 
-def _validate_pdf_export_section(to_validate: ConfigParser, section_name: str = "pdf-export"):
+def _validate_pdf_export_section(to_validate: ConfigParser, section_name: str = "export"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
-    _validate_path_to_directory(section, defaults, "pdf-export-path")
+    _validate_path_to_directory(section, defaults, "export-path")
     _validate_non_negative_int(section, defaults, "pdf-page-count-limit")
     _validate_boolean(section, defaults, "landscape-compatibility-workaround")
 
@@ -493,18 +493,20 @@ def _restore_default(section: SectionProxy, defaults: SectionProxy, key: str):
 
 
 def migrate_settings(to_migrate: ConfigParser):
-    _migrate_layout_setting(to_migrate)
-    _migrate_download_settings(to_migrate)
-    _migrate_default_save_paths_settings(to_migrate)
-    _migrate_print_guessing_settings(to_migrate)
-    _migrate_image_spacing_settings(to_migrate)
-    _migrate_to_pdf_export_section(to_migrate)
-    _migrate_document_settings_to_pint(to_migrate)
-    _migrate_images_to_cards_section(to_migrate)
-    _migrate_application_to_update_checks_section(to_migrate)
+    """Run setting file migrations."""
+    _01_migrate_layout_setting(to_migrate)
+    _02_migrate_download_settings(to_migrate)
+    _03_migrate_default_save_paths_settings(to_migrate)
+    _04_migrate_print_guessing_settings(to_migrate)
+    _05_migrate_image_spacing_settings(to_migrate)
+    _06_migrate_to_pdf_export_section(to_migrate)
+    _07_migrate_document_settings_to_pint(to_migrate)
+    _08_migrate_images_to_cards_section(to_migrate)
+    _09_migrate_application_to_update_checks_section(to_migrate)
+    _10_migrate_export_section(to_migrate)
 
 
-def _migrate_layout_setting(to_migrate: ConfigParser):
+def _01_migrate_layout_setting(to_migrate: ConfigParser):
     try:
         gui_section = to_migrate["gui"]
         layout = gui_section["search-widget-layout"]
@@ -516,7 +518,7 @@ def _migrate_layout_setting(to_migrate: ConfigParser):
         gui_section["central-widget-layout"] = layout
         
         
-def _migrate_download_settings(to_migrate: ConfigParser):
+def _02_migrate_download_settings(to_migrate: ConfigParser):
     target_section_name = "card-filter"
     if to_migrate.has_section(target_section_name) or not to_migrate.has_section("downloads"):
         return
@@ -533,7 +535,7 @@ def _migrate_download_settings(to_migrate: ConfigParser):
             filter_section[target_setting] = str(new_value)
 
 
-def _migrate_default_save_paths_settings(to_migrate: ConfigParser):
+def _03_migrate_default_save_paths_settings(to_migrate: ConfigParser):
     source_section_name = "default-save-paths"
     target_section_name = "default-filesystem-paths"
     if to_migrate.has_section(target_section_name) or not to_migrate.has_section(source_section_name):
@@ -542,7 +544,7 @@ def _migrate_default_save_paths_settings(to_migrate: ConfigParser):
     to_migrate[target_section_name].update(to_migrate[source_section_name])
 
 
-def _migrate_print_guessing_settings(to_migrate: ConfigParser):
+def _04_migrate_print_guessing_settings(to_migrate: ConfigParser):
     source_section_name = "print-guessing"
     target_section_name = "decklist-import"
     if to_migrate.has_section(target_section_name) or not to_migrate.has_section(source_section_name):
@@ -557,7 +559,7 @@ def _migrate_print_guessing_settings(to_migrate: ConfigParser):
     target["always-translate-deck-lists"] = source.get("always-translate-deck-lists", "False")
 
 
-def _migrate_image_spacing_settings(to_migrate: ConfigParser):
+def _05_migrate_image_spacing_settings(to_migrate: ConfigParser):
     section = to_migrate["documents"]
     if "image-spacing-horizontal-mm" not in section:
         return
@@ -567,9 +569,9 @@ def _migrate_image_spacing_settings(to_migrate: ConfigParser):
     del section["image-spacing-vertical-mm"]
 
 
-def _migrate_to_pdf_export_section(to_migrate: ConfigParser):
-    section_name: str = "pdf-export"
-    if to_migrate.has_section(section_name):
+def _06_migrate_to_pdf_export_section(to_migrate: ConfigParser):
+    section_name = "pdf-export"
+    if to_migrate.has_section(section_name) or to_migrate.has_section("export"):
         return
     to_migrate.add_section(section_name)
     target = to_migrate[section_name]
@@ -581,9 +583,11 @@ def _migrate_to_pdf_export_section(to_migrate: ConfigParser):
     if to_migrate.has_section("default-filesystem-paths"):
         target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
         del to_migrate["default-filesystem-paths"]["pdf-export-path"]
+    else:
+        target["pdf-export-path"] = DEFAULT_SETTINGS["export"]["export-path"]
 
 
-def _migrate_document_settings_to_pint(to_migrate: ConfigParser):
+def _07_migrate_document_settings_to_pint(to_migrate: ConfigParser):
     section = to_migrate["documents"]
     if "margin-top-mm" not in section:
         return
@@ -598,17 +602,33 @@ def _migrate_document_settings_to_pint(to_migrate: ConfigParser):
             section[key] = "0 mm"
 
 
-def _migrate_images_to_cards_section(to_migrate: ConfigParser):
+def _08_migrate_images_to_cards_section(to_migrate: ConfigParser):
     if "images" not in to_migrate:
         return
     to_migrate["cards"] = to_migrate["images"]
     del to_migrate["images"]
 
-def _migrate_application_to_update_checks_section(to_migrate: ConfigParser):
+
+def _09_migrate_application_to_update_checks_section(to_migrate: ConfigParser):
     if "application" not in to_migrate:
         return
     to_migrate["update-checks"] = to_migrate["application"]
     del to_migrate["application"]
+
+
+def _10_migrate_export_section(to_migrate: ConfigParser):
+    if "pdf-export" not in to_migrate:
+        return
+    if "export" in to_migrate:  # New and old section present, just discard the old. Should not happen normally.
+        del to_migrate["pdf-export"]
+        return
+    to_migrate["export"] = to_migrate["pdf-export"]
+    del to_migrate["pdf-export"]
+    section = to_migrate["export"]
+    section["export-path"] = section["pdf-export-path"]
+    del section["pdf-export-path"]
+
+
 
 # Read the settings from file during module import
 # This has to be performed before any modules containing GUI classes are imported.
