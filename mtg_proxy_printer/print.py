@@ -47,6 +47,7 @@ logger = get_logger(__name__)
 del get_logger
 
 RenderHint = QPainter.RenderHint
+Format = QImage.Format
 
 __all__ = [
     "export_pdf",
@@ -85,8 +86,11 @@ class PNGRenderer(ProgressSignalContainer):
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
             output_path = parent / file_name
-            image = QImage(page_size, QImage.Format.Format_RGBA8888)
-            image.fill(QColorConstants.Transparent)
+            background_color = QColorConstants.Transparent  # TODO: Fetch from application settings
+            # 255 is solid. So avoid adding the alpha channel, if it won't be used.
+            image_format = Format.Format_RGB888 if background_color.alpha() == 255 else Format.Format_RGBA8888
+            image = QImage(page_size, image_format)
+            image.fill(background_color)
             painter = QPainter(image)
             scene.on_current_page_changed(document.index(page_nr, 0))
             scene.render(painter)
