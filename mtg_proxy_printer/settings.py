@@ -24,7 +24,7 @@ from collections import defaultdict
 
 import pint
 from PyQt5.QtCore import QStandardPaths, QLocale
-from PyQt5.QtGui import QPageSize, QPageLayout
+from PyQt5.QtGui import QPageSize, QPageLayout, QColor
 from PyQt5.QtPrintSupport import QPrinterInfo
 
 import mtg_proxy_printer.app_dirs
@@ -206,6 +206,7 @@ DEFAULT_SETTINGS["export"] = {
     "export-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
     "pdf-page-count-limit": "0",
     "landscape-compatibility-workaround": "False",
+    "png-background-color": "#FFFFFF",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
 MIN_SIZE = 0 * mm
@@ -303,7 +304,7 @@ def validate_settings(read_settings: ConfigParser):
     _validate_decklist_import_section(read_settings)
     _validate_default_filesystem_paths_section(read_settings)
     _validate_printer_section(read_settings)
-    _validate_pdf_export_section(read_settings)
+    _validate_export_section(read_settings)
 
 
 def _validate_card_filter_section(to_validate: ConfigParser, section_name: str = "card-filter"):
@@ -429,12 +430,13 @@ def _validate_printer_section(to_validate: ConfigParser, section_name: str = "pr
             _validate_length(section, defaults, key, -100*mm, 100*mm)
 
 
-def _validate_pdf_export_section(to_validate: ConfigParser, section_name: str = "export"):
+def _validate_export_section(to_validate: ConfigParser, section_name: str = "export"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_path_to_directory(section, defaults, "export-path")
     _validate_non_negative_int(section, defaults, "pdf-page-count-limit")
     _validate_boolean(section, defaults, "landscape-compatibility-workaround")
+    _validate_color(section, defaults, "png-background-color")
 
 
 def _validate_path_to_directory(section: SectionProxy, defaults: SectionProxy, key: str):
@@ -485,6 +487,11 @@ def _validate_length(section: SectionProxy, defaults: SectionProxy, key: str, mi
 def _validate_string_is_in_set(section: SectionProxy, defaults: SectionProxy, valid_options: typing.Set[str], key: str):
     """Checks if the value of the option is one of the allowed values, as determined by the given set of strings."""
     if section[key] not in valid_options:
+        _restore_default(section, defaults, key)
+
+
+def _validate_color(section: SectionProxy, defaults: SectionProxy, key: str):
+    if not QColor.isValidColor(section.get(key)):
         _restore_default(section, defaults, key)
 
 
