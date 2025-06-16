@@ -26,7 +26,7 @@ from threading import BoundedSemaphore
 import typing
 
 from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex, QThreadPool
-from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage, QColorConstants
+from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage, QColor
 from PyQt5.QtPrintSupport import QPrinter
 
 
@@ -86,7 +86,7 @@ class PNGRenderer(ProgressSignalContainer):
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
             output_path = parent / file_name
-            background_color = QColorConstants.Transparent  # TODO: Fetch from application settings
+            background_color = QColor(settings["export"]["png-background-color"])
             # 255 is solid. So avoid adding the alpha channel, if it won't be used.
             image_format = Format.Format_RGB888 if background_color.alpha() == 255 else Format.Format_RGBA8888
             image = QImage(page_size, image_format)
