@@ -42,7 +42,7 @@ try:
     from mtg_proxy_printer.ui.generated.settings_window.general_settings_page import Ui_GeneralSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.hide_printings_page import Ui_HidePrintingsPage
     from mtg_proxy_printer.ui.generated.settings_window.printer_settings_page import Ui_PrinterSettingsPage
-    from mtg_proxy_printer.ui.generated.settings_window.pdf_settings_page import Ui_PDFSettingsPage
+    from mtg_proxy_printer.ui.generated.settings_window.export_settings_page import Ui_ExportSettingsPage
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
     Ui_DebugSettingsPage = load_ui_from_file("settings_window/debug_settings_page")
@@ -50,7 +50,7 @@ except ModuleNotFoundError:
     Ui_GeneralSettingsPage = load_ui_from_file("settings_window/general_settings_page")
     Ui_HidePrintingsPage = load_ui_from_file("settings_window/hide_printings_page")
     Ui_PrinterSettingsPage = load_ui_from_file("settings_window/printer_settings_page")
-    Ui_PDFSettingsPage = load_ui_from_file("settings_window/pdf_settings_page")
+    Ui_ExportSettingsPage = load_ui_from_file("settings_window/export_settings_page")
 
 CheckState = Qt.CheckState
 bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
@@ -558,21 +558,21 @@ class ExportSettingsPage(Page):
 
     def __init__(self, parent=None, flags=Qt.WindowFlags()):
         super().__init__(parent, flags)
-        self.ui = ui = Ui_PDFSettingsPage()
+        self.ui = ui = Ui_ExportSettingsPage()
         ui.setupUi(self)
 
     def load(self, settings: ConfigParser):
         ui = self.ui
         section = settings["export"]
         ui.pdf_page_count_limit.setValue(section.getint("pdf-page-count-limit"))
-        ui.pdf_save_path.setText(section["export-path"])
+        ui.export_path.setText(section["export-path"])
         ui.landscape_workaround.setChecked(section.getboolean("landscape-compatibility-workaround"))
 
     def save(self):
         ui = self.ui
         section = mtg_proxy_printer.settings.settings["export"]
         section["pdf-page-count-limit"] = str(ui.pdf_page_count_limit.value())
-        section["export-path"] = ui.pdf_save_path.text()
+        section["export-path"] = ui.export_path.text()
         section["landscape-compatibility-workaround"] = str(ui.landscape_workaround.isChecked())
 
     def highlight_differing_settings(self, settings: ConfigParser):
@@ -580,16 +580,16 @@ class ExportSettingsPage(Page):
         section = settings["export"]
         if section.getint("pdf-page-count-limit") != ui.pdf_page_count_limit.value():
             highlight_widget(ui.pdf_page_count_limit)
-        if ui.pdf_save_path.text() != section["export-path"]:
-            highlight_widget(ui.pdf_save_path)
+        if ui.export_path.text() != section["export-path"]:
+            highlight_widget(ui.export_path)
         if ui.landscape_workaround.isChecked() != section.getboolean("landscape-compatibility-workaround"):
             highlight_widget(ui.landscape_workaround)
 
     @Slot()
-    def on_pdf_save_path_browse_button_clicked(self):
+    def on_export_path_browse_button_clicked(self):
         logger.debug("User about to select a new default Export path.")
         if location := QFileDialog.getExistingDirectory(self, self.tr("Select default export location")):
             logger.info("User selected a new default export path.")
-            self.ui.pdf_save_path.setText(location)
+            self.ui.export_path.setText(location)
         else:
             logger.debug("User cancelled path selection")

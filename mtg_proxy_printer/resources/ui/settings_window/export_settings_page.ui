@@ -1,69 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>PDFSettingsPage</class>
- <widget class="QWidget" name="PDFSettingsPage">
+ <class>ExportSettingsPage</class>
+ <widget class="QWidget" name="ExportSettingsPage">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>420</width>
-    <height>126</height>
+    <width>508</width>
+    <height>186</height>
    </rect>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="2" column="1">
-    <widget class="QLineEdit" name="pdf_save_path">
-     <property name="toolTip">
-      <string>If set, use this as the default location for saving exported PDF documents.</string>
-     </property>
-     <property name="inputMethodHints">
-      <set>Qt::ImhNoAutoUppercase</set>
-     </property>
-     <property name="placeholderText">
-      <string>Path to a directory</string>
-     </property>
-     <property name="clearButtonEnabled">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="0" colspan="3">
-    <spacer name="vertical_spacer">
+   <item row="8" column="0" colspan="3">
+    <widget class="Line" name="line_2">
      <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="pdf_save_path_label">
-     <property name="text">
-      <string>PDF export path</string>
-     </property>
-     <property name="buddy">
-      <cstring>pdf_save_path</cstring>
+      <enum>Qt::Horizontal</enum>
      </property>
     </widget>
    </item>
-   <item row="2" column="2">
-    <widget class="QPushButton" name="pdf_save_path_browse_button">
-     <property name="toolTip">
-      <string>Browse…</string>
-     </property>
+   <item row="10" column="0">
+    <widget class="QLabel" name="png_background_color_label">
      <property name="text">
-      <string/>
-     </property>
-     <property name="icon">
-      <iconset theme="document-open"/>
+      <string>PNG background color</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="0">
+   <item row="6" column="0">
     <widget class="QLabel" name="pdf_page_count_limit_label">
      <property name="toolTip">
       <string>Automatically split PDF documents, if they get longer than this many pages.
@@ -84,7 +46,43 @@ it will be exported into multiple PDF documents automatically.</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="1" colspan="2">
+   <item row="2" column="1">
+    <widget class="QLineEdit" name="export_path">
+     <property name="toolTip">
+      <string>If set, use this as the default location for saving exported PDF documents.</string>
+     </property>
+     <property name="inputMethodHints">
+      <set>Qt::ImhNoAutoUppercase</set>
+     </property>
+     <property name="placeholderText">
+      <string>Path to a directory</string>
+     </property>
+     <property name="clearButtonEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="export_path_label">
+     <property name="toolTip">
+      <string>If set, use this as the default location for saving exported PDF documents.</string>
+     </property>
+     <property name="text">
+      <string>Export path</string>
+     </property>
+     <property name="buddy">
+      <cstring>export_path</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="3">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1" colspan="2">
     <widget class="QSpinBox" name="pdf_page_count_limit">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -111,6 +109,32 @@ it will be exported into multiple PDF documents automatically.</string>
      </property>
     </widget>
    </item>
+   <item row="10" column="1" colspan="2">
+    <widget class="QPushButton" name="png_background_color">
+     <property name="toolTip">
+      <string>Background color used for documents exported as PNG images.</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset theme="color"/>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2">
+    <widget class="QPushButton" name="export_path_browse_button">
+     <property name="toolTip">
+      <string>Browse…</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset theme="document-open"/>
+     </property>
+    </widget>
+   </item>
    <item row="4" column="0" colspan="3">
     <widget class="QCheckBox" name="landscape_workaround">
      <property name="toolTip">
@@ -121,18 +145,31 @@ Enabling this may cause the cut helper lines to flicker or not show in some PDF 
 So only enable this, if actually required.</string>
      </property>
      <property name="text">
-      <string>Enable landscape workaround: Rotate landscape PDFs by 90°</string>
+      <string>Enable landscape workaround: Rotate landscape pages by 90°</string>
      </property>
      <property name="wordWrap" stdset="0">
       <bool>true</bool>
      </property>
     </widget>
    </item>
+   <item row="11" column="0" colspan="3">
+    <spacer name="vertical_spacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
   </layout>
  </widget>
  <tabstops>
-  <tabstop>pdf_save_path</tabstop>
-  <tabstop>pdf_save_path_browse_button</tabstop>
+  <tabstop>export_path</tabstop>
+  <tabstop>export_path_browse_button</tabstop>
   <tabstop>pdf_page_count_limit</tabstop>
  </tabstops>
  <resources/>
