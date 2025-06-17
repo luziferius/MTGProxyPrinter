@@ -682,7 +682,7 @@ class PageScene(QGraphicsScene):
             # There is a card on the left, iff the row modulo column_count is non-zero
             index_row % self.column_count > 0,
             # There is a card on the right, iff there is an additional card, and this is not on the right-most column.
-            index_row % self.column_count + 1 == self.column_count and index_row + 1 < cards_on_page
+            index_row % self.column_count + 1 != self.column_count and index_row + 1 < cards_on_page
         )
 
     def remove_cut_markers(self):
