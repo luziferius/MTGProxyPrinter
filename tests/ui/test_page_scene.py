@@ -79,6 +79,7 @@ def page_scene(request, document_light: Document):
 
 def render_scene(scene: PageScene) -> QImage:
     image = QImage(ceil(scene.width()), ceil(scene.height()), QImage.Format.Format_ARGB32)
+    image.fill(QColorConstants.Transparent)
     painter = QPainter(image)
     painter.setRenderHint(RenderHint.LosslessImageRendering, True)
     scene.render(painter)
@@ -493,7 +494,7 @@ def test_sharp_corners(page_scene: PageScene, draw_sharp_corners: bool, color: Q
     right, down = QPoint(card.image_file.width()-1, 0), QPoint(0, card.image_file.height()-1)
 
     rendered = render_scene(page_scene)
-    has_correct_color = is_(equal_to(color if draw_sharp_corners else QColorConstants.White))
+    has_correct_color = is_(equal_to(color if draw_sharp_corners else QColorConstants.Transparent))
     assert_that(rendered.pixelColor(top_left), has_correct_color, "Top left corner wrong")
     assert_that(rendered.pixelColor(top_left+right), has_correct_color, "Top right corner wrong")
     assert_that(rendered.pixelColor(top_left+down), has_correct_color, "Bottom left corner wrong")
@@ -538,7 +539,6 @@ def test_card_item_origin_equals_pixmap_origin(page_scene: PageScene, card_bleed
     (9, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, True, True, True), NeighborsPresent(False, True, True, False),
          NeighborsPresent(True, True, False, True), NeighborsPresent(True, True, True, True), NeighborsPresent(True, True, True, False),
          NeighborsPresent(True, False, False, True), NeighborsPresent(True, False, True, True), NeighborsPresent(True, False, True, False)]),
-
 ])
 def test__has_neighbors(page_scene: PageScene, cards: int, neighbors: typing.List[NeighborsPresent]):
     page_scene.document.apply(ActionAddCard(create_card_with_pixmap("Something", color=QColorConstants.Black), cards))
@@ -579,8 +579,8 @@ def test_card_bleed_with_single_card(
     bottom_center = bottom_left + half_right
     
     rendered = render_scene(page_scene)
-    has_correct_color = is_(equal_to(color if card_bleed else QColorConstants.White))
-    has_background_color = is_(equal_to(QColorConstants.White))
+    has_correct_color = is_(equal_to(color if card_bleed else QColorConstants.Transparent))
+    has_background_color = is_(equal_to(QColorConstants.Transparent))
 
     # Top border
     # Inner bleed edge
@@ -675,7 +675,7 @@ def test_card_bleed_with_two_cards(page_scene: PageScene, column_spacing: Quanti
     rendered = render_scene(page_scene)
     has_left_color = is_(equal_to(QColorConstants.Black))
     has_right_color = is_(equal_to(QColorConstants.Cyan))
-    has_background_color = is_(equal_to(QColorConstants.White))
+    has_background_color = is_(equal_to(QColorConstants.Transparent))
 
     # Left card
     
