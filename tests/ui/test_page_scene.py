@@ -29,7 +29,7 @@ from PyQt5.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QPai
 from PyQt5.QtCore import QPoint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, UnitT, unit_registry, QuantityT
-from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
+from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene, NeighborsPresent
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 from mtg_proxy_printer.model.document import Document
@@ -511,6 +511,39 @@ def test_card_item_origin_equals_pixmap_origin(page_scene: PageScene, card_bleed
     assert_that(
         item.scenePos(), is_(equal_to(item.card_pixmap_item.scenePos()))
     )
+
+
+@pytest.mark.parametrize("cards, neighbors", [
+    (1, [NeighborsPresent(False, False, False, False)]),
+    (2, [NeighborsPresent(False, False, False, True), NeighborsPresent(False, False, True, False)]),
+    (3, [NeighborsPresent(False, False, False, True), NeighborsPresent(False, False, True, True), NeighborsPresent(False, False, True, False)]),
+
+    (4, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, False, True, True), NeighborsPresent(False, False, True, False),
+         NeighborsPresent(True, False, False, False)]),
+
+    (5, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, True, True, True), NeighborsPresent(False, False, True, False),
+         NeighborsPresent(True, False, False, True), NeighborsPresent(True, False, True, False)]),
+
+    (6, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, True, True, True), NeighborsPresent(False, True, True, False),
+         NeighborsPresent(True, False, False, True), NeighborsPresent(True, False, True, True), NeighborsPresent(True, False, True, False)]),
+
+    (7, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, True, True, True), NeighborsPresent(False, True, True, False),
+         NeighborsPresent(True, True, False, True), NeighborsPresent(True, False, True, True), NeighborsPresent(True, False, True, False),
+         NeighborsPresent(True, False, False, False)]),
+
+    (8, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, True, True, True), NeighborsPresent(False, True, True, False),
+         NeighborsPresent(True, True, False, True), NeighborsPresent(True, True, True, True), NeighborsPresent(True, False, True, False),
+         NeighborsPresent(True, False, False, True), NeighborsPresent(True, False, True, False)]),
+
+    (9, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, True, True, True), NeighborsPresent(False, True, True, False),
+         NeighborsPresent(True, True, False, True), NeighborsPresent(True, True, True, True), NeighborsPresent(True, True, True, False),
+         NeighborsPresent(True, False, False, True), NeighborsPresent(True, False, True, True), NeighborsPresent(True, False, True, False)]),
+
+])
+def test__has_neighbors(page_scene: PageScene, cards: int, neighbors: typing.List[NeighborsPresent]):
+    page_scene.document.apply(ActionAddCard(create_card_with_pixmap("Something", color=QColorConstants.Black), cards))
+    for index, item, expected in zip(range(cards), page_scene.card_items, neighbors):
+        assert_that(page_scene._has_neighbors(item), is_(equal_to(expected)), f"Broken {index=}")
 
 
 @pytest.mark.parametrize("color", [QColorConstants.Black, QColorConstants.Cyan])
