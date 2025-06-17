@@ -160,7 +160,7 @@ class PDFPrinter(QPdfWriter):
         self.document = document
         self.document_index = document_index
         self.pages_to_print = pages_to_print = pages_to_print or document.rowCount()
-        self.landscape_workaround_enabled = settings["pdf-export"].getboolean("landscape-compatibility-workaround")
+        self.landscape_workaround_enabled = settings["export"].getboolean("landscape-compatibility-workaround")
         if pages_to_print < document.rowCount():
             # Determine the number of digits required to properly sort all documents, without having to rely on
             # external support for natural sorting
