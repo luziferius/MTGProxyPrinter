@@ -17,12 +17,14 @@ import json
 import logging
 from functools import partial
 import pathlib
+import re
 import typing
 from abc import abstractmethod
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
-from PyQt5.QtGui import QDesktopServices, QStandardItem, QIcon
-from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox
+from PyQt5.QtGui import QDesktopServices, QStandardItem, QIcon, QColor, QColorConstants
+from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox, \
+    QColorDialog
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
@@ -567,6 +569,7 @@ class ExportSettingsPage(Page):
         ui.pdf_page_count_limit.setValue(section.getint("pdf-page-count-limit"))
         ui.export_path.setText(section["export-path"])
         ui.landscape_workaround.setChecked(section.getboolean("landscape-compatibility-workaround"))
+        self._set_png_background_color_display(QColor(section["png-background-color"]))
 
     def save(self):
         ui = self.ui
@@ -574,6 +577,7 @@ class ExportSettingsPage(Page):
         section["pdf-page-count-limit"] = str(ui.pdf_page_count_limit.value())
         section["export-path"] = ui.export_path.text()
         section["landscape-compatibility-workaround"] = str(ui.landscape_workaround.isChecked())
+        section["png-background-color"] = self._get_png_background_color().name(QColor.NameFormat.HexArgb)
 
     def highlight_differing_settings(self, settings: ConfigParser):
         ui = self.ui
@@ -584,6 +588,9 @@ class ExportSettingsPage(Page):
             highlight_widget(ui.export_path)
         if ui.landscape_workaround.isChecked() != section.getboolean("landscape-compatibility-workaround"):
             highlight_widget(ui.landscape_workaround)
+        if section["png-background-color"] != self._get_png_background_color().name(QColor.NameFormat.HexArgb):
+            highlight_widget(ui.png_background_color)
+            highlight_widget(ui.png_background_color_label)
 
     @Slot()
     def on_export_path_browse_button_clicked(self):
@@ -593,3 +600,23 @@ class ExportSettingsPage(Page):
             self.ui.export_path.setText(location)
         else:
             logger.debug("User cancelled path selection")
+
+    @Slot()
+    def on_png_background_color_button_clicked(self):
+        current_color = self._get_png_background_color()
+        selected = QColorDialog.getColor(
+            current_color, self, self.tr("Select PNG background color"),
+            QColorDialog.ColorDialogOption.ShowAlphaChannel)
+        if selected.isValid():
+            self._set_png_background_color_display(selected)
+
+    def _get_png_background_color(self) -> QColor:
+        if style_sheet := self.ui.png_background_color.styleSheet():
+            name = re.match(r"QLabel\s*\{\s*background-color\s*:\s*(?P<name>#.+)}", style_sheet)["name"]
+            return QColor(name)
+        return QColorConstants.Transparent
+
+    def _set_png_background_color_display(self, color: QColor):
+        # Can't use formatting, because embedded curly braces in the CSS style sheet
+        style_sheet = "QLabel { background-color : {bg}}".replace("{bg}", color.name(QColor.NameFormat.HexArgb))
+        self.ui.png_background_color.setStyleSheet(style_sheet)
