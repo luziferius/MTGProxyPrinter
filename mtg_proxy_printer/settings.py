@@ -206,7 +206,7 @@ DEFAULT_SETTINGS["export"] = {
     "export-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
     "pdf-page-count-limit": "0",
     "landscape-compatibility-workaround": "False",
-    "png-background-color": "#FFFFFF",
+    "png-background-color": "#ffffffff",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
 MIN_SIZE = 0 * mm
