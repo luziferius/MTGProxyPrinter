@@ -579,8 +579,11 @@ def _migrate_to_pdf_export_section(to_migrate: ConfigParser):
     except KeyError:
         pass
     if to_migrate.has_section("default-filesystem-paths"):
-        target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
-        del to_migrate["default-filesystem-paths"]["pdf-export-path"]
+        try:
+            target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
+            del to_migrate["default-filesystem-paths"]["pdf-export-path"]
+        except KeyError:
+            pass
 
 
 def _migrate_document_settings_to_pint(to_migrate: ConfigParser):
