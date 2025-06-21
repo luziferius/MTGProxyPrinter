@@ -574,8 +574,9 @@ class PageScene(QGraphicsScene):
             next_item = self.card_items[first] if needs_reorder else None
             page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
             logger.debug(f"Added {inserted_cards} cards to the currently shown page, drawing them.")
+            model = parent.model()
             for new in range(first, last+1):
-                self.draw_card(parent.child(new, PageColumns.Image), page_type, next_item)
+                self.draw_card(model.index(new, PageColumns.Image, parent), page_type, next_item)
             if needs_reorder:
                 logger.debug("Cards added in the middle of the page, re-order existing cards.")
                 self.update_card_positions()

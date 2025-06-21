@@ -309,7 +309,7 @@ class PageConfigWidget(QGroupBox):
         ]
         return widgets_with_settings
 
-    def _current_page_size(self) -> QPrinter.PageSize:
+    def _current_page_size(self) -> QPageSize.PageSizeId:
         return self.ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
 
     def _current_page_orientation(self) -> QPageLayout.Orientation:
