@@ -158,7 +158,7 @@ def load_file(file_path_str: str, parent: QObject = None) -> bytes:
             data = file.readAll().data()
         finally:
             file.close()
-            return data
+        return data
     logger.error(f"Opening {full_file_path} failed")
     return data
 
