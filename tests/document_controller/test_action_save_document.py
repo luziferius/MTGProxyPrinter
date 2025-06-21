@@ -39,6 +39,7 @@ from tests.helpers import quantity_close_to
 ItemDataRole = Qt.ItemDataRole
 mm: UnitT = unit_registry.mm
 
+
 def validate_qt_model_signal_parameter(
         expected_first: int, expected_last: int,
         parent: QModelIndex, first: int, last: int) -> bool:
@@ -112,7 +113,7 @@ def test_subsequent_save_updates_settings(tmp_path: Path, qtbot: QtBot, document
     save_action.apply(document_custom_layout)
 
     modified_layout = copy.copy(document_custom_layout.page_layout)
-    modified_layout.page_height = modified_layout.page_width = 1000*mm
+    modified_layout.custom_page_width = modified_layout.custom_page_width = 1000*mm
     modified_layout.margin_top = modified_layout.margin_bottom = 13*mm
     modified_layout.margin_left = modified_layout.margin_right= 14*mm
     modified_layout.column_spacing = modified_layout.row_spacing = 2*mm
@@ -201,14 +202,18 @@ def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Pat
               WHERE key IN ({keys})
               ORDER BY key ASC
             """)
+        values = [value for value, in save.execute(query)]
         assert_that(
-            [value for value, in save.execute(query).fetchall()],
+            values,
             contains_exactly(
                 layout.document_name,
                 str(layout.draw_cut_markers),
                 str(layout.draw_page_numbers),
                 str(layout.draw_sharp_corners),
-            )
+                layout.paper_orientation,
+                layout.paper_size,
+            ),
+            f"Obtained: {values}"
         )
         query = textwrap.dedent(f"""\
                     SELECT value
@@ -216,17 +221,19 @@ def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Pat
                       WHERE key IN ({keys})
                       ORDER BY key ASC
                     """)
+        values = [value for value, in save.execute(query)]
         assert_that(
-            [value for value, in save.execute(query).fetchall()],
+            values,
             contains_exactly(
                 quantity_close_to(layout.card_bleed),
                 quantity_close_to(layout.column_spacing),
+                quantity_close_to(layout.custom_page_height),
+                quantity_close_to(layout.custom_page_width),
                 quantity_close_to(layout.margin_bottom),
                 quantity_close_to(layout.margin_left),
                 quantity_close_to(layout.margin_right),
                 quantity_close_to(layout.margin_top),
-                quantity_close_to(layout.page_height),
-                quantity_close_to(layout.page_width),
                 quantity_close_to(layout.row_spacing),
-            )
+            ),
+            f"Obtained: {values}"
         )

@@ -141,16 +141,32 @@ in which all other dependencies will be installed.
 - The `venv` Python module to create environments
 - `pip` to install dependencies
 
-## Installation
+## Building packages
 
-To install from a fossil checkout or a downloaded and unpacked source code archive, 
-execute `pipx install .` or `pip install .` from the repository root directory 
-(where `pyproject.toml` is located).
+The top level of the checked-out repository or unpacked source code archive contains scripts to build the packages.
+These create a virtual environment, if not already present, and then use `tox`, to build the packages in dedicated virtual environments.
 
+Building the packages first 
+- calls the Qt UI file compiler to generate GUI classes from the included `.ui`-files,
+- builds importable locale files using the Qt locale compiler
+- compiles locales and the icon theme into an importable module using the Qt resource compiler
+
+The exact steps can be seen by inspecting `tox.ini`
+
+It then bundles that up with the source code into an installable Python Wheel, and, if run on Windows,
+the installable MSI package. Built artifacts are placed in the `dist` directory.
+
+## Installing from a source checkout
+
+Because the package contains compiled data that must be built before installation,
+the source checkout is not directly installable via `pip install .`. 
+
+You first must build an installable package (see above), and then install the generated Python Wheel using `pip` or better yet using `pipx`.
+The compiled data is cross-platform, so a built wheel will install on any operating system and compatible Python version.
 
 ## Usage
 
-Execute `mtg-proxy-printer` to start the GUI. The Windows MSI package places a starter in the Start menu.
+On Linux/macOS, execute `mtg-proxy-printer` to start the GUI. The Windows MSI package places a starter in the Start menu.
 
 At first start and at somewhat regular intervals, MTGProxyPrinter requires downloading the MTG card data
 from the Scryfall API. This dataset containing the information about the available 400k+ printings
@@ -161,7 +177,8 @@ The left-most panel in the main window shows an overview over all pages with a s
 Click on a page to show it’s content in detail and select it for editing.
 The top-right area is used to find cards by name or set and add them to the current page.
 Below is a preview rendering of the current page, and a table with details about the cards in the opened page.
-You can select images and remove them, if you accidentally added the wrong cards.
+You can select images and remove them, if you accidentally added the wrong cards. 
+Double-clicking table cells allows re-selecting printings, or editing data of custom cards.
 
 If you don’t want to use the built-in card search, MTGProxyPrinter can import deck lists from disk and from a set of
 card database websites. The import wizard is available from the File menu in the main window. After loading the list,

@@ -20,17 +20,24 @@ import pathlib
 import re
 import typing
 import tokenize
+from collections import defaultdict
 
 import pint
-from PySide6.QtCore import QStandardPaths
+from PySide6.QtCore import QStandardPaths, QLocale
+from PySide6.QtGui import QPageSize, QPageLayout
+from PySide6.QtPrintSupport import QPrinterInfo
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
-from mtg_proxy_printer.units_and_sizes import CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT
+from mtg_proxy_printer.units_and_sizes import \
+    CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT, PageSizeManager, is_acceptable_page_size
 
 StandardLocation = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
+Territory = QLocale.Country  # TODO: Adjust for PySide6
+PageSizeId = QPageSize.PageSizeId
+Orientation = QPageLayout.Orientation
 
 __all__ = [
     "settings",
@@ -42,6 +49,41 @@ __all__ = [
     "get_boolean_card_filter_keys",
     "parse_card_set_filters",
 ]
+
+
+Letter = QPageSize.PageSizeId.Letter
+# https://www.unicode.org/cldr/charts/47/supplemental/territory_information.html
+LOCATION_PAPER_SIZE_TABLE = defaultdict(lambda:PageSizeId.A4, {
+    Territory.Belize: Letter,
+    Territory.Canada: Letter,
+    Territory.Chile: Letter,
+    Territory.Colombia: Letter,
+    Territory.CostaRica: Letter,
+    Territory.DominicanRepublic: Letter,
+    Territory.ElSalvador: Letter,
+    Territory.Guatemala: Letter,
+    Territory.Guyana: Letter,
+    Territory.Nicaragua: Letter,
+    Territory.Panama: Letter,
+    Territory.Philippines: Letter,
+    Territory.PuertoRico: Letter,
+    Territory.UnitedStates: Letter,
+    Territory.UnitedStatesMinorOutlyingIslands: Letter,
+    Territory.UnitedStatesVirginIslands: Letter,
+    Territory.Venezuela: Letter,
+})
+
+
+def get_default_paper_size() -> str:
+    system_country = QLocale.system().country()
+    default = PageSizeManager.PageSizeReverse[LOCATION_PAPER_SIZE_TABLE[system_country]]
+    printer_info = QPrinterInfo.defaultPrinter()
+    if printer_info.isNull():
+        return default
+    page_size = printer_info.defaultPageSize()
+    if page_size.isValid() and is_acceptable_page_size(page_size):
+        return PageSizeManager.PageSizeReverse[page_size.id()]
+    return default
 
 
 mm: QuantityT = unit_registry.mm
@@ -65,7 +107,7 @@ VERSION_CHECK_RE = re.compile(
 
 # Below are the default application settings. How to define new ones:
 # - Add a key-value pair (String keys and values only) to a section or add a new section
-# - If adding a new section, also add a validator function for that section.
+#   - If adding a new section, also add a validator function for that section.
 # - Add the new key to the validator of the section it’s in. The validator has to check that the value can be properly
 #   cast into the expected type and perform a value range check.
 # - Add the option to the Settings window UI
@@ -102,14 +144,18 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-art-series-cards": "False",
     "hidden-sets": "",
 }
+
+DEFAULT_MARGINS = 5*mm
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed": "0 mm",
+    "paper-orientation": PageSizeManager.PageOrientationReverse[Orientation.Portrait],
+    "paper-size": get_default_paper_size(),
     "paper-height": "297 mm",
     "paper-width": "210 mm",
-    "margin-top": "5 mm",
-    "margin-bottom": "5 mm",
-    "margin-left": "5 mm",
-    "margin-right": "5 mm",
+    "margin-top": str(DEFAULT_MARGINS),
+    "margin-bottom": str(DEFAULT_MARGINS),
+    "margin-left": str(DEFAULT_MARGINS),
+    "margin-right": str(DEFAULT_MARGINS),
     "row-spacing": "0 mm",
     "column-spacing": "0 mm",
     "print-cut-marker": "False",
@@ -288,7 +334,7 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
     boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
-    string_settings = {"default-document-name", }
+    string_settings = {"default-document-name", "paper-size", "paper-orientation"}
     for key in section.keys():
         if key in boolean_settings:
             _validate_boolean(section, defaults, key)
@@ -297,6 +343,10 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
         else:
             _validate_length(section, defaults, key, MIN_SIZE, MAX_SIZE)
 
+    if section["paper-size"] not in PageSizeManager.PageSize:
+        _restore_default(section, defaults, "paper-size")
+    if section["paper-orientation"] not in PageSizeManager.PageOrientation:
+        _restore_default(section, defaults, "paper-orientation")
     # Check some semantic properties
     available_height = section.get_quantity("paper-height") - \
         (section.get_quantity("margin-top") + section.get_quantity("margin-bottom"))
@@ -529,8 +579,11 @@ def _migrate_to_pdf_export_section(to_migrate: ConfigParser):
     except KeyError:
         pass
     if to_migrate.has_section("default-filesystem-paths"):
-        target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
-        del to_migrate["default-filesystem-paths"]["pdf-export-path"]
+        try:
+            target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
+            del to_migrate["default-filesystem-paths"]["pdf-export-path"]
+        except KeyError:
+            pass
 
 
 def _migrate_document_settings_to_pint(to_migrate: ConfigParser):

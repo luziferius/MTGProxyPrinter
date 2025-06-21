@@ -13,7 +13,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
 import copy
 import typing
 import unittest.mock
@@ -347,10 +346,11 @@ def test_get_card_indices_of_type(document_light, page_type: PageType, parent_ro
 @pytest.fixture
 def document_custom_layout(document: Document) -> Document:
     custom_layout = PageLayoutSettings(
-        page_height=300*mm, page_width=200*mm,
+        custom_page_height=300*mm, custom_page_width=200*mm,
         margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
         row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
-        draw_cut_markers=True, draw_sharp_corners=False,
+        draw_cut_markers=True,
+        paper_size="Custom", paper_orientation="Portrait",
     )
     document.apply(ActionEditDocumentSettings(custom_layout))
     return document
@@ -393,8 +393,6 @@ def test_document_is_created_empty(document_light: Document):
     )
 
 
-
-
 @pytest.mark.parametrize("size", [REGULAR, OVERSIZED])
 def test_get_missing_image_cards(document_light: Document, size: CardSize):
     blank_image = document_light.image_db.get_blank(size)
@@ -409,6 +407,7 @@ def test_get_missing_image_cards(document_light: Document, size: CardSize):
     )
     cards = [i.data(ItemDataRole.UserRole) for i in result]
     assert_that(cards, only_contains(expected))
+
 
 @pytest.mark.parametrize("size", [REGULAR, OVERSIZED])
 @pytest.mark.parametrize("result", [True, False])

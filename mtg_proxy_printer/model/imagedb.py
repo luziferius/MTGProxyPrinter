@@ -447,7 +447,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             self.currently_opened_file = None
             download_path.unlink(missing_ok=True)
             self.download_finished.emit()
-            return pixmap
+        return pixmap
 
 
 def read_disk_cache_content(db_path: pathlib.Path) -> typing.List[CacheContent]:

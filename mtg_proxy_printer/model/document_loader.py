@@ -20,9 +20,10 @@ import itertools
 import pathlib
 import sqlite3
 import textwrap
-from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, Tuple, TYPE_CHECKING, TypeVar
+from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, Tuple, TYPE_CHECKING
 
 import pint
+from PySide6.QtGui import QPageLayout, QPageSize
 from PySide6.QtCore import QObject, Signal, QThreadPool, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, is_, any_of, none, has_item, has_property, equal_to
@@ -33,6 +34,7 @@ except ImportError:
     # Compatibility with PyHamcrest < 1.10
     from hamcrest import contains as contains_exactly
 
+import mtg_proxy_printer.units_and_sizes
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardDatabase
@@ -40,7 +42,8 @@ from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType,
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, QuantityT, UUID, CardSizes, OptStr, unit_registry, CardSize
+from mtg_proxy_printer.units_and_sizes import  PageType, CardSize, CardSizes, unit_registry, \
+    PageSizeManager, QuantityT, T, UUID, OptStr
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.save_file_migrations import migrate_database
@@ -57,7 +60,8 @@ __all__ = [
 
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
 SAVE_FILE_MAGIC_NUMBER = 41325044
-
+Orientation = QPageLayout.Orientation
+Millimeter = QPageSize.Unit.Millimeter
 
 class CardType(str, enum.Enum):
     REGULAR = "r"
@@ -87,7 +91,6 @@ class CardRow(NamedTuple):
 
 sqlite3.register_adapter(CardType, lambda item: item.value)
 CustomCards = Dict[str, Card]
-T = TypeVar("T")
 
 
 def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[Tuple[T, ...]]:
@@ -510,8 +513,8 @@ class Worker(LoaderSignals):
             settings,
             has_properties(
                 card_bleed=is_distance,
-                page_height=is_distance,
-                page_width=is_distance,
+                custom_page_height=is_distance,
+                custom_page_width=is_distance,
                 margin_top=is_distance,
                 margin_bottom=is_distance,
                 margin_left=is_distance,
@@ -522,6 +525,8 @@ class Worker(LoaderSignals):
                 draw_sharp_corners=is_bool_str,
                 draw_page_numbers=is_bool_str,
                 document_name=instance_of(str),
+                paper_orientation=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageOrientation),
+                paper_size=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize),
             ),
             "Document settings contain invalid data or data types"
         )
