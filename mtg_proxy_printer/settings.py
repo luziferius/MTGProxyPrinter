@@ -75,7 +75,7 @@ LOCATION_PAPER_SIZE_TABLE = defaultdict(lambda:PageSizeId.A4, {
 
 
 def get_default_paper_size() -> str:
-    system_country = QLocale.system().country()
+    system_country = QLocale.system().territory()
     default = PageSizeManager.PageSizeReverse[LOCATION_PAPER_SIZE_TABLE[system_country]]
     printer_info = QPrinterInfo.defaultPrinter()
     if printer_info.isNull():
