@@ -67,20 +67,20 @@ class PageConfigWidget(QGroupBox):
 
         ui.paper_size.currentIndexChanged.connect(self._on_paper_size_changed)
         ui.paper_size.currentIndexChanged.connect(self.validate_paper_size_settings)
-        ui.paper_size.currentIndexChanged.connect(self.on_page_layout_setting_changed)
-        ui.paper_size.currentIndexChanged.connect(partial(self.page_layout_changed.emit, page_layout))
+        ui.paper_size.currentIndexChanged.connect(self.on_page_layout_changed)
+        ui.paper_size.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
         ui.paper_orientation.currentIndexChanged.connect(self._on_paper_orientation_changed)
         ui.paper_orientation.currentIndexChanged.connect(self.validate_paper_size_settings)
-        ui.paper_orientation.currentIndexChanged.connect(self.on_page_layout_setting_changed)
-        ui.paper_orientation.currentIndexChanged.connect(partial(self.page_layout_changed.emit, page_layout))
+        ui.paper_orientation.currentIndexChanged.connect(self.on_page_layout_changed)
+        ui.paper_orientation.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
         for spinbox, _ in self._get_decimal_settings_widgets():
             layout_key = spinbox.objectName()
             spinbox.valueChanged[float].connect(
                 partial(self.set_numerical_page_layout_item, page_layout, layout_key, "mm"))
             spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
-            spinbox.valueChanged[float].connect(self.on_page_layout_setting_changed)
+            spinbox.valueChanged[float].connect(self.on_page_layout_changed)
             spinbox.valueChanged[float].connect(lambda: self.page_layout_changed.emit(page_layout))
 
         for checkbox, _ in self._get_boolean_settings_widgets():
@@ -131,7 +131,7 @@ class PageConfigWidget(QGroupBox):
         self.page_layout.paper_orientation = PageSizeManager.PageOrientationReverse[orientation]
 
     @Slot()
-    def on_page_layout_setting_changed(self):
+    def on_page_layout_changed(self):
         """
         Recomputes and updates the page capacity display, whenever any page layout widget changes.
         """
@@ -217,7 +217,7 @@ class PageConfigWidget(QGroupBox):
         self._load_paper_size(documents_section["paper-size"])
         self._load_paper_orientation(documents_section["paper-orientation"])
         self.validate_paper_size_settings()
-        self.on_page_layout_setting_changed()
+        self.on_page_layout_changed()
         self.page_layout_changed.emit(self.page_layout)
         logger.debug(f"Loading from settings finished")
 
@@ -243,7 +243,7 @@ class PageConfigWidget(QGroupBox):
         self._load_paper_size(other.paper_size)
         self._load_paper_orientation(other.paper_orientation)
         self.validate_paper_size_settings()
-        self.on_page_layout_setting_changed()
+        self.on_page_layout_changed()
         self.page_layout_changed.emit(self.page_layout)
         logger.debug(f"Loading from document settings finished")
 

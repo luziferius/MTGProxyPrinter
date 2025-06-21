@@ -235,6 +235,7 @@ class CardItem(QGraphicsItemGroup):
         rect.setZValue(RenderLayers.CORNERS.value)
         return rect
 
+    @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
         for corner in self.corners:
             corner.setOpacity(new_page_layout.draw_sharp_corners)
