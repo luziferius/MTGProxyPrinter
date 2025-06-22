@@ -20,6 +20,7 @@ import math
 import typing
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -40,7 +41,7 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
 
 
 @pytest.mark.parametrize("card_count", [1, 9, 10, 11, 100])
-def test_apply_appends_cards(document_light, card_count: int):
+def test_apply_appends_cards(document_light: Document, card_count: int):
     page_capacity = document_light.page_layout.compute_page_card_capacity(PageType.REGULAR)
     expected_pages = math.ceil(card_count/page_capacity)
     pages = document_light.pages
@@ -58,7 +59,7 @@ def test_apply_appends_cards(document_light, card_count: int):
         )
 
 
-def test_apply_does_not_create_mixed_size_page(document_light):
+def test_apply_does_not_create_mixed_size_page(document_light: Document):
     pages = document_light.pages
     existing_card = append_new_card_in_page(pages[0], "Card")
     new_card = create_card("New", CardSizes.OVERSIZED)
@@ -77,7 +78,7 @@ def test_apply_does_not_create_mixed_size_page(document_light):
     )
 
 
-def test_apply_raises_exception_if_action_list_is_not_empty(document_light):
+def test_apply_raises_exception_if_action_list_is_not_empty(document_light: Document):
     action = ActionImportDeckList(Counter(), False)
     action.actions.append(ActionAddCard(create_card("Card")))
     assert_that(calling(action.apply).with_args(document_light), raises(IllegalStateError))
@@ -113,7 +114,7 @@ def test_apply_clears_document_if_enabled(qtbot, document_light, new_card_is_ove
 
 
 @pytest.mark.parametrize("card_count", [1, 9, 10, 11, 100])
-def test_undo_removes_created_pages(document_light, card_count):
+def test_undo_removes_created_pages(document_light: Document, card_count: int):
     pages = document_light.pages
     cards = [create_card(f"Card {number}") for number in range(1, card_count+1)]
     action = ActionImportDeckList(cards, False)

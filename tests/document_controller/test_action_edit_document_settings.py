@@ -20,9 +20,11 @@ from unittest.mock import patch
 
 import pytest
 from hamcrest import *
+from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
@@ -35,7 +37,7 @@ def test_create_action_raises_value_error_on_zero_page_capacity():
     assert_that(calling(ActionEditDocumentSettings).with_args(PageLayoutSettings()), raises(ValueError))
 
 
-def test_apply_emits_settings_changed_signal(qtbot, document_light):
+def test_apply_emits_settings_changed_signal(qtbot: QtBot, document_light: Document):
     old_settings = copy.copy(document_light.page_layout)
     new_settings = copy.copy(document_light.page_layout)
     new_settings.page_height += 1*unit_registry.mm  # Ensure that the new settings differ from the previous ones
@@ -56,7 +58,7 @@ def test_apply_emits_settings_changed_signal(qtbot, document_light):
     (0, 30),  # Both sizes overflow
 ])
 def test_page_capacity_reduction_reflows_document(
-        qtbot, document_light, initial_row_spacing: int, new_row_spacing: int):
+        qtbot: QtBot, document_light: Document, initial_row_spacing: int, new_row_spacing: int):
     document_light.page_layout.row_spacing = initial_row_spacing*unit_registry.mm
     initial_capacity = (document_light.page_layout.compute_page_card_capacity(PageType.REGULAR),
                         document_light.page_layout.compute_page_card_capacity(PageType.OVERSIZED))
@@ -79,7 +81,7 @@ def test_page_capacity_reduction_reflows_document(
     (0, 30),  # Both sizes overflow
 ])
 def test_reflow_keeps_total_card_order(
-        qtbot, document_light, initial_row_spacing: int, new_row_spacing: int):
+        document_light: Document, initial_row_spacing: int, new_row_spacing: int):
     document_light.page_layout.row_spacing = initial_row_spacing*unit_registry.mm
     ActionNewPage(count=2).apply(document_light)
     names = []
@@ -107,7 +109,7 @@ def test_reflow_keeps_total_card_order(
             f"Page {index} has unexpected page type")
 
 
-def test_reflow_moves_card_on_later_page(qtbot, document_light):
+def test_reflow_moves_card_on_later_page(document_light: Document):
     assert_that(document_light.page_layout.compute_page_card_capacity(PageType.REGULAR), is_(9), "Test setup failed")
 
     ActionNewPage().apply(document_light)
@@ -135,7 +137,7 @@ def test_reflow_moves_card_on_later_page(qtbot, document_light):
     )
 
 
-def test_reflow_does_not_append_empty_pages(qtbot, document_light):
+def test_reflow_does_not_append_empty_pages(qtbot: QtBot, document_light: Document):
     """The issue of trailing empty pages was discovered on a document with at least four full pages"""
     pages = document_light.pages
     ActionAddCard((card_inserted := create_card("Card")), 4*9).apply(document_light)
@@ -169,7 +171,7 @@ def test_reflow_does_not_append_empty_pages(qtbot, document_light):
     )
 
 
-def test_undo_restores_old_page_layout(qtbot, document_light):
+def test_undo_restores_old_page_layout(qtbot: QtBot, document_light: Document):
     # Alter the settings and store that in the action as the new settings, while keeping a backup in the old_settings
     # undo() should then restore the old values
     old_settings = copy.copy(document_light.page_layout)
@@ -189,7 +191,7 @@ def test_undo_restores_old_page_layout(qtbot, document_light):
     assert_that(action.old_settings, is_(none()))
 
 
-def test_undo_restores_old_page_content(qtbot, document_light):
+def test_undo_restores_old_page_content(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     new_page = ActionNewPage(1).apply(document_light)
     ActionAddCard((card_1 := create_card("Stays on 0")), 6).apply(document_light)
