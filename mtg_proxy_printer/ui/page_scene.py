@@ -278,7 +278,6 @@ class PageScene(QGraphicsScene):
         self.selected_page = self.document.get_current_page_index()
         self.row_count = self.column_count = 1
         self._update_row_and_column_counts(document)
-        self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.BrushStyle.SolidPattern))
         background_color = self.get_background_color(render_mode)
         logger.debug(f"Drawing background rectangle")
         self.background = self.addRect(0, 0, self.width(), self.height(), background_color, background_color)
@@ -681,7 +680,7 @@ class PageScene(QGraphicsScene):
             # There is a card on the left, iff the row modulo column_count is non-zero
             index_row % self.column_count > 0,
             # There is a card on the right, iff there is an additional card, and this is not on the right-most column.
-            index_row % self.column_count + 1 == self.column_count and index_row + 1 < cards_on_page
+            index_row % self.column_count + 1 != self.column_count and index_row + 1 < cards_on_page
         )
 
     def remove_cut_markers(self):

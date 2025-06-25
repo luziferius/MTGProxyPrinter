@@ -28,13 +28,13 @@ try:
 except ImportError:  # Compatibility with Python < 3.11
     from typing_extensions import NotRequired
 
-
+from PyQt5.QtCore import QSize, QObject
 from PyQt5.QtGui import QPageSize, QPageLayout
+
 try:
     from pint import Quantity, Unit
 except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
     Quantity = Unit = typing.Any
-from PyQt5.QtCore import QSize, QObject
 import pint
 import pint.facets.context.objects
 
@@ -90,16 +90,17 @@ mm: Unit = unit_registry.mm
 
 
 class SectionProxy(configparser.SectionProxy):
-    def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars_=None) -> Quantity:
-        raw_value = self.get(option, fallback, raw=raw, vars=vars_)
+    def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars=None) -> Quantity:
+        raw_value = self.get(option, fallback, raw=raw, vars=vars)
         return unit_registry.parse_expression(raw_value)
+
 
 class ConfigParser(configparser.ConfigParser):
 
     __getitem__: typing.Callable[[str], SectionProxy]  # Type hint that [] returns a SectionProxy having get_quantity()
 
-    def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars_=None) -> Quantity:
-        raw_value = self.get(section, option, raw=raw, vars=vars_, fallback=fallback)
+    def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> Quantity:
+        raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
         return unit_registry.parse_expression(raw_value)
 
 
@@ -144,6 +145,7 @@ class CardSizes(CardSize, enum.Enum):
 
 sqlite3.register_adapter(CardSize, lambda item: item.to_save_data())
 sqlite3.register_adapter(CardSizes, lambda item: item.to_save_data())
+
 
 @enum.unique
 class PageType(enum.Enum):

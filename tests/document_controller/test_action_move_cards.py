@@ -13,22 +13,23 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-
 from functools import partial
+from typing import Optional
 
 import pytest
 from hamcrest import *
 from PyQt5.QtCore import QModelIndex
+from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.units_and_sizes import CardSizes, IntList
 from mtg_proxy_printer.model.document_page import PageType
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
 
 from .helpers import card_container_with, append_new_card_in_page, card_container_with_name
-
+OptInt = Optional[int]
 
 def validate_qt_model_move_signal_parameter(
         expected_source: int, expected_row_start: int, expected_row_end: int,
@@ -57,7 +58,7 @@ def validate_qt_model_move_signal_parameter(
         and rows_valid
 
 
-def test_apply_raises_exception_when_trying_to_create_a_mixed_size_page(document_light):
+def test_apply_raises_exception_when_trying_to_create_a_mixed_size_page(document_light: Document):
     ActionNewPage().apply(document_light)
     append_new_card_in_page(document_light.pages[0], "Normal", CardSizes.REGULAR)
     append_new_card_in_page(document_light.pages[1], "Large", CardSizes.OVERSIZED)
@@ -66,7 +67,7 @@ def test_apply_raises_exception_when_trying_to_create_a_mixed_size_page(document
     assert_that(calling(ActionMoveCards(0, [0], 1).apply).with_args(document_light), raises(IllegalStateError))
 
 
-def test_apply_move_all_cards_onto_empty_page(qtbot, document_light):
+def test_apply_move_all_cards_onto_empty_page(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     to_move = append_new_card_in_page(pages[0], "Normal")
@@ -88,7 +89,7 @@ def test_apply_move_all_cards_onto_empty_page(qtbot, document_light):
     )
 
 
-def test_apply_move_all_cards_onto_partially_filled_page(qtbot, document_light):
+def test_apply_move_all_cards_onto_partially_filled_page(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     to_move = append_new_card_in_page(pages[0], "Move")
@@ -113,7 +114,7 @@ def test_apply_move_all_cards_onto_partially_filled_page(qtbot, document_light):
     )
 
 
-def test_apply_move_subset_of_cards_onto_empty_page(qtbot, document_light):
+def test_apply_move_subset_of_cards_onto_empty_page(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     to_move = append_new_card_in_page(pages[0], "Move")
@@ -138,7 +139,7 @@ def test_apply_move_subset_of_cards_onto_empty_page(qtbot, document_light):
     )
 
 
-def test_apply_move_subset_of_cards_onto_partially_filled_page(qtbot, document_light):
+def test_apply_move_subset_of_cards_onto_partially_filled_page(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     to_move = append_new_card_in_page(pages[0], "Move")
@@ -164,7 +165,7 @@ def test_apply_move_subset_of_cards_onto_partially_filled_page(qtbot, document_l
     )
 
 
-def test_apply_move_center_block(qtbot, document_light):
+def test_apply_move_center_block(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     on_page_0_0 = append_new_card_in_page(pages[0], "Stay on 0")
@@ -211,7 +212,7 @@ def test_apply_move_center_block(qtbot, document_light):
     )
 
 
-def test_apply_move_two_separate_cards(qtbot, document_light):
+def test_apply_move_two_separate_cards(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     to_move_1 = append_new_card_in_page(pages[0], "Move")
@@ -251,7 +252,7 @@ def test_apply_move_two_separate_cards(qtbot, document_light):
     )
 
 
-def test_apply_move_card_with_target_inserts_at_front(qtbot, document_light):
+def test_apply_move_card_with_target_inserts_at_front(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     card_1 = append_new_card_in_page(pages[0], "Move1")
@@ -279,7 +280,7 @@ def test_apply_move_card_with_target_inserts_at_front(qtbot, document_light):
     )
 
 
-def test_apply_move_card_with_target_inserts_between_cards(qtbot, document_light):
+def test_apply_move_card_with_target_inserts_between_cards(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     card_1 = append_new_card_in_page(pages[0], "Move1")
@@ -310,7 +311,7 @@ def test_apply_move_card_with_target_inserts_between_cards(qtbot, document_light
 
 
 @pytest.mark.parametrize("target_row", [None, 1])  # Because the target has 1 card, both should give the same result
-def test_apply_move_card_with_target_appends_to_page(qtbot, document_light, target_row):
+def test_apply_move_card_with_target_appends_to_page(qtbot: QtBot, document_light: Document, target_row: OptInt):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     card_1 = append_new_card_in_page(pages[0], "Move1")
@@ -339,7 +340,7 @@ def test_apply_move_card_with_target_appends_to_page(qtbot, document_light, targ
 
 
 @pytest.mark.parametrize("target_row", [0, 1, None])
-def test_apply_without_indices_does_nothing(qtbot, document_light, target_row):
+def test_apply_without_indices_does_nothing(qtbot: QtBot, document_light: Document, target_row: OptInt):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     card_1 = append_new_card_in_page(pages[0], "Move1")
@@ -364,13 +365,13 @@ def test_apply_without_indices_does_nothing(qtbot, document_light, target_row):
 
 
 @pytest.mark.parametrize("indices", [[], [0], [1], [0, 1], [0, 2], [0, 1, 2], [0, 1, 3, 4]])
-def test___total_moved_cards(indices):
+def test___total_moved_cards(indices: IntList):
     action = ActionMoveCards(0, indices, 0)
     expected_result = len(indices)
     assert_that(action._total_moved_cards(), is_(equal_to(expected_result)))
 
 
-def test_undo_move_all_cards_onto_empty_page(qtbot, document_light):
+def test_undo_move_all_cards_onto_empty_page(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     to_move = append_new_card_in_page(pages[1], "Move")
@@ -392,7 +393,7 @@ def test_undo_move_all_cards_onto_empty_page(qtbot, document_light):
     )
 
 
-def test_undo_move_all_cards_onto_partially_filled_page(qtbot, document_light):
+def test_undo_move_all_cards_onto_partially_filled_page(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     on_page_1 = append_new_card_in_page(pages[1], "Stay on 1")
@@ -416,7 +417,7 @@ def test_undo_move_all_cards_onto_partially_filled_page(qtbot, document_light):
     )
 
 
-def test_undo_separates_two_source_ranges(qtbot, document_light):
+def test_undo_separates_two_source_ranges(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     on_page_0_0 = append_new_card_in_page(pages[0], "Stay on 0")
@@ -458,7 +459,7 @@ def test_undo_separates_two_source_ranges(qtbot, document_light):
     )
 
 
-def test_undo_with_target_at_front_from_front(qtbot, document_light):
+def test_undo_with_target_at_front_from_front(qtbot: QtBot, document_light: Document):
     """
     test Undo [[C1, C2], [C3]] → [[C2], [C1, C3]]
     """
@@ -489,7 +490,7 @@ def test_undo_with_target_at_front_from_front(qtbot, document_light):
     )
 
 
-def test_undo_with_target_within_page(qtbot, document_light):
+def test_undo_with_target_within_page(qtbot: QtBot, document_light: Document):
     """
     test Undo [[C1, C2], [C3, C4]] → [[C2], [C3, C1, C4]]
     """
@@ -523,7 +524,7 @@ def test_undo_with_target_within_page(qtbot, document_light):
 
 
 @pytest.mark.parametrize("target_row", [None, 1])
-def test_undo_with_target_at_end_from_begin(qtbot, document_light, target_row):
+def test_undo_with_target_at_end_from_begin(qtbot: QtBot, document_light: Document, target_row: OptInt):
     """
     test Undo [[C1, C2], [C3]] → [[C2], [C3, C1]]
     """
@@ -555,7 +556,7 @@ def test_undo_with_target_at_end_from_begin(qtbot, document_light, target_row):
 
 
 @pytest.mark.parametrize("target_row", [None, 1])
-def test_undo_with_target_at_end_from_end(qtbot, document_light, target_row):
+def test_undo_with_target_at_end_from_end(qtbot: QtBot, document_light: Document, target_row: OptInt):
     """
     test Undo [[C1, C2], [C3]] → [[C1], [C3, C2]]
     """

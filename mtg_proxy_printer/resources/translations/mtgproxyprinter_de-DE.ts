@@ -154,7 +154,7 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
   <context>
     <name>ActionLoadDocument</name>
     <message numerus="yes">
-      <location filename="../../document_controller/load_document.py" line="77"/>
+      <location filename="../../document_controller/load_document.py" line="94"/>
       <source>Load document from &apos;{save_path}&apos;,
 containing %n page(s) {cards_total}</source>
       <comment>Undo/redo tooltip text.</comment>
@@ -169,7 +169,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionLoadDocument. Card total</name>
     <message numerus="yes">
-      <location filename="../../document_controller/load_document.py" line="73"/>
+      <location filename="../../document_controller/load_document.py" line="90"/>
       <source>with %n card(s) total</source>
       <comment>Undo/redo tooltip text. Will be inserted as {cards_total}</comment>
       <translation>
@@ -367,12 +367,12 @@ zu wechseln.</translation>
   <context>
     <name>CardSideSelectionDelegate</name>
     <message>
-      <location filename="../../ui/item_delegates.py" line="99"/>
+      <location filename="../../ui/item_delegates.py" line="100"/>
       <source>Front</source>
       <translation>Vorderseite</translation>
     </message>
     <message>
-      <location filename="../../ui/item_delegates.py" line="100"/>
+      <location filename="../../ui/item_delegates.py" line="101"/>
       <source>Back</source>
       <translation>Rückseite</translation>
     </message>
@@ -2427,7 +2427,7 @@ Aktivieren Sie dies also nur, wenn es tatsächlich erforderlich ist.</translatio
   <context>
     <name>PageConfigWidget</name>
     <message numerus="yes">
-      <location filename="../../ui/page_config_widget.py" line="101"/>
+      <location filename="../../ui/page_config_widget.py" line="137"/>
       <source>%n regular card(s)</source>
       <comment>Display of the resulting page capacity for regular-sized cards</comment>
       <translation>
@@ -2436,7 +2436,7 @@ Aktivieren Sie dies also nur, wenn es tatsächlich erforderlich ist.</translatio
       </translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/page_config_widget.py" line="105"/>
+      <location filename="../../ui/page_config_widget.py" line="141"/>
       <source>%n oversized card(s)</source>
       <comment>Display of the resulting page capacity for oversized cards</comment>
       <translation>
@@ -2445,7 +2445,7 @@ Aktivieren Sie dies also nur, wenn es tatsächlich erforderlich ist.</translatio
       </translation>
     </message>
     <message>
-      <location filename="../../ui/page_config_widget.py" line="110"/>
+      <location filename="../../ui/page_config_widget.py" line="146"/>
       <source>{regular_text}, {oversized_text}</source>
       <comment>Combination of the page capacities for regular, and oversized cards</comment>
       <translation>{regular_text}, {oversized_text}</translation>
@@ -2463,17 +2463,17 @@ based on the page size and spacings configured</source>
 basierend auf der Seitengröße und den konfigurierten Rand- und Kartenabständen</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="57"/>
+      <location filename="../ui/page_config_widget.ui" line="179"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mindestspanne zwischen dem linken Papierrand und dem Seiteninhalt.&lt;/p&gt;&lt;p&gt;Die meisten Drucker haben eine Mindestspanne von 3 bis 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="422"/>
+      <location filename="../ui/page_config_widget.ui" line="453"/>
       <source> mm</source>
       <translation> mm</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="76"/>
+      <location filename="../ui/page_config_widget.ui" line="330"/>
       <source>Paper height in millimeters.
 Must match the size of the sheets in the printer.
 Otherwise, scaling may be applied by the printer driver.</source>
@@ -2482,37 +2482,37 @@ Muss mit der Größe der Blätter im Drucker übereinstimmen.
 Andernfalls könnte der Druckertreiber das Dokument skalieren.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="94"/>
+      <location filename="../ui/page_config_widget.ui" line="311"/>
       <source>Top margin</source>
       <translation>Oberer Rand</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="113"/>
+      <location filename="../ui/page_config_widget.ui" line="50"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the right paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mindestspanne zwischen dem rechten Papierrand und dem Seiteninhalt.&lt;/p&gt;&lt;p&gt;Die meisten Drucker haben eine Mindestspanne von 3 bis 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="126"/>
+      <location filename="../ui/page_config_widget.ui" line="150"/>
       <source>If enabled, the page number is printed on each page. Makes it easier to notice missing pages in a stack.</source>
       <translation>Wenn aktiviert, wird die Seitennummer auf jeder Seite ausgedruckt. Dadurch wird es einfacher, fehlende Seiten in einem Stapel zu bemerken.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="129"/>
+      <location filename="../ui/page_config_widget.ui" line="153"/>
       <source>Print page numbers</source>
       <translation>Seitennummern drucken</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="136"/>
+      <location filename="../ui/page_config_widget.ui" line="278"/>
       <source>Resulting page capacity:</source>
       <translation>Seitenkapazität:</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="146"/>
+      <location filename="../ui/page_config_widget.ui" line="396"/>
       <source>Card bleed</source>
       <translation>Kartenumrandung</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="165"/>
+      <location filename="../ui/page_config_widget.ui" line="448"/>
       <source>Paper width in millimeters.
 Must match the size of the sheets in the printer.
 Otherwise, scaling may be applied by the printer driver.</source>
@@ -2521,17 +2521,17 @@ Muss mit der Größe der Blätter im Drucker übereinstimmen.
 Andernfalls könnte der Druckertreiber das Dokument skalieren.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="183"/>
+      <location filename="../ui/page_config_widget.ui" line="301"/>
       <source>Enable printing additional lines to aid cutting the printed sheets.</source>
       <translation>Aktivieren Sie das Drucken zusätzlicher Schneidhilfslinien, um das Schneiden der gedruckten Seiten zu erleichtern.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="186"/>
+      <location filename="../ui/page_config_widget.ui" line="304"/>
       <source>Print cut markers</source>
       <translation>Schnittmarkierungen drucken</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="199"/>
+      <location filename="../ui/page_config_widget.ui" line="250"/>
       <source>Space between image rows in mm.
 If set to zero, you only need one cut to separate two images,
 otherwise you need two cuts but require less precision hitting the exact middle.</source>
@@ -2540,27 +2540,27 @@ Wenn Sie diesen Wert auf null setzen, benötigen Sie nur einen Schnitt, um zwei 
 Andernfalls sind zwei Schnitte erforderlich, die jedoch weniger Präzision erfordern.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="214"/>
+      <location filename="../ui/page_config_widget.ui" line="409"/>
       <source>Draw 90° card corners, instead of round ones</source>
       <translation>90°-Kartenecken zeichnen</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="227"/>
+      <location filename="../ui/page_config_widget.ui" line="354"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mindestabstand zwischen dem oberen Papierrand und dem Seiteninhalt.&lt;/p&gt;&lt;p&gt;Die meisten Drucker haben einen Mindestabstand von 3 bis 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="240"/>
+      <location filename="../ui/page_config_widget.ui" line="386"/>
       <source>Document name</source>
       <translation>Dokumentenname</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="250"/>
+      <location filename="../ui/page_config_widget.ui" line="224"/>
       <source>Row spacing</source>
       <translation>Zeilenabstand</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="263"/>
+      <location filename="../ui/page_config_widget.ui" line="367"/>
       <source>The document name is printed on each page and can help you keep track
 of different printed sheets and to which deck they belong.
 
@@ -2569,32 +2569,27 @@ Leave empty to disable.</source>
 um Stapel gedruckter Seiten auseinanderhalten zu können.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="272"/>
+      <location filename="../ui/page_config_widget.ui" line="376"/>
       <source>Document/deck name</source>
       <translation>Dokument-/Deckname</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="282"/>
-      <source>Page height</source>
-      <translation>Seitenhöhe</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="295"/>
+      <location filename="../ui/page_config_widget.ui" line="416"/>
       <source>Draw an additional border around cards to ease cutting.</source>
       <translation>Einen zusätzlichen Rand um die Karten zeichnen, um das Schneiden zu erleichtern.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="308"/>
+      <location filename="../ui/page_config_widget.ui" line="265"/>
       <source>Bottom Margin</source>
       <translation>Unterer Rand</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="321"/>
+      <location filename="../ui/page_config_widget.ui" line="160"/>
       <source>Left margin</source>
       <translation>Linker Rand</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="340"/>
+      <location filename="../ui/page_config_widget.ui" line="96"/>
       <source>Space between image columns in mm.
 If set to zero, you only need one cut to separate two images,
 otherwise you need two cuts but require less precision hitting the exact middle.</source>
@@ -2603,39 +2598,49 @@ Wenn Sie diesen Wert auf null setzen, benötigen Sie nur einen Schnitt, um zwei 
 Andernfalls sind zwei Schnitte erforderlich, die jedoch weniger Präzision erfordern.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="361"/>
+      <location filename="../ui/page_config_widget.ui" line="117"/>
       <source>Switch between portrait and landscape mode</source>
       <translation>Zwischen Hoch- und Querformat wechseln</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="364"/>
+      <location filename="../ui/page_config_widget.ui" line="120"/>
       <source>Flip</source>
       <translation>Drehen</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="374"/>
+      <location filename="../ui/page_config_widget.ui" line="130"/>
       <source>Column spacing</source>
       <translation>Spaltenabstand</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="387"/>
+      <location filename="../ui/page_config_widget.ui" line="288"/>
       <source>Right margin</source>
       <translation>Rechter Rand</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="400"/>
-      <source>Page width</source>
-      <translation>Seitenbreite</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="419"/>
+      <location filename="../ui/page_config_widget.ui" line="211"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mindestabstand zwischen dem unteren Papierrand und dem Seiteninhalt.&lt;/p&gt;&lt;p&gt;Die meisten Drucker haben einen Mindestabstand von 3 bis 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="447"/>
+      <location filename="../ui/page_config_widget.ui" line="78"/>
       <source>Show Preview</source>
       <translation>Vorschau anzeigen</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="143"/>
+      <source>Paper size</source>
+      <translation>Papierformat</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="192"/>
+      <source>Paper height</source>
+      <translation>Seitenhöhe</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="429"/>
+      <source>Paper width</source>
+      <translation>Seitenbreite</translation>
     </message>
   </context>
   <context>

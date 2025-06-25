@@ -18,8 +18,10 @@ from functools import partial
 
 from hamcrest import *
 from PyQt5.QtCore import QModelIndex
+from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.model.document_page import Page
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage
 
@@ -32,7 +34,7 @@ def validate_qt_model_signal_parameter(
     return not parent.isValid() and first == expected_first and last == expected_last
 
 
-def test_apply_with_position_deletes_given_page_1(qtbot, document_light):
+def test_apply_with_position_deletes_given_page_1(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
     remaining_page = document_light.pages[0]
     removed_page = document_light.pages[1]
@@ -63,7 +65,7 @@ def test_apply_with_position_deletes_given_page_1(qtbot, document_light):
     )
 
 
-def test_apply_with_position_deletes_given_page_0(qtbot, document_light):
+def test_apply_with_position_deletes_given_page_0(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
     removed_page = document_light.pages[0]
     remaining_page = document_light.pages[1]
@@ -93,7 +95,7 @@ def test_apply_with_position_deletes_given_page_0(qtbot, document_light):
     )
 
 
-def test_apply_with_one_page_correctly_replaces_the_existing_page(qtbot, document_light):
+def test_apply_with_one_page_correctly_replaces_the_existing_page(qtbot: QtBot, document_light: Document):
     old_page = document_light.pages[0]
     action = ActionRemovePage()
     with qtbot.wait_signal(document_light.current_page_changed):
@@ -103,7 +105,7 @@ def test_apply_with_one_page_correctly_replaces_the_existing_page(qtbot, documen
     assert_that(action.removed_pages, contains_exactly(same_instance(old_page)))
 
 
-def test_apply_with_position_and_count_deletes_given_number_of_pages(qtbot, document_light):
+def test_apply_with_position_and_count_deletes_given_number_of_pages(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 2)
     remaining_page = document_light.pages[0]
     removed_pages = document_light.pages[1:3]
@@ -133,7 +135,8 @@ def test_apply_with_position_and_count_deletes_given_number_of_pages(qtbot, docu
     verify_page_index_cache_is_valid(document_light)
 
 
-def test_apply_with_position_and_count_includes_currently_edited_page_if_within_range(qtbot, document_light):
+def test_apply_with_position_and_count_includes_currently_edited_page_if_within_range(
+        qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 2)
     remaining_page = document_light.pages[0]
     removed_pages = document_light.pages[1:3]
@@ -162,7 +165,7 @@ def test_apply_with_position_and_count_includes_currently_edited_page_if_within_
     verify_page_index_cache_is_valid(document_light)
 
 
-def test_apply_without_position_deletes_currently_edited_page(qtbot, document_light):
+def test_apply_without_position_deletes_currently_edited_page(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
     removed_page = document_light.pages[1]
     document_light.set_currently_edited_page(removed_page)
@@ -192,7 +195,7 @@ def test_apply_without_position_deletes_currently_edited_page(qtbot, document_li
     verify_page_index_cache_is_valid(document_light)
 
 
-def test_undo_with_position_restores_page_at_given_middle_position(qtbot, document_light):
+def test_undo_with_position_restores_page_at_given_middle_position(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
     action = ActionRemovePage(1)
     action.removed_pages.append(removed_page := Page())
@@ -217,7 +220,7 @@ def test_undo_with_position_restores_page_at_given_middle_position(qtbot, docume
     assert_that(action.removed_all_pages, is_(False))
 
 
-def test_undo_with_position_restores_multiple_pages_at_given_middle_position(qtbot, document_light):
+def test_undo_with_position_restores_multiple_pages_at_given_middle_position(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
     action = ActionRemovePage(1, 2)
     action.removed_pages.append(removed_page_1 := Page())
@@ -243,7 +246,7 @@ def test_undo_with_position_restores_multiple_pages_at_given_middle_position(qtb
     assert_that(action.removed_all_pages, is_(False))
 
 
-def test_undo_restores_currently_edited_page(qtbot, document_light):
+def test_undo_restores_currently_edited_page(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
     action = ActionRemovePage(2)
     action.removed_pages.append(removed_page := Page())
@@ -268,7 +271,8 @@ def test_undo_restores_currently_edited_page(qtbot, document_light):
     assert_that(action.removed_all_pages, is_(False))
 
 
-def test_undo_with_one_page_correctly_replaces_the_old_automatically_inserted_page(qtbot, document_light):
+def test_undo_with_one_page_correctly_replaces_the_old_automatically_inserted_page(
+        qtbot: QtBot, document_light: Document):
     removed_page = Page()
     action = ActionRemovePage(0)
     action.removed_pages.append(removed_page)
@@ -292,7 +296,7 @@ def test_undo_with_one_page_correctly_replaces_the_old_automatically_inserted_pa
     assert_that(action.removed_all_pages, is_(False))
 
 
-def test_undo_without_initial_position_raises_exception(document_light):
+def test_undo_without_initial_position_raises_exception(document_light: Document):
     append_new_pages(document_light, 2)
     document_light.set_currently_edited_page(document_light.pages[1])
     action = ActionRemovePage()

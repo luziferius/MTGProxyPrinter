@@ -25,7 +25,7 @@ from pathlib import Path
 
 from PyQt5.QtGui import QColorConstants, QPixmap
 import pytest
-from hamcrest import assert_that, is_
+from hamcrest import assert_that
 
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings

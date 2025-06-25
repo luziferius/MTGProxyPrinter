@@ -189,7 +189,7 @@ otherwise you need two cuts but require less precision hitting the exact middle.
    <item row="21" column="1">
     <widget class="QLabel" name="custom_page_height_label">
      <property name="text">
-      <string>Page height</string>
+      <string>Paper height</string>
      </property>
      <property name="textInteractionFlags">
       <set>Qt::NoTextInteraction</set>
@@ -426,7 +426,7 @@ Leave empty to disable.</string>
    <item row="23" column="1">
     <widget class="QLabel" name="custom_page_width_label">
      <property name="text">
-      <string>Page width</string>
+      <string>Paper width</string>
      </property>
      <property name="textInteractionFlags">
       <set>Qt::NoTextInteraction</set>

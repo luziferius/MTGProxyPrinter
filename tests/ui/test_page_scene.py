@@ -29,18 +29,19 @@ from PyQt5.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QPai
 from PyQt5.QtCore import QPoint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, Unit, unit_registry, Quantity
-from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
+from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene, NeighborsPresent
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 from mtg_proxy_printer.model.document import Document
 
 from ..document_controller.helpers import create_card
-from tests.helpers import close_to_
 from tests.hasgetter import has_getters, has_getter
 from tests.helpers import close_to_
 
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer.PageScene."
 RenderHint = QPainter.RenderHint
+ColorGroup = QPalette.ColorGroup
+ColorRole = QPalette.ColorRole
 mm: Unit = unit_registry.mm
 
 
@@ -55,14 +56,14 @@ def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *, co
     Each corner has a square transparent area, as a crude emulation of rounded corners.
     """
     card = create_card(name, size)
-    q_size = size.as_qsize_px()
-    image = QImage(q_size, QImage.Format.Format_ARGB32)
+    image_size = size.as_qsize_px()
+    image = QImage(image_size, QImage.Format.Format_ARGB32)
     image.fill(color)
     fill_transparent = partial(_fill_area, image, QColorConstants.Transparent)
     fill_transparent(QPoint(0, 0))
-    fill_transparent(QPoint(0, q_size.height()-5))
-    fill_transparent(QPoint(q_size.width()-5, 0))
-    fill_transparent(QPoint(q_size.width()-5, q_size.height()-5))
+    fill_transparent(QPoint(0, image_size.height()-5))
+    fill_transparent(QPoint(image_size.width()-5, 0))
+    fill_transparent(QPoint(image_size.width()-5, image_size.height()-5))
     card.set_image_file(QPixmap.fromImage(image))
     return card
 
@@ -79,6 +80,7 @@ def page_scene(request, document_light: Document):
 
 def render_scene(scene: PageScene) -> QImage:
     image = QImage(ceil(scene.width()), ceil(scene.height()), QImage.Format.Format_ARGB32)
+    image.fill(QColorConstants.Transparent)
     painter = QPainter(image)
     painter.setRenderHint(RenderHint.LosslessImageRendering, True)
     scene.render(painter)
@@ -493,11 +495,14 @@ def test_sharp_corners(page_scene: PageScene, draw_sharp_corners: bool, color: Q
     right, down = QPoint(card.image_file.width()-1, 0), QPoint(0, card.image_file.height()-1)
 
     rendered = render_scene(page_scene)
-    has_correct_color = is_(equal_to(color if draw_sharp_corners else QColorConstants.White))
-    assert_that(rendered.pixelColor(top_left), has_correct_color, "Top left corner wrong")
-    assert_that(rendered.pixelColor(top_left+right), has_correct_color, "Top right corner wrong")
-    assert_that(rendered.pixelColor(top_left+down), has_correct_color, "Bottom left corner wrong")
-    assert_that(rendered.pixelColor(top_left+right+down), has_correct_color, "Bottom right corner wrong")
+    expected_color =  color if draw_sharp_corners \
+        else QColorConstants.Transparent if page_scene.render_mode == RenderMode.ON_PAPER \
+        else page_scene.palette().color(ColorGroup.Active, ColorRole.Base)
+    has_expected_color = is_(equal_to(expected_color))
+    assert_that(rendered.pixelColor(top_left), has_expected_color, "Top left corner wrong")
+    assert_that(rendered.pixelColor(top_left+right), has_expected_color, "Top right corner wrong")
+    assert_that(rendered.pixelColor(top_left+down), has_expected_color, "Bottom left corner wrong")
+    assert_that(rendered.pixelColor(top_left+right+down), has_expected_color, "Bottom right corner wrong")
 
 
 @pytest.mark.parametrize("card_bleed", [0*mm, 1*mm])
@@ -511,6 +516,38 @@ def test_card_item_origin_equals_pixmap_origin(page_scene: PageScene, card_bleed
     assert_that(
         item.scenePos(), is_(equal_to(item.card_pixmap_item.scenePos()))
     )
+
+
+@pytest.mark.parametrize("cards, neighbors", [
+    (1, [NeighborsPresent(False, False, False, False)]),
+    (2, [NeighborsPresent(False, False, False, True), NeighborsPresent(False, False, True, False)]),
+    (3, [NeighborsPresent(False, False, False, True), NeighborsPresent(False, False, True, True), NeighborsPresent(False, False, True, False)]),
+
+    (4, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, False, True, True), NeighborsPresent(False, False, True, False),
+         NeighborsPresent(True, False, False, False)]),
+
+    (5, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, True, True, True), NeighborsPresent(False, False, True, False),
+         NeighborsPresent(True, False, False, True), NeighborsPresent(True, False, True, False)]),
+
+    (6, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, True, True, True), NeighborsPresent(False, True, True, False),
+         NeighborsPresent(True, False, False, True), NeighborsPresent(True, False, True, True), NeighborsPresent(True, False, True, False)]),
+
+    (7, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, True, True, True), NeighborsPresent(False, True, True, False),
+         NeighborsPresent(True, True, False, True), NeighborsPresent(True, False, True, True), NeighborsPresent(True, False, True, False),
+         NeighborsPresent(True, False, False, False)]),
+
+    (8, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, True, True, True), NeighborsPresent(False, True, True, False),
+         NeighborsPresent(True, True, False, True), NeighborsPresent(True, True, True, True), NeighborsPresent(True, False, True, False),
+         NeighborsPresent(True, False, False, True), NeighborsPresent(True, False, True, False)]),
+
+    (9, [NeighborsPresent(False, True, False, True), NeighborsPresent(False, True, True, True), NeighborsPresent(False, True, True, False),
+         NeighborsPresent(True, True, False, True), NeighborsPresent(True, True, True, True), NeighborsPresent(True, True, True, False),
+         NeighborsPresent(True, False, False, True), NeighborsPresent(True, False, True, True), NeighborsPresent(True, False, True, False)]),
+])
+def test__has_neighbors(page_scene: PageScene, cards: int, neighbors: typing.List[NeighborsPresent]):
+    page_scene.document.apply(ActionAddCard(create_card_with_pixmap("Something", color=QColorConstants.Black), cards))
+    for index, item, expected in zip(range(cards), page_scene.card_items, neighbors):
+        assert_that(page_scene._has_neighbors(item), is_(equal_to(expected)), f"Broken {index=}")
 
 
 @pytest.mark.parametrize("color", [QColorConstants.Black, QColorConstants.Cyan])
@@ -546,18 +583,22 @@ def test_card_bleed_with_single_card(
     bottom_center = bottom_left + half_right
     
     rendered = render_scene(page_scene)
-    has_correct_color = is_(equal_to(color if card_bleed else QColorConstants.White))
-    has_background_color = is_(equal_to(QColorConstants.White))
+    background_color = QColorConstants.Transparent if page_scene.render_mode == RenderMode.ON_PAPER \
+        else page_scene.palette().color(ColorGroup.Active, ColorRole.Base)
+    expected_color = color if card_bleed > 0*mm else background_color
+
+    has_expected_color = is_(equal_to(expected_color))
+    has_background_color = is_(equal_to(background_color))
 
     # Top border
     # Inner bleed edge
-    assert_that(rendered.pixelColor(top_left - v_1), has_correct_color)
-    assert_that(rendered.pixelColor(top_center - v_1), has_correct_color)
-    assert_that(rendered.pixelColor(top_right - v_1), has_correct_color)
+    assert_that(rendered.pixelColor(top_left - v_1), has_expected_color)
+    assert_that(rendered.pixelColor(top_center - v_1), has_expected_color)
+    assert_that(rendered.pixelColor(top_right - v_1), has_expected_color)
     # Outer bleed edge
-    assert_that(rendered.pixelColor(top_left - v_12), has_correct_color)
-    assert_that(rendered.pixelColor(top_center - v_12), has_correct_color)
-    assert_that(rendered.pixelColor(top_right - v_12), has_correct_color)
+    assert_that(rendered.pixelColor(top_left - v_12), has_expected_color)
+    assert_that(rendered.pixelColor(top_center - v_12), has_expected_color)
+    assert_that(rendered.pixelColor(top_right - v_12), has_expected_color)
     # Outside bleed
     assert_that(rendered.pixelColor(top_left - v_13), has_background_color)
     assert_that(rendered.pixelColor(top_center - v_13), has_background_color)
@@ -565,13 +606,13 @@ def test_card_bleed_with_single_card(
 
     # Bottom border
     # Inner bleed edge
-    assert_that(rendered.pixelColor(bottom_left + v_1), has_correct_color)
-    assert_that(rendered.pixelColor(bottom_center + v_1), has_correct_color)
-    assert_that(rendered.pixelColor(bottom_right + v_1), has_correct_color)
+    assert_that(rendered.pixelColor(bottom_left + v_1), has_expected_color)
+    assert_that(rendered.pixelColor(bottom_center + v_1), has_expected_color)
+    assert_that(rendered.pixelColor(bottom_right + v_1), has_expected_color)
     # Outer bleed edge
-    assert_that(rendered.pixelColor(bottom_left + v_12), has_correct_color)
-    assert_that(rendered.pixelColor(bottom_center + v_12), has_correct_color)
-    assert_that(rendered.pixelColor(bottom_right + v_12), has_correct_color)
+    assert_that(rendered.pixelColor(bottom_left + v_12), has_expected_color)
+    assert_that(rendered.pixelColor(bottom_center + v_12), has_expected_color)
+    assert_that(rendered.pixelColor(bottom_right + v_12), has_expected_color)
     # Outside bleed
     assert_that(rendered.pixelColor(bottom_left + v_13), has_background_color)
     assert_that(rendered.pixelColor(bottom_center + v_13), has_background_color)
@@ -579,13 +620,13 @@ def test_card_bleed_with_single_card(
     
     # Left border
     # Inner bleed edge
-    assert_that(rendered.pixelColor(top_left - h_1), has_correct_color)
-    assert_that(rendered.pixelColor(left_center - h_1), has_correct_color)
-    assert_that(rendered.pixelColor(bottom_left - h_1), has_correct_color)
+    assert_that(rendered.pixelColor(top_left - h_1), has_expected_color)
+    assert_that(rendered.pixelColor(left_center - h_1), has_expected_color)
+    assert_that(rendered.pixelColor(bottom_left - h_1), has_expected_color)
     # Outer bleed edge
-    assert_that(rendered.pixelColor(top_left - h_12), has_correct_color)
-    assert_that(rendered.pixelColor(left_center - h_12), has_correct_color)
-    assert_that(rendered.pixelColor(bottom_left - h_12), has_correct_color)
+    assert_that(rendered.pixelColor(top_left - h_12), has_expected_color)
+    assert_that(rendered.pixelColor(left_center - h_12), has_expected_color)
+    assert_that(rendered.pixelColor(bottom_left - h_12), has_expected_color)
     # Outside bleed
     assert_that(rendered.pixelColor(top_left - h_13), has_background_color)
     assert_that(rendered.pixelColor(left_center - h_13), has_background_color)
@@ -593,13 +634,13 @@ def test_card_bleed_with_single_card(
     
     # Right border
     # Inner bleed edge
-    assert_that(rendered.pixelColor(top_right + h_1), has_correct_color)
-    assert_that(rendered.pixelColor(right_center + h_1), has_correct_color)
-    assert_that(rendered.pixelColor(bottom_right + h_1), has_correct_color)
+    assert_that(rendered.pixelColor(top_right + h_1), has_expected_color)
+    assert_that(rendered.pixelColor(right_center + h_1), has_expected_color)
+    assert_that(rendered.pixelColor(bottom_right + h_1), has_expected_color)
     # Outer bleed edge
-    assert_that(rendered.pixelColor(top_right + h_12), has_correct_color)
-    assert_that(rendered.pixelColor(right_center + h_12), has_correct_color)
-    assert_that(rendered.pixelColor(bottom_right + h_12), has_correct_color)
+    assert_that(rendered.pixelColor(top_right + h_12), has_expected_color)
+    assert_that(rendered.pixelColor(right_center + h_12), has_expected_color)
+    assert_that(rendered.pixelColor(bottom_right + h_12), has_expected_color)
     # Outside bleed
     assert_that(rendered.pixelColor(top_right + h_13), has_background_color)
     assert_that(rendered.pixelColor(right_center + h_13), has_background_color)
@@ -642,7 +683,9 @@ def test_card_bleed_with_two_cards(page_scene: PageScene, column_spacing: Quanti
     rendered = render_scene(page_scene)
     has_left_color = is_(equal_to(QColorConstants.Black))
     has_right_color = is_(equal_to(QColorConstants.Cyan))
-    has_background_color = is_(equal_to(QColorConstants.White))
+    background_color = QColorConstants.Transparent if page_scene.render_mode == RenderMode.ON_PAPER \
+        else page_scene.palette().color(ColorGroup.Active, ColorRole.Base)
+    has_background_color = is_(equal_to(background_color))
 
     # Left card
     

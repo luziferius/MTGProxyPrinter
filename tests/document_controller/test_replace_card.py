@@ -15,7 +15,7 @@
 
 
 from hamcrest import *
-
+from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
@@ -31,7 +31,7 @@ OVERSIZED = CardSizes.OVERSIZED
 
 
 def test_replacing_regular_with_oversized_on_otherwise_filled_card_moves_oversized_away(
-        qtbot, document_light: Document):
+        qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
     pages = document_light.pages
     to_replace = append_new_card_in_page(pages[0], "Normal 1", REGULAR)
@@ -81,7 +81,7 @@ def test_replacing_regular_with_oversized_on_otherwise_filled_card_moves_oversiz
 
 
 def test_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_card_on_same_page(
-        qtbot, document_light: Document):
+        qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
     pages = document_light.pages
     to_replace = append_new_card_in_page(pages[0], "Normal 1", REGULAR)
@@ -111,7 +111,7 @@ def test_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_card_on_
 
 
 def test_undo_replacing_regular_with_oversized_on_otherwise_filled_card_moves_card_back_to_original_page(
-        qtbot, document_light: Document):
+        qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
     pages = document_light.pages
     original = create_card("Normal 1", REGULAR)
@@ -144,7 +144,7 @@ def test_undo_replacing_regular_with_oversized_on_otherwise_filled_card_moves_ca
 
 
 def test_undo_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_card_on_same_page(
-        qtbot, document_light: Document):
+        qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
     pages = document_light.pages
     original = create_card("Normal 1", REGULAR)

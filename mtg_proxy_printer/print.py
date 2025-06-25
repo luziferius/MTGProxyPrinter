@@ -28,7 +28,7 @@ except ImportError:  # Py 3.8 compatibility
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, \
     QThreadPool
-from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage
+from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage, QColor
 from PyQt5.QtPrintSupport import QPrinter
 
 
@@ -50,6 +50,7 @@ logger = get_logger(__name__)
 del get_logger
 
 RenderHint = QPainter.RenderHint
+Format = QImage.Format
 
 __all__ = [
     "export_pdf",
@@ -88,7 +89,11 @@ class PNGRenderer(AsyncTask):
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
             output_path = parent / file_name
-            image = QImage(page_size, QImage.Format.Format_RGB888)
+            background_color = QColor(settings["export"]["png-background-color"])
+            # 255 is solid. So avoid adding the alpha channel, if it won't be used.
+            image_format = Format.Format_RGB888 if background_color.alpha() == 255 else Format.Format_RGBA8888
+            image = QImage(page_size, image_format)
+            image.fill(background_color)
             painter = QPainter(image)
             scene.on_current_page_changed(document.index(page_nr, 0))
             scene.render(painter)
@@ -168,7 +173,7 @@ class PDFPrinter(QPdfWriter):
         self.document = document
         self.document_index = document_index
         self.pages_to_print = pages_to_print = pages_to_print or document.rowCount()
-        self.landscape_workaround_enabled = settings["pdf-export"].getboolean("landscape-compatibility-workaround")
+        self.landscape_workaround_enabled = settings["export"].getboolean("landscape-compatibility-workaround")
         if pages_to_print < document.rowCount():
             # Determine the number of digits required to properly sort all documents, without having to rely on
             # external support for natural sorting
