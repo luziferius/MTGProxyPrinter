@@ -253,7 +253,10 @@ class PageConfigWidget(QGroupBox):
         model = combo_box.model()
         for row in range(model.rowCount()):
             if model.data(model.index(row, 0), Qt.ItemDataRole.UserRole) == page_size:
-                combo_box.setCurrentIndex(row)
+                # Blocks premature execution of validation logic triggered via change signals
+                # that should not run *right now*.
+                with BlockedSignals(combo_box):
+                    combo_box.setCurrentIndex(row)
                 break
 
     def _load_paper_orientation(self, orientation_str: str):
@@ -262,7 +265,10 @@ class PageConfigWidget(QGroupBox):
         model = combo_box.model()
         for row in range(model.rowCount()):
             if model.data(model.index(row, 0), Qt.ItemDataRole.UserRole) == orientation:
-                combo_box.setCurrentIndex(row)
+                # Blocks premature execution of validation logic triggered via change signals
+                # that should not run *right now*.
+                with BlockedSignals(combo_box):
+                    combo_box.setCurrentIndex(row)
                 break
 
     def save_document_settings_to_config(self):

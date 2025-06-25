@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ExportSettingsPage</class>
+ <widget class="QWidget" name="ExportSettingsPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>508</width>
+    <height>186</height>
+   </rect>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="6" column="1" colspan="2">
+    <widget class="QSpinBox" name="pdf_page_count_limit">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Automatically split PDF documents, if they get longer than this many pages.
+Set to zero to disable splitting.
+
+
+When printing PDFs using a USB flash drive directly connected to the printer,
+the printer may refuse to print documents exceeding some arbitrary size limit.
+To work around this limitation, you can enable this option,
+and limit the number of pages per PDF. If the document has more pages,
+it will be exported into multiple PDF documents automatically.</string>
+     </property>
+     <property name="suffix">
+      <string> pages</string>
+     </property>
+     <property name="maximum">
+      <number>2000000000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2">
+    <widget class="QPushButton" name="export_path_browse_button">
+     <property name="toolTip">
+      <string>Browse…</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset theme="document-open"/>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="3">
+    <widget class="QCheckBox" name="landscape_workaround">
+     <property name="toolTip">
+      <string>If enabled, landscape documents are rotated by 90° to portrait mode during export.
+Enable this, if printing from PDFs in landscape format results in portrait printouts with cropped-off sides.
+
+Enabling this may cause the cut helper lines to flicker or not show in some PDF viewers.
+So only enable this, if actually required.</string>
+     </property>
+     <property name="text">
+      <string>Enable landscape workaround: Rotate landscape pages by 90°</string>
+     </property>
+     <property name="wordWrap" stdset="0">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QLineEdit" name="export_path">
+     <property name="toolTip">
+      <string>If set, use this as the default location for saving exported PDF documents.</string>
+     </property>
+     <property name="inputMethodHints">
+      <set>Qt::ImhNoAutoUppercase</set>
+     </property>
+     <property name="placeholderText">
+      <string>Path to a directory</string>
+     </property>
+     <property name="clearButtonEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="export_path_label">
+     <property name="toolTip">
+      <string>If set, use this as the default location for saving exported PDF documents.</string>
+     </property>
+     <property name="text">
+      <string>Export path</string>
+     </property>
+     <property name="buddy">
+      <cstring>export_path</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="12" column="0" colspan="3">
+    <spacer name="vertical_spacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="11" column="0">
+    <widget class="QLabel" name="png_background_color_label">
+     <property name="text">
+      <string>PNG background color</string>
+     </property>
+     <property name="buddy">
+      <cstring>png_background_color_button</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="pdf_page_count_limit_label">
+     <property name="toolTip">
+      <string>Automatically split PDF documents, if they get longer than this many pages.
+Set to zero to disable splitting.
+
+
+When printing PDFs using a USB flash drive directly connected to the printer,
+the printer may refuse to print documents exceeding some arbitrary size limit.
+To work around this limitation, you can enable this option,
+and limit the number of pages per PDF. If the document has more pages,
+it will be exported into multiple PDF documents automatically.</string>
+     </property>
+     <property name="text">
+      <string>Split PDF documents longer than</string>
+     </property>
+     <property name="buddy">
+      <cstring>pdf_page_count_limit</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0" colspan="3">
+    <widget class="Line" name="line_2">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="2">
+    <widget class="QPushButton" name="png_background_color_button">
+     <property name="toolTip">
+      <string>Background color used for documents exported as PNG images.</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset theme="color-picker"/>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="3">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="1">
+    <widget class="QLabel" name="png_background_color">
+     <property name="text">
+      <string notr="true"/>
+     </property>
+     <property name="buddy">
+      <cstring>png_background_color_button</cstring>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>export_path</tabstop>
+  <tabstop>export_path_browse_button</tabstop>
+  <tabstop>pdf_page_count_limit</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

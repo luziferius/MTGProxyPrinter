@@ -279,7 +279,6 @@ class PageScene(QGraphicsScene):
         self.selected_page = self.document.get_current_page_index()
         self.row_count = self.column_count = 1
         self._update_row_and_column_counts(document)
-        self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.BrushStyle.SolidPattern))
         background_color = self.get_background_color(render_mode)
         logger.debug(f"Drawing background rectangle")
         self.background = self.addRect(0, 0, self.width(), self.height(), background_color, background_color)

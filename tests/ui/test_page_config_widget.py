@@ -178,14 +178,14 @@ def test_load_numerical_document_settings_from_config(
         widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
 
     if value < min_value:
-        assert_that(spinbox_widget, has_getter("value", close_to_(min_value.magnitude)))
-        assert_that(page_layout, has_property(attribute_name, quantity_close_to(min_value)))
+        assert_that(spinbox_widget, has_getter("value", close_to_(min_value.magnitude)), f"Attribute: {attribute_name}")
+        assert_that(page_layout, has_property(attribute_name, quantity_close_to(min_value)), f"Attribute: {attribute_name}")
     elif value > max_value:
-        assert_that(spinbox_widget, has_getter("value", close_to_(max_value.magnitude)))
-        assert_that(page_layout, has_property(attribute_name, quantity_close_to(max_value)))
+        assert_that(spinbox_widget, has_getter("value", close_to_(max_value.magnitude)), f"Attribute: {attribute_name}")
+        assert_that(page_layout, has_property(attribute_name, quantity_close_to(max_value)), f"Attribute: {attribute_name}")
     else:
-        assert_that(spinbox_widget, has_getter("value", close_to_(value.magnitude)))
-        assert_that(page_layout, has_property(attribute_name, quantity_close_to(value)))
+        assert_that(spinbox_widget, has_getter("value", close_to_(value.magnitude)), f"Attribute: {attribute_name}")
+        assert_that(page_layout, has_property(attribute_name, quantity_close_to(value)), f"Attribute: {attribute_name}")
 
 
 @pytest.mark.parametrize("value", [True, False])
