@@ -57,7 +57,7 @@ def test_boolean_settings_change_signal_connection_from_config_widget_to_preview
 @pytest.mark.parametrize(
     "widget_name",[
          "card_bleed",
-         "page_height", "page_width",
+         "custom_page_height", "custom_page_width",
          "margin_top", "margin_bottom", "margin_left", "margin_right",
          "row_spacing", "column_spacing",
      ])

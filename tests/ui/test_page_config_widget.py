@@ -43,9 +43,18 @@ def widget(qtbot: QtBot) -> PageConfigWidget:
 def default_settings() -> PageLayoutSettings:
     return PageLayoutSettings.create_from_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
 
+
+@pytest.fixture()
+def custom_a4_page_layout():
+    layout = PageLayoutSettings.create_from_settings()
+    layout.paper_size = "Custom"
+    layout.paper_orientation = "Portrait"
+    return layout
+
+
 @pytest.mark.parametrize("name, min_value", [
-    ("page_height", 126),
-    ("page_width", 88),
+    ("custom_page_height", 126),
+    ("custom_page_width", 88),
 ])
 def test_paper_size_spin_box_minimum_value(widget: PageConfigWidget, name: str, min_value: int):
     spinbox: QDoubleSpinBox = getattr(widget.ui, name)
@@ -53,8 +62,8 @@ def test_paper_size_spin_box_minimum_value(widget: PageConfigWidget, name: str, 
 
 
 @pytest.mark.parametrize("attribute_name", [
-    "page_height",
-    "page_width",
+    "custom_page_height",
+    "custom_page_width",
     "margin_top",
     "margin_bottom",
     "margin_left",
@@ -80,6 +89,7 @@ def test_set_numerical_spin_boxes(
 
 @pytest.mark.parametrize("attribute_name", [
     "draw_cut_markers",
+    "draw_page_numbers",
     "draw_sharp_corners",
     "draw_page_numbers",
 ])
@@ -144,8 +154,8 @@ ZeroMarginsSettings = {
 
 @pytest.mark.parametrize("value", [-1*mm, 0*mm, 1*mm, 200*mm, 1000*mm])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value, max_value", [
-    ("paper-height", "page_height", 126*mm, 10000*mm),
-    ("paper-width", "page_width", 88*mm, 10000*mm),
+    ("paper-height", "custom_page_height", 126*mm, 10000*mm),
+    ("paper-width", "custom_page_width", 88*mm, 10000*mm),
     ("margin-top", "margin_top", 0*mm, 170.85*mm),
     ("margin-bottom", "margin_bottom", 0*mm, 170.85*mm),
     ("margin-left", "margin_left", 0*mm, 121.95*mm),
@@ -183,6 +193,8 @@ def test_load_numerical_document_settings_from_config(
     ("print-cut-marker", "draw_cut_markers",),
     ("print-sharp-corners", "draw_sharp_corners"),
     ("print-page-numbers", "draw_page_numbers"),
+    ("print-page-numbers", "draw_page_numbers"),
+    ("print-sharp-corners", "draw_sharp_corners"),
 ])
 def test_load_boolean_checkboxes_from_config(
         widget: PageConfigWidget, settings_name: str, attribute_name: str, value: bool):
@@ -196,8 +208,8 @@ def test_load_boolean_checkboxes_from_config(
 
 @pytest.mark.parametrize("value", [-1*mm, 0*mm, 1*mm, 200*mm, 1000*mm])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value, max_value", [
-    ("paper-height", "page_height", 126*mm, 10000*mm),
-    ("paper-width", "page_width", 88*mm, 10000*mm),
+    ("paper-height", "custom_page_height", 126*mm, 10000*mm),
+    ("paper-width", "custom_page_width", 88*mm, 10000*mm),
     ("margin-top", "margin_top", 0*mm, 170.85*mm),
     ("margin-bottom", "margin_bottom", 0*mm, 170.85*mm),
     ("margin-left", "margin_left", 0*mm, 121.95*mm),
@@ -232,6 +244,8 @@ def test_save_numerical_document_settings_to_config(
     ("print-cut-marker", "draw_cut_markers",),
     ("print-sharp-corners", "draw_sharp_corners"),
     ("print-page-numbers", "draw_page_numbers"),
+    ("print-page-numbers", "draw_page_numbers"),
+    ("print-sharp-corners", "draw_sharp_corners"),
 ])
 def test_save_boolean_document_settings_to_config(
         widget: PageConfigWidget, settings_name: str, attribute_name: str, value: bool):
@@ -252,8 +266,8 @@ def test_save_boolean_document_settings_to_config(
 
 @pytest.mark.parametrize("value", [0*mm, 1*mm, 200*mm, 1000*mm])
 @pytest.mark.parametrize("attribute_name, min_value, max_value", [
-    ("page_height", 126*mm, 10000*mm),
-    ("page_width", 88*mm, 10000*mm),
+    ("custom_page_height", 126*mm, 10000*mm),
+    ("custom_page_width", 88*mm, 10000*mm),
     ("margin_top", 0*mm, 170.85*mm),
     ("margin_bottom", 0*mm, 170.85*mm),
     ("margin_left", 0*mm, 121.95*mm),
@@ -283,6 +297,8 @@ def test_load_numerical_values_from_page_layout(
     "draw_cut_markers",
     "draw_sharp_corners",
     "draw_page_numbers",
+    "draw_page_numbers",
+    "draw_sharp_corners",
 ])
 def test_load_booleans_from_page_layout(
         widget: PageConfigWidget, default_settings: PageLayoutSettings,
@@ -295,25 +311,25 @@ def test_load_booleans_from_page_layout(
     assert_that(checkbox_widget.isChecked(), is_(equal_to(value)))
 
 
-def test_flip_page_dimensions_button(widget: PageConfigWidget, default_settings: PageLayoutSettings):
-    widget.load_from_page_layout(default_settings)
+def test_flip_page_dimensions_button(widget: PageConfigWidget, custom_a4_page_layout: PageLayoutSettings):
+    widget.load_from_page_layout(custom_a4_page_layout)
     assert_that(widget.page_layout, has_properties({
-        "page_height": equal_to(297*mm),
-        "page_width": equal_to(210*mm),
+        "custom_page_height": equal_to(297*mm),
+        "custom_page_width": equal_to(210*mm),
     }), "Setup failed")
     widget.ui.flip_page_dimensions.click()
 
     assert_that(widget.page_layout, has_properties({
-        "page_height": equal_to(210*mm),
-        "page_width": equal_to(297*mm),
+        "custom_page_height": equal_to(210*mm),
+        "custom_page_width": equal_to(297*mm),
     }), "Values not correctly flipped")
 
 
-def test_flip_page_dimensions_updates_capacity(widget: PageConfigWidget, default_settings: PageLayoutSettings):
-    widget.load_from_page_layout(default_settings)
+def test_flip_page_dimensions_updates_capacity(widget: PageConfigWidget, custom_a4_page_layout: PageLayoutSettings):
+    widget.load_from_page_layout(custom_a4_page_layout)
     assert_that(widget.page_layout, has_properties({
-        "page_height": equal_to(297*mm),
-        "page_width": equal_to(210*mm),
+        "custom_page_height": equal_to(297*mm),
+        "custom_page_width": equal_to(210*mm),
     }), "Setup failed")
     widget.ui.flip_page_dimensions.click()
     assert_that(widget.ui.page_capacity, has_getter("text", all_of(
