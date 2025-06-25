@@ -30,8 +30,7 @@ from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersiste
 from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage, QColor
 from PyQt5.QtPrintSupport import QPrinter
 
-from pypdf import PdfWriter
-
+from pypdf import PdfWriter, PdfReader
 
 from mtg_proxy_printer.runner import ProgressSignalContainer
 if typing.TYPE_CHECKING:
@@ -110,7 +109,7 @@ class PNGRenderer(ProgressSignalContainer):
 
 
 def export_pdf(document: Document, file_path: str, parent: QObject = None):
-    pages_to_print = settings["pdf-export"].getint("pdf-page-count-limit") or document.rowCount()
+    pages_to_print = settings["export"].getint("pdf-page-count-limit") or document.rowCount()
     if not pages_to_print:  # No pages in document. Return now, to avoid dividing by zero
         logger.error("Tried to export a document with zero pages as a PDF. Aborting.")
         return
@@ -227,12 +226,13 @@ class PDFPrinter(QPdfWriter):
         self.scene.on_current_page_changed(index)
 
     def _set_viewer_preferences(self):
-        pdf = PdfWriter(clone_from=self.temp_path)
-        
-        pdf.create_viewer_preferences()
-        pdf.viewer_preferences.print_scaling = "/None"
-        with open(self.target_path, "wb") as output_file:
-            pdf.write(output_file)
+        output_document = PdfWriter()
+        output_document.pdf_header = '%PDF-1.6'
+        preferences = output_document.create_viewer_preferences()
+        input_document = PdfReader(self.temp_path, True)
+        output_document.clone_document_from_reader(input_document)
+        preferences.print_scaling = "/None"
+        output_document.write(self.target_path)
         self.temp_path.unlink()
 
 class Renderer(QObject):
