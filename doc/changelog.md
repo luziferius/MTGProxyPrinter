@@ -4,6 +4,10 @@
 
 Because it was requested multiple times, there is a mirror of the application's source code repository on [GitHub](https://github.com/luziferius/MTGProxyPrinter/).
 
+## New features
+
+- Configurable background color for PNG exports, including support for semi- or fully transparent backgrounds.
+
 ## Changed features
 
 - Reworked paper size configuration: 

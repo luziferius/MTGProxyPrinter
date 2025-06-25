@@ -26,13 +26,14 @@ from threading import BoundedSemaphore
 import typing
 
 from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex, QThreadPool
-from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage
+from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage, QColor
 from PyQt5.QtPrintSupport import QPrinter
 
 
 from mtg_proxy_printer.runner import ProgressSignalContainer
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
+
 from mtg_proxy_printer.units_and_sizes import RESOLUTION
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
@@ -46,6 +47,7 @@ logger = get_logger(__name__)
 del get_logger
 
 RenderHint = QPainter.RenderHint
+Format = QImage.Format
 
 __all__ = [
     "export_pdf",
@@ -84,7 +86,11 @@ class PNGRenderer(ProgressSignalContainer):
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
             output_path = parent / file_name
-            image = QImage(page_size, QImage.Format.Format_RGB888)
+            background_color = QColor(settings["export"]["png-background-color"])
+            # 255 is solid. So avoid adding the alpha channel, if it won't be used.
+            image_format = Format.Format_RGB888 if background_color.alpha() == 255 else Format.Format_RGBA8888
+            image = QImage(page_size, image_format)
+            image.fill(background_color)
             painter = QPainter(image)
             scene.on_current_page_changed(document.index(page_nr, 0))
             scene.render(painter)
@@ -154,7 +160,7 @@ class PDFPrinter(QPdfWriter):
         self.document = document
         self.document_index = document_index
         self.pages_to_print = pages_to_print = pages_to_print or document.rowCount()
-        self.landscape_workaround_enabled = settings["pdf-export"].getboolean("landscape-compatibility-workaround")
+        self.landscape_workaround_enabled = settings["export"].getboolean("landscape-compatibility-workaround")
         if pages_to_print < document.rowCount():
             # Determine the number of digits required to properly sort all documents, without having to rely on
             # external support for natural sorting
