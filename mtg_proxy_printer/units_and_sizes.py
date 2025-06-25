@@ -21,26 +21,28 @@ import functools
 import re
 import sqlite3
 import typing
-from typing import Type, Dict, List, Optional, Set, TypeVar, NamedTuple, TypedDict, Union
+from typing import Type, Dict, List, Optional, Set, NamedTuple, TypedDict, Union
 
 try:
     from typing import NotRequired
 except ImportError:  # Compatibility with Python < 3.11
     from typing_extensions import NotRequired
 
-
+from PyQt5.QtCore import QSize, QObject
 from PyQt5.QtGui import QPageSize, QPageLayout
+
 try:
     from pint.facets.plain.registry import QuantityT, UnitT
 except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
     QuantityT = UnitT = typing.Any
-from PyQt5.QtCore import QSize, QObject, pyqtSignal as Signal
+
 import pint
 
 if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+    from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 import mtg_proxy_printer.natsort
+
 
 def _setup_units() -> typing.Tuple[pint.UnitRegistry, QuantityT]:
     registry = pint.UnitRegistry(cache_folder=":auto:")
@@ -86,6 +88,7 @@ class SectionProxy(configparser.SectionProxy):
     def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars=None) -> QuantityT:
         raw_value = self.get(option, fallback, raw=raw, vars=vars)
         return unit_registry.parse_expression(raw_value)
+
 
 class ConfigParser(configparser.ConfigParser):
 
@@ -137,6 +140,7 @@ class CardSizes(CardSize, enum.Enum):
 
 sqlite3.register_adapter(CardSize, lambda item: item.to_save_data())
 sqlite3.register_adapter(CardSizes, lambda item: item.to_save_data())
+
 
 @enum.unique
 class PageType(enum.Enum):
@@ -353,10 +357,3 @@ class PageSizeManager(QObject):
     PageSizeReverse = {value: key for key, value in read_page_size_enum().items()}
     PageOrientation = _read_enum(QPageLayout, QPageLayout.Orientation)
     PageOrientationReverse = {value: key for key, value in _read_enum(QPageLayout, QPageLayout.Orientation).items()}
-
-    available_page_sizes_changed = Signal(dict)
-
-    def on_margins_updated(self, page_layout: "PageLayoutSettings"):
-        # TODO: actually check the page layout margins
-        PageSizeManager.PageSize.clear()
-        PageSizeManager.PageSize.update(read_page_size_enum())

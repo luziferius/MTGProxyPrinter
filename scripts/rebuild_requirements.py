@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
+import asyncio
+import itertools
 from pathlib import Path
-from subprocess import call
-from concurrent.futures import ThreadPoolExecutor, wait
+from typing import Union, List
 
 repo_root = Path(__file__).parent.parent
 source = repo_root / "pyproject.toml"
@@ -10,14 +11,26 @@ req = repo_root / "requirements.txt"
 req_dev = repo_root / "requirements-dev.txt"
 req_pack = repo_root / "requirements-package.txt"
 
-tasks = [
-    ["python", "-m", "piptools", "compile", "-o", req, source],
-    ["python", "-m", "piptools", "compile", "--extra", "dev", "-o", req_dev, source],
-    ["python", "-m", "piptools", "compile", "--extra", "package", "-o", req_pack, source],
+python_command_args = [
+    ["python", "-m", "piptools", "compile", "--strip-extras", "-o", req, source],
+    ["python", "-m", "piptools", "compile", "--strip-extras", "--extra", "dev", "-o", req_dev, source],
+    ["python", "-m", "piptools", "compile", "--strip-extras", "--extra", "package", "-o", req_pack, source],
 ]
+Argument = Union[str, Path]
+
+
+async def run(prog: str, *args: List[Argument]):
+    proc = await asyncio.create_subprocess_exec(
+        prog, *args)
+    await proc.wait()
+
+
+async def main():
+    for file in (req, req_dev, req_pack):
+        file.unlink(missing_ok=True)
+    tasks = itertools.starmap(run, python_command_args)
+    await asyncio.gather(*tasks)
+
 
 if __name__ == "__main__":
-    with ThreadPoolExecutor() as pool:
-        # Py 3.8 workaround: wait() on 3.8 requires a List[Future] instead of Sequence[Future]
-        futures = list(pool.submit(call, args) for args in tasks)
-        wait(futures)
+    asyncio.run(main())

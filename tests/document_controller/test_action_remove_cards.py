@@ -18,8 +18,10 @@ from typing import List
 
 import pytest
 from hamcrest import *
+from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.model.document_page import CardContainer, PageType
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller import IllegalStateError, DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards, to_list_of_ranges
 
@@ -57,7 +59,7 @@ def test___init___converts_index_list_to_ranges_list(mock_to_list_of_ranges: uni
     assert_that(action.card_ranges_to_remove, is_(same_instance(mock_to_list_of_ranges.return_value)))
 
 
-def test_apply_removes_two_1_card_ranges(qtbot, document_light):
+def test_apply_removes_two_1_card_ranges(qtbot: QtBot, document_light: Document):
     page = document_light.pages[0]
     removed_1 = append_new_card_in_page(page, "Removed 1")
     remaining = append_new_card_in_page(page, "Remaining")
@@ -85,7 +87,7 @@ def test_apply_removes_two_1_card_ranges(qtbot, document_light):
 
 
 @pytest.mark.parametrize("row_selection", [[0, 1], [1, 0]])
-def test_apply_removes_one_2_card_range(qtbot, document_light, row_selection: List[int]):
+def test_apply_removes_one_2_card_range(qtbot: QtBot, document_light: Document, row_selection: List[int]):
     page = document_light.pages[0]
     removed_1 = append_new_card_in_page(page, "Removed 1")
     removed_2 = append_new_card_in_page(page, "Removed 2")
@@ -110,7 +112,7 @@ def test_apply_removes_one_2_card_range(qtbot, document_light, row_selection: Li
     )
 
 
-def test_apply_emits_page_type_changed_signal_if_changed(qtbot, document_light):
+def test_apply_emits_page_type_changed_signal_if_changed(qtbot: QtBot, document_light: Document):
     """Removes the first card on the page. The second one (if present) determines the new page type."""
     page = document_light.currently_edited_page
     removed_1 = append_new_card_in_page(page, "Removed 1")
@@ -132,7 +134,7 @@ def test_apply_emits_page_type_changed_signal_if_changed(qtbot, document_light):
     assert_that(page.page_type(), is_(PageType.UNDETERMINED))
 
 
-def test_undo_restores_two_1_card_ranges(qtbot, document_light):
+def test_undo_restores_two_1_card_ranges(qtbot: QtBot, document_light: Document):
     page = document_light.pages[0]
     remaining = append_new_card_in_page(page, "Remaining")
     action = ActionRemoveCards([0, 2], page_number=0)
@@ -154,7 +156,7 @@ def test_undo_restores_two_1_card_ranges(qtbot, document_light):
     assert_that(action.removed_cards, is_(empty()))
 
 
-def test_undo_restores_one_2_card_range(qtbot, document_light):
+def test_undo_restores_one_2_card_range(qtbot: QtBot, document_light: Document):
     page = document_light.pages[0]
     remaining = append_new_card_in_page(page, "Remaining")
     removed_1 = create_card("Removed 1")
@@ -176,6 +178,6 @@ def test_undo_restores_one_2_card_range(qtbot, document_light):
     assert_that(action.removed_cards, is_(empty()))
 
 
-def test_undo_without_page_index_raises_exception(qtbot, document_light):
+def test_undo_without_page_index_raises_exception(document_light: Document):
     action = ActionRemoveCards([1])
     assert_that(calling(action.undo).with_args(document_light), raises(IllegalStateError))

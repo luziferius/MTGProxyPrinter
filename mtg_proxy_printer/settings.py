@@ -588,8 +588,11 @@ def _06_migrate_to_pdf_export_section(to_migrate: ConfigParser):
     except KeyError:
         pass
     if to_migrate.has_section("default-filesystem-paths"):
-        target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
-        del to_migrate["default-filesystem-paths"]["pdf-export-path"]
+        try:
+            target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
+            del to_migrate["default-filesystem-paths"]["pdf-export-path"]
+        except KeyError:
+            pass
     else:
         target["pdf-export-path"] = DEFAULT_SETTINGS["export"]["export-path"]
 
