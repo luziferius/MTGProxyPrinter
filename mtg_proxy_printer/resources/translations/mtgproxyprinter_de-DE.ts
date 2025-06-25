@@ -91,7 +91,7 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
   <context>
     <name>ActionAddCard</name>
     <message numerus="yes">
-      <location filename="../../document_controller/card_actions.py" line="159"/>
+      <location filename="../../document_controller/card_actions.py" line="161"/>
       <source>Add {count} × {card_display_string} to page {target}</source>
       <comment>Undo/redo tooltip text. Plural form refers to {target}, not {count}. {target} can be multiple ranges of multiple pages each</comment>
       <translation>
@@ -113,6 +113,15 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
     </message>
   </context>
   <context>
+    <name>ActionEditCustomCard</name>
+    <message>
+      <location filename="../../document_controller/edit_custom_card.py" line="85"/>
+      <source>Edit custom card, set {column_header_text} to {new_value}</source>
+      <comment>Undo/redo tooltip text</comment>
+      <translation>Inoffizielle Karte bearbeiten, {column_header_text} auf {new_value} setzen</translation>
+    </message>
+  </context>
+  <context>
     <name>ActionEditDocumentSettings</name>
     <message>
       <location filename="../../document_controller/edit_document_settings.py" line="133"/>
@@ -124,16 +133,7 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
   <context>
     <name>ActionImportDeckList</name>
     <message numerus="yes">
-      <location filename="../../document_controller/import_deck_list.py" line="73"/>
-      <source>Wipe document and import a deck list containing %n card(s)</source>
-      <comment>Undo/redo tooltip text. Option to delete the current document enabled.</comment>
-      <translation>
-        <numerusform>Dokument löschen und eine Deckliste mit %n Karte importieren</numerusform>
-        <numerusform>Dokument löschen und eine Deckliste mit %n Karten importieren</numerusform>
-      </translation>
-    </message>
-    <message numerus="yes">
-      <location filename="../../document_controller/import_deck_list.py" line="78"/>
+      <location filename="../../document_controller/import_deck_list.py" line="82"/>
       <source>Import a deck list containing %n card(s)</source>
       <comment>Undo/redo tooltip text. Option to delete the current document disabled.</comment>
       <translation>
@@ -141,11 +141,20 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
         <numerusform>Deckliste mit %n Karten importieren</numerusform>
       </translation>
     </message>
+    <message numerus="yes">
+      <location filename="../../document_controller/import_deck_list.py" line="77"/>
+      <source>Replace document with imported deck list containing %n card(s)</source>
+      <comment>Undo/redo tooltip text. Option to delete the current document enabled.</comment>
+      <translation>
+        <numerusform>Ersetze Dokument durch importierte Deckliste mit einer Karte</numerusform>
+        <numerusform>Ersetze Dokument durch importierte Deckliste mit %n Karten</numerusform>
+      </translation>
+    </message>
   </context>
   <context>
     <name>ActionLoadDocument</name>
     <message numerus="yes">
-      <location filename="../../document_controller/load_document.py" line="76"/>
+      <location filename="../../document_controller/load_document.py" line="94"/>
       <source>Load document from &apos;{save_path}&apos;,
 containing %n page(s) {cards_total}</source>
       <comment>Undo/redo tooltip text.</comment>
@@ -160,7 +169,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionLoadDocument. Card total</name>
     <message numerus="yes">
-      <location filename="../../document_controller/load_document.py" line="72"/>
+      <location filename="../../document_controller/load_document.py" line="90"/>
       <source>with %n card(s) total</source>
       <comment>Undo/redo tooltip text. Will be inserted as {cards_total}</comment>
       <translation>
@@ -205,7 +214,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionRemoveCards</name>
     <message numerus="yes">
-      <location filename="../../document_controller/card_actions.py" line="217"/>
+      <location filename="../../document_controller/card_actions.py" line="219"/>
       <source>Remove %n card(s) from page {page_number}</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>
@@ -245,6 +254,14 @@ mit %n Seiten {cards_total}</numerusform>
     </message>
   </context>
   <context>
+    <name>ActionSaveDocument</name>
+    <message>
+      <location filename="../../document_controller/save_document.py" line="169"/>
+      <source>Save document to &apos;{save_file_path}&apos;.</source>
+      <translation>Dokument in &apos;{save_file_path}&apos; speichern.</translation>
+    </message>
+  </context>
+  <context>
     <name>ActionShuffleDocument</name>
     <message>
       <location filename="../../document_controller/shuffle_document.py" line="102"/>
@@ -256,7 +273,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>CacheCleanupWizard</name>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="472"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="458"/>
       <source>Cleanup locally stored card images</source>
       <comment>Dialog window title</comment>
       <translation>Lokal gespeicherte Kartenbilder bereinigen</translation>
@@ -293,165 +310,152 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>CardListModel</name>
     <message>
-      <location filename="../../model/card_list.py" line="60"/>
+      <location filename="../../model/card_list.py" line="89"/>
       <source>Card name</source>
       <translation>Kartenname</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="61"/>
+      <location filename="../../model/card_list.py" line="90"/>
       <source>Set</source>
       <translation>Set</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="62"/>
+      <location filename="../../model/card_list.py" line="91"/>
       <source>Collector #</source>
       <translation>Sammler #</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="63"/>
+      <location filename="../../model/card_list.py" line="92"/>
       <source>Language</source>
       <translation>Sprache</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="64"/>
+      <location filename="../../model/card_list.py" line="93"/>
       <source>Side</source>
       <translation>Seite</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="96"/>
+      <location filename="../../model/card_list.py" line="130"/>
       <source>Front</source>
       <translation>Vorderseite</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="96"/>
+      <location filename="../../model/card_list.py" line="130"/>
       <source>Back</source>
       <translation>Rückseite</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="99"/>
+      <location filename="../../model/card_list.py" line="134"/>
       <source>Beware: Potentially oversized card!
 This card may not fit in your deck.</source>
       <translation>Achtung: Potenziell übergroße Karte!
 Diese Karte könnte nicht in Ihr Deck passen.</translation>
     </message>
     <message>
-      <location filename="../../model/card_list.py" line="237"/>
+      <location filename="../../model/card_list.py" line="324"/>
       <source>Double-click on entries to
 switch the selected printing.</source>
       <translation>Doppelklicken Sie auf Einträge, um den Ausdruck
 zu wechseln.</translation>
     </message>
+    <message>
+      <location filename="../../model/card_list.py" line="88"/>
+      <source>Copies</source>
+      <translation>Kopien</translation>
+    </message>
   </context>
   <context>
-    <name>CentralWidget</name>
-    <message numerus="yes">
-      <location filename="../../ui/central_widget.py" line="155"/>
-      <source>Add %n copies</source>
-      <comment>Context menu action: Add additional card copies to the document</comment>
-      <translation>
-        <numerusform>%n Kopie hinzufügen</numerusform>
-        <numerusform>%n Kopien hinzufügen</numerusform>
-      </translation>
+    <name>CardSideSelectionDelegate</name>
+    <message>
+      <location filename="../../ui/item_delegates.py" line="100"/>
+      <source>Front</source>
+      <translation>Vorderseite</translation>
     </message>
     <message>
-      <location filename="../../ui/central_widget.py" line="161"/>
-      <source>Add copies …</source>
-      <comment>Context menu action: Add additional card copies to the document. User will be asked for a number</comment>
-      <translation>Kopien hinzufügen …</translation>
-    </message>
-    <message>
-      <location filename="../../ui/central_widget.py" line="167"/>
-      <source>Generate DFC check card</source>
-      <translation>Platzhalterkarte generieren</translation>
-    </message>
-    <message>
-      <location filename="../../ui/central_widget.py" line="171"/>
-      <source>All related cards</source>
-      <translation>Alle zugehörigen Karten</translation>
-    </message>
-    <message>
-      <location filename="../../ui/central_widget.py" line="179"/>
-      <source>Add copies</source>
-      <translation>Kopien hinzufügen</translation>
-    </message>
-    <message>
-      <location filename="../../ui/central_widget.py" line="179"/>
-      <source>Add copies of {card_name}</source>
-      <comment>Asks the user for a number. Does not need plural forms</comment>
-      <translation>Kopien von {card_name} hinzufügen</translation>
-    </message>
-    <message>
-      <location filename="../../ui/central_widget.py" line="205"/>
-      <source>Export image</source>
-      <translation>Bild exportieren</translation>
-    </message>
-    <message>
-      <location filename="../../ui/central_widget.py" line="220"/>
-      <source>Save card image</source>
-      <translation>Kartenbild speichern</translation>
-    </message>
-    <message>
-      <location filename="../../ui/central_widget.py" line="220"/>
-      <source>Images (*.png *.bmp *.jpg)</source>
-      <translation>Bilder (*.png *.bmp *.jpg)</translation>
+      <location filename="../../ui/item_delegates.py" line="101"/>
+      <source>Back</source>
+      <translation>Rückseite</translation>
     </message>
   </context>
   <context>
     <name>ColumnarCentralWidget</name>
     <message>
-      <location filename="../ui/central_widget/columnar.ui" line="64"/>
+      <location filename="../ui/central_widget/columnar.ui" line="61"/>
       <source>All pages:</source>
       <translation>Alle Seiten:</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/columnar.ui" line="71"/>
+      <location filename="../ui/central_widget/columnar.ui" line="68"/>
       <source>Current page:</source>
       <translation>Aktuelle Seite:</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/columnar.ui" line="81"/>
+      <location filename="../ui/central_widget/columnar.ui" line="78"/>
       <source>Remove selected</source>
       <translation>Ausgewählte entfernen</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/columnar.ui" line="91"/>
+      <location filename="../ui/central_widget/columnar.ui" line="88"/>
       <source>Add new cards:</source>
       <translation>Karten hinzufügen:</translation>
     </message>
   </context>
   <context>
+    <name>CustomCardImportDialog</name>
+    <message>
+      <location filename="../ui/custom_card_import_dialog.ui" line="14"/>
+      <source>Import custom cards</source>
+      <translation>Inoffizielle Karten importieren</translation>
+    </message>
+    <message>
+      <location filename="../ui/custom_card_import_dialog.ui" line="20"/>
+      <source>Set Copies to …</source>
+      <translation>Kopien auf … setzen</translation>
+    </message>
+    <message>
+      <location filename="../ui/custom_card_import_dialog.ui" line="40"/>
+      <source>Remove selected</source>
+      <translation>Ausgewählte entfernen</translation>
+    </message>
+    <message>
+      <location filename="../ui/custom_card_import_dialog.ui" line="50"/>
+      <source>Load images</source>
+      <translation>Bilder laden</translation>
+    </message>
+  </context>
+  <context>
     <name>DatabaseImportWorker</name>
     <message>
-      <location filename="../../card_info_downloader.py" line="424"/>
+      <location filename="../../card_info_downloader.py" line="425"/>
       <source>Error during import from file:
 {path}</source>
       <translation>Fehler beim Import aus Datei:
 {path}</translation>
     </message>
     <message>
-      <location filename="../../card_info_downloader.py" line="435"/>
+      <location filename="../../card_info_downloader.py" line="436"/>
       <source>Updating card data from Scryfall:</source>
       <comment>Progress bar label text</comment>
       <translation>Kartendaten von Scryfall aktualisieren:</translation>
     </message>
     <message>
-      <location filename="../../card_info_downloader.py" line="445"/>
+      <location filename="../../card_info_downloader.py" line="446"/>
       <source>Reading from socket failed: {error}</source>
       <translation>Lesen von Socket fehlgeschlagen: {error}</translation>
     </message>
     <message>
-      <location filename="../../card_info_downloader.py" line="461"/>
+      <location filename="../../card_info_downloader.py" line="462"/>
       <source>Importing card data from disk:</source>
       <comment>Progress bar label text</comment>
       <translation>Kartendaten aus Datei importieren:</translation>
     </message>
     <message>
-      <location filename="../../card_info_downloader.py" line="481"/>
+      <location filename="../../card_info_downloader.py" line="482"/>
       <source>Failed to parse data from Scryfall. Reported error: {error}</source>
       <translation>Fehler beim Verarbeiten der Scryfall-Daten. Fehler: {error}</translation>
     </message>
     <message>
-      <location filename="../../card_info_downloader.py" line="525"/>
+      <location filename="../../card_info_downloader.py" line="526"/>
       <source>Post-processing card data:</source>
       <translation>Kartendaten nachbearbeiten:</translation>
     </message>
@@ -459,12 +463,12 @@ zu wechseln.</translation>
   <context>
     <name>DatabaseMigrationRunner</name>
     <message>
-      <location filename="../../carddb_migrations.py" line="790"/>
+      <location filename="../../carddb_migrations.py" line="792"/>
       <source>Running database migrations:</source>
       <translation>Datenbankmigrationen durchführen:</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../carddb_migrations.py" line="806"/>
+      <location filename="../../carddb_migrations.py" line="808"/>
       <source>Migrate to version %n:</source>
       <comment>The numeric parameter is a version number, and not countable.</comment>
       <translation>
@@ -476,49 +480,49 @@ zu wechseln.</translation>
   <context>
     <name>DebugSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="128"/>
+      <location filename="../../ui/settings_window_pages.py" line="130"/>
       <source>Debug settings</source>
       <translation>Fehlersuche (Debug)</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="128"/>
+      <location filename="../../ui/settings_window_pages.py" line="130"/>
       <source>Things useful for investigating bugs in the application</source>
       <translation>Nützliche Dinge, um Fehler in der Anwendung zu untersuchen</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="183"/>
+      <location filename="../../ui/settings_window_pages.py" line="185"/>
       <source>Select download location</source>
       <translation>Download-Verzeichnis auswählen</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="191"/>
+      <location filename="../../ui/settings_window_pages.py" line="193"/>
       <source>Selected location is not a directory</source>
       <translation>Ausgewählter Ort ist kein Verzeichnis</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="191"/>
+      <location filename="../../ui/settings_window_pages.py" line="193"/>
       <source>Cannot write the card data at the given location, because it is not a directory:
 {location}</source>
       <translation>Die Kartendaten können nicht an den angegebenen Ort geschrieben werden, da es kein Verzeichnis ist:
 {location}</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="204"/>
+      <location filename="../../ui/settings_window_pages.py" line="206"/>
       <source>Import previously downloaded card data obtained from Scryfall</source>
       <translation>Zuvor von Scryfall heruntergeladene Kartendaten importieren</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="204"/>
+      <location filename="../../ui/settings_window_pages.py" line="206"/>
       <source>Scryfall card data (*.json, *.json.gz)</source>
       <translation>Scryfall-Kartendaten (*.json, *.json.gz)</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="214"/>
+      <location filename="../../ui/settings_window_pages.py" line="216"/>
       <source>Selected location is not a file</source>
       <translation>Ausgewählter Ort ist keine Datei</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="214"/>
+      <location filename="../../ui/settings_window_pages.py" line="216"/>
       <source>Cannot find the selected file:
 {location}</source>
       <translation>Die ausgewählte Datei konnte nicht gefunden werden:
@@ -530,52 +534,52 @@ zu wechseln.</translation>
       <translation>Debug-Protokollverzeichnis öffnen</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/debug_settings_page.ui" line="28"/>
+      <location filename="../ui/settings_window/debug_settings_page.ui" line="27"/>
       <source>Enable writing a log file to disk</source>
       <translation>Aktiviere das Schreiben einer Protokolldatei</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/debug_settings_page.ui" line="35"/>
+      <location filename="../ui/settings_window/debug_settings_page.ui" line="34"/>
       <source>Cutelog is a live log event viewer that can be used to monitor events in real-time.</source>
       <translation>Cutelog ist ein Live-Protokoll-Ereignisbetrachter, der genutzt werden kann, um Ereignisse im Programm in Echtzeit zu überwachen.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/debug_settings_page.ui" line="38"/>
+      <location filename="../ui/settings_window/debug_settings_page.ui" line="37"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;See &lt;a href=&quot;https://github.com/busimus/cutelog&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;https://github.com/busimus/cutelog&lt;/span&gt;&lt;/a&gt; for details about Cutelog.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Siehe &lt;a href=&quot;https://github.com/busimus/cutelog&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;https://github.com/busimus/cutelog&lt;/span&gt;&lt;/a&gt; für Details zu Cutelog.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/debug_settings_page.ui" line="41"/>
+      <location filename="../ui/settings_window/debug_settings_page.ui" line="40"/>
       <source>Enable Cutelog integration</source>
       <translation>Cutelog-Integration aktivieren</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/debug_settings_page.ui" line="48"/>
+      <location filename="../ui/settings_window/debug_settings_page.ui" line="47"/>
       <source>Download card data as file</source>
       <translation>Kartendaten als Datei herunterladen</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/debug_settings_page.ui" line="66"/>
+      <location filename="../ui/settings_window/debug_settings_page.ui" line="64"/>
       <source>Event severity that gets logged to file:</source>
       <translation>Ereignis-Schweregrad, ab dem in Datei protokolliert wird:</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/debug_settings_page.ui" line="76"/>
+      <location filename="../ui/settings_window/debug_settings_page.ui" line="74"/>
       <source>Only write events with the given severity level and higher to the log file.</source>
       <translation>Schreibt nur Ereignisse mit dem angegebenen oder höherem Schweregrad ins Protokoll.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/debug_settings_page.ui" line="83"/>
+      <location filename="../ui/settings_window/debug_settings_page.ui" line="81"/>
       <source>Debug settings (Changing these require an application restart)</source>
       <translation>Fehlersuch-Einstellungen (Ändern dieser Einstellungen erfordert einen Neustart der Anwendung)</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/debug_settings_page.ui" line="103"/>
+      <location filename="../ui/settings_window/debug_settings_page.ui" line="101"/>
       <source>Import card data from file</source>
       <translation>Kartendaten aus Datei importieren</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/debug_settings_page.ui" line="120"/>
+      <location filename="../ui/settings_window/debug_settings_page.ui" line="117"/>
       <source>Open the Cutelog homepage</source>
       <translation>Öffne die Cutelog-Homepage</translation>
     </message>
@@ -583,17 +587,17 @@ zu wechseln.</translation>
   <context>
     <name>DeckImportWizard</name>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="619"/>
+      <location filename="../../ui/deck_import_wizard.py" line="611"/>
       <source>Import a deck list</source>
       <translation>Deckliste importieren</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="640"/>
+      <location filename="../../ui/deck_import_wizard.py" line="633"/>
       <source>Oversized cards present</source>
       <translation>Übergroße Karten vorhanden</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/deck_import_wizard.py" line="640"/>
+      <location filename="../../ui/deck_import_wizard.py" line="633"/>
       <source>There are %n possibly oversized cards in the deck list that may not fit into a deck, when printed out.
 
 Continue and use these cards as-is?</source>
@@ -607,12 +611,12 @@ Trotzdem mit der Deckliste fortfahren?</numerusform>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="651"/>
+      <location filename="../../ui/deck_import_wizard.py" line="644"/>
       <source>Incompatible file selected</source>
       <translation>Inkompatible Datei ausgewählt</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="651"/>
+      <location filename="../../ui/deck_import_wizard.py" line="644"/>
       <source>Unable to parse the given deck list, no results were obtained.
 Maybe you selected the wrong deck list type?</source>
       <translation>Die gegebene Deck-Liste konnte nicht analysiert werden. Es wurden keine Ergebnisse abgerufen.
@@ -622,17 +626,17 @@ Vielleicht haben Sie den falschen Deck-Listentyp ausgewählt?</translation>
   <context>
     <name>DecklistImportSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="227"/>
+      <location filename="../../ui/settings_window_pages.py" line="229"/>
       <source>Deck list import</source>
       <translation>Decklisten-Import</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="227"/>
+      <location filename="../../ui/settings_window_pages.py" line="229"/>
       <source>Configure the deck list importer</source>
       <translation>Den Decklisten-Import konfigurieren</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="237"/>
+      <location filename="../../ui/settings_window_pages.py" line="239"/>
       <source>Select default deck list search path</source>
       <translation>Wähle den Standardsuchpfad für Decklisten</translation>
     </message>
@@ -758,19 +762,19 @@ Bei einigen Decklistenformaten ist diese Option immer aktiviert.</translation>
   <context>
     <name>DefaultDocumentLayoutSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="481"/>
+      <location filename="../../ui/settings_window_pages.py" line="482"/>
       <source>Default document settings</source>
       <translation>Standardeinstellungen für Dokumente</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="481"/>
+      <location filename="../../ui/settings_window_pages.py" line="482"/>
       <source>Set the default document settings used for new documents,
 like page size, margins, spacings, etc.</source>
       <translation>Standardeinstellungen für Dokumente setzen,
 wie Papiergröße, Randabstände, Kartenabstände, usw.</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="489"/>
+      <location filename="../../ui/settings_window_pages.py" line="490"/>
       <source>Default settings for new documents</source>
       <translation>Standardeinstellungen für neue Dokumente</translation>
     </message>
@@ -778,59 +782,59 @@ wie Papiergröße, Randabstände, Kartenabstände, usw.</translation>
   <context>
     <name>Document</name>
     <message>
-      <location filename="../../model/document.py" line="90"/>
+      <location filename="../../model/document.py" line="92"/>
       <source>Card name</source>
       <translation>Kartenname</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="91"/>
+      <location filename="../../model/document.py" line="93"/>
       <source>Set</source>
       <translation>Set</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="92"/>
+      <location filename="../../model/document.py" line="94"/>
       <source>Collector #</source>
       <translation>Sammler #</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="93"/>
+      <location filename="../../model/document.py" line="95"/>
       <source>Language</source>
       <translation>Sprache</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="94"/>
+      <location filename="../../model/document.py" line="96"/>
       <source>Image</source>
       <translation>Bild</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="95"/>
+      <location filename="../../model/document.py" line="97"/>
       <source>Side</source>
       <translation>Seite</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="173"/>
+      <location filename="../../model/document.py" line="175"/>
       <source>Double-click on entries to
 switch the selected printing.</source>
       <translation>Doppelklicken Sie auf Einträge, um den Ausdruck
 zu wechseln.</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="283"/>
+      <location filename="../../model/document.py" line="288"/>
       <source>Page {current}/{total}</source>
       <translation>Seite {current}/{total}</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="313"/>
+      <location filename="../../model/document.py" line="319"/>
       <source>Front</source>
       <translation>Vorderseite</translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="313"/>
+      <location filename="../../model/document.py" line="319"/>
       <source>Back</source>
       <translation>Rückseite</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../model/document.py" line="318"/>
+      <location filename="../../model/document.py" line="325"/>
       <source>%n× {name}</source>
       <comment>Used to display a card name and amount of copies in the page overview. Only needs translation for RTL language support</comment>
       <translation>
@@ -839,7 +843,7 @@ zu wechseln.</translation>
       </translation>
     </message>
     <message>
-      <location filename="../../model/document.py" line="406"/>
+      <location filename="../../model/document.py" line="382"/>
       <source>Empty Placeholder</source>
       <translation>Leerer Platzhalter</translation>
     </message>
@@ -856,7 +860,7 @@ zu wechseln.</translation>
   <context>
     <name>DocumentSettingsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="322"/>
+      <location filename="../../ui/dialogs.py" line="379"/>
       <source>These settings only affect the current document</source>
       <translation>Diese Einstellungen betreffen nur das aktuelle Dokument</translation>
     </message>
@@ -867,9 +871,164 @@ zu wechseln.</translation>
     </message>
   </context>
   <context>
+    <name>ExportCardImagesDialog</name>
+    <message>
+      <location filename="../../ui/dialogs.py" line="455"/>
+      <source>Select card image export location</source>
+      <translation>Speicherort für Kartenbild-Export auswählen</translation>
+    </message>
+    <message>
+      <location filename="../ui/export_card_images_dialog.ui" line="17"/>
+      <source>Export card images</source>
+      <translation>Kartenbilder exportieren</translation>
+    </message>
+    <message>
+      <location filename="../ui/export_card_images_dialog.ui" line="29"/>
+      <source>Browse …</source>
+      <translation>Durchsuchen …</translation>
+    </message>
+    <message>
+      <location filename="../ui/export_card_images_dialog.ui" line="52"/>
+      <source>Custom cards</source>
+      <translation>Inoffizielle Karten</translation>
+    </message>
+    <message>
+      <location filename="../ui/export_card_images_dialog.ui" line="66"/>
+      <source>Output directory:</source>
+      <translation>Speicherort:</translation>
+    </message>
+    <message>
+      <location filename="../ui/export_card_images_dialog.ui" line="73"/>
+      <source>Official cards</source>
+      <translation>Offizielle Karten</translation>
+    </message>
+    <message>
+      <location filename="../ui/export_card_images_dialog.ui" line="83"/>
+      <source>Which card images should be exported?</source>
+      <translation>Welche Karten sollen exportiert werden?</translation>
+    </message>
+    <message>
+      <location filename="../ui/export_card_images_dialog.ui" line="93"/>
+      <source>Path to a directory</source>
+      <translation>Pfad zu einem Verzeichnis</translation>
+    </message>
+    <message>
+      <location filename="../../ui/dialogs.py" line="502"/>
+      <source>Copy failed for {card_name}! Disk detached/full? Aborting.</source>
+      <translation>Kopieren von {card_name} fehlgeschlagen! Ziel entfernt/voll? Breche ab.</translation>
+    </message>
+    <message>
+      <location filename="../../ui/dialogs.py" line="531"/>
+      <source>Write failed for {card_name}! Disk detached/full? Aborting.</source>
+      <translation>Schreiben des Bilds von {card_name} fehlgeschlagen! Ziel entfernt/voll? Breche ab.</translation>
+    </message>
+  </context>
+  <context>
+    <name>ExportSettingsPage</name>
+    <message>
+      <location filename="../../ui/settings_window_pages.py" line="559"/>
+      <source>Export settings</source>
+      <translation>Exporteinstellungen</translation>
+    </message>
+    <message>
+      <location filename="../../ui/settings_window_pages.py" line="559"/>
+      <source>Configure the PDF/PNG export</source>
+      <translation>PDF/PNG-Export konfigurieren</translation>
+    </message>
+    <message>
+      <location filename="../../ui/settings_window_pages.py" line="598"/>
+      <source>Select default export location</source>
+      <translation>Standardpfad für Exporte auswählen</translation>
+    </message>
+    <message>
+      <location filename="../../ui/settings_window_pages.py" line="607"/>
+      <source>Select PNG background color</source>
+      <translation>PNG-Hintergrundfarbe wählen</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="126"/>
+      <source>Automatically split PDF documents, if they get longer than this many pages.
+Set to zero to disable splitting.
+
+
+When printing PDFs using a USB flash drive directly connected to the printer,
+the printer may refuse to print documents exceeding some arbitrary size limit.
+To work around this limitation, you can enable this option,
+and limit the number of pages per PDF. If the document has more pages,
+it will be exported into multiple PDF documents automatically.</source>
+      <translation>PDF-Dokumente automatisch aufteilen, wenn sie länger als diese Anzahl von Seiten werden.
+Setzen Sie den Wert auf Null, um dies zu deaktivieren.
+
+
+Wenn Sie PDF-Dokumente über ein direkt an den Drucker angeschlossenes USB-Flash-Laufwerk drucken,
+weigert sich der Drucker möglicherweise, Dokumente zu drucken, die eine gewisse Größenbeschränkung überschreiten.
+Um diese Einschränkung zu umgehen, können Sie diese Option aktivieren,
+und die Anzahl der Seiten pro PDF begrenzen. Wenn das Dokument mehr Seiten hat,
+wird es automatisch in mehrere PDF-Dokumente exportiert.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="34"/>
+      <source> pages</source>
+      <translation> Seiten</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="44"/>
+      <source>Browse…</source>
+      <translation>Durchsuchen …</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="57"/>
+      <source>If enabled, landscape documents are rotated by 90° to portrait mode during export.
+Enable this, if printing from PDFs in landscape format results in portrait printouts with cropped-off sides.
+
+Enabling this may cause the cut helper lines to flicker or not show in some PDF viewers.
+So only enable this, if actually required.</source>
+      <translation>Wenn aktiviert, werden Querformat-Dokumente stattdessenum 90° gedreht im Hochformat exportiert.
+Aktivieren Sie dies, wenn das Drucken von Querformat-Dokumenten zu Ausdrucken im Hochformat mit abgeschnittenen Seiten führt.
+
+Aktivieren kann dazu führen, dass die Schnitthilfslinien in einigen PDF-Anzeigeprogrammen fehlerhaft oder gar nicht angezeigt werden.
+Aktivieren Sie dies also nur, wenn es tatsächlich erforderlich ist.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="64"/>
+      <source>Enable landscape workaround: Rotate landscape pages by 90°</source>
+      <translation>Querformat-Workaround: Querformat-Dokumente um 90° drehen</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="90"/>
+      <source>If set, use this as the default location for saving exported PDF documents.</source>
+      <translation>Standard-Speicherort für exportierte PDFs.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="80"/>
+      <source>Path to a directory</source>
+      <translation>Pfad zu einem Verzeichnis</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="93"/>
+      <source>Export path</source>
+      <translation>Exportpfad</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="116"/>
+      <source>PNG background color</source>
+      <translation>PNG Hintergrundfarbe</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="137"/>
+      <source>Split PDF documents longer than</source>
+      <translation>PDF-Dokumente länger als … aufteilen</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="154"/>
+      <source>Background color used for documents exported as PNG images.</source>
+      <translation>Hintergrundfarbe für als PNG exportierte Dokumente.</translation>
+    </message>
+  </context>
+  <context>
     <name>FileDownloadWorker</name>
     <message>
-      <location filename="../../card_info_downloader.py" line="188"/>
+      <location filename="../../card_info_downloader.py" line="189"/>
       <source>Downloading card data:</source>
       <comment>Progress bar label text</comment>
       <translation>Kartendaten herunterladen:</translation>
@@ -1159,52 +1318,37 @@ Similar to borderless cards, these require higher precision during the cutting p
   <context>
     <name>GeneralSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="294"/>
+      <location filename="../../ui/settings_window_pages.py" line="296"/>
       <source>General settings</source>
       <translation>Allgemeine Einstellungen</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="301"/>
+      <location filename="../../ui/settings_window_pages.py" line="303"/>
       <source>Horizontal layout</source>
       <translation>Horizontales Layout</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="302"/>
+      <location filename="../../ui/settings_window_pages.py" line="304"/>
       <source>Columnar layout</source>
       <translation>Spaltenlayout</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="303"/>
+      <location filename="../../ui/settings_window_pages.py" line="305"/>
       <source>Tabbed layout</source>
       <translation>Layout in Tabs</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="305"/>
+      <location filename="../../ui/settings_window_pages.py" line="308"/>
       <source>System default</source>
       <translation>Standardsprache des Systems</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="306"/>
-      <source>English (US)</source>
-      <translation>Englisch (USA)</translation>
-    </message>
-    <message>
-      <location filename="../../ui/settings_window_pages.py" line="307"/>
-      <source>German</source>
-      <translation>Deutsch</translation>
-    </message>
-    <message>
-      <location filename="../../ui/settings_window_pages.py" line="314"/>
+      <location filename="../../ui/settings_window_pages.py" line="319"/>
       <source>Select default save location</source>
       <translation>Standardspeicherort auswählen</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="17"/>
-      <source>Look &amp;&amp; Feel (Changing this requires an application restart)</source>
-      <translation>Look &amp;&amp; Feel (Ändern dieser Einstellungen erfordert einen Neustart der Anwendung)</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="29"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="45"/>
       <source>Horizontal adds a wide, horizontal search area above the currently edited page, and is best for taller screens, like 4:3 or 3:2.
 Columnar organizes the main window content in four columns, and is best for (ultra-)wide screens.
 Tabbed uses tabs to only show parts of the main window at a time. Best used with small screens in portrait mode (i.e. 9:16), otherwise not recommended.</source>
@@ -1213,17 +1357,101 @@ Tabbed uses tabs to only show parts of the main window at a time. Best used with
 "Tabs" verwendet Tabs, um jederzeit nur einen Teil des Hauptfensters anzuzeigen. Am besten mit kleinen Bildschirmen im Hochformat (z.B. 9:16), ansonsten nicht empfohlen.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="38"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="22"/>
       <source>Main window layout</source>
       <translation>Hauptfenster-Layout</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="51"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="15"/>
       <source>Application language</source>
       <translation>Sprache der Anwendung</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="67"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="83"/>
+      <source>Double-faced cards</source>
+      <translation>Doppelseitige Karten</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="89"/>
+      <source>When adding double-faced cards, automatically add the same number of copies of the other side.
+Uses the appropriate, matching other card side.
+Uncheck to disable this automatism.</source>
+      <translation>Beim Hinzufügen von doppelseitigen Karten automatisch die gleiche Anzahl von Kopien der anderen Seite hinzufügen.
+Verwendet die zugehörige, passende andere Kartenseite.
+Deaktivieren um diesen Automatismus zu deaktivieren.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="94"/>
+      <source>Automatically add the other side of double-faced cards</source>
+      <translation>Automatisch die andere Seite von doppelseitigen Karten hinzufügen</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="107"/>
+      <source>Preferred card language:</source>
+      <translation>Bevorzugte Kartensprache:</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="120"/>
+      <source>Automatic update checks</source>
+      <translation>Automatisch nach Aktualisierungen suchen</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="126"/>
+      <source>Update checks are performed at application start, if enabled.</source>
+      <translation>Suche nach Aktualisierungen wird beim Anwendungsstart durchgeführt, sofern aktiviert.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="133"/>
+      <source>If enabled, check for application updates, and notify if new updates are available for installation.</source>
+      <translation>Falls aktiviert, beim Start automatisch nach Anwendungsaktualisierungen suchen und bei verfügbaren Aktualisierungen benachrichtigen.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="136"/>
+      <source>Check for application updates</source>
+      <translation>Nach Anwendungsaktualisierungen suchen</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="146"/>
+      <source>If enabled, query the Scryfall API if new cards are available. If so, offer to update the local card data.</source>
+      <translation>Falls aktiviert, frage automatisch die Scryfall API ab, ob neue Karten verfügbar sind. Wenn ja, bieten wir an, die lokalen Kartendaten zu aktualisieren.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="149"/>
+      <source>Check for new card data</source>
+      <translation>Nach Aktualisierungen für die Kartendaten suchen</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="162"/>
+      <source>These paths are selected by default when browsing the file system for files</source>
+      <translation>Diese Pfade werden standardmäßig beim Durchsuchen des Dateisystems nach Dateien ausgewählt</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="165"/>
+      <source>Default save paths</source>
+      <translation>Standardspeicherpfade</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="171"/>
+      <source>Browse…</source>
+      <translation>Durchsuchen…</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="184"/>
+      <source>Document save path</source>
+      <translation>Dokumentenspeicherpfad</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="194"/>
+      <source>If set, use this as the default location for saving documents.</source>
+      <translation>Wenn gesetzt, verwende dies als Standard-Speicherort für Dokumente.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="200"/>
+      <source>Path to a directory</source>
+      <translation>Pfad zu einem Verzeichnis</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="73"/>
       <source>Language choices will default to the chosen language here.
 Entries use the language codes as listed on Scryfall.
 
@@ -1234,93 +1462,39 @@ Einträge verwenden die Sprachcodes wie auf Scryfall.
 Hinweis: Decklistenimports verwenden die Sprache, wie in der Deckliste angegeben. Zum Überschreiben verwenden Sie die Option der Decklistenübersetzung.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="77"/>
-      <source>Double-faced cards</source>
-      <translation>Doppelseitige Karten</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="83"/>
-      <source>When adding double-faced cards, automatically add the same number of copies of the other side.
-Uses the appropriate, matching other card side.
-Uncheck to disable this automatism.</source>
-      <translation>Beim Hinzufügen von doppelseitigen Karten automatisch die gleiche Anzahl von Kopien der anderen Seite hinzufügen.
-Verwendet die zugehörige, passende andere Kartenseite.
-Deaktivieren um diesen Automatismus zu deaktivieren.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="88"/>
-      <source>Automatically add the other side of double-faced cards</source>
-      <translation>Automatisch die andere Seite von doppelseitigen Karten hinzufügen</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="98"/>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="104"/>
       <source>Card language selected at application start and default language when enabling deck list translations</source>
       <translation>Beim Start der Anwendung ausgewählte Kartensprache und Standardsprache beim Aktivieren der Decklistenübersetzung</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="101"/>
-      <source>Preferred card language:</source>
-      <translation>Bevorzugte Kartensprache:</translation>
+      <location filename="../../ui/settings_window_pages.py" line="309"/>
+      <source>English (US) [{progress}%]</source>
+      <translation>Englisch (US) [{progress}%]</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="114"/>
-      <source>Automatic update checks</source>
-      <translation>Automatisch nach Aktualisierungen suchen</translation>
+      <location filename="../../ui/settings_window_pages.py" line="310"/>
+      <source>German [{progress}%]</source>
+      <translation>Deutsch [{progress}%]</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="120"/>
-      <source>Update checks are performed at application start, if enabled.</source>
-      <translation>Suche nach Aktualisierungen wird beim Anwendungsstart durchgeführt, sofern aktiviert.</translation>
+      <location filename="../../ui/settings_window_pages.py" line="311"/>
+      <source>French [{progress}%]</source>
+      <translation>Französisch [{progress}%]</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="127"/>
-      <source>If enabled, check for application updates, and notify if new updates are available for installation.</source>
-      <translation>Falls aktiviert, beim Start automatisch nach Anwendungsaktualisierungen suchen und bei verfügbaren Aktualisierungen benachrichtigen.</translation>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="32"/>
+      <source>Open the main window maximized</source>
+      <translation>Hauptfenster maximiert öffnen</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="130"/>
-      <source>Check for application updates</source>
-      <translation>Nach Anwendungsaktualisierungen suchen</translation>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="9"/>
+      <source>Look &amp;&amp; Feel (Changing most of these require an application restart)</source>
+      <translation>Look &amp;&amp; Feel (Ändern der meisten dieser Einstellungen erfordert einen Neustart der Anwendung)</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="140"/>
-      <source>If enabled, query the Scryfall API if new cards are available. If so, offer to update the local card data.</source>
-      <translation>Falls aktiviert, frage automatisch die Scryfall API ab, ob neue Karten verfügbar sind. Wenn ja, bieten wir an, die lokalen Kartendaten zu aktualisieren.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="143"/>
-      <source>Check for new card data</source>
-      <translation>Nach Aktualisierungen für die Kartendaten suchen</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="156"/>
-      <source>These paths are selected by default when browsing the file system for files</source>
-      <translation>Diese Pfade werden standardmäßig beim Durchsuchen des Dateisystems nach Dateien ausgewählt</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="159"/>
-      <source>Default save paths</source>
-      <translation>Standardspeicherpfade</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="165"/>
-      <source>Browse…</source>
-      <translation>Durchsuchen…</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="179"/>
-      <source>Document save path</source>
-      <translation>Dokumentenspeicherpfad</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="189"/>
-      <source>If set, use this as the default location for saving documents.</source>
-      <translation>Wenn gesetzt, verwende dies als Standard-Speicherort für Dokumente.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="195"/>
-      <source>Path to a directory</source>
-      <translation>Pfad zu einem Verzeichnis</translation>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="57"/>
+      <source>Open all wizards maximized</source>
+      <translation>Alle Wizards maximiert öffnen</translation>
     </message>
   </context>
   <context>
@@ -1331,12 +1505,12 @@ Deaktivieren um diesen Automatismus zu deaktivieren.</translation>
       <translation>Ausgewählte entfernen</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/grouped.ui" line="106"/>
+      <location filename="../ui/central_widget/grouped.ui" line="103"/>
       <source>All pages:</source>
       <translation>Alle Seiten:</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/grouped.ui" line="113"/>
+      <location filename="../ui/central_widget/grouped.ui" line="110"/>
       <source>Add new cards:</source>
       <translation>Karten hinzufügen:</translation>
     </message>
@@ -1344,12 +1518,12 @@ Deaktivieren um diesen Automatismus zu deaktivieren.</translation>
   <context>
     <name>HidePrintingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="438"/>
+      <location filename="../../ui/settings_window_pages.py" line="439"/>
       <source>Hide printings</source>
       <translation>Drucke verbergen</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="438"/>
+      <location filename="../../ui/settings_window_pages.py" line="439"/>
       <source>Hide unwanted printings</source>
       <translation>Unerwünschte Kartenvarianten verbergen</translation>
     </message>
@@ -1435,19 +1609,19 @@ für beliebig viele Zeichen.</translation>
   <context>
     <name>ImageDownloader</name>
     <message>
-      <location filename="../../model/imagedb.py" line="338"/>
+      <location filename="../../model/imagedb.py" line="309"/>
       <source>Importing deck list</source>
       <comment>Progress bar label text</comment>
       <translation>Deckliste importieren</translation>
     </message>
     <message>
-      <location filename="../../model/imagedb.py" line="358"/>
+      <location filename="../../model/imagedb.py" line="329"/>
       <source>Fetching missing images</source>
       <comment>Progress bar label text</comment>
       <translation>Abrufen fehlender Bilder</translation>
     </message>
     <message>
-      <location filename="../../model/imagedb.py" line="453"/>
+      <location filename="../../model/imagedb.py" line="424"/>
       <source>Downloading &apos;{card_name}&apos;</source>
       <comment>Progress bar label text</comment>
       <translation>Lade '{card_name}' herunter</translation>
@@ -1456,47 +1630,47 @@ für beliebig viele Zeichen.</translation>
   <context>
     <name>KnownCardImageModel</name>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="147"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="133"/>
       <source>Name</source>
       <translation>Name</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="148"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="134"/>
       <source>Set</source>
       <translation>Set</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="149"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="135"/>
       <source>Collector #</source>
       <translation>Sammler #</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="150"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="136"/>
       <source>Is Hidden</source>
       <translation>Versteckt</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="151"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="137"/>
       <source>Front/Back</source>
       <translation>Vorder-/Rückseite</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="152"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="138"/>
       <source>High resolution?</source>
       <translation>Hohe Qualität?</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="153"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="139"/>
       <source>Size</source>
       <translation>Größe</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="154"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="140"/>
       <source>Scryfall ID</source>
       <translation>Scryfall ID</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="155"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="141"/>
       <source>Path</source>
       <translation>Dateipfad</translation>
     </message>
@@ -1504,17 +1678,17 @@ für beliebig viele Zeichen.</translation>
   <context>
     <name>KnownCardRow</name>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="126"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="112"/>
       <source>Yes</source>
       <translation>Ja</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="126"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="112"/>
       <source>No</source>
       <translation>Nein</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="114"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="100"/>
       <source>This printing is hidden by an enabled card filter
 and is thus unavailable for printing.</source>
       <comment>Tooltip for cells with hidden cards</comment>
@@ -1522,13 +1696,13 @@ and is thus unavailable for printing.</source>
 versteckt und ist daher nicht verfügbar.</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="120"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="106"/>
       <source>Front</source>
       <comment>Card side</comment>
       <translation>Vorderseite</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="120"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="106"/>
       <source>Back</source>
       <comment>Card side</comment>
       <translation>Rückseite</translation>
@@ -1537,7 +1711,7 @@ versteckt und ist daher nicht verfügbar.</translation>
   <context>
     <name>LoadDocumentDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="163"/>
+      <location filename="../../ui/dialogs.py" line="220"/>
       <source>Load MTGProxyPrinter document</source>
       <translation>MTGProxyPrinter-Dokument laden</translation>
     </message>
@@ -1545,44 +1719,44 @@ versteckt und ist daher nicht verfügbar.</translation>
   <context>
     <name>LoadListPage</name>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="121"/>
+      <location filename="../../ui/deck_import_wizard.py" line="116"/>
       <source>Supported websites:
 {supported_sites}</source>
       <translation>Unterstützte Webseiten:
 {supported_sites}</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="217"/>
+      <location filename="../../ui/deck_import_wizard.py" line="212"/>
       <source>Overwrite existing deck list?</source>
       <translation>Vorhandene Deckliste überschreiben?</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="171"/>
+      <location filename="../../ui/deck_import_wizard.py" line="166"/>
       <source>Selecting a file will overwrite the existing deck list. Continue?</source>
       <translation>Das Auswählen einer Datei überschreibt die vorhandene Deckliste. Fortfahren?</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="179"/>
+      <location filename="../../ui/deck_import_wizard.py" line="174"/>
       <source>Select deck file</source>
       <translation>Decklisten-Datei auswählen</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="189"/>
+      <location filename="../../ui/deck_import_wizard.py" line="184"/>
       <source>All files (*)</source>
       <translation>Alle Dateien (*)</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="200"/>
+      <location filename="../../ui/deck_import_wizard.py" line="195"/>
       <source>All Supported </source>
       <translation>Alle unterstützten </translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="217"/>
+      <location filename="../../ui/deck_import_wizard.py" line="212"/>
       <source>Downloading a deck list will overwrite the existing deck list. Continue?</source>
       <translation>Das Herunterladen einer Deckliste überschreibt die vorhandene Deckliste. Fortfahren?</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="230"/>
+      <location filename="../../ui/deck_import_wizard.py" line="225"/>
       <source>Download failed with HTTP error {http_error_code}.
 
 {bad_request_msg}</source>
@@ -1591,12 +1765,12 @@ versteckt und ist daher nicht verfügbar.</translation>
 {bad_request_msg}</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="241"/>
+      <location filename="../../ui/deck_import_wizard.py" line="236"/>
       <source>Deck list download failed</source>
       <translation>Download der Deckliste fehlgeschlagen</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="236"/>
+      <location filename="../../ui/deck_import_wizard.py" line="231"/>
       <source>Download failed.
 
 Check your internet connection, verify that the URL is valid, reachable, and that the deck list is set to public. This program cannot download private deck lists. If this persists, please report a bug in the issue tracker on the homepage.</source>
@@ -1605,24 +1779,24 @@ Check your internet connection, verify that the URL is valid, reachable, and tha
 Überprüfen Sie Ihre Internetverbindung, ob die URL gültig und erreichbar ist, und dass die Deckliste öffentlich ist. Dieses Programm kann keine privaten Deck-Listen herunterladen. Falls das Problem weiterhin besteht, melden Sie bitte einen Fehler im Issue-Tracker auf der Homepage.</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="267"/>
+      <location filename="../../ui/deck_import_wizard.py" line="262"/>
       <source>Unable to read file content</source>
       <translation>Dateiinhalt konnte nicht gelesen werden</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="267"/>
+      <location filename="../../ui/deck_import_wizard.py" line="262"/>
       <source>Unable to read the content of file {file_path} as plain text.
 Failed to load the content.</source>
       <translation>Kann den Inhalt der Datei {file_path} nicht als Text lesen.
 Fehler beim Laden des Inhalts.</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="279"/>
+      <location filename="../../ui/deck_import_wizard.py" line="274"/>
       <source>Load large file?</source>
       <translation>Große Datei laden?</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="279"/>
+      <location filename="../../ui/deck_import_wizard.py" line="274"/>
       <source>The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyway?</source>
       <translation>Die ausgewählte Datei {file_path} ist mit {formatted_size} unerwartet groß. Trotzdem laden?</translation>
     </message>
@@ -1709,7 +1883,7 @@ Aktivieren kann möglicherweise Speicherplatz auf der Festplatte und Datenvolume
   <context>
     <name>LoadSaveDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="120"/>
+      <location filename="../../ui/dialogs.py" line="177"/>
       <source>MTGProxyPrinter document (*.{default_save_suffix})</source>
       <comment>Human-readable file type name</comment>
       <translation>MTGProxyPrinter-Dokument (*.{default_save_suffix})</translation>
@@ -1718,7 +1892,7 @@ Aktivieren kann möglicherweise Speicherplatz auf der Festplatte und Datenvolume
   <context>
     <name>MTGArenaParser</name>
     <message>
-      <location filename="../../decklist_parser/re_parsers.py" line="200"/>
+      <location filename="../../decklist_parser/re_parsers.py" line="201"/>
       <source>Magic Arena deck file</source>
       <translation>Magic Arena Deckliste</translation>
     </message>
@@ -1726,7 +1900,7 @@ Aktivieren kann möglicherweise Speicherplatz auf der Festplatte und Datenvolume
   <context>
     <name>MTGOnlineParser</name>
     <message>
-      <location filename="../../decklist_parser/re_parsers.py" line="234"/>
+      <location filename="../../decklist_parser/re_parsers.py" line="235"/>
       <source>Magic Online (MTGO) deck file</source>
       <translation>Magic Online (MTGO) Deckliste</translation>
     </message>
@@ -1734,7 +1908,7 @@ Aktivieren kann möglicherweise Speicherplatz auf der Festplatte und Datenvolume
   <context>
     <name>MagicWorkstationDeckDataFormatParser</name>
     <message>
-      <location filename="../../decklist_parser/re_parsers.py" line="178"/>
+      <location filename="../../decklist_parser/re_parsers.py" line="179"/>
       <source>Magic Workstation Deck Data Format</source>
       <translation>Magic Workstation Deck Data (mwDeck)</translation>
     </message>
@@ -1742,38 +1916,38 @@ Aktivieren kann möglicherweise Speicherplatz auf der Festplatte und Datenvolume
   <context>
     <name>MainWindow</name>
     <message>
-      <location filename="../../ui/main_window.py" line="219"/>
+      <location filename="../../ui/main_window.py" line="224"/>
       <source>Undo:
 {top_entry}</source>
       <translation>Rückgängig:
 {top_entry}</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="221"/>
+      <location filename="../../ui/main_window.py" line="226"/>
       <source>Redo:
 {top_entry}</source>
       <translation>Wiederholen:
 {top_entry}</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="277"/>
+      <location filename="../../ui/main_window.py" line="290"/>
       <source>printing</source>
       <comment>This is passed as the {action} when asking the user about compacting the document if that can save pages</comment>
       <translation>dem Drucken</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="289"/>
+      <location filename="../../ui/main_window.py" line="302"/>
       <source>exporting as a PDF</source>
       <comment>This is passed as the {action} when asking the user about compacting the document if that can save pages</comment>
       <translation>dem PDF-Export</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="305"/>
+      <location filename="../../ui/main_window.py" line="337"/>
       <source>Network error</source>
       <translation>Netzwerkfehler</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="305"/>
+      <location filename="../../ui/main_window.py" line="337"/>
       <source>Operation failed, because a network error occurred.
 Check your internet connection. Reported error message:
 
@@ -1784,12 +1958,12 @@ Check your internet connection. Reported error message:
 {message}</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="313"/>
+      <location filename="../../ui/main_window.py" line="345"/>
       <source>Error</source>
       <translation>Fehler</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="313"/>
+      <location filename="../../ui/main_window.py" line="345"/>
       <source>Operation failed, because an internal error occurred.
 Reported error message:
 
@@ -1800,12 +1974,12 @@ Berichtete Fehlermeldung:
 {message}</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="322"/>
+      <location filename="../../ui/main_window.py" line="354"/>
       <source>Saving pages possible</source>
       <translation>Einsparen von Seiten möglich</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="322"/>
+      <location filename="../../ui/main_window.py" line="354"/>
       <source>It is possible to save %n pages when printing this document.
 Do you want to compact the document now to minimize the page count prior to {action}?</source>
       <translation>
@@ -1816,12 +1990,12 @@ Möchten Sie das Dokument jetzt komprimieren, um die Seitenanzahl vor {action} z
       </translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="338"/>
+      <location filename="../../ui/main_window.py" line="370"/>
       <source>Download required Card data from Scryfall?</source>
       <translation>Benötigte Kartendaten von Scryfall herunterladen?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="338"/>
+      <location filename="../../ui/main_window.py" line="370"/>
       <source>This program requires downloading additional card data from Scryfall to operate the card search.
 Download the required data from Scryfall now?
 Without the data, you can only print custom cards by drag&amp;dropping the image files onto the main window.</source>
@@ -1830,24 +2004,24 @@ Jetzt die benötigten Daten von Scryfall herunterladen?
 Ohne die Daten können Sie nur nutzererstellte Karten drucken, indem Sie die Bilddateien per Drag &amp; Drop in das Hauptfenster ziehen.</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="386"/>
+      <location filename="../../ui/main_window.py" line="418"/>
       <source>Document loading failed</source>
       <translation>Laden des Dokuments fehlgeschlagen</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="386"/>
+      <location filename="../../ui/main_window.py" line="418"/>
       <source>Loading file &quot;{failed_path}&quot; failed. The file was not recognized as a {program_name} document. If you want to load a deck list, use the &quot;{function_text}&quot; function instead.
 Reported failure reason: {reason}</source>
       <translation>Laden der Datei "{failed_path}" fehlgeschlagen. Die Datei wurde nicht als {program_name}-Dokument erkannt. Wenn Sie eine Deckliste laden möchten, verwenden Sie die "{function_text}"-Funktion stattdessen.
 Berichteter Fehlergrund: {reason}</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="399"/>
+      <location filename="../../ui/main_window.py" line="431"/>
       <source>Unavailable printings replaced</source>
       <translation>Nicht verfügbare Drucke ersetzt</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="399"/>
+      <location filename="../../ui/main_window.py" line="431"/>
       <source>The document contained %n unavailable printings of cards that were automatically replaced with other printings. The replaced printings are unavailable, because they match a configured card filter.</source>
       <translation>
         <numerusform>Das Dokument enthielt einen nicht verfügbaren Druck einer Karte, der automatisch durch einen anderen Druck ersetzt wurden. Der ausgetauschten Druck ist nicht verfügbar, da er mit einem konfigurierten Kartenfilter übereinstimmt.</numerusform>
@@ -1855,12 +2029,12 @@ Berichteter Fehlergrund: {reason}</translation>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="408"/>
+      <location filename="../../ui/main_window.py" line="440"/>
       <source>Unrecognized cards in loaded document found</source>
       <translation>Nicht erkannte Karten im geladenen Dokument gefunden</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="408"/>
+      <location filename="../../ui/main_window.py" line="440"/>
       <source>Skipped %n unrecognized cards in the loaded document. Saving the document will remove these entries permanently.
 
 The locally stored card data may be outdated or the document was tampered with.</source>
@@ -1874,12 +2048,12 @@ Die lokalen Kartendaten sind möglicherweise veraltet oder das Dokument wurde ma
       </translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="418"/>
+      <location filename="../../ui/main_window.py" line="450"/>
       <source>Application update available. Visit website?</source>
       <translation>Anwendungsaktualisierung verfügbar. Website besuchen?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="418"/>
+      <location filename="../../ui/main_window.py" line="450"/>
       <source>An application update is available: Version {newer_version}
 You are currently using version {current_version}.
 
@@ -1890,12 +2064,12 @@ Sie verwenden derzeit Version {current_version}.
 Die {program_name}-Webseite mit Ihrem Web-Browser besuchen, um die neue Version herunterzuladen?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="433"/>
+      <location filename="../../ui/main_window.py" line="465"/>
       <source>New card data available</source>
       <translation>Neue Kartendaten verfügbar</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="433"/>
+      <location filename="../../ui/main_window.py" line="465"/>
       <source>There are %n new printings available on Scryfall. Update the local data now?</source>
       <translation>
         <numerusform>Es ist %n neue Karte auf Scryfall verfügbar. Lokale Daten jetzt aktualisieren?</numerusform>
@@ -1903,27 +2077,27 @@ Die {program_name}-Webseite mit Ihrem Web-Browser besuchen, um die neue Version 
       </translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="449"/>
+      <location filename="../../ui/main_window.py" line="481"/>
       <source>Check for application updates?</source>
       <translation>Nach Anwendungsaktualisierungen suchen?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="449"/>
+      <location filename="../../ui/main_window.py" line="481"/>
       <source>Automatically check for application updates whenever you start {program_name}?</source>
       <translation>Beim Anwendungsstart automatisch nach Updates suchen?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="461"/>
+      <location filename="../../ui/main_window.py" line="493"/>
       <source>Check for card data updates?</source>
       <translation>Suche nach Kartendaten-Updates?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="461"/>
+      <location filename="../../ui/main_window.py" line="493"/>
       <source>Automatically check for card data updates on Scryfall whenever you start {program_name}?</source>
       <translation>Automatisch nach Kartenupdates auf Scryfall prüfen, wann immer Sie {program_name} starten?</translation>
     </message>
     <message>
-      <location filename="../../ui/main_window.py" line="471"/>
+      <location filename="../../ui/main_window.py" line="503"/>
       <source>{question}
 You can change this later in the settings.</source>
       <translation>{question}
@@ -1940,192 +2114,187 @@ Sie können dies später in den Einstellungen ändern.</translation>
       <translation>&amp;Datei</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="170"/>
+      <location filename="../ui/main_window.ui" line="185"/>
       <source>Settings</source>
       <translation>Einstellungen</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="59"/>
+      <location filename="../ui/main_window.ui" line="74"/>
       <source>Edit</source>
       <translation>Bearbeiten</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="301"/>
+      <location filename="../ui/main_window.ui" line="316"/>
       <source>Show toolbar</source>
       <translation>Werkzeugleiste anzeigen</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="109"/>
+      <location filename="../ui/main_window.ui" line="124"/>
       <source>&amp;Quit</source>
       <translation>&amp;Beenden</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="112"/>
+      <location filename="../ui/main_window.ui" line="127"/>
       <source>Ctrl+Q</source>
       <translation>Strg+Q</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="123"/>
+      <location filename="../ui/main_window.ui" line="138"/>
       <source>&amp;Print</source>
       <translation>&amp;Drucken</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="126"/>
+      <location filename="../ui/main_window.ui" line="141"/>
       <source>Print the current document</source>
       <translation>Aktuelles Dokument drucken</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="129"/>
+      <location filename="../ui/main_window.ui" line="144"/>
       <source>Ctrl+P</source>
       <translation>Strg+P</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="137"/>
+      <location filename="../ui/main_window.ui" line="152"/>
       <source>&amp;Show print preview</source>
       <translation>Druckvorschau</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="140"/>
+      <location filename="../ui/main_window.ui" line="155"/>
       <source>Show print preview window</source>
       <translation>Druckvorschau anzeigen</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="148"/>
+      <location filename="../ui/main_window.ui" line="163"/>
       <source>&amp;Create PDF</source>
       <translation>PDF erzeugen</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="151"/>
+      <location filename="../ui/main_window.ui" line="166"/>
       <source>Create a PDF document</source>
       <translation>Als PDF-Dokument exportieren</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="159"/>
+      <location filename="../ui/main_window.ui" line="174"/>
       <source>Discard page</source>
       <translation>Seite verwerfen</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="162"/>
+      <location filename="../ui/main_window.ui" line="177"/>
       <source>Discard this page.</source>
       <translation>Diese Seite verwerfen.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="181"/>
+      <location filename="../ui/main_window.ui" line="196"/>
       <source>Update card data</source>
       <translation>Kartendaten aktualisieren</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="189"/>
+      <location filename="../ui/main_window.ui" line="204"/>
       <source>New Page</source>
       <translation>Neue Seite</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="192"/>
+      <location filename="../ui/main_window.ui" line="207"/>
       <source>Add a new, empty page.</source>
       <translation>Neue, leere Seite hinzufügen.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="200"/>
+      <location filename="../ui/main_window.ui" line="215"/>
       <source>Save</source>
       <translation>Speichern</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="203"/>
+      <location filename="../ui/main_window.ui" line="218"/>
       <source>Ctrl+S</source>
       <translation>Strg+S</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="211"/>
+      <location filename="../ui/main_window.ui" line="226"/>
       <source>New</source>
       <translation>Neu</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="214"/>
+      <location filename="../ui/main_window.ui" line="229"/>
       <source>Ctrl+N</source>
       <translation>Strg+N</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="222"/>
+      <location filename="../ui/main_window.ui" line="237"/>
       <source>Load</source>
       <translation>Laden</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="225"/>
+      <location filename="../ui/main_window.ui" line="240"/>
       <source>Ctrl+L</source>
       <translation>Strg+L</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="233"/>
+      <location filename="../ui/main_window.ui" line="248"/>
       <source>Save as …</source>
       <translation>Speichern unter …</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="238"/>
+      <location filename="../ui/main_window.ui" line="253"/>
       <source>About …</source>
       <translation>Über …</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="246"/>
+      <location filename="../ui/main_window.ui" line="261"/>
       <source>Show Changelog</source>
       <translation>Änderungsprotokoll anzeigen</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="254"/>
+      <location filename="../ui/main_window.ui" line="269"/>
       <source>Compact document</source>
       <translation>Dokument kompaktieren</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="257"/>
+      <location filename="../ui/main_window.ui" line="272"/>
       <source>Minimize page count: Fill empty slots on pages by moving cards from the end of the document</source>
       <translation>Seitenzahl minimieren: Leerstellen auf Seiten durch das Verschieben von Karten vom Dokumentenende füllen</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="265"/>
+      <location filename="../ui/main_window.ui" line="280"/>
       <source>Edit document settings</source>
       <translation>Einstellungen dieses Dokuments</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="268"/>
+      <location filename="../ui/main_window.ui" line="283"/>
       <source>Configure page size, margins, image spacings for the currently edited document.</source>
       <translation>Einstellungen des aktuellen Dokuments, wie Papiergröße, Rand- und Bildabstände anpassen.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="276"/>
-      <source>Import Deck list</source>
-      <translation>Deckliste importieren</translation>
-    </message>
-    <message>
-      <location filename="../ui/main_window.ui" line="279"/>
+      <location filename="../ui/main_window.ui" line="294"/>
       <source>Import a deck list from online sources</source>
       <translation>Eine Deckliste aus dem Internet importieren</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="287"/>
+      <location filename="../ui/main_window.ui" line="302"/>
       <source>Cleanup card images</source>
       <translation>Kartenbilder bereinigen/löschen</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="290"/>
+      <location filename="../ui/main_window.ui" line="305"/>
       <source>Delete locally stored card images you no longer need.</source>
       <translation>Nicht mehr benötigte, gespeicherte Kartenbilder löschen.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="304"/>
+      <location filename="../ui/main_window.ui" line="319"/>
       <source>Ctrl+M</source>
       <translation>Strg+M</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="312"/>
+      <location filename="../ui/main_window.ui" line="327"/>
       <source>Download missing card images</source>
       <translation>Fehlende Kartenbilder herunterladen</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="320"/>
+      <location filename="../ui/main_window.ui" line="335"/>
       <source>Shuffle document</source>
       <translation>Dokument mischen</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="323"/>
+      <location filename="../ui/main_window.ui" line="338"/>
       <source>Randomly rearrange all card image.
 If you want to quickly print a full deck for playing,
 use this to reduce the initial deck shuffling required</source>
@@ -2134,111 +2303,132 @@ Wenn Sie schnell ein komplettes Deck für das Spielen drucken möchten,
 können Sie dies verwenden, um den Aufwand beim initialen Mischen zu reduzieren</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="336"/>
+      <location filename="../ui/main_window.ui" line="351"/>
       <source>Undo</source>
       <translation>Rückgängig</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="347"/>
+      <location filename="../ui/main_window.ui" line="362"/>
       <source>Redo</source>
       <translation>Wiederholen</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="355"/>
+      <location filename="../ui/main_window.ui" line="291"/>
+      <source>Import deck list</source>
+      <translation>Deckliste importieren</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="370"/>
       <source>Add empty card to page</source>
       <translation>Leere Karte zur Seite hinzufügen</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="358"/>
+      <location filename="../ui/main_window.ui" line="373"/>
       <source>Add an empty spacer filling a card slot</source>
       <translation>Ein Feld auf der aktuellen Seite leer halten</translation>
     </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="381"/>
+      <source>Add custom cards</source>
+      <translation>Inoffizielle Karten hinzufügen</translation>
+    </message>
+    <message>
+      <location filename="../../ui/main_window.py" line="314"/>
+      <source>exporting as a PNG image sequence</source>
+      <comment>This is passed as the {action} when asking the user about compacting the document if that can save pages</comment>
+      <translation>exportieren als PNG-Bildsequenz</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="392"/>
+      <source>Export document as an image sequence</source>
+      <translation>Dokument als Bildsequenz exportieren</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="403"/>
+      <source>Export all card images to a directory</source>
+      <translation>Alle Kartenbilder in ein Verzeichnis exportieren</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="35"/>
+      <source>Export</source>
+      <translation>Exportieren …</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="60"/>
+      <source>Application</source>
+      <translation>Anwendung</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="389"/>
+      <source>Export as image sequence</source>
+      <translation>Als Bildsequenz exportieren</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="400"/>
+      <source>Export individual card images</source>
+      <translation>Einzelne Kartenbilder exportieren</translation>
+    </message>
   </context>
   <context>
-    <name>PDFSettingsPage</name>
+    <name>PNGRenderer</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="558"/>
-      <source>PDF export settings</source>
-      <translation>PDF-Exporteinstellungen</translation>
+      <location filename="../../print.py" line="85"/>
+      <source>Export as PNGs</source>
+      <translation>Als PNGs exportieren</translation>
+    </message>
+  </context>
+  <context>
+    <name>PageCardTableView</name>
+    <message numerus="yes">
+      <location filename="../../ui/page_card_table_view.py" line="128"/>
+      <source>Add %n copies</source>
+      <comment>Context menu action: Add additional card copies to the document</comment>
+      <translation>
+        <numerusform>Kopie hinzufügen</numerusform>
+        <numerusform>%n Kopien hinzufügen</numerusform>
+      </translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="558"/>
-      <source>Configure the PDF export</source>
-      <translation>PDF-Export konfigurieren</translation>
+      <location filename="../../ui/page_card_table_view.py" line="134"/>
+      <source>Add copies …</source>
+      <comment>Context menu action: Add additional card copies to the document. User will be asked for a number</comment>
+      <translation>Kopien hinzufügen …</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="592"/>
-      <source>Select default PDF export location</source>
-      <translation>Standardpfad für PDF-Exporte auswählen</translation>
+      <location filename="../../ui/page_card_table_view.py" line="121"/>
+      <source>Generate DFC check card</source>
+      <translation>Platzhalterkarte generieren</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="17"/>
-      <source>If set, use this as the default location for saving exported PDF documents.</source>
-      <translation>Wenn gesetzt, verwende dies als Standard-Speicherort für exportierte PDFs.</translation>
+      <location filename="../../ui/page_card_table_view.py" line="148"/>
+      <source>All related cards</source>
+      <translation>Alle zugehörigen Karten</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="23"/>
-      <source>Path to a directory</source>
-      <translation>Pfad zu einem Verzeichnis</translation>
+      <location filename="../../ui/page_card_table_view.py" line="156"/>
+      <source>Add copies</source>
+      <translation>Kopien hinzufügen</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="46"/>
-      <source>PDF export path</source>
-      <translation>PDF-Exportpfad</translation>
+      <location filename="../../ui/page_card_table_view.py" line="156"/>
+      <source>Add copies of {card_name}</source>
+      <comment>Asks the user for a number. Does not need plural forms</comment>
+      <translation>Kopien von {card_name} hinzufügen</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="56"/>
-      <source>Browse…</source>
-      <translation>Durchsuchen …</translation>
+      <location filename="../../ui/page_card_table_view.py" line="182"/>
+      <source>Export image</source>
+      <translation>Bild exportieren</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="96"/>
-      <source>Automatically split PDF documents, if they get longer than this many pages.
-Set to zero to disable splitting.
-
-
-When printing PDFs using a USB flash drive directly connected to the printer,
-the printer may refuse to print documents exceeding some arbitrary size limit.
-To work around this limitation, you can enable this option,
-and limit the number of pages per PDF. If the document has more pages,
-it will be exported into multiple PDF documents automatically.</source>
-      <translation>PDF-Dokumente automatisch aufteilen, wenn sie länger als diese Anzahl von Seiten werden.
-Setzen Sie den Wert auf Null, um dies zu deaktivieren.
-
-
-Wenn Sie PDF-Dokumente über ein direkt an den Drucker angeschlossenes USB-Flash-Laufwerk drucken,
-weigert sich der Drucker möglicherweise, Dokumente zu drucken, die eine gewisse Größenbeschränkung überschreiten.
-Um diese Einschränkung zu umgehen, können Sie diese Option aktivieren,
-und die Anzahl der Seiten pro PDF begrenzen. Wenn das Dokument mehr Seiten hat,
-wird es automatisch in mehrere PDF-Dokumente exportiert.</translation>
+      <location filename="../../ui/page_card_table_view.py" line="197"/>
+      <source>Save card image</source>
+      <translation>Kartenbild speichern</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="80"/>
-      <source>Split PDF documents longer than</source>
-      <translation>PDF-Dokumente länger als … aufteilen</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="107"/>
-      <source> pages</source>
-      <translation> Seiten</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="117"/>
-      <source>If enabled, landscape documents are rotated by 90° to portrait mode during export.
-Enable this, if printing from PDFs in landscape format results in portrait printouts with cropped-off sides.
-
-Enabling this may cause the cut helper lines to flicker or not show in some PDF viewers.
-So only enable this, if actually required.</source>
-      <translation>Wenn aktiviert, werden Querformat-Dokumente stattdessen im Hochformat mit allen Inhalten um 90° gedreht exportiert.
-Aktivieren Sie dies, wenn das Drucken von Querformat-PDFs zu Ausdrucken im Hochformat mit abgeschnittenen Seiten führt.
-
-Aktivieren kann dazu führen, dass die Schnitthelfslinien in einigen PDF-Anzeigeprogrammen fehlerhaft oder gar nicht angezeigt werden.
-Aktivieren Sie dies also nur, wenn es tatsächlich erforderlich ist.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="124"/>
-      <source>Enable landscape workaround: Rotate landscape PDFs by 90°</source>
-      <translation>Querformat-Workaround: Querformat-Dokumente um 90° drehen</translation>
+      <location filename="../../ui/page_card_table_view.py" line="197"/>
+      <source>Images (*.png *.bmp *.jpg)</source>
+      <translation>Bilder (*.png *.bmp *.jpg)</translation>
     </message>
   </context>
   <context>
@@ -2262,7 +2452,7 @@ Aktivieren Sie dies also nur, wenn es tatsächlich erforderlich ist.</translatio
   <context>
     <name>PageConfigWidget</name>
     <message numerus="yes">
-      <location filename="../../ui/page_config_widget.py" line="102"/>
+      <location filename="../../ui/page_config_widget.py" line="137"/>
       <source>%n regular card(s)</source>
       <comment>Display of the resulting page capacity for regular-sized cards</comment>
       <translation>
@@ -2271,7 +2461,7 @@ Aktivieren Sie dies also nur, wenn es tatsächlich erforderlich ist.</translatio
       </translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/page_config_widget.py" line="106"/>
+      <location filename="../../ui/page_config_widget.py" line="141"/>
       <source>%n oversized card(s)</source>
       <comment>Display of the resulting page capacity for oversized cards</comment>
       <translation>
@@ -2280,7 +2470,7 @@ Aktivieren Sie dies also nur, wenn es tatsächlich erforderlich ist.</translatio
       </translation>
     </message>
     <message>
-      <location filename="../../ui/page_config_widget.py" line="111"/>
+      <location filename="../../ui/page_config_widget.py" line="146"/>
       <source>{regular_text}, {oversized_text}</source>
       <comment>Combination of the page capacities for regular, and oversized cards</comment>
       <translation>{regular_text}, {oversized_text}</translation>
@@ -2298,17 +2488,17 @@ based on the page size and spacings configured</source>
 basierend auf der Seitengröße und den konfigurierten Rand- und Kartenabständen</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="57"/>
+      <location filename="../ui/page_config_widget.ui" line="179"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mindestspanne zwischen dem linken Papierrand und dem Seiteninhalt.&lt;/p&gt;&lt;p&gt;Die meisten Drucker haben eine Mindestspanne von 3 bis 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="423"/>
+      <location filename="../ui/page_config_widget.ui" line="453"/>
       <source> mm</source>
       <translation> mm</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="76"/>
+      <location filename="../ui/page_config_widget.ui" line="330"/>
       <source>Paper height in millimeters.
 Must match the size of the sheets in the printer.
 Otherwise, scaling may be applied by the printer driver.</source>
@@ -2317,37 +2507,37 @@ Muss mit der Größe der Blätter im Drucker übereinstimmen.
 Andernfalls könnte der Druckertreiber das Dokument skalieren.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="94"/>
+      <location filename="../ui/page_config_widget.ui" line="311"/>
       <source>Top margin</source>
       <translation>Oberer Rand</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="113"/>
+      <location filename="../ui/page_config_widget.ui" line="50"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the right paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mindestspanne zwischen dem rechten Papierrand und dem Seiteninhalt.&lt;/p&gt;&lt;p&gt;Die meisten Drucker haben eine Mindestspanne von 3 bis 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="126"/>
+      <location filename="../ui/page_config_widget.ui" line="150"/>
       <source>If enabled, the page number is printed on each page. Makes it easier to notice missing pages in a stack.</source>
       <translation>Wenn aktiviert, wird die Seitennummer auf jeder Seite ausgedruckt. Dadurch wird es einfacher, fehlende Seiten in einem Stapel zu bemerken.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="129"/>
+      <location filename="../ui/page_config_widget.ui" line="153"/>
       <source>Print page numbers</source>
       <translation>Seitennummern drucken</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="136"/>
+      <location filename="../ui/page_config_widget.ui" line="278"/>
       <source>Resulting page capacity:</source>
       <translation>Seitenkapazität:</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="146"/>
+      <location filename="../ui/page_config_widget.ui" line="396"/>
       <source>Card bleed</source>
       <translation>Kartenumrandung</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="165"/>
+      <location filename="../ui/page_config_widget.ui" line="448"/>
       <source>Paper width in millimeters.
 Must match the size of the sheets in the printer.
 Otherwise, scaling may be applied by the printer driver.</source>
@@ -2356,17 +2546,17 @@ Muss mit der Größe der Blätter im Drucker übereinstimmen.
 Andernfalls könnte der Druckertreiber das Dokument skalieren.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="183"/>
+      <location filename="../ui/page_config_widget.ui" line="301"/>
       <source>Enable printing additional lines to aid cutting the printed sheets.</source>
       <translation>Aktivieren Sie das Drucken zusätzlicher Schneidhilfslinien, um das Schneiden der gedruckten Seiten zu erleichtern.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="186"/>
+      <location filename="../ui/page_config_widget.ui" line="304"/>
       <source>Print cut markers</source>
       <translation>Schnittmarkierungen drucken</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="199"/>
+      <location filename="../ui/page_config_widget.ui" line="250"/>
       <source>Space between image rows in mm.
 If set to zero, you only need one cut to separate two images,
 otherwise you need two cuts but require less precision hitting the exact middle.</source>
@@ -2375,27 +2565,27 @@ Wenn Sie diesen Wert auf null setzen, benötigen Sie nur einen Schnitt, um zwei 
 Andernfalls sind zwei Schnitte erforderlich, die jedoch weniger Präzision erfordern.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="214"/>
+      <location filename="../ui/page_config_widget.ui" line="409"/>
       <source>Draw 90° card corners, instead of round ones</source>
       <translation>90°-Kartenecken zeichnen</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="227"/>
+      <location filename="../ui/page_config_widget.ui" line="354"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mindestabstand zwischen dem oberen Papierrand und dem Seiteninhalt.&lt;/p&gt;&lt;p&gt;Die meisten Drucker haben einen Mindestabstand von 3 bis 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="240"/>
+      <location filename="../ui/page_config_widget.ui" line="386"/>
       <source>Document name</source>
       <translation>Dokumentenname</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="250"/>
+      <location filename="../ui/page_config_widget.ui" line="224"/>
       <source>Row spacing</source>
       <translation>Zeilenabstand</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="263"/>
+      <location filename="../ui/page_config_widget.ui" line="367"/>
       <source>The document name is printed on each page and can help you keep track
 of different printed sheets and to which deck they belong.
 
@@ -2404,32 +2594,27 @@ Leave empty to disable.</source>
 um Stapel gedruckter Seiten auseinanderhalten zu können.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="272"/>
+      <location filename="../ui/page_config_widget.ui" line="376"/>
       <source>Document/deck name</source>
       <translation>Dokument-/Deckname</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="282"/>
-      <source>Page height</source>
-      <translation>Seitenhöhe</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="295"/>
+      <location filename="../ui/page_config_widget.ui" line="416"/>
       <source>Draw an additional border around cards to ease cutting.</source>
       <translation>Einen zusätzlichen Rand um die Karten zeichnen, um das Schneiden zu erleichtern.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="308"/>
+      <location filename="../ui/page_config_widget.ui" line="265"/>
       <source>Bottom Margin</source>
       <translation>Unterer Rand</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="321"/>
+      <location filename="../ui/page_config_widget.ui" line="160"/>
       <source>Left margin</source>
       <translation>Linker Rand</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="340"/>
+      <location filename="../ui/page_config_widget.ui" line="96"/>
       <source>Space between image columns in mm.
 If set to zero, you only need one cut to separate two images,
 otherwise you need two cuts but require less precision hitting the exact middle.</source>
@@ -2438,39 +2623,49 @@ Wenn Sie diesen Wert auf null setzen, benötigen Sie nur einen Schnitt, um zwei 
 Andernfalls sind zwei Schnitte erforderlich, die jedoch weniger Präzision erfordern.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="361"/>
+      <location filename="../ui/page_config_widget.ui" line="117"/>
       <source>Switch between portrait and landscape mode</source>
       <translation>Zwischen Hoch- und Querformat wechseln</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="364"/>
+      <location filename="../ui/page_config_widget.ui" line="120"/>
       <source>Flip</source>
       <translation>Drehen</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="375"/>
+      <location filename="../ui/page_config_widget.ui" line="130"/>
       <source>Column spacing</source>
       <translation>Spaltenabstand</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="388"/>
+      <location filename="../ui/page_config_widget.ui" line="288"/>
       <source>Right margin</source>
       <translation>Rechter Rand</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="401"/>
-      <source>Page width</source>
-      <translation>Seitenbreite</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="420"/>
+      <location filename="../ui/page_config_widget.ui" line="211"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mindestabstand zwischen dem unteren Papierrand und dem Seiteninhalt.&lt;/p&gt;&lt;p&gt;Die meisten Drucker haben einen Mindestabstand von 3 bis 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="448"/>
+      <location filename="../ui/page_config_widget.ui" line="78"/>
       <source>Show Preview</source>
       <translation>Vorschau anzeigen</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="143"/>
+      <source>Paper size</source>
+      <translation>Papierformat</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="192"/>
+      <source>Paper height</source>
+      <translation>Seitenhöhe</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="429"/>
+      <source>Paper width</source>
+      <translation>Seitenbreite</translation>
     </message>
   </context>
   <context>
@@ -2490,7 +2685,7 @@ Zoom aus: {zoom_out_shortcuts}</translation>
   <context>
     <name>ParserBase</name>
     <message>
-      <location filename="../../decklist_parser/common.py" line="68"/>
+      <location filename="../../decklist_parser/common.py" line="71"/>
       <source>All files (*)</source>
       <translation>Alle Dateien (*)</translation>
     </message>
@@ -2498,7 +2693,7 @@ Zoom aus: {zoom_out_shortcuts}</translation>
   <context>
     <name>PrettySetListModel</name>
     <message>
-      <location filename="../../model/string_list.py" line="37"/>
+      <location filename="../../model/string_list.py" line="36"/>
       <source>Set</source>
       <comment>MTG set name</comment>
       <translation>Set</translation>
@@ -2507,44 +2702,14 @@ Zoom aus: {zoom_out_shortcuts}</translation>
   <context>
     <name>PrinterSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="507"/>
+      <location filename="../../ui/settings_window_pages.py" line="508"/>
       <source>Printer settings</source>
       <translation>Druckereinstellungen</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="507"/>
+      <location filename="../../ui/settings_window_pages.py" line="508"/>
       <source>Configure the printer</source>
       <translation>Drucker konfigurieren</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/printer_settings_page.ui" line="17"/>
-      <source>Horizontal printing offset</source>
-      <translation>Horizontaler Druckversatz</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/printer_settings_page.ui" line="24"/>
-      <source>Globally shifts the printing area to correct physical offsets in the printer.
-Positive values shift to the right.
-Negative offsets shift to the left.</source>
-      <translation>Verschiebt den Druckbereich, um einen physikalischen Versatz im Drucker auszugleichen und die Zentrierung zu verbessern.
-Positive Werte verschieben nach rechts, negative nach links.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/printer_settings_page.ui" line="32"/>
-      <source> mm</source>
-      <translation> mm</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/printer_settings_page.ui" line="48"/>
-      <source>If enabled, print landscape documents in portrait mode with all content rotated by 90°.
-Enable this, if printing landscape documents results in portrait printouts with cropped-off sides.</source>
-      <translation>Wenn aktiviert, werden Querformat-Dokumente stattdessen im Hochformat mit allen Inhalten um 90° gedreht ausgedruckt.
-Aktivieren Sie dies, wenn das Drucken von Querformat-Dokumenten zu Ausdrucken im Hochformat mit abgeschnittenen Seiten führt.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/printer_settings_page.ui" line="52"/>
-      <source>Enable landscape workaround: Rotate prints by 90°</source>
-      <translation>Querformat-Workaround: Drucke um 90° drehen</translation>
     </message>
     <message>
       <location filename="../ui/settings_window/printer_settings_page.ui" line="62"/>
@@ -2564,11 +2729,41 @@ Dies sollte die Kompatibilität erhöhen, allerdings auf Kosten des Zeichnens k�
       <source>Configure printer for borderless printing</source>
       <translation>Drucker auf randloses Drucken einstellen</translation>
     </message>
+    <message>
+      <location filename="../ui/settings_window/printer_settings_page.ui" line="48"/>
+      <source>If enabled, print landscape documents in portrait mode with all content rotated by 90°.
+Enable this, if printing landscape documents results in portrait printouts with cropped-off sides.</source>
+      <translation>Wenn aktiviert, werden Querformat-Dokumente stattdessen im Hochformat mit allen Inhalten um 90° gedreht ausgedruckt.
+Aktivieren Sie dies, wenn das Drucken von Querformat-Dokumenten zu Ausdrucken im Hochformat mit abgeschnittenen Seiten führt.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/printer_settings_page.ui" line="52"/>
+      <source>Enable landscape workaround: Rotate prints by 90°</source>
+      <translation>Querformat-Workaround: Drucke um 90° drehen</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/printer_settings_page.ui" line="17"/>
+      <source>Horizontal printing offset</source>
+      <translation>Horizontaler Druckversatz</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/printer_settings_page.ui" line="24"/>
+      <source>Globally shifts the printing area to correct physical offsets in the printer.
+Positive values shift to the right.
+Negative offsets shift to the left.</source>
+      <translation>Verschiebt den Druckbereich, um einen physikalischen Versatz im Drucker auszugleichen und die Zentrierung zu verbessern.
+Positive Werte verschieben nach rechts, negative nach links.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/printer_settings_page.ui" line="32"/>
+      <source> mm</source>
+      <translation> mm</translation>
+    </message>
   </context>
   <context>
     <name>PrintingFilterUpdater.store_current_printing_filters()</name>
     <message>
-      <location filename="../../printing_filter_updater.py" line="119"/>
+      <location filename="../../printing_filter_updater.py" line="118"/>
       <source>Processing updated card filters:</source>
       <translation>Verarbeite aktualisierte Kartenfilter:</translation>
     </message>
@@ -2576,7 +2771,7 @@ Dies sollte die Kompatibilität erhöhen, allerdings auf Kosten des Zeichnens k�
   <context>
     <name>SaveDocumentAsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="133"/>
+      <location filename="../../ui/dialogs.py" line="190"/>
       <source>Save document as …</source>
       <translation>Dokument speichern unter …</translation>
     </message>
@@ -2584,20 +2779,33 @@ Dies sollte die Kompatibilität erhöhen, allerdings auf Kosten des Zeichnens k�
   <context>
     <name>SavePDFDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="79"/>
+      <location filename="../../ui/dialogs.py" line="91"/>
       <source>Export as PDF</source>
       <translation>Als PDF exportieren</translation>
     </message>
     <message>
-      <location filename="../../ui/dialogs.py" line="80"/>
+      <location filename="../../ui/dialogs.py" line="92"/>
       <source>PDF documents (*.pdf)</source>
       <translation>PDF-Dokument (*.pdf)</translation>
     </message>
   </context>
   <context>
+    <name>SavePNGDialog</name>
+    <message>
+      <location filename="../../ui/dialogs.py" line="133"/>
+      <source>Export as PNG</source>
+      <translation>Als PNG exportieren</translation>
+    </message>
+    <message>
+      <location filename="../../ui/dialogs.py" line="134"/>
+      <source>PNG images (*.png)</source>
+      <translation>PNG-Bilder (*.png)</translation>
+    </message>
+  </context>
+  <context>
     <name>ScryfallCSVParser</name>
     <message>
-      <location filename="../../decklist_parser/csv_parsers.py" line="117"/>
+      <location filename="../../decklist_parser/csv_parsers.py" line="118"/>
       <source>Scryfall CSV export</source>
       <translation>Scryfall CSV-Export</translation>
     </message>
@@ -2615,7 +2823,7 @@ Dies sollte die Kompatibilität erhöhen, allerdings auf Kosten des Zeichnens k�
       <translation>Wählen Sie aus, welche Art von Deckliste Sie importieren möchten.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="23"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="228"/>
       <source>Deck list files, stored in XMage’s native format.
 Because XMage closely follows Scryfall regarding Magic sets,
 this should give very accurate results.</source>
@@ -2624,34 +2832,34 @@ Da XMage in Bezug auf Magic-Sets eng an Scryfall angelehnt ist,
 sollte dies sehr genaue Ergebnisse liefern.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="28"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="233"/>
       <source>XMage</source>
       <translation>XMage</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="38"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="69"/>
       <source>This is a Tappedout-specific section of the deck.
 It may contain the deck list author’s buy-list or anything else.</source>
       <translation>Dies ist ein Tappedout-spezifischer Abschnitt des Decks.
 Er kann die Kaufliste des Autors oder irgendetwas anderes enthalten.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="42"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="73"/>
       <source>Include “Acquire-Board”</source>
       <translation>„Ankaufliste“ einschließen</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="49"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="240"/>
       <source>The simplistic format used by Magic Online. It does not specify exact printings, so may not give the best results.</source>
       <translation>Das einfache Format, das von Magic Online verwendet wird und keine genauen Ausdrucke angibt. Liefert daher nicht die besten Ergebnisse.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="52"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="243"/>
       <source>Magic Online</source>
       <translation>Magic-Online</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="94"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="26"/>
       <source>This is a Tappedout-specific section of the deck.
 It may contain cards that the deck list creator considers for inclusion, based on the meta
 or any other preference, like card price.</source>
@@ -2659,12 +2867,12 @@ or any other preference, like card price.</source>
 Er könnte Karten enthalten, die der Ersteller der Liste in Erwägung zieht, basierend auf der Meta oder anderen Präferenzen, wie z. B. dem Kartenpreis.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="99"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="31"/>
       <source>Include “Maybe-Board”</source>
       <translation>"Maybe-Board" einschließen</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="106"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="54"/>
       <source>CSV exports from Scryfall’s own deck builder.
 Gives very accurate results, unless the imported deck list contains ignored items
 matching an enabled card filter.</source>
@@ -2672,64 +2880,64 @@ matching an enabled card filter.</source>
 Ergibt sehr genaue Ergebnisse, es sei denn, die importierte Deckliste enthält durch Kartenfilter versteckte Drucke.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="111"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="59"/>
       <source>Scryfall.com deck lists (CSV export)</source>
       <translation>Scryfall.com Decklisten (CSV-Export)</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="131"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="257"/>
       <source>CSV exports can be downloaded from Tappedout by choosing the appropriate deck export option.</source>
       <translation>CSV-Exporte können von Tappedout heruntergeladen werden, indem Sie die entsprechende Deck-Export-Option wählen.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="134"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="260"/>
       <source>tappedout.net deck list (CSV export)</source>
       <translation>tappedout.net Deckliste (CSV-Export)</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="146"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="154"/>
       <source>Appends a sample matcher for a set code to the input field above.</source>
       <translation>Fügt einen Beispiel-Matcher für ein Setkürzel dem obigen Eingabefeld zu.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="149"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="157"/>
       <source>Set code matcher</source>
       <translation>Set-Matcher einfügen</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="159"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="99"/>
       <source>Appends a sample matcher for a collector number to the input field above</source>
       <translation>Fügt einen Beispiel-Matcher für eine Sammlernummer dem obigen Eingabefeld zu</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="162"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="102"/>
       <source>Collector number matcher</source>
       <translation>Matcher für Sammlernummer einfügen</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="172"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="140"/>
       <source>Appends a matcher for the number of card copies to the input field above.
 If a card count field is not present in the deck list, 1 card copy per line is assumed</source>
       <translation>Fügt einen Matcher für die Kartenanzahl an das obige Eingabefeld an.
 Wenn ein Feld für die Anzahl nicht vorhanden ist, wird eine Karte pro Zeile angenommen</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="176"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="144"/>
       <source>Copies matcher</source>
       <translation>Matcher für Kopien</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="186"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="112"/>
       <source>Appends a matcher for a card name to the input field above.</source>
       <translation>Fügt einen Matcher für einen Kartennamen dem obigen Eingabefeld zu.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="189"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="115"/>
       <source>Card name matcher</source>
       <translation>Matcher für Kartenname</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="199"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="125"/>
       <source>Appends a matcher for the Scryfall ID to the input field above.
 This may be used by deck lists that closely integrate with the Scryfall website.
 Most deck lists won’t use this.</source>
@@ -2738,24 +2946,24 @@ Dies kann von Decklisten verwendet werden, die sich eng mit der Scryfall-Website
 Die meisten Decklisten werden dies nicht verwenden.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="204"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="130"/>
       <source>Scryfall ID matcher</source>
       <translation>Matcher für Scryfall ID</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="214"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="85"/>
       <source>Appends a matcher for the  card language to the input field above.
 If a language field is not present in the deck list, the card language is guessed.</source>
       <translation>Fügt einen Matcher für die Kartensprache an das obige Eingabefeld an.
 Wenn ein Sprachfeld in der Deckliste nicht vorhanden ist, wird die Kartensprache erraten.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="218"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="89"/>
       <source>Language matcher</source>
       <translation>Matcher für Sprache</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="227"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="267"/>
       <source>Specify a custom regular expression in the input field below. It will be used to parse each deck list line.
 You can use the buttons below to insert basic building blocks.
 You have to separate them with the “control structures”, like spaces, as used in your deck list.</source>
@@ -2764,12 +2972,12 @@ Sie können die Schaltflächen unten benutzen, um Grundbausteine einzufügen.
 Sie müssen die Bausteine mit den „Kontrollstrukturen“ des Listenformats trennen, wie z.B. Leerzeichen, genau so, wie sie in Ihrer Deckliste verwendet werden.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="232"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="272"/>
       <source>Custom regular expression based parser:</source>
       <translation>Benutzerdefinierter Parser basierend auf regulären Ausdrücken:</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="268"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="216"/>
       <source>Magic Arena and exports from compatible websites, like moxfield.com
 Note that this option is not limited to cards in Standard/Historic,
 as the format works for any card.</source>
@@ -2778,12 +2986,12 @@ Beachten Sie, dass diese Option nicht auf Karten in Standard/Historic beschränk
 da das Format für jede Karte funktioniert.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="273"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="221"/>
       <source>MTG Arena</source>
       <translation>MTG Arena</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="283"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="167"/>
       <source>Enter a Regular Expression containing at least one supported, named group.
 
 Supported named groups are: {group_names}
@@ -2796,7 +3004,7 @@ Unterstützte benannte Gruppen sind: {group_names}
 Siehe "Was ist das?"-Hilfe (?-Button) für Details.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="290"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="174"/>
       <source>You can enter a custom Regular Expression (in Python syntax) to parse the lines of your deck list. Use *named groups* to extract the individual card properties from the individual lines of the deck list.
 A named group looks like this:
 **(?P\&lt;GroupName&gt;RE)**, where RE is a Regular Expression matching the part you want to extract, and GroupName is one of the following:
@@ -2823,9 +3031,32 @@ Nicht alle Gruppen sind für eine erfolgreiche Identifizierung erforderlich. Zum
 Tipp: Möglicherweise möchten Sie einen Online-Editor für reguläre Ausdrücke verwenden, wie z.B. [](https://regex101.com/).</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="317"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="250"/>
       <source>Magic Workstation Deck Data (mwDeck)</source>
       <translation>Magic Workstation Deck Data (mwDeck)</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="308"/>
+      <source>A simple list, containing one card name per line</source>
+      <translation>Eine einfache Liste mit einem Kartennamen pro Zeile</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="311"/>
+      <source>List with card names</source>
+      <translation>Liste mit Kartennamen</translation>
+    </message>
+  </context>
+  <context>
+    <name>SetEditor</name>
+    <message>
+      <location filename="../ui/set_editor_widget.ui" line="35"/>
+      <source>Set name</source>
+      <translation>Setname</translation>
+    </message>
+    <message>
+      <location filename="../ui/set_editor_widget.ui" line="61"/>
+      <source>CODE</source>
+      <translation>CODE</translation>
     </message>
   </context>
   <context>
@@ -2890,18 +3121,8 @@ Neue Einstellungen auf das aktuelle Dokument anwenden?</translation>
   </context>
   <context>
     <name>SummaryPage</name>
-    <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="452"/>
-      <source>Images about to be deleted: {count}</source>
-      <translation>Zu löschende Bilder: {count}</translation>
-    </message>
-    <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="453"/>
-      <source>Disk space that will be freed: {disk_space_freed}</source>
-      <translation>Frei werdender Speicherplatz: {disk_space_freed}</translation>
-    </message>
     <message numerus="yes">
-      <location filename="../../ui/deck_import_wizard.py" line="470"/>
+      <location filename="../../ui/deck_import_wizard.py" line="479"/>
       <source>Beware: The card list currently contains %n potentially oversized card(s).</source>
       <comment>Warning emitted, if at least 1 card has the oversized flag set. The Scryfall server *may* still return a regular-sized image, so not *all* printings marked as oversized are actually so when fetched.</comment>
       <translation>
@@ -2910,34 +3131,44 @@ Neue Einstellungen auf das aktuelle Dokument anwenden?</translation>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="490"/>
+      <location filename="../../ui/deck_import_wizard.py" line="499"/>
       <source>Replace document content with the identified cards</source>
       <translation>Dokumenteninhalt durch identifizierte Karten ersetzen</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="493"/>
+      <location filename="../../ui/deck_import_wizard.py" line="502"/>
       <source>Append identified cards to the document</source>
       <translation>Identifizierte Karten an das Dokument anhängen</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="544"/>
+      <location filename="../../ui/deck_import_wizard.py" line="538"/>
       <source>Remove basic lands</source>
       <translation>Standardländer entfernen</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="545"/>
+      <location filename="../../ui/deck_import_wizard.py" line="539"/>
       <source>Remove all basic lands in the deck list above</source>
       <translation>Entferne alle Standardländer in der obrigen Deckliste</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="550"/>
+      <location filename="../../ui/deck_import_wizard.py" line="544"/>
       <source>Remove selected</source>
       <translation>Ausgewählte entfernen</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="551"/>
+      <location filename="../../ui/deck_import_wizard.py" line="545"/>
       <source>Remove all selected cards in the deck list above</source>
       <translation>Entferne alle ausgewählten Karten in der obrigen Deckliste</translation>
+    </message>
+    <message>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="438"/>
+      <source>Images about to be deleted: {count}</source>
+      <translation>Zu löschende Bilder: {count}</translation>
+    </message>
+    <message>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="439"/>
+      <source>Disk space that will be freed: {disk_space_freed}</source>
+      <translation>Frei werdender Speicherplatz: {disk_space_freed}</translation>
     </message>
     <message>
       <location filename="../ui/cache_cleanup_wizard/summary_page.ui" line="14"/>
@@ -3000,12 +3231,12 @@ Wenn nicht ausgewählt, füge die unten gefundenen Karten dem Dokument an.</tran
       <translation>Aktuelle Seite</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/tabbed_vertical.ui" line="92"/>
+      <location filename="../ui/central_widget/tabbed_vertical.ui" line="89"/>
       <source>Remove selected</source>
       <translation>Ausgewählte entfernen</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/tabbed_vertical.ui" line="103"/>
+      <location filename="../ui/central_widget/tabbed_vertical.ui" line="100"/>
       <source>Preview</source>
       <translation>Vorschau</translation>
     </message>
@@ -3013,7 +3244,7 @@ Wenn nicht ausgewählt, füge die unten gefundenen Karten dem Dokument an.</tran
   <context>
     <name>TappedOutCSVParser</name>
     <message>
-      <location filename="../../decklist_parser/csv_parsers.py" line="196"/>
+      <location filename="../../decklist_parser/csv_parsers.py" line="197"/>
       <source>Tappedout CSV export</source>
       <translation>Tappedout CSV-Export</translation>
     </message>
@@ -3021,27 +3252,27 @@ Wenn nicht ausgewählt, füge die unten gefundenen Karten dem Dokument an.</tran
   <context>
     <name>UnknownCardImageModel</name>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="270"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="256"/>
       <source>Scryfall ID</source>
       <translation>Scryfall ID</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="271"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="257"/>
       <source>Front/Back</source>
       <translation>Vorder-/Rückseite</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="272"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="258"/>
       <source>High resolution?</source>
       <translation>Hohe Qualität?</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="273"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="259"/>
       <source>Size</source>
       <translation>Größe</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="274"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="260"/>
       <source>Path</source>
       <translation>Dateipfad</translation>
     </message>
@@ -3049,22 +3280,22 @@ Wenn nicht ausgewählt, füge die unten gefundenen Karten dem Dokument an.</tran
   <context>
     <name>UnknownCardRow</name>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="244"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="230"/>
       <source>Front</source>
       <translation>Vorderseite</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="244"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="230"/>
       <source>Back</source>
       <translation>Rückseite</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="250"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="236"/>
       <source>Yes</source>
       <translation>Ja</translation>
     </message>
     <message>
-      <location filename="../../ui/cache_cleanup_wizard.py" line="250"/>
+      <location filename="../../ui/cache_cleanup_wizard.py" line="236"/>
       <source>No</source>
       <translation>Nein</translation>
     </message>
@@ -3125,7 +3356,7 @@ Wenn nicht ausgewählt, füge die unten gefundenen Karten dem Dokument an.</tran
   <context>
     <name>XMageParser</name>
     <message>
-      <location filename="../../decklist_parser/re_parsers.py" line="256"/>
+      <location filename="../../decklist_parser/re_parsers.py" line="257"/>
       <source>XMage Deck file</source>
       <translation>XMage Deck-Datei</translation>
     </message>
@@ -3133,7 +3364,7 @@ Wenn nicht ausgewählt, füge die unten gefundenen Karten dem Dokument an.</tran
   <context>
     <name>format_size</name>
     <message>
-      <location filename="../../ui/common.py" line="127"/>
+      <location filename="../../ui/common.py" line="178"/>
       <source>{size} {unit}</source>
       <comment>A formatted file size in SI bytes</comment>
       <translation>{size} {unit}</translation>

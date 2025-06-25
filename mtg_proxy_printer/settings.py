@@ -20,14 +20,24 @@ import pathlib
 import re
 import typing
 import tokenize
+from collections import defaultdict
 
 import pint
-from PyQt5.QtCore import QStandardPaths
+from PyQt5.QtCore import QStandardPaths, QLocale
+from PyQt5.QtGui import QPageSize, QPageLayout, QColor
+from PyQt5.QtPrintSupport import QPrinterInfo
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
-from mtg_proxy_printer.units_and_sizes import CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT
+from mtg_proxy_printer.units_and_sizes import \
+    CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT, PageSizeManager, is_acceptable_page_size
+
+StandardLocation = QStandardPaths.StandardLocation
+LocateOption = QStandardPaths.LocateOption
+Territory = QLocale.Country  # TODO: Adjust for PySide6
+PageSizeId = QPageSize.PageSizeId
+Orientation = QPageLayout.Orientation
 
 __all__ = [
     "settings",
@@ -39,6 +49,41 @@ __all__ = [
     "get_boolean_card_filter_keys",
     "parse_card_set_filters",
 ]
+
+
+Letter = QPageSize.PageSizeId.Letter
+# https://www.unicode.org/cldr/charts/47/supplemental/territory_information.html
+LOCATION_PAPER_SIZE_TABLE = defaultdict(lambda:PageSizeId.A4, {
+    Territory.Belize: Letter,
+    Territory.Canada: Letter,
+    Territory.Chile: Letter,
+    Territory.Colombia: Letter,
+    Territory.CostaRica: Letter,
+    Territory.DominicanRepublic: Letter,
+    Territory.ElSalvador: Letter,
+    Territory.Guatemala: Letter,
+    Territory.Guyana: Letter,
+    Territory.Nicaragua: Letter,
+    Territory.Panama: Letter,
+    Territory.Philippines: Letter,
+    Territory.PuertoRico: Letter,
+    Territory.UnitedStates: Letter,
+    Territory.UnitedStatesMinorOutlyingIslands: Letter,
+    Territory.UnitedStatesVirginIslands: Letter,
+    Territory.Venezuela: Letter,
+})
+
+
+def get_default_paper_size() -> str:
+    system_country = QLocale.system().country()
+    default = PageSizeManager.PageSizeReverse[LOCATION_PAPER_SIZE_TABLE[system_country]]
+    printer_info = QPrinterInfo.defaultPrinter()
+    if printer_info.isNull():
+        return default
+    page_size = printer_info.defaultPageSize()
+    if page_size.isValid() and is_acceptable_page_size(page_size):
+        return PageSizeManager.PageSizeReverse[page_size.id()]
+    return default
 
 
 mm: QuantityT = unit_registry.mm
@@ -62,7 +107,7 @@ VERSION_CHECK_RE = re.compile(
 
 # Below are the default application settings. How to define new ones:
 # - Add a key-value pair (String keys and values only) to a section or add a new section
-# - If adding a new section, also add a validator function for that section.
+#   - If adding a new section, also add a validator function for that section.
 # - Add the new key to the validator of the section it’s in. The validator has to check that the value can be properly
 #   cast into the expected type and perform a value range check.
 # - Add the option to the Settings window UI
@@ -99,14 +144,18 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-art-series-cards": "False",
     "hidden-sets": "",
 }
+
+DEFAULT_MARGINS = 5*mm
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed": "0 mm",
+    "paper-orientation": PageSizeManager.PageOrientationReverse[Orientation.Portrait],
+    "paper-size": get_default_paper_size(),
     "paper-height": "297 mm",
     "paper-width": "210 mm",
-    "margin-top": "5 mm",
-    "margin-bottom": "5 mm",
-    "margin-left": "5 mm",
-    "margin-right": "5 mm",
+    "margin-top": str(DEFAULT_MARGINS),
+    "margin-bottom": str(DEFAULT_MARGINS),
+    "margin-left": str(DEFAULT_MARGINS),
+    "margin-right": str(DEFAULT_MARGINS),
     "row-spacing": "0 mm",
     "column-spacing": "0 mm",
     "print-cut-marker": "False",
@@ -115,17 +164,19 @@ DEFAULT_SETTINGS["documents"] = {
     "default-document-name": "",
 }
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
-    "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
-    "deck-list-search-path": QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
+    "document-save-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
+    "deck-list-search-path": QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory),
 }
 DEFAULT_SETTINGS["gui"] = {
     "central-widget-layout": "columnar",
     "show-toolbar": "True",
     "language": "",
+    "gui-open-maximized": "True",
+    "wizards-open-maximized": "False",
 }
 VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "columnar", "tabbed"}
 VALID_LANGUAGES = {
-    "", "de", "en_US",
+    "", "de", "en_US", "fr",
 }
 DEFAULT_SETTINGS["debug"] = {
     "cutelog-integration": "False",
@@ -151,10 +202,11 @@ DEFAULT_SETTINGS["printer"] = {
     "landscape-compatibility-workaround": "False",
     "horizontal-offset": "0 mm",
 }
-DEFAULT_SETTINGS["pdf-export"] = {
-    "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
+DEFAULT_SETTINGS["export"] = {
+    "export-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
     "pdf-page-count-limit": "0",
     "landscape-compatibility-workaround": "False",
+    "png-background-color": "#ffffffff",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
 MIN_SIZE = 0 * mm
@@ -252,7 +304,7 @@ def validate_settings(read_settings: ConfigParser):
     _validate_decklist_import_section(read_settings)
     _validate_default_filesystem_paths_section(read_settings)
     _validate_printer_section(read_settings)
-    _validate_pdf_export_section(read_settings)
+    _validate_export_section(read_settings)
 
 
 def _validate_card_filter_section(to_validate: ConfigParser, section_name: str = "card-filter"):
@@ -283,7 +335,7 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
     boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
-    string_settings = {"default-document-name", }
+    string_settings = {"default-document-name", "paper-size", "paper-orientation"}
     for key in section.keys():
         if key in boolean_settings:
             _validate_boolean(section, defaults, key)
@@ -292,6 +344,10 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
         else:
             _validate_length(section, defaults, key, MIN_SIZE, MAX_SIZE)
 
+    if section["paper-size"] not in PageSizeManager.PageSize:
+        _restore_default(section, defaults, "paper-size")
+    if section["paper-orientation"] not in PageSizeManager.PageOrientation:
+        _restore_default(section, defaults, "paper-orientation")
     # Check some semantic properties
     available_height = section.get_quantity("paper-height") - \
         (section.get_quantity("margin-top") + section.get_quantity("margin-bottom"))
@@ -336,7 +392,8 @@ def _validate_gui_section(to_validate: ConfigParser, section_name: str = "gui"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
-    _validate_boolean(section, defaults, "show-toolbar")
+    for key in ("show-toolbar", "gui-open-maximized", "wizards-open-maximized"):
+        _validate_boolean(section, defaults, key)
     _validate_string_is_in_set(section, defaults, VALID_LANGUAGES, "language")
 
 
@@ -373,12 +430,13 @@ def _validate_printer_section(to_validate: ConfigParser, section_name: str = "pr
             _validate_length(section, defaults, key, -100*mm, 100*mm)
 
 
-def _validate_pdf_export_section(to_validate: ConfigParser, section_name: str = "pdf-export"):
+def _validate_export_section(to_validate: ConfigParser, section_name: str = "export"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
-    _validate_path_to_directory(section, defaults, "pdf-export-path")
+    _validate_path_to_directory(section, defaults, "export-path")
     _validate_non_negative_int(section, defaults, "pdf-page-count-limit")
     _validate_boolean(section, defaults, "landscape-compatibility-workaround")
+    _validate_color(section, defaults, "png-background-color")
 
 
 def _validate_path_to_directory(section: SectionProxy, defaults: SectionProxy, key: str):
@@ -432,23 +490,30 @@ def _validate_string_is_in_set(section: SectionProxy, defaults: SectionProxy, va
         _restore_default(section, defaults, key)
 
 
+def _validate_color(section: SectionProxy, defaults: SectionProxy, key: str):
+    if not QColor.isValidColor(section.get(key)):
+        _restore_default(section, defaults, key)
+
+
 def _restore_default(section: SectionProxy, defaults: SectionProxy, key: str):
     section[key] = defaults[key]
 
 
 def migrate_settings(to_migrate: ConfigParser):
-    _migrate_layout_setting(to_migrate)
-    _migrate_download_settings(to_migrate)
-    _migrate_default_save_paths_settings(to_migrate)
-    _migrate_print_guessing_settings(to_migrate)
-    _migrate_image_spacing_settings(to_migrate)
-    _migrate_to_pdf_export_section(to_migrate)
-    _migrate_document_settings_to_pint(to_migrate)
-    _migrate_images_to_cards_section(to_migrate)
-    _migrate_application_to_update_checks_section(to_migrate)
+    """Run setting file migrations."""
+    _01_migrate_layout_setting(to_migrate)
+    _02_migrate_download_settings(to_migrate)
+    _03_migrate_default_save_paths_settings(to_migrate)
+    _04_migrate_print_guessing_settings(to_migrate)
+    _05_migrate_image_spacing_settings(to_migrate)
+    _06_migrate_to_pdf_export_section(to_migrate)
+    _07_migrate_document_settings_to_pint(to_migrate)
+    _08_migrate_images_to_cards_section(to_migrate)
+    _09_migrate_application_to_update_checks_section(to_migrate)
+    _10_migrate_export_section(to_migrate)
 
 
-def _migrate_layout_setting(to_migrate: ConfigParser):
+def _01_migrate_layout_setting(to_migrate: ConfigParser):
     try:
         gui_section = to_migrate["gui"]
         layout = gui_section["search-widget-layout"]
@@ -460,7 +525,7 @@ def _migrate_layout_setting(to_migrate: ConfigParser):
         gui_section["central-widget-layout"] = layout
         
         
-def _migrate_download_settings(to_migrate: ConfigParser):
+def _02_migrate_download_settings(to_migrate: ConfigParser):
     target_section_name = "card-filter"
     if to_migrate.has_section(target_section_name) or not to_migrate.has_section("downloads"):
         return
@@ -477,7 +542,7 @@ def _migrate_download_settings(to_migrate: ConfigParser):
             filter_section[target_setting] = str(new_value)
 
 
-def _migrate_default_save_paths_settings(to_migrate: ConfigParser):
+def _03_migrate_default_save_paths_settings(to_migrate: ConfigParser):
     source_section_name = "default-save-paths"
     target_section_name = "default-filesystem-paths"
     if to_migrate.has_section(target_section_name) or not to_migrate.has_section(source_section_name):
@@ -486,7 +551,7 @@ def _migrate_default_save_paths_settings(to_migrate: ConfigParser):
     to_migrate[target_section_name].update(to_migrate[source_section_name])
 
 
-def _migrate_print_guessing_settings(to_migrate: ConfigParser):
+def _04_migrate_print_guessing_settings(to_migrate: ConfigParser):
     source_section_name = "print-guessing"
     target_section_name = "decklist-import"
     if to_migrate.has_section(target_section_name) or not to_migrate.has_section(source_section_name):
@@ -501,7 +566,7 @@ def _migrate_print_guessing_settings(to_migrate: ConfigParser):
     target["always-translate-deck-lists"] = source.get("always-translate-deck-lists", "False")
 
 
-def _migrate_image_spacing_settings(to_migrate: ConfigParser):
+def _05_migrate_image_spacing_settings(to_migrate: ConfigParser):
     section = to_migrate["documents"]
     if "image-spacing-horizontal-mm" not in section:
         return
@@ -511,9 +576,9 @@ def _migrate_image_spacing_settings(to_migrate: ConfigParser):
     del section["image-spacing-vertical-mm"]
 
 
-def _migrate_to_pdf_export_section(to_migrate: ConfigParser):
-    section_name: str = "pdf-export"
-    if to_migrate.has_section(section_name):
+def _06_migrate_to_pdf_export_section(to_migrate: ConfigParser):
+    section_name = "pdf-export"
+    if to_migrate.has_section(section_name) or to_migrate.has_section("export"):
         return
     to_migrate.add_section(section_name)
     target = to_migrate[section_name]
@@ -523,11 +588,16 @@ def _migrate_to_pdf_export_section(to_migrate: ConfigParser):
     except KeyError:
         pass
     if to_migrate.has_section("default-filesystem-paths"):
-        target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
-        del to_migrate["default-filesystem-paths"]["pdf-export-path"]
+        try:
+            target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
+            del to_migrate["default-filesystem-paths"]["pdf-export-path"]
+        except KeyError:
+            pass
+    else:
+        target["pdf-export-path"] = DEFAULT_SETTINGS["export"]["export-path"]
 
 
-def _migrate_document_settings_to_pint(to_migrate: ConfigParser):
+def _07_migrate_document_settings_to_pint(to_migrate: ConfigParser):
     section = to_migrate["documents"]
     if "margin-top-mm" not in section:
         return
@@ -542,17 +612,33 @@ def _migrate_document_settings_to_pint(to_migrate: ConfigParser):
             section[key] = "0 mm"
 
 
-def _migrate_images_to_cards_section(to_migrate: ConfigParser):
+def _08_migrate_images_to_cards_section(to_migrate: ConfigParser):
     if "images" not in to_migrate:
         return
     to_migrate["cards"] = to_migrate["images"]
     del to_migrate["images"]
 
-def _migrate_application_to_update_checks_section(to_migrate: ConfigParser):
+
+def _09_migrate_application_to_update_checks_section(to_migrate: ConfigParser):
     if "application" not in to_migrate:
         return
     to_migrate["update-checks"] = to_migrate["application"]
     del to_migrate["application"]
+
+
+def _10_migrate_export_section(to_migrate: ConfigParser):
+    if "pdf-export" not in to_migrate:
+        return
+    if "export" in to_migrate:  # New and old section present, just discard the old. Should not happen normally.
+        del to_migrate["pdf-export"]
+        return
+    to_migrate["export"] = to_migrate["pdf-export"]
+    del to_migrate["pdf-export"]
+    section = to_migrate["export"]
+    section["export-path"] = section["pdf-export-path"]
+    del section["pdf-export-path"]
+
+
 
 # Read the settings from file during module import
 # This has to be performed before any modules containing GUI classes are imported.

@@ -12,7 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-import collections
+
 import collections
 import enum
 import functools
@@ -50,6 +50,7 @@ __all__ = [
     "CardInfoDownloader",
     "CardInfoWorkerBase",
     "DatabaseImportWorker",
+    "ApiStreamWorker",
     "SetWackinessScore",
 ]
 
@@ -410,7 +411,7 @@ class DatabaseImportWorker(DownloaderBase):
         # in the thread that actually uses it.
         if self._db is None:
             logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
-            self._db = open_database(self.model.db_path, SCHEMA_NAME, self.model.MIN_SUPPORTED_SQLITE_VERSION)
+            self._db = open_database(self.model.db_path, SCHEMA_NAME)
         return self._db
 
     @with_database_write_lock()

@@ -13,22 +13,24 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+import json
 import logging
 from functools import partial
 import pathlib
+import re
 import typing
 from abc import abstractmethod
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
-from PyQt5.QtGui import QDesktopServices, QStandardItem, QIcon
-from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox
+from PyQt5.QtGui import QDesktopServices, QStandardItem, QIcon, QColor, QColorConstants
+from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox, \
+    QColorDialog
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.ui.common import highlight_widget
+from mtg_proxy_printer.ui.common import highlight_widget, load_file
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, QuantityT
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
@@ -42,7 +44,7 @@ try:
     from mtg_proxy_printer.ui.generated.settings_window.general_settings_page import Ui_GeneralSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.hide_printings_page import Ui_HidePrintingsPage
     from mtg_proxy_printer.ui.generated.settings_window.printer_settings_page import Ui_PrinterSettingsPage
-    from mtg_proxy_printer.ui.generated.settings_window.pdf_settings_page import Ui_PDFSettingsPage
+    from mtg_proxy_printer.ui.generated.settings_window.export_settings_page import Ui_ExportSettingsPage
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
     Ui_DebugSettingsPage = load_ui_from_file("settings_window/debug_settings_page")
@@ -50,7 +52,7 @@ except ModuleNotFoundError:
     Ui_GeneralSettingsPage = load_ui_from_file("settings_window/general_settings_page")
     Ui_HidePrintingsPage = load_ui_from_file("settings_window/hide_printings_page")
     Ui_PrinterSettingsPage = load_ui_from_file("settings_window/printer_settings_page")
-    Ui_PDFSettingsPage = load_ui_from_file("settings_window/pdf_settings_page")
+    Ui_ExportSettingsPage = load_ui_from_file("settings_window/export_settings_page")
 
 CheckState = Qt.CheckState
 bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
@@ -301,11 +303,14 @@ class GeneralSettingsPage(Page):
         ui.add_card_widget_style_combo_box.addItem(self.tr("Horizontal layout"), "horizontal")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Columnar layout"), "columnar")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Tabbed layout"), "tabbed")
+        progress: typing.Dict[str, int] = json.loads(load_file("translations/progress.json", self))
         for display_text, language_code in [
             (self.tr("System default"), ""),
-            (self.tr("English (US)"), "en_US"),
-            (self.tr("German"), "de"),
+            (self.tr("English (US) [{progress}%]"), "en_US"),
+            (self.tr("German [{progress}%]"), "de"),
+            (self.tr("French [{progress}%]"), "fr"),
         ]:
+            display_text = display_text.format(progress=progress.get(language_code, ""))
             ui.application_language_combo_box.addItem(display_text, language_code)
 
     @Slot()
@@ -317,7 +322,7 @@ class GeneralSettingsPage(Page):
 
     def load(self, settings: ConfigParser):
         self._load_look_and_feel_settings(settings)
-        self._load_update_settings(settings)
+        self._load_boolean_settings(settings)
         self._load_cards_settings(settings)
         self._load_path_settings(settings)
 
@@ -329,9 +334,9 @@ class GeneralSettingsPage(Page):
         language_index = ui.application_language_combo_box.findData(gui_section["language"])
         ui.application_language_combo_box.setCurrentIndex(language_index)
 
-    def _load_update_settings(self, settings: ConfigParser):
-        section = settings["update-checks"]
-        for widget, setting in self._get_update_check_settings_widgets():
+    def _load_boolean_settings(self, settings: ConfigParser):
+        for widget, section_name, setting in self._get_boolean_check_settings_widgets():
+            section = settings[section_name]
             widget.setCheckState(bool_to_check_state[section.getboolean(setting)])
 
     def _load_cards_settings(self, settings: ConfigParser):
@@ -342,9 +347,6 @@ class GeneralSettingsPage(Page):
         if not (known := list_model.stringList()) or preferred_language not in known:
             preferred_language_combo_box.addItem(preferred_language)
         preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(preferred_language))
-        self.ui.automatically_add_opposing_faces.setChecked(
-            section.getboolean("automatically-add-opposing-faces")
-        )
 
     def _load_path_settings(self, settings: ConfigParser):
         section = settings["default-filesystem-paths"]
@@ -352,11 +354,14 @@ class GeneralSettingsPage(Page):
         for widget, setting in widgets_with_settings:
             widget.setText(section[setting])
 
-    def _get_update_check_settings_widgets(self):
+    def _get_boolean_check_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (ui.check_application_updates_enabled, "check-for-application-updates"),
-            (ui.check_card_data_updates_enabled, "check-for-card-data-updates"),
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str, str]] = [
+            (ui.check_application_updates_enabled, "update-checks", "check-for-application-updates"),
+            (ui.check_card_data_updates_enabled, "update-checks", "check-for-card-data-updates"),
+            (ui.automatically_add_opposing_faces, "cards", "automatically-add-opposing-faces"),
+            (ui.gui_open_maximized, "gui", "gui-open-maximized"),
+            (ui.wizards_open_maximized, "gui", "wizards-open-maximized"),
         ]
         return widgets_with_settings
 
@@ -368,14 +373,14 @@ class GeneralSettingsPage(Page):
             return languages.index("en")
 
     def save(self):
-        self._save_update_check_settings()
+        self._save_boolean_settings()
         self._save_look_and_feel_settings()
         self._save_cards_settings()
         self._save_path_settings()
 
-    def _save_update_check_settings(self):
-        section = mtg_proxy_printer.settings.settings["update-checks"]
-        for widget, setting in self._get_update_check_settings_widgets():
+    def _save_boolean_settings(self):
+        for widget, section_name, setting in self._get_boolean_check_settings_widgets():
+            section = mtg_proxy_printer.settings.settings[section_name]
             section[setting] = check_state_to_bool_str[widget.checkState()]
 
     def _save_look_and_feel_settings(self):
@@ -388,7 +393,6 @@ class GeneralSettingsPage(Page):
     def _save_cards_settings(self):
         section = mtg_proxy_printer.settings.settings["cards"]
         section["preferred-language"] = self.ui.preferred_language_combo_box.currentText()
-        section["automatically-add-opposing-faces"] = str(self.ui.automatically_add_opposing_faces.isChecked())
 
     def _save_path_settings(self):
         section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
@@ -398,9 +402,8 @@ class GeneralSettingsPage(Page):
 
     def highlight_differing_settings(self, settings: ConfigParser):
         ui = self.ui
-
-        section = settings["update-checks"]
-        for widget, setting in self._get_update_check_settings_widgets():
+        for widget, section_name, setting in self._get_boolean_check_settings_widgets():
+            section = settings[section_name]
             if section[setting] != check_state_to_bool_str[widget.checkState()]:
                 highlight_widget(widget)
 
@@ -415,8 +418,6 @@ class GeneralSettingsPage(Page):
         section = settings["cards"]
         if section["preferred-language"] != ui.preferred_language_combo_box.currentText():
             highlight_widget(ui.preferred_language_combo_box)
-        if section.getboolean("automatically-add-opposing-faces") is not ui.automatically_add_opposing_faces.isChecked():
-            highlight_widget(ui.automatically_add_opposing_faces)
 
         section = settings["default-filesystem-paths"]
         widgets_and_settings = self._get_save_path_settings_widgets()
@@ -553,44 +554,69 @@ class PrinterSettingsPage(Page):
                 highlight_widget(spinbox)
 
 
-class PDFSettingsPage(Page):
+class ExportSettingsPage(Page):
     def display_metadata(self) -> PageMetadata:
-        return PageMetadata(self.tr("PDF export settings"), "viewpdf", self.tr("Configure the PDF export"))
+        return PageMetadata(self.tr("Export settings"), "viewpdf", self.tr("Configure the PDF/PNG export"))
 
     def __init__(self, parent=None, flags=Qt.WindowFlags()):
         super().__init__(parent, flags)
-        self.ui = ui = Ui_PDFSettingsPage()
+        self.ui = ui = Ui_ExportSettingsPage()
         ui.setupUi(self)
 
     def load(self, settings: ConfigParser):
         ui = self.ui
-        section = settings["pdf-export"]
+        section = settings["export"]
         ui.pdf_page_count_limit.setValue(section.getint("pdf-page-count-limit"))
-        ui.pdf_save_path.setText(section["pdf-export-path"])
+        ui.export_path.setText(section["export-path"])
         ui.landscape_workaround.setChecked(section.getboolean("landscape-compatibility-workaround"))
+        self._set_png_background_color_display(QColor(section["png-background-color"]))
 
     def save(self):
         ui = self.ui
-        section = mtg_proxy_printer.settings.settings["pdf-export"]
+        section = mtg_proxy_printer.settings.settings["export"]
         section["pdf-page-count-limit"] = str(ui.pdf_page_count_limit.value())
-        section["pdf-export-path"] = ui.pdf_save_path.text()
+        section["export-path"] = ui.export_path.text()
         section["landscape-compatibility-workaround"] = str(ui.landscape_workaround.isChecked())
+        section["png-background-color"] = self._get_png_background_color().name(QColor.NameFormat.HexArgb)
 
     def highlight_differing_settings(self, settings: ConfigParser):
         ui = self.ui
-        section = settings["pdf-export"]
+        section = settings["export"]
         if section.getint("pdf-page-count-limit") != ui.pdf_page_count_limit.value():
             highlight_widget(ui.pdf_page_count_limit)
-        if ui.pdf_save_path.text() != section["pdf-export-path"]:
-            highlight_widget(ui.pdf_save_path)
+        if ui.export_path.text() != section["export-path"]:
+            highlight_widget(ui.export_path)
         if ui.landscape_workaround.isChecked() != section.getboolean("landscape-compatibility-workaround"):
             highlight_widget(ui.landscape_workaround)
+        if section["png-background-color"] != self._get_png_background_color().name(QColor.NameFormat.HexArgb):
+            highlight_widget(ui.png_background_color)
+            highlight_widget(ui.png_background_color_label)
 
     @Slot()
-    def on_pdf_save_path_browse_button_clicked(self):
-        logger.debug("User about to select a new default PDF document export path.")
-        if location := QFileDialog.getExistingDirectory(self, self.tr("Select default PDF export location")):
-            logger.info("User selected a new default PDF document export path.")
-            self.ui.pdf_save_path.setText(location)
+    def on_export_path_browse_button_clicked(self):
+        logger.debug("User about to select a new default Export path.")
+        if location := QFileDialog.getExistingDirectory(self, self.tr("Select default export location")):
+            logger.info("User selected a new default export path.")
+            self.ui.export_path.setText(location)
         else:
             logger.debug("User cancelled path selection")
+
+    @Slot()
+    def on_png_background_color_button_clicked(self):
+        current_color = self._get_png_background_color()
+        selected = QColorDialog.getColor(
+            current_color, self, self.tr("Select PNG background color"),
+            QColorDialog.ColorDialogOption.ShowAlphaChannel)
+        if selected.isValid():
+            self._set_png_background_color_display(selected)
+
+    def _get_png_background_color(self) -> QColor:
+        if style_sheet := self.ui.png_background_color.styleSheet():
+            name = re.match(r"QLabel\s*\{\s*background-color\s*:\s*(?P<name>#.+)}", style_sheet)["name"]
+            return QColor(name)
+        return QColorConstants.Transparent
+
+    def _set_png_background_color_display(self, color: QColor):
+        # Can't use formatting, because embedded curly braces in the CSS style sheet
+        style_sheet = "QLabel { background-color : {bg}}".replace("{bg}", color.name(QColor.NameFormat.HexArgb))
+        self.ui.png_background_color.setStyleSheet(style_sheet)

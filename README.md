@@ -2,61 +2,79 @@
 
 Print Magic: The Gathering cards for play-testing purposes.
 
-(If you are reading this on GitHub, then you are looking at a Git mirror of the [fossil](https://fossil-scm.org)-based source repository located at [https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter](https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter))
+(If you are reading this on [GitHub](https://github.com/luziferius/MTGProxyPrinter), 
+then you are looking at a Git mirror of the [fossil](https://fossil-scm.org)-based source repository
+located at [https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter](https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter))
 
 ## Feature overview
 
-The application supports importing deck lists from locally stored files or various deck list building websites, automatically fetches high-quality card images from [Scryfall](https://scryfall.com), and arranges the fetched images
+The application supports importing deck lists from locally stored files or various deck list building websites, 
+automatically fetches high-quality card images from [Scryfall](https://scryfall.com), and arranges the fetched images
 in a paged document suitable for printing or PDF export.
 
 - The standard document editing features:
   - Create, save and load documents
   - Multi-level undo & redo, even across the "New document" and "Load document"
-- Export documents as PDFs
-  - Optional, automatic splitting into configurable chunks to accommodate file size limits present in various printers.
+- Multiple export options:
+  - Export as PDFs, including optional, automatic splitting into configurable chunks to accommodate file size limits 
+    present in various printers.
+  - Export as a PNG image sequence, when PDF export is unsuitable
+  - Export as individual card images
 - Direct printing using your operating system’s printing support. Can use any available and suitable printer
 - Obtains high-quality images from Scryfall (where available)
   - Images are cached locally for faster loading times when printing the same cards again
-- Basic support for printing custom cards. Drop images onto the main window to add them as custom regular-size cards.
-- Import deck lists in various formats, like Magic Arena deck lists and XMage deck files (see below for a list of supported formats)
+- Support for printing custom cards (currently regular size only). Drag & drop images onto the main window 
+  or use the import wizard in the File menu.
+- Import deck lists in various formats, like Magic Arena deck lists and XMage 
+  deck files (see below for a list of supported formats)
   - Automatic download of deck lists from various deck list database websites (see below for a list)
   - One-click removal of basic lands (optionally also including Wastes and Snow-covered basic lands)
-  - Optional, automatic deck list translation. Translate all cards in the deck list to your preferred language. (Depending on image availability.)
+  - Optional, automatic deck list translation. Translate all cards in the deck list to your preferred language.
+    (Depending on image availability.)
   - Manually override chosen card printings, if you dislike the printing choices made in the deck list
-  - When importing a deck list that contains excluded printings (see below), MTGProxyPrinter tries to replace them with suitable surrogates, where possible
+  - When importing a deck list that contains excluded printings (see below), MTGProxyPrinter tries to replace them 
+    with suitable surrogates, where possible
 - Supports double-faced cards and split cards
   - Both front and back are searchable by all names printed on the card
-  - Automatic handling of opposing card faces: MTGProxyPrinter automatically adds the same number of copies of the other face. (This feature can be disabled)
-  - Optional generation of check cards for double-faced cards. Those combine both sides on a single side
+  - Automatic handling of opposing card faces: MTGProxyPrinter automatically adds the same number
+    of copies of the other face. (This feature can be disabled)
+  - Optional generation of check cards for double-faced cards. Those combine both sides on a single side.
 - Hide cards using various card and printing filters. Hidden cards are treated as though they do not exist.
   - Bans in various formats supported by Scryfall
   - Border color (white-bordered, gold-bordered)
   - Full-art, or extended-art cards
-  - Funny cards (Silver-bordered and other black-bordered promotional cards, like the “Heroes of the Realm” cards. Also cards from Un-sets with acorn-shaped security stamp.)
+  - Funny cards (Silver-bordered and other black-bordered promotional cards, like the “Heroes of the Realm” cards.
+    Also cards from Un-sets with acorn-shaped security stamp.)
   - Image availability (for non-English cards)
   - Being oversized
-  - Digital printings (includes both Magic Online promotional card versions, MTG Arena digital-only cards and other digital printings)
+  - Digital printings (includes both Magic Online promotional card versions, MTG Arena digital-only cards,
+    and other digital printings)
 - Supports cards in all languages supported by Scryfall
-- Supports the official tokens (As offered by Scryfall, which is currently English only. If Scryfall starts to offer localized tokens, these will be become available, too.)
+- Supports the official tokens (As offered by Scryfall, which is currently English only.
+  If Scryfall starts to offer localized tokens, these will be become available, too.)
 - Adjustable document appearance
   - Adjustable paper size, page margins, spacing between card images
   - Optional printing of cut helper lines to aid machine-cutting printed sheets
   - Optionally render sharp image corners, instead of the default round ones
-  - Optionally draw a bleed (a thick outline of configurable width) around the images. The bleed color is sampled from the images to ensure compatibility with arbitrary border colors
+  - Optionally draw a bleed (a thick outline of configurable width) around the images. The bleed color is sampled
+    from the images to ensure compatibility with arbitrary border colors
   - Optionally print a document title and page numbers on all pages, to ease identifying loose sheets of printed cards
 - Full support for oversized cards, like Archenemy Scheme cards or Planechase Planes. 
-  - Regular-size cards and oversized cards are kept on separate pages to ensure consistent image spacing and proper rendering of cut helper lines.
+  - Regular-size cards and oversized cards are kept on separate pages to ensure consistent image spacing
+    and proper rendering of cut helper lines.
 - Ability to add “related cards” of cards in the document. These are cards referenced by name or tokens created.
 
 ### Supported deck list formats
 
+- Simple list with one card name per line, treated as a list of singletons.
 - Magic Arena
 - Magic Online (MTGO)
-- [XMage](http://xmage.de)
+- [XMage](http://xmage.today) deck files
 - [Tappedout.net](https://tappedout.net) deck lists (choose CSV export)
 - [Scryfall.com](https://scryfall.com) deck lists (choose CSV export)
 - Magic Workstation Deck Data (`.mwDeck` files)
-- Any other deck list format containing one card per line, by supplying a matching regular expression to parse the file (this is an advanced feature).
+- Any other deck list format containing one card per line, by supplying a matching regular
+  expression to parse the file (this is an advanced feature).
 
 
 ### Supported deck list database sites
@@ -76,7 +94,11 @@ MTGProxyPrinter can directly fetch public deck lists from these websites:
 - [mtg.wtf](https://mtg.wtf/)
 - [MTGDecks](https://mtgdecks.net)
 
-If you want to print your own lists, ensure that deck lists are accessible without any login, i.e. set to be "public". MTGProxyPrinter does not support logging into an account on those sites, thus cannot fetch any decks behind a login-wall. When setting a deck list to public, it may take a few minutes for the site to update the availability, so give it a few minutes. Alternatively, if the website offers to download or export the deck list, export it in one of the supported formats and manually load or paste it into the deck import wizard.
+If you want to print your own lists, ensure that deck lists are accessible without any login, i.e. set to be "public".
+MTGProxyPrinter does not support logging into an account on those sites, thus cannot fetch any decks behind a login-wall.
+When setting a deck list to public, it may take a few minutes for the site to update the availability, 
+so give it a few minutes. Alternatively, if the website offers to download or export the deck list, 
+export it in one of the supported formats and manually load or paste it into the deck import wizard.
 
 Except for Scryfall, these websites do not offer a stable, public Web API. Support is offered on a
 “best effort” base and may break at any time, if a website decides to re-design their code.
@@ -95,6 +117,8 @@ These external libraries are used in the code. They can be installed from PyPI.
 - `delegateto`
 - `PyHamcrest`
 - `cx_Freeze` (Stand-alone bundles only. Used by the installer for Windows®-based platforms.)
+- Either `truststore` (Py >= 3.10) or `certifi` (Py < 3.10)
+- `typing_extensions` (Py < 3.11)
 
 ### System libraries
 
@@ -109,25 +133,52 @@ These libraries are required to run the unit tests.
 - `pytest-qt`
 - `pytest-cov` (Optional, for code coverage reports).
 
-## Install
+### Development/Packaging environment creation
 
-To install from a fossil checkout or a downloaded and unpacked source code archive, execute `pip install .` 
-from the repository root directory (where `pyproject.toml` is located).
+These two packages must be installed on the host system. They are used to create a virtual environment, 
+in which all other dependencies will be installed.
 
+- The `venv` Python module to create environments
+- `pip` to install dependencies
+
+## Building packages
+
+The top level of the checked-out repository or unpacked source code archive contains scripts to build the packages.
+These create a virtual environment, if not already present, and then use `tox`, to build the packages in dedicated virtual environments.
+
+Building the packages first 
+- calls the Qt UI file compiler to generate GUI classes from the included `.ui`-files,
+- builds importable locale files using the Qt locale compiler
+- compiles locales and the icon theme into an importable module using the Qt resource compiler
+
+The exact steps can be seen by inspecting `tox.ini`
+
+It then bundles that up with the source code into an installable Python Wheel, and, if run on Windows,
+the installable MSI package. Built artifacts are placed in the `dist` directory.
+
+## Installing from a source checkout
+
+Because the package contains compiled data that must be built before installation,
+the source checkout is not directly installable via `pip install .`. 
+
+You first must build an installable package (see above), and then install the generated Python Wheel using `pip` or better yet using `pipx`.
+The compiled data is cross-platform, so a built wheel will install on any operating system and compatible Python version.
 
 ## Usage
 
-Execute `mtg-proxy-printer` to start the GUI. The Windows MSI package places a starter in the Start menu.
+On Linux/macOS, execute `mtg-proxy-printer` to start the GUI. The Windows MSI package places a starter in the Start menu.
 
 At first start and at somewhat regular intervals, MTGProxyPrinter requires downloading the MTG card data
-from the Scryfall API. This dataset containing the information about the available 400k+ printings is roughly 250-300 MiB large.
+from the Scryfall API. This dataset containing the information about the available 400k+ printings
+is roughly 250-300 MiB large.
 
 When starting, an empty document is created. You can add any number of pages, if you need more than one page to print.
 The left-most panel in the main window shows an overview over all pages with a summary of what is on each page.
 Click on a page to show it’s content in detail and select it for editing.
 The top-right area is used to find cards by name or set and add them to the current page.
 Below is a preview rendering of the current page, and a table with details about the cards in the opened page.
-You can select images and remove them, if you accidentally added the wrong cards.
+You can select images and remove them, if you accidentally added the wrong cards. 
+Double-clicking table cells allows re-selecting printings, or editing data of custom cards.
 
 If you don’t want to use the built-in card search, MTGProxyPrinter can import deck lists from disk and from a set of
 card database websites. The import wizard is available from the File menu in the main window. After loading the list,

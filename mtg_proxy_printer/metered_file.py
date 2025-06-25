@@ -59,6 +59,7 @@ class MeteredFile(QObject):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> Optional[bool]:
+        result = None
         try:
             result = self.file.__exit__(exc_type, exc_val, exc_tb)
         finally:

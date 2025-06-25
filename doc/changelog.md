@@ -2,11 +2,72 @@
 
 # Next version (in development)
 
+Because it was requested multiple times, there is a mirror of the application's source code repository on [GitHub](https://github.com/luziferius/MTGProxyPrinter/).
+
+## New features
+
+- Configurable background color for PNG exports, including support for semi- or fully transparent backgrounds.
+
 ## Changed features
 
+- Rearranged the menu entries in the main window to be more logical.
+- Reworked paper size configuration: 
+    - The document settings now provide a list of pre-defined paper sizes to choose from. Only paper sizes that can
+      fit an oversized card in both landscape and portrait orientation are available.
+    - Default paper size is read from the system default printer if available, or based on the system locale otherwise.
+      Regions using US Letter should get that as the default, instead of A4.
+    - For the pre-defined paper sizes, there is an additional toggle for the choice between Portrait and Landscape mode.
+    - Arbitrary page sizes are still supported by selecting the "Custom" paper size and entering the paper dimensions 
+      as in previous versions.
+
+## Fixed issues
+
+- Performance optimization in the page renderer. The app no longer lags massively when working with
+  huge paper sizes (like A0, ANSI E) that contain 100+ cards
+- Fixed broken card bleed rendering with excessively large bleeds (30+ mm)
+
+# Version 0.32.0 (2025-05-26)  <a name="v0_32_0"></a>
+
+## New features
+
+- Export documents as lossless PNG image sequences. The export can be triggered via the File menu.
+- Export all card images of cards in the current document to a directory.
+  - A first step towards supporting external image post-processing/filtering or (AI) upscaling tools.
+  - You can choose between exporting official cards and/or custom cards. Defaults to exporting official cards only.
+
+## Changed features
+
+- The main window now opens maximized when starting the application. Added a setting to restore the previous behavior.
+- Added option to open wizards and dialogs maximized. Off by default.
+- Reduced click count required for switching printings from 5 to 3. Now, double-clicking editable table cells 
+  automatically opens the list with choices. Clicking an entry in the list saves immediately.
+
+# Version 0.31.0 (2025-05-01)  <a name="v0_31_0"></a>
+
+## New features
+
+- Improved custom card support
+  - Adding custom cards via drag & drop now opens a dialog to customize the import
+    - Allows setting the number of copies to add for each card. Vastly improves the workflow when you want
+      to print multiple copies. 
+    - Shown card name is now derived from the file name, instead of defaulting to "Custom Card"
+  - The import dialog can also be accessed from the File menu. Access to printing custom cards no longer
+    requires the use of drag & drop.
+  - It is now possible to save custom cards and empty slots in the apps save file format.
+    Custom cards are no longer lost when saving.
+- Add (a partial) French translation, which will be used automatically on French systems. 
+  Can be reverted to English by explicitly setting the application language to that.
+  - Translations now display their completion in the settings
+
+## Changed features
+
+- The card table in the deck import wizard now has an editable Copies column to state the number of copies per card,
+  instead of duplicating the card for that many rows. This makes it possible to edit the number of copies per card
 - When splitting exported PDFs, zero-pad the sequence numbers appended to the file name 
   so that all have the same length. This gives a more consistent sorting of output files.
   - This avoids having output files sorted like "1.pdf", "11.pdf", "12.pdf", …, "2.pdf", "21.pdf", …
+- The page content table no longer uses a fancy multi selection behavior, as it interfered with editing entries.
+  The new behavior is in line with how other applications allow selections in tables.
 
 # Version 0.30.1 (2025-03-11)  <a name="v0_30_1"></a>
 
@@ -80,7 +141,7 @@
 ## Changed features
 
 - The deck list import wizard now supports downloading links from the Scryfall API card search at 
-  [https://api.scryfall.com/cards/search](https://scryfall.com/docs/api/cards/search) 
+  [https://api.scryfall.com/cards/search](https://scryfall.com/docs/api/cards/search)
 - Support decimal values in document settings, like margins, image spacings and the card bleed width.
 - As a safety measure against DoS-attacks via loading malicious documents, the app now limits
   numerical document settings to 10000mm. Limiting the paper size to 10m (~394in) in each direction prevents the creation

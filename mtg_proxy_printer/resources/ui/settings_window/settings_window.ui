@@ -30,7 +30,7 @@
      </property>
      <widget class="GeneralSettingsPage" name="general_settings_page"/>
      <widget class="DecklistImportSettingsPage" name="decklist_import_settings_page"/>
-     <widget class="PDFSettingsPage" name="pdf_settings_page"/>
+     <widget class="ExportSettingsPage" name="export_settings_page"/>
      <widget class="PrinterSettingsPage" name="printer_settings_page"/>
      <widget class="DefaultDocumentLayoutSettingsPage" name="default_document_layout_page"/>
      <widget class="HidePrintingsPage" name="hide_printings_page"/>
@@ -103,7 +103,7 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>PDFSettingsPage</class>
+   <class>ExportSettingsPage</class>
    <extends>QWidget</extends>
    <header>mtg_proxy_printer.ui.settings_window_pages</header>
    <container>1</container>

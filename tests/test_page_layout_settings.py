@@ -13,31 +13,29 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+import itertools
 import unittest.mock
+from multiprocessing.context import assert_spawning
+
+import pint
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.units_and_sizes import PageType, QuantityT, UnitT, unit_registry, StrDict
+from mtg_proxy_printer.model.card import CustomCard
+from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, QuantityT, UnitT, unit_registry, StrDict
 from mtg_proxy_printer.ui.page_scene import RenderMode
 
 from PyQt5.QtGui import QPageLayout, QPageSize
 from PyQt5.QtCore import QMarginsF
 import pytest
 from hamcrest import *
-PageLayoutSettings = mtg_proxy_printer.model.document_loader.PageLayoutSettings
 
 from tests.hasgetter import has_getters
-from tests.helpers import quantity_close_to
+from tests.helpers import quantity_close_to, close_to_
 
+PageLayoutSettings = mtg_proxy_printer.model.document_loader.PageLayoutSettings
 mm: UnitT = unit_registry.mm
-
-
-@pytest.fixture
-def page_layout():
-    layout = PageLayoutSettings.create_from_settings()
-    return layout
 
 
 @pytest.mark.parametrize("page_type, expected", [
@@ -84,6 +82,9 @@ def test_page_layout_compute_page_card_capacity_default_value(page_layout: PageL
 ])
 def test_page_layout_compute_page_row_count(
         page_layout: PageLayoutSettings, page_type: PageType, row_spacing: QuantityT, expected: int):
+    assert_that(page_layout.page_height, quantity_close_to(297*mm), "Setup failed: Environment altered")
+    assert_that(page_layout.margin_top, quantity_close_to(5*mm), "Setup failed: Environment altered")
+    assert_that(page_layout.margin_bottom, quantity_close_to(5*mm), "Setup failed: Environment altered")
     page_layout.row_spacing = row_spacing
     assert_that(page_layout.compute_page_row_count(page_type), is_(equal_to(expected)))
 
@@ -135,17 +136,17 @@ def test_page_layout_lt_raises_type_error_on_incompatible_types(page_layout: Pag
     assert_that(calling(page_layout.__lt__).with_args(1), raises(TypeError))
 
 
-def test_page_layout_gt():
-    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings()
-    layout.page_height = 300*mm
-    assert_that(layout.compute_page_card_capacity(PageType.REGULAR), is_(0))
-    assert_that(layout, is_not(greater_than(layout)))
+def test_page_layout_gt(page_layout: PageLayoutSettings):
+    page_layout.paper_size = "Custom"
+    page_layout.paper_orientation = "Portrait"
+    page_layout.custom_page_width = 10*mm
+    assert_that(page_layout.compute_page_card_capacity(PageType.REGULAR), is_(0))
+    assert_that(page_layout, is_not(greater_than(page_layout)))
 
 
-def test_page_layout_lt():
-    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
-    assert_that(layout.compute_page_card_capacity(PageType.REGULAR), is_(9))
-    assert_that(layout, is_not(less_than(layout)))
+def test_page_layout_lt(page_layout: PageLayoutSettings):
+    assert_that(page_layout.compute_page_card_capacity(PageType.REGULAR), is_(9))
+    assert_that(page_layout, is_not(less_than(page_layout)))
 
 
 @pytest.mark.parametrize("values", [
@@ -162,6 +163,8 @@ def test_page_layout_lt():
         "print-sharp-corners": "True",
         "print-page-numbers": "True",
         "default-document-name": "Test",
+        "paper-orientation": "Portrait",
+        "paper-size": "Custom",
     },
     {
         "paper-height": "200 millimeter",
@@ -176,6 +179,8 @@ def test_page_layout_lt():
         "print-sharp-corners": "True",
         "print-page-numbers": "True",
         "default-document-name": "Test",
+        "paper-orientation": "Portrait",
+        "paper-size": "Custom",
     },
 ])
 def test_create_from_settings(values: StrDict):
@@ -193,13 +198,15 @@ def test_create_from_settings(values: StrDict):
             margin_left=quantity_close_to(7*mm),
             margin_right=quantity_close_to(6*mm),
             margin_top=quantity_close_to(9*mm),
-            page_height=quantity_close_to(200*mm),
-            page_width=quantity_close_to(100*mm),
+            custom_page_height=quantity_close_to(200*mm),
+            custom_page_width=quantity_close_to(100*mm),
+            paper_orientation=equal_to("Portrait"),
+            paper_size=equal_to("Custom"),
         )
     )
 
 
-@pytest.mark.parametrize("height, width, landscape_workaround, orientation", [
+@pytest.mark.parametrize("height, width, landscape_workaround, expected_orientation", [
     (297*mm, 210*mm, True, QPageLayout.Orientation.Portrait),
     (297*mm, 210*mm, False, QPageLayout.Orientation.Portrait),
     (210*mm, 297*mm, True, QPageLayout.Orientation.Portrait),
@@ -212,10 +219,12 @@ def test_create_from_settings(values: StrDict):
 def test_to_page_layout(
         page_layout: PageLayoutSettings,
         render_mode: RenderMode, margins: QMarginsF,
-        height: QuantityT, width: QuantityT, landscape_workaround: bool, orientation: QPageLayout.Orientation
+        height: QuantityT, width: QuantityT, landscape_workaround: bool, expected_orientation: QPageLayout.Orientation
 ):
-    page_layout.page_height = height
-    page_layout.page_width = width
+    page_layout.custom_page_height = height
+    page_layout.custom_page_width = width
+    page_layout.paper_size = "Custom"
+    page_layout.paper_orientation = PageSizeManager.PageOrientationReverse[expected_orientation]
     page_layout.margin_left = 1*mm
     page_layout.margin_top = 2*mm
     page_layout.margin_right = 3*mm
@@ -225,29 +234,35 @@ def test_to_page_layout(
         q_page_layout = page_layout.to_page_layout(render_mode)
     assert_that(q_page_layout, has_getters(
         margins=has_getters(
-            left=margins.left(),
-            top=margins.top(),
-            right=margins.right(),
-            bottom=margins.bottom(),
+            left=close_to_(margins.left()),
+            top=close_to_(margins.top()),
+            right=close_to_(margins.right()),
+            bottom=close_to_(margins.bottom()),
         ),
         isValid=True,
-        orientation=orientation,
+        orientation=equal_to(expected_orientation),
     ))
     assert_that(q_page_layout.pageSize().size(QPageSize.Unit.Millimeter), has_getters(
-        height=close_to(297, 0.01),
-        width=close_to(210, 0.01),
+        height=close_to(max(height.to(mm).magnitude, width.to(mm).magnitude), 0.01),
+        width=close_to(min(height.to(mm).magnitude, width.to(mm).magnitude), 0.01),
     ))
 
+
 def test_to_save_file_data_contains_all_keys(page_layout: PageLayoutSettings):
-    data = [key for key, value in page_layout.to_save_file_data()]
+    data = [key for key, value in itertools.chain.from_iterable(page_layout.to_save_file_data())]
     assert_that(
         data,
         contains_inanyorder(*PageLayoutSettings.__annotations__.keys()),
     )
 
+
 def test_to_save_file_data_returns_only_acceptable_types(page_layout: PageLayoutSettings):
-    data = [value for key, value in page_layout.to_save_file_data()]
+    settings, dimensions = page_layout.to_save_file_data()
     assert_that(
-        data,
-        only_contains(instance_of(str), instance_of(float), instance_of(bool), instance_of(int)),
+        [value for key, value in settings],
+        only_contains(instance_of(str)),
+    )
+    assert_that(
+        [value for key, value in dimensions],
+        only_contains(instance_of(pint.Quantity)),
     )

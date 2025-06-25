@@ -17,39 +17,18 @@
    <string>Select which kind of deck list you want to import.</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="3" column="1" colspan="4">
-    <widget class="QRadioButton" name="select_parser_xmage">
-     <property name="toolTip">
-      <string>Deck list files, stored in XMage’s native format.
-Because XMage closely follows Scryfall regarding Magic sets,
-this should give very accurate results.</string>
-     </property>
-     <property name="text">
-      <string>XMage</string>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="3">
-    <widget class="QCheckBox" name="tappedout_include_acquire_board">
+   <item row="7" column="2">
+    <widget class="QCheckBox" name="tappedout_include_maybe_board">
      <property name="enabled">
       <bool>false</bool>
      </property>
      <property name="toolTip">
       <string>This is a Tappedout-specific section of the deck.
-It may contain the deck list author’s buy-list or anything else.</string>
+It may contain cards that the deck list creator considers for inclusion, based on the meta
+or any other preference, like card price.</string>
      </property>
      <property name="text">
-      <string>Include “Acquire-Board”</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1" colspan="4">
-    <widget class="QRadioButton" name="select_parser_mtg_online">
-     <property name="toolTip">
-      <string>The simplistic format used by Magic Online. It does not specify exact printings, so may not give the best results.</string>
-     </property>
-     <property name="text">
-      <string>Magic Online</string>
+      <string>Include “Maybe-Board”</string>
      </property>
     </widget>
    </item>
@@ -69,38 +48,7 @@ It may contain the deck list author’s buy-list or anything else.</string>
      </property>
     </spacer>
    </item>
-   <item row="9" column="1">
-    <spacer name="custom_re_input_spacer">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeType">
-      <enum>QSizePolicy::Fixed</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="6" column="2">
-    <widget class="QCheckBox" name="tappedout_include_maybe_board">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="toolTip">
-      <string>This is a Tappedout-specific section of the deck.
-It may contain cards that the deck list creator considers for inclusion, based on the meta
-or any other preference, like card price.</string>
-     </property>
-     <property name="text">
-      <string>Include “Maybe-Board”</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="1" colspan="4">
+   <item row="5" column="1" colspan="4">
     <widget class="QRadioButton" name="select_parser_scryfall_csv">
      <property name="toolTip">
       <string>CSV exports from Scryfall’s own deck builder.
@@ -112,45 +60,37 @@ matching an enabled card filter.</string>
      </property>
     </widget>
    </item>
-   <item row="14" column="1" colspan="4">
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
+   <item row="7" column="3">
+    <widget class="QCheckBox" name="tappedout_include_acquire_board">
+     <property name="enabled">
+      <bool>false</bool>
      </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="5" column="1" colspan="4">
-    <widget class="QRadioButton" name="select_parser_tappedout_csv">
      <property name="toolTip">
-      <string>CSV exports can be downloaded from Tappedout by choosing the appropriate deck export option.</string>
+      <string>This is a Tappedout-specific section of the deck.
+It may contain the deck list author’s buy-list or anything else.</string>
      </property>
      <property name="text">
-      <string>tappedout.net deck list (CSV export)</string>
+      <string>Include “Acquire-Board”</string>
      </property>
     </widget>
    </item>
    <item row="11" column="2" colspan="3">
     <layout class="QGridLayout" name="sample_buttons_layout">
-     <item row="0" column="1">
-      <widget class="QPushButton" name="insert_set_code_matcher_sample_button">
+     <item row="2" column="1">
+      <widget class="QPushButton" name="insert_language_matcher_sample_button">
        <property name="enabled">
         <bool>false</bool>
        </property>
        <property name="toolTip">
-        <string>Appends a sample matcher for a set code to the input field above.</string>
+        <string>Appends a matcher for the  card language to the input field above.
+If a language field is not present in the deck list, the card language is guessed.</string>
        </property>
        <property name="text">
-        <string>Set code matcher</string>
+        <string>Language matcher</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="2">
+     <item row="1" column="2">
       <widget class="QPushButton" name="insert_collector_number_matcher_sample_button">
        <property name="enabled">
         <bool>false</bool>
@@ -164,20 +104,6 @@ matching an enabled card filter.</string>
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QPushButton" name="insert_copies_matcher_sample_button">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="toolTip">
-        <string>Appends a matcher for the number of card copies to the input field above.
-If a card count field is not present in the deck list, 1 card copy per line is assumed</string>
-       </property>
-       <property name="text">
-        <string>Copies matcher</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
       <widget class="QPushButton" name="insert_name_matcher_sample_button">
        <property name="enabled">
         <bool>false</bool>
@@ -190,7 +116,7 @@ If a card count field is not present in the deck list, 1 card copy per line is a
        </property>
       </widget>
      </item>
-     <item row="1" column="2">
+     <item row="2" column="2">
       <widget class="QPushButton" name="insert_scryfall_id_matcher_sample_button">
        <property name="enabled">
         <bool>false</bool>
@@ -205,23 +131,137 @@ Most deck lists won’t use this.</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
-      <widget class="QPushButton" name="insert_language_matcher_sample_button">
+     <item row="2" column="0">
+      <widget class="QPushButton" name="insert_copies_matcher_sample_button">
        <property name="enabled">
         <bool>false</bool>
        </property>
        <property name="toolTip">
-        <string>Appends a matcher for the  card language to the input field above.
-If a language field is not present in the deck list, the card language is guessed.</string>
+        <string>Appends a matcher for the number of card copies to the input field above.
+If a card count field is not present in the deck list, 1 card copy per line is assumed</string>
        </property>
        <property name="text">
-        <string>Language matcher</string>
+        <string>Copies matcher</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QPushButton" name="insert_set_code_matcher_sample_button">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="toolTip">
+        <string>Appends a sample matcher for a set code to the input field above.</string>
+       </property>
+       <property name="text">
+        <string>Set code matcher</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" colspan="3">
+      <widget class="QLineEdit" name="custom_re_input">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="toolTip">
+        <string>Enter a Regular Expression containing at least one supported, named group.
+
+Supported named groups are: {group_names}
+
+See the 'What’s this?' (?-Button) help for details.</string>
+       </property>
+       <property name="whatsThis">
+        <string>You can enter a custom Regular Expression (in Python syntax) to parse the lines of your deck list. Use *named groups* to extract the individual card properties from the individual lines of the deck list.
+A named group looks like this:
+**(?P\&lt;GroupName&gt;RE)**, where RE is a Regular Expression matching the part you want to extract, and GroupName is one of the following:
+
+- `copies`: The number of card copies. Defaults to 1, if not present
+- `name`: The card name
+- `set_code`: The 3 (or more) letter code identifying the set
+- `collector_number`: The collector number of the card
+- `language`: The card language, using a two-letter language code. If not given, the importer tries to determine the language from the card name. Defaults to &quot;en&quot; for English, if not possible.
+
+Not all groups are required for a successful match. For example, `set_code` and `collector_number` is sufficient for exact identification most of the time.
+Hint: You may want to use an online Regular Expression editor, like [](https://regex101.com/), for example.</string>
+       </property>
+       <property name="inputMethodHints">
+        <set>Qt::ImhPreferLatin</set>
+       </property>
+       <property name="placeholderText">
+        <string notr="true">(?P&lt;copies&gt;\w+) (?P&lt;name&gt;.+) \((?P&lt;set_code&gt;\w+)\) (?P&lt;collector_number&gt;\d+)</string>
+       </property>
+       <property name="clearButtonEnabled">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
     </layout>
    </item>
-   <item row="8" column="1" colspan="4">
+   <item row="14" column="1" colspan="4">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="1" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_mtg_arena">
+     <property name="toolTip">
+      <string>Magic Arena and exports from compatible websites, like moxfield.com
+Note that this option is not limited to cards in Standard/Historic,
+as the format works for any card.</string>
+     </property>
+     <property name="text">
+      <string>MTG Arena</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_xmage">
+     <property name="toolTip">
+      <string>Deck list files, stored in XMage’s native format.
+Because XMage closely follows Scryfall regarding Magic sets,
+this should give very accurate results.</string>
+     </property>
+     <property name="text">
+      <string>XMage</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_mtg_online">
+     <property name="toolTip">
+      <string>The simplistic format used by Magic Online. It does not specify exact printings, so may not give the best results.</string>
+     </property>
+     <property name="text">
+      <string>Magic Online</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_magic_workstation">
+     <property name="text">
+      <string>Magic Workstation Deck Data (mwDeck)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_tappedout_csv">
+     <property name="toolTip">
+      <string>CSV exports can be downloaded from Tappedout by choosing the appropriate deck export option.</string>
+     </property>
+     <property name="text">
+      <string>tappedout.net deck list (CSV export)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="1" colspan="4">
     <widget class="QRadioButton" name="select_parser_custom_re">
      <property name="toolTip">
       <string>Specify a custom regular expression in the input field below. It will be used to parse each deck list line.
@@ -233,7 +273,7 @@ You have to separate them with the “control structures”, like spaces, as use
      </property>
     </widget>
    </item>
-   <item row="6" column="1">
+   <item row="7" column="1">
     <spacer name="tapped_out_board_spacer">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -249,7 +289,7 @@ You have to separate them with the “control structures”, like spaces, as use
      </property>
     </spacer>
    </item>
-   <item row="6" column="4">
+   <item row="7" column="4">
     <spacer name="horizontalSpacer">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -263,58 +303,12 @@ You have to separate them with the “control structures”, like spaces, as use
     </spacer>
    </item>
    <item row="0" column="1" colspan="4">
-    <widget class="QRadioButton" name="select_parser_mtg_arena">
+    <widget class="QRadioButton" name="select_parser_card_name_list">
      <property name="toolTip">
-      <string>Magic Arena and exports from compatible websites, like moxfield.com
-Note that this option is not limited to cards in Standard/Historic,
-as the format works for any card.</string>
+      <string>A simple list, containing one card name per line</string>
      </property>
      <property name="text">
-      <string>MTG Arena</string>
-     </property>
-    </widget>
-   </item>
-   <item row="9" column="2" colspan="3">
-    <widget class="QLineEdit" name="custom_re_input">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="toolTip">
-      <string>Enter a Regular Expression containing at least one supported, named group.
-
-Supported named groups are: {group_names}
-
-See the 'What’s this?' (?-Button) help for details.</string>
-     </property>
-     <property name="whatsThis">
-      <string>You can enter a custom Regular Expression (in Python syntax) to parse the lines of your deck list. Use *named groups* to extract the individual card properties from the individual lines of the deck list.
-A named group looks like this:
-**(?P\&lt;GroupName&gt;RE)**, where RE is a Regular Expression matching the part you want to extract, and GroupName is one of the following:
-
-- `copies`: The number of card copies. Defaults to 1, if not present
-- `name`: The card name
-- `set_code`: The 3 (or more) letter code identifying the set
-- `collector_number`: The collector number of the card
-- `language`: The card language, using a two-letter language code. If not given, the importer tries to determine the language from the card name. Defaults to "en" for English, if not possible.
-
-Not all groups are required for a successful match. For example, `set_code` and `collector_number` is sufficient for exact identification most of the time.
-Hint: You may want to use an online Regular Expression editor, like [](https://regex101.com/), for example.</string>
-     </property>
-     <property name="inputMethodHints">
-      <set>Qt::ImhPreferLatin</set>
-     </property>
-     <property name="placeholderText">
-      <string notr="true">(?P&lt;copies&gt;\w+) (?P&lt;name&gt;.+) \((?P&lt;set_code&gt;\w+)\) (?P&lt;collector_number&gt;\d+)</string>
-     </property>
-     <property name="clearButtonEnabled">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="1" colspan="4">
-    <widget class="QRadioButton" name="select_parser_magic_workstation">
-     <property name="text">
-      <string>Magic Workstation Deck Data (mwDeck)</string>
+      <string>List with card names</string>
      </property>
     </widget>
    </item>
@@ -327,272 +321,108 @@ Hint: You may want to use an online Regular Expression editor, like [](https://r
    <signal>toggled(bool)</signal>
    <receiver>custom_re_input</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>126</x>
-     <y>223</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>208</x>
-     <y>261</y>
-    </hint>
-   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_card_name_list</sender>
+   <signal>clicked()</signal>
+   <receiver>SelectDeckParserPage</receiver>
+   <slot>isComplete()</slot>
   </connection>
   <connection>
    <sender>select_parser_mtg_arena</sender>
    <signal>clicked()</signal>
    <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_mtg_online</sender>
    <signal>clicked()</signal>
    <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>26</x>
-     <y>51</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_scryfall_csv</sender>
    <signal>clicked()</signal>
    <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>32</x>
-     <y>139</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_custom_re</sender>
    <signal>clicked()</signal>
    <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>44</x>
-     <y>223</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_xmage</sender>
    <signal>clicked()</signal>
    <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>32</x>
-     <y>111</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>custom_re_input</sender>
    <signal>textChanged(QString)</signal>
    <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>247</x>
-     <y>261</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>145</x>
-     <y>114</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_tappedout_csv</sender>
    <signal>clicked()</signal>
    <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>145</x>
-     <y>167</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>139</x>
-     <y>101</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_tappedout_csv</sender>
    <signal>toggled(bool)</signal>
    <receiver>tappedout_include_maybe_board</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>98</x>
-     <y>167</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>120</x>
-     <y>195</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_tappedout_csv</sender>
    <signal>toggled(bool)</signal>
    <receiver>tappedout_include_acquire_board</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>283</x>
-     <y>167</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>378</x>
-     <y>195</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_custom_re</sender>
    <signal>toggled(bool)</signal>
    <receiver>insert_name_matcher_sample_button</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>262</x>
-     <y>223</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>206</x>
-     <y>302</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_custom_re</sender>
    <signal>toggled(bool)</signal>
    <receiver>insert_collector_number_matcher_sample_button</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>396</x>
-     <y>223</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>759</x>
-     <y>302</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_custom_re</sender>
    <signal>toggled(bool)</signal>
    <receiver>insert_scryfall_id_matcher_sample_button</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>342</x>
-     <y>223</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>759</x>
-     <y>342</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_custom_re</sender>
    <signal>toggled(bool)</signal>
    <receiver>insert_set_code_matcher_sample_button</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>396</x>
-     <y>223</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>515</x>
-     <y>302</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_custom_re</sender>
    <signal>toggled(bool)</signal>
    <receiver>insert_copies_matcher_sample_button</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>396</x>
-     <y>223</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>206</x>
-     <y>342</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_custom_re</sender>
    <signal>toggled(bool)</signal>
    <receiver>insert_language_matcher_sample_button</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>452</x>
-     <y>223</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>515</x>
-     <y>342</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>select_parser_magic_workstation</sender>
    <signal>clicked()</signal>
    <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>383</x>
-     <y>72</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>383</x>
-     <y>297</y>
-    </hint>
-   </hints>
   </connection>
  </connections>
 </ui>

@@ -17,19 +17,31 @@
 """Contains some constants, type definitions and the unit parsing support code"""
 import configparser
 import enum
+import functools
 import re
+import sqlite3
 import typing
+from typing import Type, Dict, List, Optional, Set, NamedTuple, TypedDict, Union
+
 try:
     from typing import NotRequired
 except ImportError:  # Compatibility with Python < 3.11
     from typing_extensions import NotRequired
 
-import pint
+from PyQt5.QtCore import QSize, QObject
+from PyQt5.QtGui import QPageSize, QPageLayout
+
 try:
     from pint.facets.plain.registry import QuantityT, UnitT
 except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
     QuantityT = UnitT = typing.Any
-from PyQt5.QtCore import QSize
+
+import pint
+
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+
+import mtg_proxy_printer.natsort
 
 
 def _setup_units() -> typing.Tuple[pint.UnitRegistry, QuantityT]:
@@ -42,22 +54,41 @@ def _setup_units() -> typing.Tuple[pint.UnitRegistry, QuantityT]:
     return registry, resolution
 
 
+@functools.lru_cache(None)
+def distance_to_rounded_px(value: QuantityT) -> int:
+    return round(value.to("pixel", "print").magnitude)
+
+
+@functools.lru_cache(None)
+def distance_to_px(value: QuantityT) -> float:
+    return value.to("pixel", "print").magnitude
+
+
+@functools.lru_cache(None)
+def distance_to_mm(value: QuantityT) -> float:
+    return value.to("mm", "print").magnitude
+
+
 unit_registry, RESOLUTION = _setup_units()
 DEFAULT_SAVE_SUFFIX = "mtgproxies"
 
 # typing shortcuts
 ShouldBeUUID = WEB_URI = API_URI = str
-Colors = StringList = typing.List[str]
-StringSet = typing.Set[str]
-OptStr = typing.Optional[str]
-IntList = typing.List[int]
-StrDict = typing.Dict[str, str]
+Colors = StringList = List[str]
+StringSet = Set[str]
+OptStr = Optional[str]
+IntList = List[int]
+StrDict = Dict[str, str]
 T = typing.TypeVar("T")
+PageSizeId = QPageSize.PageSizeId
+mm: UnitT = unit_registry.mm
+
 
 class SectionProxy(configparser.SectionProxy):
     def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars=None) -> QuantityT:
         raw_value = self.get(option, fallback, raw=raw, vars=vars)
         return unit_registry.parse_expression(raw_value)
+
 
 class ConfigParser(configparser.ConfigParser):
 
@@ -82,12 +113,15 @@ class UUID(str):
         raise ValueError(f"Not a proper UUID: '{new}'")
 
 
-class CardSize(typing.NamedTuple):
+class CardSize(NamedTuple):
     width: QuantityT
     height: QuantityT
 
     def as_qsize_px(self):
         return QSize(round(self.width.magnitude), round(self.height.magnitude))
+
+    def to_save_data(self):
+        return f"{self.width.magnitude:.0f}x{self.height.magnitude:.0f}"
 
 
 @enum.unique
@@ -104,6 +138,10 @@ class CardSizes(CardSize, enum.Enum):
         return cls.OVERSIZED if value else cls.REGULAR
 
 
+sqlite3.register_adapter(CardSize, lambda item: item.to_save_data())
+sqlite3.register_adapter(CardSizes, lambda item: item.to_save_data())
+
+
 @enum.unique
 class PageType(enum.Enum):
     """
@@ -118,7 +156,7 @@ class PageType(enum.Enum):
     MIXED = enum.auto()
 
 
-class ImageUriType(typing.TypedDict):
+class ImageUriType(TypedDict):
     small: str
     normal: str
     large: str
@@ -127,9 +165,9 @@ class ImageUriType(typing.TypedDict):
     border_crop: str
 
 
-class FaceDataType(typing.TypedDict):
+class FaceDataType(TypedDict):
     artist: NotRequired[str]
-    artist_ids: NotRequired[typing.List[ShouldBeUUID]]
+    artist_ids: NotRequired[List[ShouldBeUUID]]
     cmc: NotRequired[float]
     color_indicator: NotRequired[Colors]
     colors: NotRequired[Colors]
@@ -153,7 +191,7 @@ class FaceDataType(typing.TypedDict):
     watermark: NotRequired[str]
 
 
-class RelatedCardType(typing.TypedDict):
+class RelatedCardType(TypedDict):
     object: str
     id: ShouldBeUUID
     component: str
@@ -162,7 +200,7 @@ class RelatedCardType(typing.TypedDict):
     uri: str
 
 
-_CardPreviewFields = typing.TypedDict("_CardPreviewFields", {
+_CardPreviewFields = TypedDict("_CardPreviewFields", {
     # Note: Requires this syntax, because keys are not valid python identifiers
     "preview.previewed_at": str,
     "preview.source_uri": WEB_URI,
@@ -192,8 +230,8 @@ class CardDataType(_CardPreviewFields):
     uri: API_URI
 
     # Gameplay fields
-    all_parts: NotRequired[typing.List[RelatedCardType]]
-    card_faces: NotRequired[typing.List[FaceDataType]]
+    all_parts: NotRequired[List[RelatedCardType]]
+    card_faces: NotRequired[List[FaceDataType]]
     cmc: float
     color_identity: Colors
     color_indicator: NotRequired[Colors]
@@ -217,7 +255,7 @@ class CardDataType(_CardPreviewFields):
 
     # Print fields
     artist: NotRequired[str]
-    artist_ids: NotRequired[typing.List[ShouldBeUUID]]
+    artist_ids: NotRequired[List[ShouldBeUUID]]
     attraction_lights: NotRequired[IntList]
     booster: bool
     border_color: str
@@ -237,15 +275,15 @@ class CardDataType(_CardPreviewFields):
     image_status: str
     image_uris: NotRequired[ImageUriType]
     oversized: bool
-    prices: typing.Dict[str, float]
+    prices: Dict[str, float]
     printed_name: NotRequired[str]
     printed_text: NotRequired[str]
     printed_type_line: NotRequired[str]
     promo: bool
     promo_types: NotRequired[StringList]
-    purchase_uris: NotRequired[typing.Dict[str, ShouldBeUUID]]
+    purchase_uris: NotRequired[Dict[str, ShouldBeUUID]]
     rarity: str
-    related_uris: typing.Dict[str, WEB_URI]
+    related_uris: Dict[str, WEB_URI]
     released_at: str
     reprint: bool
     scryfall_set_uri: WEB_URI
@@ -262,7 +300,7 @@ class CardDataType(_CardPreviewFields):
     watermark: NotRequired[str]
 
 
-class BulkDataType(typing.TypedDict):
+class BulkDataType(TypedDict):
     """
     The data returned by the bulk data API end point.
     See https://scryfall.com/docs/api/bulk-data
@@ -277,3 +315,45 @@ class BulkDataType(typing.TypedDict):
     size: int
     content_type: str
     content_encoding: str
+
+
+def _read_enum(container: Type, enum_class: Type[T], accumulator: Dict[str, T] = None) -> Dict[str, T]:
+    if accumulator is None:
+        accumulator = {}
+    for item in mtg_proxy_printer.natsort.natural_sorted(dir(container)):
+        value = getattr(container, item)
+        if isinstance(value, enum_class):
+            accumulator[item] = value
+    return accumulator
+
+
+def is_acceptable_page_size(page_size: Union[PageSizeId, QPageSize]) -> bool:
+    """
+    To be acceptable, the paper must support at least one oversized card and margins
+    in both portrait and landscape orientation.
+    """
+    if page_size == PageSizeId.Custom:
+        return True
+    size = QPageSize.size(page_size, QPageSize.Unit.Millimeter) \
+        if isinstance(page_size, PageSizeId) else page_size.size(QPageSize.Unit.Millimeter)
+    # TODO: Find a better way than this hack that adds 10mm of hard-coded margins.
+    card_height = CardSizes.OVERSIZED.height.to(mm, "print").magnitude + 10  # Add 10mm for margins
+    return size.height() >= card_height <= size.width() \
+        and size.height() >= card_height <= size.width()
+
+
+def read_page_size_enum() -> Dict[str, PageSizeId]:
+    result = _read_enum(QPageSize, PageSizeId, {"Custom": PageSizeId.Custom})
+    del result["LastPageSize"]
+
+    for item, value in list(result.items()):
+        if not is_acceptable_page_size(value):
+            del result[item]
+    return result
+
+
+class PageSizeManager(QObject):
+    PageSize = read_page_size_enum()
+    PageSizeReverse = {value: key for key, value in read_page_size_enum().items()}
+    PageOrientation = _read_enum(QPageLayout, QPageLayout.Orientation)
+    PageOrientationReverse = {value: key for key, value in _read_enum(QPageLayout, QPageLayout.Orientation).items()}

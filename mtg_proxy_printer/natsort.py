@@ -18,6 +18,7 @@
 Natural sorting for lists or other iterables of strings.
 """
 
+import itertools
 import re
 import typing
 
@@ -27,6 +28,7 @@ __all__ = [
     "natural_sorted",
     "str_less_than",
     "NaturallySortedSortFilterProxyModel",
+    "to_list_of_ranges"
 ]
 
 _NUMBER_GROUP_REG_EXP = re.compile(r"(\d+)")
@@ -79,3 +81,17 @@ class NaturallySortedSortFilterProxyModel(QSortFilterProxyModel):
         return [
             self.mapToSource(self.index(row, 0)).row() for row in range(self.rowCount())
         ]
+
+
+def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[typing.Tuple[int, int]]:
+    sequence = sorted(sequence)
+    ranges: typing.List[typing.Tuple[int, int]] = []
+    sequence = itertools.chain(sequence, (sentinel := object(),))
+    lower = upper = next(sequence)
+    for item in sequence:
+        if item is sentinel or upper != item-1:
+            ranges.append((lower, upper))
+            lower = upper = item
+        else:
+            upper = item
+    return ranges

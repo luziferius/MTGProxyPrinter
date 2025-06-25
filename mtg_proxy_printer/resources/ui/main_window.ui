@@ -23,28 +23,41 @@
      <x>0</x>
      <y>0</y>
      <width>1050</width>
-     <height>30</height>
+     <height>28</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
     <property name="title">
      <string>Fi&amp;le</string>
     </property>
+    <widget class="QMenu" name="menu_export">
+     <property name="title">
+      <string>Export</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-export">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
+     <addaction name="action_print_pdf"/>
+     <addaction name="action_export_png"/>
+     <addaction name="separator"/>
+     <addaction name="action_export_card_images"/>
+    </widget>
     <addaction name="action_new_document"/>
     <addaction name="action_load_document"/>
     <addaction name="action_save_document"/>
     <addaction name="action_save_as"/>
+    <addaction name="separator"/>
     <addaction name="action_print_preview"/>
     <addaction name="action_print"/>
-    <addaction name="action_print_pdf"/>
+    <addaction name="menu_export"/>
     <addaction name="separator"/>
     <addaction name="action_import_deck_list"/>
-    <addaction name="separator"/>
-    <addaction name="action_quit"/>
+    <addaction name="action_add_custom_cards"/>
    </widget>
-   <widget class="QMenu" name="menu_settings">
+   <widget class="QMenu" name="menu_application">
     <property name="title">
-     <string>Settings</string>
+     <string>Application</string>
     </property>
     <addaction name="action_show_settings"/>
     <addaction name="action_show_toolbar"/>
@@ -53,6 +66,8 @@
     <addaction name="separator"/>
     <addaction name="action_show_changelog"/>
     <addaction name="action_show_about_dialog"/>
+    <addaction name="separator"/>
+    <addaction name="action_quit"/>
    </widget>
    <widget class="QMenu" name="menu_edit">
     <property name="title">
@@ -70,9 +85,9 @@
     <addaction name="action_add_empty_card"/>
     <addaction name="action_discard_page"/>
    </widget>
+   <addaction name="menu_application"/>
    <addaction name="menu_file"/>
    <addaction name="menu_edit"/>
-   <addaction name="menu_settings"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
@@ -273,7 +288,7 @@
     <iconset theme="document-import"/>
    </property>
    <property name="text">
-    <string>Import Deck list</string>
+    <string>Import deck list</string>
    </property>
    <property name="toolTip">
     <string>Import a deck list from online sources</string>
@@ -358,6 +373,36 @@ use this to reduce the initial deck shuffling required</string>
     <string>Add an empty spacer filling a card slot</string>
    </property>
   </action>
+  <action name="action_add_custom_cards">
+   <property name="icon">
+    <iconset theme="list-add"/>
+   </property>
+   <property name="text">
+    <string>Add custom cards</string>
+   </property>
+  </action>
+  <action name="action_export_png">
+   <property name="icon">
+    <iconset theme="document-export"/>
+   </property>
+   <property name="text">
+    <string>Export as image sequence</string>
+   </property>
+   <property name="toolTip">
+    <string>Export document as an image sequence</string>
+   </property>
+  </action>
+  <action name="action_export_card_images">
+   <property name="icon">
+    <iconset theme="document-export"/>
+   </property>
+   <property name="text">
+    <string>Export individual card images</string>
+   </property>
+   <property name="toolTip">
+    <string>Export all card images to a directory</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -374,32 +419,12 @@ use this to reduce the initial deck shuffling required</string>
    <signal>toggled(bool)</signal>
    <receiver>toolBar</receiver>
    <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>499</x>
-     <y>48</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>toolBar</sender>
    <signal>visibilityChanged(bool)</signal>
    <receiver>action_show_toolbar</receiver>
    <slot>setChecked(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>499</x>
-     <y>48</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
   </connection>
  </connections>
 </ui>

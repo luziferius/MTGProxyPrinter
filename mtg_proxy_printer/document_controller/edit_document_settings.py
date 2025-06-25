@@ -25,7 +25,7 @@ from .page_actions import ActionNewPage
 from mtg_proxy_printer.logger import get_logger
 
 from mtg_proxy_printer.units_and_sizes import PageType
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document_page import Page
@@ -84,7 +84,7 @@ class ActionEditDocumentSettings(DocumentAction):
         Leading empty pages are ignored.
         """
         pages = document.pages
-        first_populated_page = sum(1 for _ in itertools.takewhile(lambda page: not page, pages))
+        first_populated_page = sum(1 for _ in itertools.takewhile(lambda p: not p, pages))
         if first_populated_page == len(pages):
             return []
 

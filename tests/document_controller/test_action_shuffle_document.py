@@ -13,12 +13,16 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Sequence
+
 
 import pytest
 from hamcrest import *
+from pytestqt.qtbot import QtBot
 
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
-from mtg_proxy_printer.model.carddb import CardList
+from mtg_proxy_printer.model.card import CardList
 from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
@@ -39,7 +43,7 @@ def test_init_creates_nonempty_seed():
     assert_that(action.random_seed, all_of(instance_of(bytes), is_not(empty())))
 
 
-def test_apply(qtbot, document_light):
+def test_apply(qtbot: QtBot, document_light: Document):
     action = ActionShuffleDocument()
     action.random_seed = b"1"
     page = document_light.pages[0]
@@ -64,7 +68,8 @@ def test_apply(qtbot, document_light):
     (b"a", (0, 1), ("Card 1", "Card 2")),  # This seed keeps the original order
     (b"b", (1, 0), ("Card 2", "Card 1")),  # This one swaps the cards
 ])
-def test_apply_swaps_cards_across_pages(document_light, seed, order, card_names):
+def test_apply_swaps_cards_across_pages(
+        document_light: Document, seed: bytes, order: Sequence[int], card_names: Sequence[str]):
     def page_matcher(name: str):
         return contains_exactly(has_property("card", has_property("name", name)))
 
@@ -83,7 +88,7 @@ def test_apply_swaps_cards_across_pages(document_light, seed, order, card_names)
     )
 
 
-def test_apply_does_not_create_mixed_pages(document_light):
+def test_apply_does_not_create_mixed_pages(document_light: Document):
     def page_matcher(names):
         return contains_inanyorder(
             *map(lambda name: has_property("card", has_property("name", name)), names))
@@ -109,13 +114,13 @@ def test_apply_does_not_create_mixed_pages(document_light):
         )
 
 
-def test_apply_with_existing_state_raises_exception(document_light):
+def test_apply_with_existing_state_raises_exception(document_light: Document):
     action = ActionShuffleDocument()
     action.shuffle_order[PageType.REGULAR] = [0]
     assert_that(calling(action.apply).with_args(document_light), raises(IllegalStateError))
 
 
-def test_undo_reorders_cards(qtbot, document_light):
+def test_undo_reorders_cards(document_light: Document):
     page = document_light.pages[0]
     append_new_card_in_page(page, "Card 3")
     append_new_card_in_page(page, "Card 2")
@@ -133,7 +138,7 @@ def test_undo_reorders_cards(qtbot, document_light):
     )
 
 
-def test_second_apply_produces_same_order(qtbot, document_light):
+def test_second_apply_produces_same_order(qtbot: QtBot, document_light: Document):
     action = ActionShuffleDocument()
     action.random_seed = b"1"
     page = document_light.pages[0]

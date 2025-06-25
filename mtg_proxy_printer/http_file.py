@@ -13,8 +13,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-
 try:
     from functools import cache
 except ImportError:
@@ -22,8 +20,7 @@ except ImportError:
 import http.client
 import socket
 import time
-import typing
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Callable
 import urllib.error
 import urllib.request
 
@@ -65,7 +62,7 @@ class MeteredSeekableHTTPFile(QObject):
     io_begin = Signal(int, str)  # Emitted in __enter__, carries the total file size in bytes. -1, if unknown
     io_finished = Signal()  # Emitted in __exit__, when the file is closed
     total_bytes_processed = Signal(int)  # Emitted after each read chunk, carries the total number of bytes read
-    getcode: typing.Callable[[], int]
+    getcode: Callable[[], int]
 
     def __init__(self, url: str, headers: Dict[str, str] = None, parent: QObject = None, *,
                  ui_hint: str = "", retry_limit: int = 10):
@@ -123,11 +120,11 @@ class MeteredSeekableHTTPFile(QObject):
         if not self.seekable():
             raise OSError
         old_pos = self.tell()
-        if whence == 0:
+        if whence == 0:  # Relative to the file begin
             self._pos = 0
-        elif whence == 1:
+        elif whence == 1:  # Relative to the current position
             pass
-        elif whence == 2:
+        elif whence == 2:  # Relative to the file end
             self._pos = self.content_length - 1
         self._pos += offset
         if self._pos != old_pos:
@@ -157,6 +154,7 @@ class MeteredSeekableHTTPFile(QObject):
                 return buffer
         if last_error is not None:
             raise last_error
+        return b""
 
     def read1(self, count: int = None, /) -> bytes:
         buffer = self.file.read1(count)
@@ -182,6 +180,7 @@ class MeteredSeekableHTTPFile(QObject):
                 return buffer_length
         if last_error is not None:
             raise last_error
+        return 0
 
     def readinto1(self, buffer, /) -> int:
         block_length = self.file.readinto1(buffer)
@@ -204,7 +203,7 @@ class MeteredSeekableHTTPFile(QObject):
         self.read_bytes += block_length
         self.total_bytes_processed.emit(self.read_bytes)
 
-    def _urlopen(self, first_byte: int = 0, /, *, outer_retries: int = 0) -> http.client.HTTPResponse:
+    def _urlopen(self, first_byte: int = 0, /, *, outer_retries: int = 0) -> Optional[http.client.HTTPResponse]:
         """
         Opens the stored URL, returning the Response object, which can be used as a context manager.
 
@@ -239,6 +238,7 @@ class MeteredSeekableHTTPFile(QObject):
         if last_error is not None:
             logger.exception(last_error)
             raise last_error
+        return None
 
     def close(self):
         self.closed = True

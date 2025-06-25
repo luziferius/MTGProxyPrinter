@@ -14,12 +14,15 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
+from typing import List
 from unittest.mock import MagicMock
 
 from hamcrest import *
 import pytest
+from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.model.carddb import Card
+from mtg_proxy_printer.model.card import Card, CardList
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import CardContainer, Page
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
@@ -50,7 +53,8 @@ def test_init_with_non_positive_count_raises_exception(count: int):
     (2, [[]]),
     (2, [[], [], []]),
 ])
-def test_init_with_content_length_unequal_count_raises_exception(qtbot, document_light, count: int, content):
+def test_init_with_content_length_unequal_count_raises_exception(
+        document_light: Document, count: int, content: List[CardList]):
     assert_that(calling(ActionNewPage).with_args(count=count, content=content), raises(ValueError))
 
 
@@ -69,11 +73,11 @@ def test_init_initializes_length_content_to_count_if_not_given(count: int):
     [[create_card("P1")], [], [create_card("P3-1", OVERSIZED), create_card("P3-2")]],
     [[create_card("P1", OVERSIZED)], [], [create_card("P3-1"), create_card("P3-2", OVERSIZED)]],
 ])
-def test_init_with_content_rejects_creating_mixed_size_pages(content):
+def test_init_with_content_rejects_creating_mixed_size_pages(content: List[CardList]):
     assert_that(calling(ActionNewPage).with_args(count=len(content), content=content), raises(ValueError))
 
 
-def test_apply_without_position_appends_new_page(qtbot, document_light):
+def test_apply_without_position_appends_new_page(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     card = append_new_card_in_page(pages[0], "Card")
     action = ActionNewPage()
@@ -91,7 +95,7 @@ def test_apply_without_position_appends_new_page(qtbot, document_light):
 
 
 @pytest.mark.parametrize("count", [1, 3])
-def test_apply_without_position_appends_count_new_pages(qtbot, document_light, count):
+def test_apply_without_position_appends_count_new_pages(qtbot: QtBot, document_light: Document, count: int):
     pages = document_light.pages
     card = append_new_card_in_page(pages[0], "Card")
     action = ActionNewPage(count=count)
@@ -108,7 +112,7 @@ def test_apply_without_position_appends_count_new_pages(qtbot, document_light, c
     verify_page_index_cache_is_valid(document_light)
 
 
-def test_apply_with_position_inserts_new_page_at_the_given_position(qtbot, document_light):
+def test_apply_with_position_inserts_new_page_at_the_given_position(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
     insert_mock_in_page(document_light.pages[0], 2)
     insert_mock_in_page(document_light.pages[1], 1)
@@ -128,7 +132,8 @@ def test_apply_with_position_inserts_new_page_at_the_given_position(qtbot, docum
 
 
 @pytest.mark.parametrize("count", [1, 3])
-def test_apply_with_position_inserts_count_new_pages_at_the_given_position(qtbot, document_light, count: int):
+def test_apply_with_position_inserts_count_new_pages_at_the_given_position(
+        qtbot: QtBot, document_light: Document, count: int):
     append_new_pages(document_light, 1)
     insert_mock_in_page(document_light.pages[0], 2)
     insert_mock_in_page(document_light.pages[1], 1)
@@ -153,7 +158,7 @@ def test_apply_with_position_inserts_count_new_pages_at_the_given_position(qtbot
     [[create_card("P1", OVERSIZED)], [], [create_card("P3-1"), create_card("P3-2")]],
     [[create_card("P1")], [], [create_card("P3-1", OVERSIZED), create_card("P3-2", OVERSIZED)]],
 ])
-def test_apply_with_content_populates_created_pages(qtbot, document_light, content):
+def test_apply_with_content_populates_created_pages(qtbot: QtBot, document_light: Document, content: List[CardList]):
     action = ActionNewPage(count=len(content), content=content)
     with qtbot.wait_signal(document_light.rowsAboutToBeInserted), qtbot.wait_signal(document_light.rowsInserted):
         assert_that(action.apply(document_light), is_(same_instance(action)))
@@ -179,7 +184,7 @@ def test_undo_without_position_raises_exception(document_light):
     assert_that(calling(action.undo).with_args(document_light), raises(IllegalStateError))
 
 
-def test_undo_with_position_removes_inserted_page(qtbot, document_light):
+def test_undo_with_position_removes_inserted_page(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 2)
     insert_mock_in_page(document_light.pages[0])
     insert_mock_in_page(document_light.pages[2])
@@ -196,7 +201,7 @@ def test_undo_with_position_removes_inserted_page(qtbot, document_light):
     verify_page_index_cache_is_valid(document_light)
 
 
-def test_undo_removes_count_pages(qtbot, document_light):
+def test_undo_removes_count_pages(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 3)
     insert_mock_in_page(document_light.pages[0])
     insert_mock_in_page(document_light.pages[3])

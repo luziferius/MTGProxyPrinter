@@ -17,6 +17,8 @@
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtWidgets import QWidget, QLabel, QProgressBar
 
+from mtg_proxy_printer.runner import ProgressSignalContainer
+
 try:
     from mtg_proxy_printer.ui.generated.progress_bar import Ui_ProgressBar
 except ModuleNotFoundError:
@@ -27,6 +29,8 @@ from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
+ConnectionType = Qt.ConnectionType
+QueuedConnection = ConnectionType.QueuedConnection
 __all__ = [
     "ProgressBar",
 ]
@@ -46,7 +50,32 @@ class ProgressBar(QWidget):
             item.hide()
         for item in (ui.outer_progress_bar, ui.outer_progress_label, ui.independent_bar, ui.independent_label):
             item.hide()
-        
+
+    def connect_inner_progress(self, sender: ProgressSignalContainer, con_type: ConnectionType = QueuedConnection):
+        self._connect_progress_slots(
+            sender, con_type,
+            self.begin_inner_progress, self.set_inner_progress, self.end_inner_progress
+        )
+
+    def connect_outer_progress(self, sender: ProgressSignalContainer, con_type: ConnectionType = QueuedConnection):
+        self._connect_progress_slots(
+            sender, con_type,
+            self.begin_outer_progress, self.set_outer_progress, self.end_outer_progress
+        )
+
+    def connect_independent_progress(self, sender: ProgressSignalContainer, con_type: ConnectionType = QueuedConnection):
+        self._connect_progress_slots(
+            sender, con_type,
+            self.begin_independent_progress, self.set_independent_progress, self.end_independent_progress
+        )
+
+    @staticmethod
+    def _connect_progress_slots(
+            sender: ProgressSignalContainer, con_type: ConnectionType, begin_slot, progress_slot, end_slot):
+        sender.begin_update.connect(begin_slot, con_type)
+        sender.progress.connect(progress_slot, con_type)
+        sender.update_completed.connect(end_slot, con_type)
+
     @staticmethod
     def _set_retain_size_policy(widget: QWidget, value: bool):
         policy = widget.sizePolicy()

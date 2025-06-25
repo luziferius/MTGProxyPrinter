@@ -8,11 +8,12 @@
     <file alias="License.md">../../LICENSE.md</file>
 
     <!-- Localisations -->
+    <file>translations/progress.json</file>
     <file>translations/mtgproxyprinter_de.qm</file>
     <!--file alias="translations/mtgproxyprinter_en.qm">translations/mtgproxyprinter_en_GB.qm</file-->
     <file alias="translations/mtgproxyprinter_en.qm">translations/mtgproxyprinter_en_US.qm</file>
     <!--file>translations/mtgproxyprinter_es.qm</file-->
-    <!--file>translations/mtgproxyprinter_fr.qm</file-->
+    <file>translations/mtgproxyprinter_fr.qm</file>
     <!--file>translations/mtgproxyprinter_it.qm</file-->
     <!--file>translations/mtgproxyprinter_ja.qm</file-->
     <!--file>translations/mtgproxyprinter_ko.qm</file-->
@@ -34,6 +35,7 @@
     <file>icons/breeze/actions/16/dialog-cancel.svg</file>
     <file>icons/breeze/actions/16/dialog-ok.svg</file>
     <file>icons/breeze/actions/16/document-close.svg</file>
+    <file>icons/breeze/actions/16/document-export.svg</file>
     <file>icons/breeze/actions/16/document-import.svg</file>
     <file>icons/breeze/actions/16/document-new.svg</file>
     <file>icons/breeze/actions/16/document-open.svg</file>
@@ -67,6 +69,7 @@
     <file>icons/breeze/actions/22/dialog-cancel.svg</file>
     <file>icons/breeze/actions/22/dialog-ok.svg</file>
     <file>icons/breeze/actions/22/document-close.svg</file>
+    <file>icons/breeze/actions/22/document-export.svg</file>
     <file>icons/breeze/actions/22/document-import.svg</file>
     <file>icons/breeze/actions/22/document-new.svg</file>
     <file>icons/breeze/actions/22/document-open.svg</file>
@@ -100,6 +103,7 @@
     <file>icons/breeze/actions/24/dialog-cancel.svg</file>
     <file>icons/breeze/actions/24/dialog-ok.svg</file>
     <file>icons/breeze/actions/24/document-close.svg</file>
+    <file>icons/breeze/actions/24/document-export.svg</file>
     <file>icons/breeze/actions/24/document-import.svg</file>
     <file>icons/breeze/actions/24/document-new.svg</file>
     <file>icons/breeze/actions/24/document-open.svg</file>
@@ -133,6 +137,7 @@
     <file>icons/breeze/actions/32/dialog-cancel.svg</file>
     <file>icons/breeze/actions/32/dialog-ok.svg</file>
     <file>icons/breeze/actions/32/document-close.svg</file>
+    <file>icons/breeze/actions/32/document-export.svg</file>
     <file>icons/breeze/actions/32/document-import.svg</file>
     <file>icons/breeze/actions/32/document-new.svg</file>
     <file>icons/breeze/actions/32/document-open.svg</file>

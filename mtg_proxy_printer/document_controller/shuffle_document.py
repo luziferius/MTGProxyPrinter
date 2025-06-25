@@ -26,9 +26,8 @@ import typing
 from PyQt5.QtCore import Qt, QModelIndex
 
 from ._interface import DocumentAction, IllegalStateError, Self
-from mtg_proxy_printer.model.carddb import Card
-from mtg_proxy_printer.model.card_list import PageColumns
-from mtg_proxy_printer.model.document_page import CardContainer
+from ..model.card import Card
+from mtg_proxy_printer.model.document_page import CardContainer, PageColumns
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import PageType
 __all__ = [
@@ -87,6 +86,7 @@ class ActionShuffleDocument(DocumentAction):
 
     @staticmethod
     def _swap_cards(document: Document, model_indices: ModelIndexList, cards: IndexedCards):
+
         rightmost_column = len(PageColumns)-1
         for (_, card), model_index in zip(cards, model_indices):
             bottom_right = model_index.siblingAtColumn(rightmost_column)

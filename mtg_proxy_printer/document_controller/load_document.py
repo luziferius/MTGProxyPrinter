@@ -19,10 +19,10 @@ import pathlib
 import typing
 
 if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+    from mtg_proxy_printer.model.page_layout import PageLayoutSettings
     from mtg_proxy_printer.model.document import Document
 
-from mtg_proxy_printer.model.carddb import CardList
+from mtg_proxy_printer.model.card import CardList
 from ._interface import DocumentAction, IllegalStateError, ActionList, Self
 from .page_actions import ActionNewPage
 from .card_actions import ActionAddCard
@@ -53,11 +53,29 @@ class ActionLoadDocument(DocumentAction):
         self.actions.append(ActionNewDocument().apply(document))
         self.actions.append(ActionEditDocumentSettings(self.page_layout).apply(document))
         document.set_currently_edited_page(document.pages[0])
-        for card in self.loaded_cards[0]:
-            self.actions.append(ActionAddCard(card).apply(document))
-        if page_count := len(self.loaded_cards)-1:
-            self.actions.append(ActionNewPage(count=page_count, content=self.loaded_cards[1:]).apply(document))
+        if self.loaded_cards:
+            for copies, card in self._batch_page_content(self.loaded_cards[0]):
+                self.actions.append(ActionAddCard(card, copies).apply(document))
+            if page_count := len(self.loaded_cards)-1:
+                self.actions.append(ActionNewPage(count=page_count, content=self.loaded_cards[1:]).apply(document))
         return super().apply(document)
+
+    @staticmethod
+    def _batch_page_content(cards: CardList):
+        if not cards:
+            return
+        cards.append(object())  # sentinel, will not be returned
+        count, last = 0, cards[0]
+        for card in cards:
+            if card == last:
+                count += 1
+            else:
+                yield count, last
+                count, last = 0, card
+        if count:
+            yield count, last
+
+
 
     def undo(self, document: "Document") -> Self:
         for action in reversed(self.actions):

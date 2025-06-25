@@ -63,7 +63,7 @@ def main():
     handle_ssl_certificates()
     # According to https://doc.qt.io/qt-5/qt.html#ApplicationAttribute-enum,
     # Qt.AA_EnableHighDpiScaling has to be set prior to creating the QApplication instance
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
     _app = Application(arguments, sys.argv)
     if arguments.test_exit_on_launch:
         logger.info("Skipping startup tasks, because immediate application exit was requested.")

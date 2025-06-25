@@ -15,30 +15,98 @@
 
 
 import math
+from functools import partial
+
+try:
+    from os import process_cpu_count
+except ImportError:
+    from os import cpu_count as process_cpu_count
 from pathlib import Path
+from threading import BoundedSemaphore
+import typing
 import tempfile
 
-from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex
-from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize
+from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex, QThreadPool
+from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage, QColor
 from PyQt5.QtPrintSupport import QPrinter
 
 from pypdf import PdfWriter
 
+
+from mtg_proxy_printer.runner import ProgressSignalContainer
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.ui.main_window import MainWindow
+
+from mtg_proxy_printer.units_and_sizes import RESOLUTION
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+from mtg_proxy_printer.model.carddb import with_database_write_lock
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.units_and_sizes
 logger = get_logger(__name__)
 del get_logger
 
+RenderHint = QPainter.RenderHint
+Format = QImage.Format
+
 __all__ = [
     "export_pdf",
     "create_printer",
     "Renderer",
+    "PNGRenderer",
 ]
+
+PNGEncoderThreadLimit = BoundedSemaphore(max(1, process_cpu_count()-1))
+
+
+class PNGRenderer(ProgressSignalContainer):
+    def __init__(self, main_window: "MainWindow", document: Document, file_path: str):
+        super().__init__(main_window)
+        self.document = document
+        self.file_path = Path(file_path)
+        self.page_count = document.rowCount()
+        self.completed = 0
+
+    def render_document(self):
+        document = self.document
+        file_path = self.file_path
+        page_count = self.page_count
+        if not page_count:  # No pages in document
+            logger.error("Tried to export a document with zero pages. Aborting.")
+            self.update_completed.emit()
+            return
+        logger.info(f'Exporting document with {document.rowCount()} pages as PNG image sequence to "{file_path}"')
+        page_size = document.page_layout.to_page_layout(RenderMode.ON_PAPER).pageSize().sizePixels(
+            round(RESOLUTION.magnitude))
+        pool = QThreadPool.globalInstance()
+        scene = PageScene(document, RenderMode.ON_PAPER, self)
+        number_width = len(str(page_count))
+        parent = file_path.parent
+        self.begin_update.emit(page_count, self.tr("Export as PNGs"))
+        for page_nr in range(page_count):
+            file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
+            output_path = parent / file_name
+            background_color = QColor(settings["export"]["png-background-color"])
+            # 255 is solid. So avoid adding the alpha channel, if it won't be used.
+            image_format = Format.Format_RGB888 if background_color.alpha() == 255 else Format.Format_RGBA8888
+            image = QImage(page_size, image_format)
+            image.fill(background_color)
+            painter = QPainter(image)
+            scene.on_current_page_changed(document.index(page_nr, 0))
+            scene.render(painter)
+            pool.start(partial(self._compress_single_image, image, output_path))
+
+    @with_database_write_lock(PNGEncoderThreadLimit)
+    def _compress_single_image(self, image: QImage, output_path: Path):
+        image.save(str(output_path), "PNG", 0)
+        self.completed += 1
+        self.advance_progress.emit()
+        self.progress.emit(self.completed)
+        if self.completed == self.page_count:
+            self.update_completed.emit()
 
 
 def export_pdf(document: Document, file_path: str, parent: QObject = None):
@@ -95,7 +163,7 @@ class PDFPrinter(QPdfWriter):
         self.document = document
         self.document_index = document_index
         self.pages_to_print = pages_to_print = pages_to_print or document.rowCount()
-        self.landscape_workaround_enabled = settings["pdf-export"].getboolean("landscape-compatibility-workaround")
+        self.landscape_workaround_enabled = settings["export"].getboolean("landscape-compatibility-workaround")
         if pages_to_print < document.rowCount():
             # Determine the number of digits required to properly sort all documents, without having to rely on
             # external support for natural sorting
@@ -135,7 +203,7 @@ class PDFPrinter(QPdfWriter):
             scaling = self.scene.width()/self.scene.height()
             self.painter.rotate(90)
             self.painter.translate(0, -self.scene.height())
-        self.painter.setRenderHint(QPainter.LosslessImageRendering)  # Prevent avoidable image degradation
+        self.painter.setRenderHint(RenderHint.LosslessImageRendering)  # Prevent avoidable image degradation
         self.painter.scale(
                 scaling*self.logicalDpiX()/self.resolution(),
                 scaling*self.logicalDpiY()/self.resolution(),
@@ -160,6 +228,7 @@ class PDFPrinter(QPdfWriter):
 
     def _set_viewer_preferences(self):
         pdf = PdfWriter(clone_from=self.temp_path)
+        
         pdf.create_viewer_preferences()
         pdf.viewer_preferences.print_scaling = "/None"
         with open(self.target_path, "wb") as output_file:
@@ -187,7 +256,7 @@ class Renderer(QObject):
             painter.translate(0, -self.scene.height())
             scaling = self.scene.width()/self.scene.height()
             painter.scale(scaling, scaling)
-        painter.setRenderHint(QPainter.LosslessImageRendering)
+        painter.setRenderHint(RenderHint.LosslessImageRendering)
         page_count = self.document.rowCount()
         for index in range(page_count):
             logger.debug(f"Printing page {index+1}/{page_count}")

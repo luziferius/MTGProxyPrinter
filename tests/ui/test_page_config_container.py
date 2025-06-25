@@ -20,17 +20,17 @@ import pytest
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import QuantityT, unit_registry
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
 from tests.helpers import quantity_close_to
 
 
-@pytest.fixture
-def container(qtbot: QtBot):
+@pytest.fixture()
+def container(qtbot: QtBot, page_layout: PageLayoutSettings):
     container = PageConfigContainer()
-    container.ui.page_config_widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
+    container.ui.page_config_widget.load_from_page_layout(page_layout)
     qtbot.add_widget(container)
     return container
 
@@ -57,7 +57,7 @@ def test_boolean_settings_change_signal_connection_from_config_widget_to_preview
 @pytest.mark.parametrize(
     "widget_name",[
          "card_bleed",
-         "page_height", "page_width",
+         "custom_page_height", "custom_page_width",
          "margin_top", "margin_bottom", "margin_left", "margin_right",
          "row_spacing", "column_spacing",
      ])

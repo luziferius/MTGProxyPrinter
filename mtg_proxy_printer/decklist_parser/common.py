@@ -19,7 +19,8 @@ import typing
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal
 
-from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.card import Card, AnyCardType
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
@@ -29,6 +30,7 @@ del get_logger
 __all__ = [
     "ParsedDeck",
     "ParserBase",
+    "CardCounter",
 ]
 
 try:
@@ -41,7 +43,8 @@ except NameError:
     def profile(func):
         return func
 
-ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
+CardCounter = typing.Counter[AnyCardType]
+ParsedDeck = typing.Tuple[CardCounter, typing.List[str]]
 
 
 class ParserBase(QObject):
@@ -161,6 +164,7 @@ class ParserBase(QObject):
                 f"Matching using language and card name. Found {len(possible_matches)} matches."
             )
             return self._determine_best_match(possible_matches)
+        return None
 
     def _determine_best_match(self, possible_matches: typing.List[Card]) -> Card:
         if self.print_guessing_prefer_already_downloaded and \

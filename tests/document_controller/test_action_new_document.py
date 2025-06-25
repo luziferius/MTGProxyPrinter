@@ -22,9 +22,10 @@ from hamcrest import *
 from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
+from mtg_proxy_printer.model.document import Document
 
 
-def test_apply(qtbot, document_light):
+def test_apply(document_light: Document):
     save_path = document_light.save_file_path = pathlib.PurePath("Test")
     action = ActionNewDocument()
 
@@ -32,7 +33,6 @@ def test_apply(qtbot, document_light):
     assert_that(
         document_light.save_file_path, is_(none())
     )
-
     assert_that(action.old_save_path, is_(equal_to(save_path)))
     assert_that(action.reset_settings_action, is_(instance_of(ActionEditDocumentSettings)))
     assert_that(action.remove_pages_action, is_(instance_of(ActionRemovePage)))
@@ -40,7 +40,7 @@ def test_apply(qtbot, document_light):
     assert_that(action.new_page_layout, is_(not_none()))
 
 
-def test_apply_applies_internal_actions(qtbot, document_light):
+def test_apply_applies_internal_actions(document_light: Document):
     action = ActionNewDocument()
     with patch("mtg_proxy_printer.document_controller.new_document.ActionRemovePage.apply") as remove_apply_mock, \
             patch("mtg_proxy_printer.document_controller.new_document.ActionEditDocumentSettings.apply") as \
@@ -50,7 +50,7 @@ def test_apply_applies_internal_actions(qtbot, document_light):
     edit_settings_apply_mock.assert_called_once_with(document_light)
 
 
-def test_undo_undoes_internal_actions(qtbot, document_light):
+def test_undo_undoes_internal_actions(document_light: Document):
     action = ActionNewDocument()
     action.apply(document_light)
     old_save_path = action.old_save_path = pathlib.PurePath("Test")
