@@ -30,6 +30,19 @@
     <property name="title">
      <string>Fi&amp;le</string>
     </property>
+    <widget class="QMenu" name="menu_export">
+     <property name="title">
+      <string>Export</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-export">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
+     <addaction name="action_print_pdf"/>
+     <addaction name="action_export_png"/>
+     <addaction name="separator"/>
+     <addaction name="action_export_card_images"/>
+    </widget>
     <addaction name="action_new_document"/>
     <addaction name="action_load_document"/>
     <addaction name="action_save_document"/>
@@ -37,18 +50,14 @@
     <addaction name="separator"/>
     <addaction name="action_print_preview"/>
     <addaction name="action_print"/>
-    <addaction name="action_print_pdf"/>
-    <addaction name="action_export_png"/>
+    <addaction name="menu_export"/>
     <addaction name="separator"/>
     <addaction name="action_import_deck_list"/>
     <addaction name="action_add_custom_cards"/>
-    <addaction name="action_export_card_images"/>
-    <addaction name="separator"/>
-    <addaction name="action_quit"/>
    </widget>
-   <widget class="QMenu" name="menu_settings">
+   <widget class="QMenu" name="menu_application">
     <property name="title">
-     <string>Settings</string>
+     <string>Application</string>
     </property>
     <addaction name="action_show_settings"/>
     <addaction name="action_show_toolbar"/>
@@ -57,6 +66,8 @@
     <addaction name="separator"/>
     <addaction name="action_show_changelog"/>
     <addaction name="action_show_about_dialog"/>
+    <addaction name="separator"/>
+    <addaction name="action_quit"/>
    </widget>
    <widget class="QMenu" name="menu_edit">
     <property name="title">
@@ -74,9 +85,9 @@
     <addaction name="action_add_empty_card"/>
     <addaction name="action_discard_page"/>
    </widget>
+   <addaction name="menu_application"/>
    <addaction name="menu_file"/>
    <addaction name="menu_edit"/>
-   <addaction name="menu_settings"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
@@ -375,7 +386,7 @@ use this to reduce the initial deck shuffling required</string>
     <iconset theme="document-export"/>
    </property>
    <property name="text">
-    <string>Create image sequence</string>
+    <string>Export as image sequence</string>
    </property>
    <property name="toolTip">
     <string>Export document as an image sequence</string>
@@ -386,7 +397,7 @@ use this to reduce the initial deck shuffling required</string>
     <iconset theme="document-export"/>
    </property>
    <property name="text">
-    <string>Export card images</string>
+    <string>Export individual card images</string>
    </property>
    <property name="toolTip">
     <string>Export all card images to a directory</string>
@@ -408,32 +419,12 @@ use this to reduce the initial deck shuffling required</string>
    <signal>toggled(bool)</signal>
    <receiver>toolBar</receiver>
    <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>499</x>
-     <y>48</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>toolBar</sender>
    <signal>visibilityChanged(bool)</signal>
    <receiver>action_show_toolbar</receiver>
    <slot>setChecked(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>499</x>
-     <y>48</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-   </hints>
   </connection>
  </connections>
 </ui>

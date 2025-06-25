@@ -483,49 +483,49 @@ switch the selected printing.</translation>
   <context>
     <name>DebugSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="128"/>
+      <location filename="../../ui/settings_window_pages.py" line="130"/>
       <source>Debug settings</source>
       <translation>Debug settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="128"/>
+      <location filename="../../ui/settings_window_pages.py" line="130"/>
       <source>Things useful for investigating bugs in the application</source>
       <translation>Things useful for investigating bugs in the application</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="183"/>
+      <location filename="../../ui/settings_window_pages.py" line="185"/>
       <source>Select download location</source>
       <translation>Select download location</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="191"/>
+      <location filename="../../ui/settings_window_pages.py" line="193"/>
       <source>Selected location is not a directory</source>
       <translation>Selected location is not a directory</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="191"/>
+      <location filename="../../ui/settings_window_pages.py" line="193"/>
       <source>Cannot write the card data at the given location, because it is not a directory:
 {location}</source>
       <translation>Cannot write the card data at the given location, because it is not a directory:
 {location}</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="204"/>
+      <location filename="../../ui/settings_window_pages.py" line="206"/>
       <source>Import previously downloaded card data obtained from Scryfall</source>
       <translation>Import previously downloaded card data obtained from Scryfall</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="204"/>
+      <location filename="../../ui/settings_window_pages.py" line="206"/>
       <source>Scryfall card data (*.json, *.json.gz)</source>
       <translation>Scryfall card data (*.json, *.json.gz)</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="214"/>
+      <location filename="../../ui/settings_window_pages.py" line="216"/>
       <source>Selected location is not a file</source>
       <translation>Selected location is not a file</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="214"/>
+      <location filename="../../ui/settings_window_pages.py" line="216"/>
       <source>Cannot find the selected file:
 {location}</source>
       <translation>Cannot find the selected file:
@@ -629,17 +629,17 @@ Maybe you selected the wrong deck list type?</translation>
   <context>
     <name>DecklistImportSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="227"/>
+      <location filename="../../ui/settings_window_pages.py" line="229"/>
       <source>Deck list import</source>
       <translation>Deck list import</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="227"/>
+      <location filename="../../ui/settings_window_pages.py" line="229"/>
       <source>Configure the deck list importer</source>
       <translation>Configure the deck list importer</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="237"/>
+      <location filename="../../ui/settings_window_pages.py" line="239"/>
       <source>Select default deck list search path</source>
       <translation>Select default deck list search path</translation>
     </message>
@@ -766,19 +766,19 @@ With some deck list formats, this option is always enabled.</translation>
   <context>
     <name>DefaultDocumentLayoutSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="480"/>
+      <location filename="../../ui/settings_window_pages.py" line="482"/>
       <source>Default document settings</source>
       <translation>Default document settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="480"/>
+      <location filename="../../ui/settings_window_pages.py" line="482"/>
       <source>Set the default document settings used for new documents,
 like page size, margins, spacings, etc.</source>
       <translation>Set the default document settings used for new documents,
 like page size, margins, spacings, etc.</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="488"/>
+      <location filename="../../ui/settings_window_pages.py" line="490"/>
       <source>Default settings for new documents</source>
       <translation>Default settings for new documents</translation>
     </message>
@@ -925,6 +925,108 @@ switch the selected printing.</translation>
       <location filename="../../ui/dialogs.py" line="531"/>
       <source>Write failed for {card_name}! Disk detached/full? Aborting.</source>
       <translation>Write failed for {card_name}! Disk detached/full? Aborting.</translation>
+    </message>
+  </context>
+  <context>
+    <name>ExportSettingsPage</name>
+    <message>
+      <location filename="../../ui/settings_window_pages.py" line="559"/>
+      <source>Export settings</source>
+      <translation>Export settings</translation>
+    </message>
+    <message>
+      <location filename="../../ui/settings_window_pages.py" line="559"/>
+      <source>Configure the PDF/PNG export</source>
+      <translation>Configure the PDF/PNG export</translation>
+    </message>
+    <message>
+      <location filename="../../ui/settings_window_pages.py" line="598"/>
+      <source>Select default export location</source>
+      <translation>Select default export location</translation>
+    </message>
+    <message>
+      <location filename="../../ui/settings_window_pages.py" line="607"/>
+      <source>Select PNG background color</source>
+      <translation>Select PNG background color</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="126"/>
+      <source>Automatically split PDF documents, if they get longer than this many pages.
+Set to zero to disable splitting.
+
+
+When printing PDFs using a USB flash drive directly connected to the printer,
+the printer may refuse to print documents exceeding some arbitrary size limit.
+To work around this limitation, you can enable this option,
+and limit the number of pages per PDF. If the document has more pages,
+it will be exported into multiple PDF documents automatically.</source>
+      <translation>Automatically split PDF documents, if they get longer than this many pages.
+Set to zero to disable splitting.
+
+
+When printing PDFs using a USB flash drive directly connected to the printer,
+the printer may refuse to print documents exceeding some arbitrary size limit.
+To work around this limitation, you can enable this option,
+and limit the number of pages per PDF. If the document has more pages,
+it will be exported into multiple PDF documents automatically.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="34"/>
+      <source> pages</source>
+      <translation> pages</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="44"/>
+      <source>Browse…</source>
+      <translation>Browse…</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="57"/>
+      <source>If enabled, landscape documents are rotated by 90° to portrait mode during export.
+Enable this, if printing from PDFs in landscape format results in portrait printouts with cropped-off sides.
+
+Enabling this may cause the cut helper lines to flicker or not show in some PDF viewers.
+So only enable this, if actually required.</source>
+      <translation>If enabled, landscape documents are rotated by 90° to portrait mode during export.
+Enable this, if printing from PDFs in landscape format results in portrait printouts with cropped-off sides.
+
+Enabling this may cause the cut helper lines to flicker or not show in some PDF viewers.
+So only enable this, if actually required.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="64"/>
+      <source>Enable landscape workaround: Rotate landscape pages by 90°</source>
+      <translation>Enable landscape workaround: Rotate landscape pages by 90°</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="90"/>
+      <source>If set, use this as the default location for saving exported PDF documents.</source>
+      <translation>If set, use this as the default location for saving exported PDF documents.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="80"/>
+      <source>Path to a directory</source>
+      <translation>Path to a directory</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="93"/>
+      <source>Export path</source>
+      <translation>Export path</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="116"/>
+      <source>PNG background color</source>
+      <translation>PNG background color</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="137"/>
+      <source>Split PDF documents longer than</source>
+      <translation>Split PDF documents longer than</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/export_settings_page.ui" line="154"/>
+      <source>Background color used for documents exported as PNG images.</source>
+      <translation>Background color used for documents exported as PNG images.</translation>
     </message>
   </context>
   <context>
@@ -1222,32 +1324,32 @@ Similar to borderless cards, these require higher precision during the cutting p
   <context>
     <name>GeneralSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="294"/>
+      <location filename="../../ui/settings_window_pages.py" line="296"/>
       <source>General settings</source>
       <translation>General settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="301"/>
+      <location filename="../../ui/settings_window_pages.py" line="303"/>
       <source>Horizontal layout</source>
       <translation>Horizontal layout</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="302"/>
+      <location filename="../../ui/settings_window_pages.py" line="304"/>
       <source>Columnar layout</source>
       <translation>Columnar layout</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="303"/>
+      <location filename="../../ui/settings_window_pages.py" line="305"/>
       <source>Tabbed layout</source>
       <translation>Tabbed layout</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="306"/>
+      <location filename="../../ui/settings_window_pages.py" line="308"/>
       <source>System default</source>
       <translation>System default</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="317"/>
+      <location filename="../../ui/settings_window_pages.py" line="319"/>
       <source>Select default save location</source>
       <translation>Select default save location</translation>
     </message>
@@ -1371,17 +1473,17 @@ Note: Cards in deck lists use the language as given by the deck list. To overwri
       <translation>Card language selected at application start and default language when enabling deck list translations</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="307"/>
+      <location filename="../../ui/settings_window_pages.py" line="309"/>
       <source>English (US) [{progress}%]</source>
       <translation>English (US) [{progress}%]</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="308"/>
+      <location filename="../../ui/settings_window_pages.py" line="310"/>
       <source>German [{progress}%]</source>
       <translation>German [{progress}%]</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="309"/>
+      <location filename="../../ui/settings_window_pages.py" line="311"/>
       <source>French [{progress}%]</source>
       <translation>French [{progress}%]</translation>
     </message>
@@ -1422,12 +1524,12 @@ Note: Cards in deck lists use the language as given by the deck list. To overwri
   <context>
     <name>HidePrintingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="437"/>
+      <location filename="../../ui/settings_window_pages.py" line="439"/>
       <source>Hide printings</source>
       <translation>Hide printings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="437"/>
+      <location filename="../../ui/settings_window_pages.py" line="439"/>
       <source>Hide unwanted printings</source>
       <translation>Hide unwanted printings</translation>
     </message>
@@ -2017,187 +2119,187 @@ You can change this later in the settings.</translation>
       <translation>Fi&amp;le</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="174"/>
+      <location filename="../ui/main_window.ui" line="185"/>
       <source>Settings</source>
       <translation>Settings</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="63"/>
+      <location filename="../ui/main_window.ui" line="74"/>
       <source>Edit</source>
       <translation>Edit</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="305"/>
+      <location filename="../ui/main_window.ui" line="316"/>
       <source>Show toolbar</source>
       <translation>Show toolbar</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="113"/>
+      <location filename="../ui/main_window.ui" line="124"/>
       <source>&amp;Quit</source>
       <translation>&amp;Quit</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="116"/>
+      <location filename="../ui/main_window.ui" line="127"/>
       <source>Ctrl+Q</source>
       <translation>Ctrl+Q</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="127"/>
+      <location filename="../ui/main_window.ui" line="138"/>
       <source>&amp;Print</source>
       <translation>&amp;Print</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="130"/>
+      <location filename="../ui/main_window.ui" line="141"/>
       <source>Print the current document</source>
       <translation>Print the current document</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="133"/>
+      <location filename="../ui/main_window.ui" line="144"/>
       <source>Ctrl+P</source>
       <translation>Ctrl+P</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="141"/>
+      <location filename="../ui/main_window.ui" line="152"/>
       <source>&amp;Show print preview</source>
       <translation>&amp;Show print preview</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="144"/>
+      <location filename="../ui/main_window.ui" line="155"/>
       <source>Show print preview window</source>
       <translation>Show print preview window</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="152"/>
+      <location filename="../ui/main_window.ui" line="163"/>
       <source>&amp;Create PDF</source>
       <translation>&amp;Create PDF</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="155"/>
+      <location filename="../ui/main_window.ui" line="166"/>
       <source>Create a PDF document</source>
       <translation>Create a PDF document</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="163"/>
+      <location filename="../ui/main_window.ui" line="174"/>
       <source>Discard page</source>
       <translation>Discard page</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="166"/>
+      <location filename="../ui/main_window.ui" line="177"/>
       <source>Discard this page.</source>
       <translation>Discard this page.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="185"/>
+      <location filename="../ui/main_window.ui" line="196"/>
       <source>Update card data</source>
       <translation>Update card data</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="193"/>
+      <location filename="../ui/main_window.ui" line="204"/>
       <source>New Page</source>
       <translation>New Page</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="196"/>
+      <location filename="../ui/main_window.ui" line="207"/>
       <source>Add a new, empty page.</source>
       <translation>Add a new, empty page.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="204"/>
+      <location filename="../ui/main_window.ui" line="215"/>
       <source>Save</source>
       <translation>Save</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="207"/>
+      <location filename="../ui/main_window.ui" line="218"/>
       <source>Ctrl+S</source>
       <translation>Ctrl+S</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="215"/>
+      <location filename="../ui/main_window.ui" line="226"/>
       <source>New</source>
       <translation>New</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="218"/>
+      <location filename="../ui/main_window.ui" line="229"/>
       <source>Ctrl+N</source>
       <translation>Ctrl+N</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="226"/>
+      <location filename="../ui/main_window.ui" line="237"/>
       <source>Load</source>
       <translation>Load</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="229"/>
+      <location filename="../ui/main_window.ui" line="240"/>
       <source>Ctrl+L</source>
       <translation>Ctrl+L</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="237"/>
+      <location filename="../ui/main_window.ui" line="248"/>
       <source>Save as …</source>
       <translation>Save as …</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="242"/>
+      <location filename="../ui/main_window.ui" line="253"/>
       <source>About …</source>
       <translation>About …</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="250"/>
+      <location filename="../ui/main_window.ui" line="261"/>
       <source>Show Changelog</source>
       <translation>Show change-log</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="258"/>
+      <location filename="../ui/main_window.ui" line="269"/>
       <source>Compact document</source>
       <translation>Compact document</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="261"/>
+      <location filename="../ui/main_window.ui" line="272"/>
       <source>Minimize page count: Fill empty slots on pages by moving cards from the end of the document</source>
       <translation>Minimize page count: Fill empty slots on pages by moving cards from the end of the document</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="269"/>
+      <location filename="../ui/main_window.ui" line="280"/>
       <source>Edit document settings</source>
       <translation>Edit document settings</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="272"/>
+      <location filename="../ui/main_window.ui" line="283"/>
       <source>Configure page size, margins, image spacings for the currently edited document.</source>
       <translation>Configure page size, margins, image spacings for the currently edited document.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="283"/>
+      <location filename="../ui/main_window.ui" line="294"/>
       <source>Import a deck list from online sources</source>
       <translation>Import a deck list from online sources</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="291"/>
+      <location filename="../ui/main_window.ui" line="302"/>
       <source>Cleanup card images</source>
       <translation>Cleanup card images</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="294"/>
+      <location filename="../ui/main_window.ui" line="305"/>
       <source>Delete locally stored card images you no longer need.</source>
       <translation>Delete locally stored card images you no longer need.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="308"/>
+      <location filename="../ui/main_window.ui" line="319"/>
       <source>Ctrl+M</source>
       <translation>Ctrl+M</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="316"/>
+      <location filename="../ui/main_window.ui" line="327"/>
       <source>Download missing card images</source>
       <translation>Download missing card images</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="324"/>
+      <location filename="../ui/main_window.ui" line="335"/>
       <source>Shuffle document</source>
       <translation>Shuffle document</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="327"/>
+      <location filename="../ui/main_window.ui" line="338"/>
       <source>Randomly rearrange all card image.
 If you want to quickly print a full deck for playing,
 use this to reduce the initial deck shuffling required</source>
@@ -2206,32 +2308,32 @@ If you want to quickly print a full deck for playing,
 use this to reduce the initial deck shuffling required</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="340"/>
+      <location filename="../ui/main_window.ui" line="351"/>
       <source>Undo</source>
       <translation>Undo</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="351"/>
+      <location filename="../ui/main_window.ui" line="362"/>
       <source>Redo</source>
       <translation>Redo</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="280"/>
+      <location filename="../ui/main_window.ui" line="291"/>
       <source>Import deck list</source>
       <translation>Import deck list</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="359"/>
+      <location filename="../ui/main_window.ui" line="370"/>
       <source>Add empty card to page</source>
       <translation>Add empty card to page</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="362"/>
+      <location filename="../ui/main_window.ui" line="373"/>
       <source>Add an empty spacer filling a card slot</source>
       <translation>Add an empty spacer filling a card slot</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="370"/>
+      <location filename="../ui/main_window.ui" line="381"/>
       <source>Add custom cards</source>
       <translation>Add custom cards</translation>
     </message>
@@ -2242,117 +2344,40 @@ use this to reduce the initial deck shuffling required</translation>
       <translation>exporting as a PNG image sequence</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="378"/>
-      <source>Create image sequence</source>
-      <translation>Create image sequence</translation>
-    </message>
-    <message>
-      <location filename="../ui/main_window.ui" line="381"/>
+      <location filename="../ui/main_window.ui" line="392"/>
       <source>Export document as an image sequence</source>
       <translation>Export document as an image sequence</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="389"/>
-      <source>Export card images</source>
-      <translation>Export card images</translation>
-    </message>
-    <message>
-      <location filename="../ui/main_window.ui" line="392"/>
+      <location filename="../ui/main_window.ui" line="403"/>
       <source>Export all card images to a directory</source>
       <translation>Export all card images to a directory</translation>
     </message>
-  </context>
-  <context>
-    <name>PDFSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="557"/>
-      <source>PDF export settings</source>
-      <translation>PDF export settings</translation>
+      <location filename="../ui/main_window.ui" line="35"/>
+      <source>Export</source>
+      <translation>Export</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="557"/>
-      <source>Configure the PDF export</source>
-      <translation>Configure the PDF export</translation>
+      <location filename="../ui/main_window.ui" line="60"/>
+      <source>Application</source>
+      <translation>Application</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="591"/>
-      <source>Select default PDF export location</source>
-      <translation>Select default PDF export location</translation>
+      <location filename="../ui/main_window.ui" line="389"/>
+      <source>Export as image sequence</source>
+      <translation>Export as image sequence</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="17"/>
-      <source>If set, use this as the default location for saving exported PDF documents.</source>
-      <translation>If set, use this as the default location for saving exported PDF documents.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="23"/>
-      <source>Path to a directory</source>
-      <translation>Path to a directory</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="46"/>
-      <source>PDF export path</source>
-      <translation>PDF export path</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="56"/>
-      <source>Browse…</source>
-      <translation>Browse…</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="96"/>
-      <source>Automatically split PDF documents, if they get longer than this many pages.
-Set to zero to disable splitting.
-
-
-When printing PDFs using a USB flash drive directly connected to the printer,
-the printer may refuse to print documents exceeding some arbitrary size limit.
-To work around this limitation, you can enable this option,
-and limit the number of pages per PDF. If the document has more pages,
-it will be exported into multiple PDF documents automatically.</source>
-      <translation>Automatically split PDF documents, if they get longer than this many pages.
-Set to zero to disable splitting.
-
-
-When printing PDFs using a USB flash drive directly connected to the printer,
-the printer may refuse to print documents exceeding some arbitrary size limit.
-To work around this limitation, you can enable this option,
-and limit the number of pages per PDF. If the document has more pages,
-it will be exported into multiple PDF documents automatically.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="80"/>
-      <source>Split PDF documents longer than</source>
-      <translation>Split PDF documents longer than</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="107"/>
-      <source> pages</source>
-      <translation> page(s)</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="117"/>
-      <source>If enabled, landscape documents are rotated by 90° to portrait mode during export.
-Enable this, if printing from PDFs in landscape format results in portrait printouts with cropped-off sides.
-
-Enabling this may cause the cut helper lines to flicker or not show in some PDF viewers.
-So only enable this, if actually required.</source>
-      <translation>If enabled, landscape documents are rotated by 90° to portrait mode during export.
-Enable this, if printing from PDFs in landscape format results in portrait printouts with cropped-off sides.
-
-Enabling this may cause the cut helper lines to flicker or not show in some PDF viewers.
-So only enable this, if actually required.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="124"/>
-      <source>Enable landscape workaround: Rotate landscape PDFs by 90°</source>
-      <translation>Enable landscape workaround: Rotate landscape PDFs by 90°</translation>
+      <location filename="../ui/main_window.ui" line="400"/>
+      <source>Export individual card images</source>
+      <translation>Export individual card images</translation>
     </message>
   </context>
   <context>
     <name>PNGRenderer</name>
     <message>
-      <location filename="../../print.py" line="83"/>
+      <location filename="../../print.py" line="85"/>
       <source>Export as PNGs</source>
       <translation>Export as PNGs</translation>
     </message>
@@ -2684,12 +2709,12 @@ Zoom out: {zoom_out_shortcuts}</translation>
   <context>
     <name>PrinterSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="506"/>
+      <location filename="../../ui/settings_window_pages.py" line="508"/>
       <source>Printer settings</source>
       <translation>Printer settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="506"/>
+      <location filename="../../ui/settings_window_pages.py" line="508"/>
       <source>Configure the printer</source>
       <translation>Configure the printer</translation>
     </message>

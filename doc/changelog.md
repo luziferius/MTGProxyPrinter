@@ -10,6 +10,7 @@ Because it was requested multiple times, there is a mirror of the application's 
 
 ## Changed features
 
+- Rearranged the menu entries in the main window to be more logical.
 - Reworked paper size configuration: 
     - The document settings now provide a list of pre-defined paper sizes to choose from. Only paper sizes that can
       fit an oversized card in both landscape and portrait orientation are available.
