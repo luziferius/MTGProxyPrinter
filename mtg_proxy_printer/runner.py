@@ -26,9 +26,45 @@ del get_logger
 __all__ = [
     "Runnable",
     "AsyncTask",
-    "AsyncTask",
     "AsyncTaskRunner",
 ]
+
+"""
+# Design
+
+- Async background tasks are classes that use a custom base class (AsyncTask)
+  derived from QObject to inherit Qt's Signal & Slot mechanism, and a fixed API to launch them
+- The AsyncTask base class holds Qt signals for progress reporting, and are started by the tasks run() method. Signals are:
+  - Starting a task with expected task size and UI string to display
+  - advancing a task by 1, or setting progress to any number
+  - finishing a task with ability to re-start
+  - and removing a finished task completely.
+- AsyncTasks can have nested sub-tasks. These are synchronous within the task, but can report individual progress.
+  - A sequence of card image downloads can be triggered by a document load or deck list import
+- Cancelable async tasks have can_cancel() return True
+  - For these, a cancel button is shown next to the progress bar
+  - Triggering the cancel button is connected to the cancel() slot. How that cancels the operation is up to the task
+- A method in the Application class handles launching them
+  - It wraps them in the AsyncTaskRunner QRunnable subclass
+  - Registers it in the ProgressBarManager to create progress bar for it to display progress
+  - Then pushes the task into the global QThreadPool
+- The ProgressBarManager sets up a progress bar widget in the main window status bar,
+  and connects the tasks progress signals with the appropriate slots
+
+# TODO: 
+- Some export tasks require locking the UI, because they take time during which the document must be immutable.
+- Implement tasks that lock the UI
+  - Add `is_locking: bool` to the AsyncTask class.
+  - Default to False
+  - If True, lock the main window UI when such a task starts, and unlock when it finishes
+  - To be completely safe, use a Semaphore or similar to count the number of active UI locks,
+    and unlock when the lock count is zero.
+  - Locking can use the normal progress signals. When `is_locking` is True, simply connect the begin_progress and finish_progress signals to the lock/unlock methods. The task dispatch method can handle those connections
+
+
+"""
+
+
 
 class AsyncTask(QObject):
     """Base class for asynchronous tasks with progress reporting"""
