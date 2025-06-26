@@ -200,7 +200,7 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
             # XMage also lists the .mtga suffix, so add that too.
             QCoreApplication.translate("MTGArenaParser", "Magic Arena deck file"): ["txt", "mtga"],
         }
-    
+
     # The deck segment headers seem inconsistent across different sites
     LINES_TO_SKIP = frozenset((
         # Moxfield uses only the capital SIDEBOARD: with colon, nothing else

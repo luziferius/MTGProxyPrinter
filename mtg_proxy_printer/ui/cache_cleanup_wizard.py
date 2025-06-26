@@ -98,7 +98,7 @@ class KnownCardRow(QObject):
             data = self.tr("Yes") if self.is_hidden else self.tr("No")
         elif column == KnownCardColumns.IsHidden and role == ItemDataRole.ToolTipRole and self.is_hidden:
             data = self.tr(
-                "This printing is hidden by an enabled card filter\nand is thus unavailable for printing.", 
+                "This printing is hidden by an enabled card filter\nand is thus unavailable for printing.",
                 "Tooltip for cells with hidden cards")
         elif column == KnownCardColumns.IsHidden and role == ItemDataRole.EditRole:
             data = self.is_hidden

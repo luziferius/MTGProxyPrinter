@@ -182,7 +182,7 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
         CREATE TABLE LastImageUseTimestamps (
           -- Used to store the last image use timestamp and usage count of each image.
           -- The usage count measures how often an image was part of a printed or exported document. Printing multiple
-          -- copies in a document still counts as a single use. Saving/loading is not enough to count as a "use". 
+          -- copies in a document still counts as a single use. Saving/loading is not enough to count as a "use".
           scryfall_id TEXT NOT NULL,
           is_front INTEGER NOT NULL CHECK (is_front in (0, 1)),
           usage_count INTEGER NOT NULL CHECK (usage_count > 0) DEFAULT 1,
@@ -223,7 +223,7 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
         )"""),
         dedent("""\
         CREATE TABLE NewCardFace (
-          -- The printable card face of a specific card in a specific language. Is the front most of the time, 
+          -- The printable card face of a specific card in a specific language. Is the front most of the time,
           -- but can be the back face for double-faced cards.
           card_face_id INTEGER NOT NULL PRIMARY KEY,
           card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -237,14 +237,14 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
           UNIQUE(face_name_id, set_id, card_id, is_front, collector_number)  -- Order important: Used to find matching sets
         )"""),
         dedent("""\
-        INSERT INTO NewFaceName (face_name_id, card_name, language_id) 
+        INSERT INTO NewFaceName (face_name_id, card_name, language_id)
           SELECT face_name_id, card_name, language_id
           FROM FaceName"""),
         dedent("""\
-        INSERT INTO NewCardFace 
+        INSERT INTO NewCardFace
           (card_face_id, card_id, set_id, face_name_id, is_front,
-           collector_number, scryfall_id, highres_image, png_image_uri) 
-        SELECT 
+           collector_number, scryfall_id, highres_image, png_image_uri)
+        SELECT
            card_face_id, card_id, set_id, face_name_id, is_front,
            collector_number, scryfall_id, highres_image, png_image_uri
         FROM CardFace"""),
@@ -308,8 +308,8 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
         INSERT OR IGNORE INTO Printing(card_id, set_id, collector_number, scryfall_id, highres_image, is_oversized)
           SELECT card_id, set_id, collector_number, scryfall_id, highres_image,
             -- The patterns below match sets containing oversized cards.
-            -- Note: Scryfall serves regularly sized images for the "% Championship" sets 
-            -- despite being marked as "oversized". Thus those are explicitly not matched.  
+            -- Note: Scryfall serves regularly sized images for the "% Championship" sets
+            -- despite being marked as "oversized". Thus those are explicitly not matched.
             set_name LIKE '% Oversized' OR set_name LIKE '% Schemes' OR set_name LIKE '% Planes'
           FROM CardFace JOIN "Set" USING (set_id)"""),
         # Joining USING (scryfall_id) is fine, because that is UNIQUE in Printing,
@@ -354,7 +354,7 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
         )"""),
         dedent("""\
         INSERT INTO CardFaceNew (card_face_id, printing_id, face_name_id, is_front, png_image_uri, face_number)
-          SELECT card_face_id, printing_id, face_name_id, is_front, png_image_uri, 
+          SELECT card_face_id, printing_id, face_name_id, is_front, png_image_uri,
                row_number() over (partition by printing_id ORDER BY card_face_id) -1 as face_number
             FROM FaceName JOIN CardFace USING (face_name_id) JOIN Printing USING (printing_id)"""),
         "DROP TABLE CardFace",
@@ -645,7 +645,7 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
         "CREATE INDEX PrintingDisplayFilter_Printing_from_filter_lookup ON PrintingDisplayFilter(filter_id)",
         dedent("""\
         CREATE VIEW VisiblePrintings AS
-        WITH 
+        WITH
           double_faced_printings(printing_id, is_dfc) AS (
           SELECT DISTINCT printing_id, TRUE as is_dfc
             FROM CardFace
@@ -673,7 +673,7 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
             AND FaceName.is_hidden IS FALSE"""),
         dedent("""\
         CREATE VIEW AllPrintings AS
-        WITH 
+        WITH
         double_faced_printings(printing_id, is_dfc) AS (
           SELECT DISTINCT printing_id, TRUE as is_dfc
             FROM CardFace

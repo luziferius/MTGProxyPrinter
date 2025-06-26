@@ -239,7 +239,7 @@ class CardDatabase(QObject):
             SELECT DISTINCT oracle_id -- get_basic_land_oracle_ids()
               FROM AllPrintings
               WHERE language = 'en'
-              AND card_name IN 
+              AND card_name IN
                 ({", ".join("?"*len(names))})
         ''')
         return {item for item, in self.db.execute(query, names)}
@@ -336,7 +336,7 @@ class CardDatabase(QObject):
             LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)
             WHERE RemovedPrintings.scryfall_id = ?
             AND is_front = ?
-            ORDER BY 
+            ORDER BY
                 -- Match with original language first, fall back to preferred language, then fall back to English
                (4*(VisiblePrintings.language == RemovedPrintings.language) +
                 2*(VisiblePrintings.language == ?) +
@@ -697,7 +697,7 @@ class CardDatabase(QObject):
           JOIN PrintLanguage USING (language_id)
           WHERE Printing.is_hidden IS FALSE
             AND FaceName.is_hidden IS FALSE
-            AND oracle_id = ? 
+            AND oracle_id = ?
             AND language = ?
           UNION ALL
           SELECT set_code, set_name, release_date

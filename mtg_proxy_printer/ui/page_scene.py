@@ -291,7 +291,7 @@ class PageScene(QGraphicsScene):
         if page_layout.draw_cut_markers:
             self.draw_cut_markers()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {render_mode}")
-        
+
     def _connect_document_signals(self, document: Document):
         document.rowsInserted.connect(self.on_rows_inserted)
         document.rowsRemoved.connect(self.on_rows_removed)

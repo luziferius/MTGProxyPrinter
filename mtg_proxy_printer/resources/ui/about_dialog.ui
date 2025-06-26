@@ -120,11 +120,11 @@
           </sizepolicy>
          </property>
          <property name="markdown">
-          <string>{application_name} allows printing 
+          <string>{application_name} allows printing
 [Magic: The Gathering](https://magic.wizards.com/) cards for play-testing
 purposes.
 
-{application_name} is unofficial Fan Content permitted under the 
+{application_name} is unofficial Fan Content permitted under the
 [Fan Content Policy](https://company.wizards.com/fancontentpolicy). Not
 approved/endorsed by Wizards. Portions of the materials used are property of
 Wizards of the Coast. ©[Wizards of the Coast LLC](https://company.wizards.com/).

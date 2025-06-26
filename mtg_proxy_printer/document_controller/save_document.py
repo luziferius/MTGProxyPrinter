@@ -61,7 +61,7 @@ class ActionSaveDocument(DocumentAction):
             self._clean_unused_custom_cards(db)
             db.commit()
             if db.execute(cached_dedent("""\
-                SELECT cast(freelist_count AS real)/page_count > 0.1 AS "should vacuum" -- apply() 
+                SELECT cast(freelist_count AS real)/page_count > 0.1 AS "should vacuum" -- apply()
                   FROM pragma_page_count
                   INNER JOIN pragma_freelist_count
                 """)).fetchone()[0]:

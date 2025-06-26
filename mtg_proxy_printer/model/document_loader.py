@@ -362,7 +362,7 @@ class DocumentLoader(AsyncTask):
             self, save_db: sqlite3.Connection, card_size: CardSize, card_row: CardRow) -> CustomCard:
         query = cached_dedent("""\
         SELECT name, set_code, set_name, collector_number, image
-          FROM CustomCardData 
+          FROM CustomCardData
           WHERE card_id = ? AND is_front = ?
         """)
         name, set_code, set_name, collector_number, image_bytes = save_db.execute(

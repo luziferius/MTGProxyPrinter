@@ -477,7 +477,7 @@ class ExportCardImagesDialog(QDialog):
             ui.export_official_cards.isChecked(),
             ui.export_custom_cards.isChecked(),
         )))
-        
+
     def accept(self):
         logger.info(f"User accepted card image export. Writing card images to {self.ui.output_path.text()}")
         try:

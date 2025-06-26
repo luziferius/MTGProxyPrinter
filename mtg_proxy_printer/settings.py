@@ -523,8 +523,8 @@ def _01_migrate_layout_setting(to_migrate: ConfigParser):
         if layout == "vertical":
             layout = "columnar"
         gui_section["central-widget-layout"] = layout
-        
-        
+
+
 def _02_migrate_download_settings(to_migrate: ConfigParser):
     target_section_name = "card-filter"
     if to_migrate.has_section(target_section_name) or not to_migrate.has_section("downloads"):
