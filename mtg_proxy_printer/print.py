@@ -111,7 +111,7 @@ class PNGRenderer(AsyncTask):
 def export_pdf(document: Document, file_path: str, parent: "SavePDFDialog" = None):
     main_window = parent.parent()
     total_pages = document.rowCount()
-    pages_to_print = settings["pdf-export"].getint("pdf-page-count-limit") or total_pages
+    pages_to_print = settings["export"].getint("pdf-page-count-limit") or total_pages
     if not pages_to_print:  # No pages in document. Return now, to avoid dividing by zero
         logger.error("Tried to export a document with zero pages as a PDF. Aborting.")
         return
