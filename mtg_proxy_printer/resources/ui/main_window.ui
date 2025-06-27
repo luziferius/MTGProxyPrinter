@@ -35,8 +35,7 @@
       <string>Export</string>
      </property>
      <property name="icon">
-      <iconset theme="document-export">
-       <normaloff>.</normaloff>.</iconset>
+      <iconset theme="document-export"/>
      </property>
      <addaction name="action_print_pdf"/>
      <addaction name="action_export_png"/>
