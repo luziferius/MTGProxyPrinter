@@ -16,6 +16,7 @@
 
 import pathlib
 import typing
+from functools import partial
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl, Qt, QSize
 from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices, QDragEnterEvent, QDropEvent, QPixmap
@@ -75,11 +76,11 @@ class MainWindow(QMainWindow):
         super().__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         self.is_running = True
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
+        self.ui = ui = Ui_MainWindow()
+        ui.setupUi(self)
         self.setAcceptDrops(True)
-        self.default_undo_tooltip = self.ui.action_undo.toolTip()
-        self.default_redo_tooltip = self.ui.action_redo.toolTip()
+        self.default_undo_tooltip = ui.action_undo.toolTip()
+        self.default_redo_tooltip = ui.action_redo.toolTip()
         self.missing_images_manager = MissingImagesManager(document, self)
         self.missing_images_manager.request_obtaining_images.connect(image_db.obtain_missing_images)
         self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
@@ -90,6 +91,7 @@ class MainWindow(QMainWindow):
         self._connect_image_database_signals(image_db)
         self.document = document
         self._connect_document_signals(document)
+        self._setup_web_action_signals(ui)
         self.language_model = language_model
         self.card_data_downloader = card_info_downloader
         self._connect_card_info_downloader_signals(card_info_downloader)
@@ -111,6 +113,17 @@ class MainWindow(QMainWindow):
         self.ui.action_show_about_dialog.triggered.connect(about_dialog.show_about)
         self.ui.action_show_changelog.triggered.connect(about_dialog.show_changelog)
         return about_dialog
+
+    @staticmethod
+    def _setup_web_action_signals(ui: Ui_MainWindow):
+        for action, link in [
+            (ui.action_web_contribute_translations, "https://crowdin.com/project/mtgproxyprinter"),
+            (ui.action_web_source_code, "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/index"),
+            (ui.action_web_source_code_github, "https://github.com/luziferius/MTGProxyPrinter/"),
+            (ui.action_web_project_on_pypi, "https://pypi.org/project/MTGProxyPrinter/"),
+        ]:
+            url = QUrl(link, QUrl.ParsingMode.StrictMode)
+            action.triggered.connect(partial(QDesktopServices.openUrl, url))
 
     def _setup_platform_dependent_default_shortcuts(self):
         actions_with_shortcuts: typing.List[typing.Tuple[QAction, StandardKey]] = [

@@ -85,9 +85,20 @@
     <addaction name="action_add_empty_card"/>
     <addaction name="action_discard_page"/>
    </widget>
+   <widget class="QMenu" name="menuWeb_links">
+    <property name="title">
+     <string>Web links</string>
+    </property>
+    <addaction name="action_web_source_code"/>
+    <addaction name="action_web_source_code_github"/>
+    <addaction name="action_web_project_on_pypi"/>
+    <addaction name="separator"/>
+    <addaction name="action_web_contribute_translations"/>
+   </widget>
    <addaction name="menu_application"/>
    <addaction name="menu_file"/>
    <addaction name="menu_edit"/>
+   <addaction name="menuWeb_links"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
@@ -401,6 +412,38 @@ use this to reduce the initial deck shuffling required</string>
    </property>
    <property name="toolTip">
     <string>Export all card images to a directory</string>
+   </property>
+  </action>
+  <action name="action_web_source_code">
+   <property name="icon">
+    <iconset theme="globe"/>
+   </property>
+   <property name="text">
+    <string>Source Code</string>
+   </property>
+  </action>
+  <action name="action_web_source_code_github">
+   <property name="icon">
+    <iconset theme="globe"/>
+   </property>
+   <property name="text">
+    <string>Source Code (GitHub)</string>
+   </property>
+  </action>
+  <action name="action_web_contribute_translations">
+   <property name="icon">
+    <iconset theme="translate"/>
+   </property>
+   <property name="text">
+    <string>Contribute Translations</string>
+   </property>
+  </action>
+  <action name="action_web_project_on_pypi">
+   <property name="icon">
+    <iconset theme="globe"/>
+   </property>
+   <property name="text">
+    <string>Project on PyPI</string>
    </property>
   </action>
  </widget>

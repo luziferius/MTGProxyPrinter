@@ -2119,7 +2119,7 @@ You can change this later in the settings.</translation>
       <translation>Fi&amp;le</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="185"/>
+      <location filename="../ui/main_window.ui" line="195"/>
       <source>Settings</source>
       <translation>Settings</translation>
     </message>
@@ -2129,177 +2129,177 @@ You can change this later in the settings.</translation>
       <translation>Edit</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="316"/>
+      <location filename="../ui/main_window.ui" line="326"/>
       <source>Show toolbar</source>
       <translation>Show toolbar</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="124"/>
+      <location filename="../ui/main_window.ui" line="134"/>
       <source>&amp;Quit</source>
       <translation>&amp;Quit</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="127"/>
+      <location filename="../ui/main_window.ui" line="137"/>
       <source>Ctrl+Q</source>
       <translation>Ctrl+Q</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="138"/>
+      <location filename="../ui/main_window.ui" line="148"/>
       <source>&amp;Print</source>
       <translation>&amp;Print</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="141"/>
+      <location filename="../ui/main_window.ui" line="151"/>
       <source>Print the current document</source>
       <translation>Print the current document</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="144"/>
+      <location filename="../ui/main_window.ui" line="154"/>
       <source>Ctrl+P</source>
       <translation>Ctrl+P</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="152"/>
+      <location filename="../ui/main_window.ui" line="162"/>
       <source>&amp;Show print preview</source>
       <translation>&amp;Show print preview</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="155"/>
+      <location filename="../ui/main_window.ui" line="165"/>
       <source>Show print preview window</source>
       <translation>Show print preview window</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="163"/>
+      <location filename="../ui/main_window.ui" line="173"/>
       <source>&amp;Create PDF</source>
       <translation>&amp;Create PDF</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="166"/>
+      <location filename="../ui/main_window.ui" line="176"/>
       <source>Create a PDF document</source>
       <translation>Create a PDF document</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="174"/>
+      <location filename="../ui/main_window.ui" line="184"/>
       <source>Discard page</source>
       <translation>Discard page</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="177"/>
+      <location filename="../ui/main_window.ui" line="187"/>
       <source>Discard this page.</source>
       <translation>Discard this page.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="196"/>
+      <location filename="../ui/main_window.ui" line="206"/>
       <source>Update card data</source>
       <translation>Update card data</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="204"/>
+      <location filename="../ui/main_window.ui" line="214"/>
       <source>New Page</source>
       <translation>New Page</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="207"/>
+      <location filename="../ui/main_window.ui" line="217"/>
       <source>Add a new, empty page.</source>
       <translation>Add a new, empty page.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="215"/>
+      <location filename="../ui/main_window.ui" line="225"/>
       <source>Save</source>
       <translation>Save</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="218"/>
+      <location filename="../ui/main_window.ui" line="228"/>
       <source>Ctrl+S</source>
       <translation>Ctrl+S</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="226"/>
+      <location filename="../ui/main_window.ui" line="236"/>
       <source>New</source>
       <translation>New</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="229"/>
+      <location filename="../ui/main_window.ui" line="239"/>
       <source>Ctrl+N</source>
       <translation>Ctrl+N</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="237"/>
+      <location filename="../ui/main_window.ui" line="247"/>
       <source>Load</source>
       <translation>Load</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="240"/>
+      <location filename="../ui/main_window.ui" line="250"/>
       <source>Ctrl+L</source>
       <translation>Ctrl+L</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="248"/>
+      <location filename="../ui/main_window.ui" line="258"/>
       <source>Save as …</source>
       <translation>Save as …</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="253"/>
+      <location filename="../ui/main_window.ui" line="263"/>
       <source>About …</source>
       <translation>About …</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="261"/>
+      <location filename="../ui/main_window.ui" line="271"/>
       <source>Show Changelog</source>
       <translation>Show change-log</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="269"/>
+      <location filename="../ui/main_window.ui" line="279"/>
       <source>Compact document</source>
       <translation>Compact document</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="272"/>
+      <location filename="../ui/main_window.ui" line="282"/>
       <source>Minimize page count: Fill empty slots on pages by moving cards from the end of the document</source>
       <translation>Minimize page count: Fill empty slots on pages by moving cards from the end of the document</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="280"/>
+      <location filename="../ui/main_window.ui" line="290"/>
       <source>Edit document settings</source>
       <translation>Edit document settings</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="283"/>
+      <location filename="../ui/main_window.ui" line="293"/>
       <source>Configure page size, margins, image spacings for the currently edited document.</source>
       <translation>Configure page size, margins, image spacings for the currently edited document.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="294"/>
+      <location filename="../ui/main_window.ui" line="304"/>
       <source>Import a deck list from online sources</source>
       <translation>Import a deck list from online sources</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="302"/>
+      <location filename="../ui/main_window.ui" line="312"/>
       <source>Cleanup card images</source>
       <translation>Cleanup card images</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="305"/>
+      <location filename="../ui/main_window.ui" line="315"/>
       <source>Delete locally stored card images you no longer need.</source>
       <translation>Delete locally stored card images you no longer need.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="319"/>
+      <location filename="../ui/main_window.ui" line="329"/>
       <source>Ctrl+M</source>
       <translation>Ctrl+M</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="327"/>
+      <location filename="../ui/main_window.ui" line="337"/>
       <source>Download missing card images</source>
       <translation>Download missing card images</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="335"/>
+      <location filename="../ui/main_window.ui" line="345"/>
       <source>Shuffle document</source>
       <translation>Shuffle document</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="338"/>
+      <location filename="../ui/main_window.ui" line="348"/>
       <source>Randomly rearrange all card image.
 If you want to quickly print a full deck for playing,
 use this to reduce the initial deck shuffling required</source>
@@ -2308,32 +2308,32 @@ If you want to quickly print a full deck for playing,
 use this to reduce the initial deck shuffling required</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="351"/>
+      <location filename="../ui/main_window.ui" line="361"/>
       <source>Undo</source>
       <translation>Undo</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="362"/>
+      <location filename="../ui/main_window.ui" line="372"/>
       <source>Redo</source>
       <translation>Redo</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="291"/>
+      <location filename="../ui/main_window.ui" line="301"/>
       <source>Import deck list</source>
       <translation>Import deck list</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="370"/>
+      <location filename="../ui/main_window.ui" line="380"/>
       <source>Add empty card to page</source>
       <translation>Add empty card to page</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="373"/>
+      <location filename="../ui/main_window.ui" line="383"/>
       <source>Add an empty spacer filling a card slot</source>
       <translation>Add an empty spacer filling a card slot</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="381"/>
+      <location filename="../ui/main_window.ui" line="391"/>
       <source>Add custom cards</source>
       <translation>Add custom cards</translation>
     </message>
@@ -2344,12 +2344,12 @@ use this to reduce the initial deck shuffling required</translation>
       <translation>exporting as a PNG image sequence</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="392"/>
+      <location filename="../ui/main_window.ui" line="402"/>
       <source>Export document as an image sequence</source>
       <translation>Export document as an image sequence</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="403"/>
+      <location filename="../ui/main_window.ui" line="413"/>
       <source>Export all card images to a directory</source>
       <translation>Export all card images to a directory</translation>
     </message>
@@ -2364,14 +2364,39 @@ use this to reduce the initial deck shuffling required</translation>
       <translation>Application</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="389"/>
+      <location filename="../ui/main_window.ui" line="399"/>
       <source>Export as image sequence</source>
       <translation>Export as image sequence</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="400"/>
+      <location filename="../ui/main_window.ui" line="410"/>
       <source>Export individual card images</source>
       <translation>Export individual card images</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="90"/>
+      <source>Web links</source>
+      <translation>Web links</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="418"/>
+      <source>Source Code</source>
+      <translation>Source Code</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="423"/>
+      <source>Source Code (GitHub)</source>
+      <translation>Source Code (GitHub)</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="428"/>
+      <source>Contribute Translations</source>
+      <translation>Contribute Translations</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="433"/>
+      <source>Project on PyPI</source>
+      <translation>Project on PyPI</translation>
     </message>
   </context>
   <context>
