@@ -18,14 +18,15 @@ import enum
 import functools
 import itertools
 import typing
+from typing import List, Iterable
 
 from PyQt5.QtCore import Qt, QSizeF, QPointF, QRectF, pyqtSignal as Signal, QObject, pyqtSlot as Slot, \
     QPersistentModelIndex, QModelIndex, QRect, QPoint, QSize
-from PyQt5.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics, QPixmap, QTransform, QPolygonF
+from PyQt5.QtGui import QPen, QColorConstants, QColor, QPalette, QFontMetrics, QPixmap, QTransform, QPolygonF
 from PyQt5.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene, QGraphicsPolygonItem
 
-from mtg_proxy_printer.model.card import CardCorner, Card
+from mtg_proxy_printer.model.card import CardCorner, AnyCardType
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
@@ -52,6 +53,7 @@ class RenderLayers(enum.IntEnum):
     CORNERS = enum.auto()
     TEXT = enum.auto()
     CARDS = enum.auto()
+    WATERMARK = enum.auto()
 
 
 @enum.unique
@@ -107,7 +109,7 @@ class CardBleedItem(QGraphicsPixmapItem):
 class CardBleedCornerItem(QGraphicsPolygonItem):
     PEN = QPen(QColorConstants.Transparent)
 
-    def __init__(self, card: Card, corner: CardCorner):
+    def __init__(self, card: AnyCardType, corner: CardCorner):
         super().__init__()
         self.corner_length = 50 if card.is_oversized else 32
         transform = QTransform()
@@ -162,7 +164,7 @@ class CardBleeds(typing.NamedTuple):
     bottom_right: CardBleedCornerItem
 
     @classmethod
-    def from_card(cls, card: Card) -> "CardBleeds":
+    def from_card(cls, card: AnyCardType) -> "CardBleeds":
         pixmap = card.image_file
         width = pixmap.width()
         height = pixmap.height()
@@ -201,10 +203,10 @@ class CardItem(QGraphicsItemGroup):
     def __init__(self, index: QModelIndex, document: Document, parent: QGraphicsItem = None):
         super().__init__(parent)
         document.page_layout_changed.connect(self.on_page_layout_changed)
-        card: Card = index.data(ItemDataRole.UserRole)
+        card: AnyCardType = index.data(ItemDataRole.UserRole)
         self.index = QPersistentModelIndex(index)
-        self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
-        self.card_pixmap_item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
+        self.card_pixmap_item = self._create_pixmap_item(card)
+        self.watermark_item = self._create_watermark(document)
         self.bleeds = CardBleeds.from_card(card)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
@@ -212,7 +214,20 @@ class CardItem(QGraphicsItemGroup):
         self._draw_content()
         self.setZValue(RenderLayers.CARDS.value)
 
-    def create_corners(self, card: Card, draw_corners: bool) -> typing.List[QGraphicsRectItem]:
+    @staticmethod
+    def _create_pixmap_item(card: AnyCardType):
+        item = QGraphicsPixmapItem(card.image_file)
+        item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
+        return item
+
+    def _create_watermark(self, document: Document) -> QGraphicsSimpleTextItem:
+        page_layout = document.page_layout
+        item = QGraphicsSimpleTextItem("")
+        item.setZValue(RenderLayers.WATERMARK.value)
+        self._update_watermark(item, page_layout)
+        return item
+
+    def create_corners(self, card: AnyCardType, draw_corners: bool) -> typing.List[QGraphicsRectItem]:
         image = card.image_file
         card_height, card_width = image.height(), image.width()
         card_width = image.width()
@@ -225,7 +240,7 @@ class CardItem(QGraphicsItemGroup):
             self._create_corner(card, CardCorner.BOTTOM_RIGHT, QPointF(right, bottom), draw_corners),
         ]
 
-    def _create_corner(self, card: Card, corner: CardCorner, position: QPointF, opaque: bool) -> QGraphicsRectItem:
+    def _create_corner(self, card: AnyCardType, corner: CardCorner, position: QPointF, opaque: bool) -> QGraphicsRectItem:
         rect = QGraphicsRectItem(0, 0, self.CORNER_SIZE_PX, self.CORNER_SIZE_PX)
         color = card.corner_color(corner)
         rect.setPos(position)
@@ -238,11 +253,22 @@ class CardItem(QGraphicsItemGroup):
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
         for corner in self.corners:
             corner.setOpacity(new_page_layout.draw_sharp_corners)
+        self._update_watermark(self.watermark_item, new_page_layout)
+
+    @staticmethod
+    def _update_watermark(item: QGraphicsSimpleTextItem, page_layout: PageLayoutSettings):
+        # TODO: Update watermark text, color, position and angle
+        item.setText("TEST")
+        item.setBrush(QColorConstants.Red)
+        item.setScale(5)
+        item.setX(100)
+        item.setY(100)
+        item.setRotation(20)
 
     def _draw_content(self):
-        for item in itertools.chain(self.corners, self.bleeds):
+        items = itertools.chain(self.corners, self.bleeds, [self.card_pixmap_item, self.watermark_item])
+        for item in items:
             self.addToGroup(item)
-        self.addToGroup(self.card_pixmap_item)
 
 
 def is_card_item(item: QGraphicsItem) -> bool:
@@ -519,7 +545,6 @@ class PageScene(QGraphicsScene):
     def draw_card(self, index: QModelIndex, page_type: PageType, next_item: CardItem = None):
         position = self._compute_position_for_image(index.row(), page_type)
         if index.data(ItemDataRole.DisplayRole) is not None:  # Card has a QPixmap set
-            card: Card = index.data(ItemDataRole.UserRole)
             card_item = CardItem(index, self.document)
             self.addItem(card_item)
             card_item.setPos(position)
