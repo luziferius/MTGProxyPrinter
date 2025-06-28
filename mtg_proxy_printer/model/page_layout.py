@@ -19,7 +19,7 @@ import typing
 from typing import Generator, Tuple
 
 import pint
-from PyQt5.QtGui import QPageLayout, QPageSize
+from PyQt5.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
 from PyQt5.QtCore import QMarginsF, QSizeF
 
 try:
@@ -61,6 +61,12 @@ class PageLayoutSettings:
     custom_page_width: QuantityT = 0 * unit_registry.mm
     paper_orientation: str = "Portrait"
     paper_size: str = "Custom"
+    watermark_text: str = ""
+    watermark_font_size: float = 0
+    watermark_pos_x: QuantityT = 0 * unit_registry.mm
+    watermark_pos_y: QuantityT = 0 * unit_registry.mm
+    watermark_angle: QuantityT = 0 * unit_registry.degree
+    watermark_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Transparent)
 
     @property
     def page_height(self) -> QuantityT:
@@ -109,6 +115,12 @@ class PageLayoutSettings:
             document_settings.get_quantity("paper-width"),
             document_settings["paper-orientation"],
             document_settings["paper-size"],
+            document_settings["watermark-text"],
+            document_settings.getfloat("watermark_font_size"),
+            document_settings.get_quantity("watermark-pos-x"),
+            document_settings.get_quantity("watermark-pos-y"),
+            document_settings.get_quantity("watermark-angle"),
+            document_settings.get_color("watermark-color"),
         )
 
     def to_page_layout(self, render_mode: "RenderMode") -> QPageLayout:
