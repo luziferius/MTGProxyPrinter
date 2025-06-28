@@ -257,13 +257,14 @@ class CardItem(QGraphicsItemGroup):
 
     @staticmethod
     def _update_watermark(item: QGraphicsSimpleTextItem, page_layout: PageLayoutSettings):
-        # TODO: Update watermark text, color, position and angle
-        item.setText("TEST")
-        item.setBrush(QColorConstants.Red)
-        item.setScale(5)
-        item.setX(100)
-        item.setY(100)
-        item.setRotation(20)
+        item.setText(page_layout.watermark_text)
+        item.setBrush(page_layout.watermark_color)
+        font = item.font()
+        font.setPointSizeF(page_layout.watermark_font_size)
+        item.setFont(font)
+        item.setX(page_layout.watermark_pos_x)
+        item.setY(page_layout.watermark_pos_y)
+        item.setRotation(page_layout.watermark_angle)
 
     def _draw_content(self):
         items = itertools.chain(self.corners, self.bleeds, [self.card_pixmap_item, self.watermark_item])
