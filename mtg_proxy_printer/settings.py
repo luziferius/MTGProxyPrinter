@@ -162,6 +162,12 @@ DEFAULT_SETTINGS["documents"] = {
     "print-sharp-corners": "False",
     "print-page-numbers": "False",
     "default-document-name": "",
+    "watermark-text": "",
+    "watermark-font-size": "30",
+    "watermark-pos-x": "10 mm",
+    "watermark-pos-y": "5 mm",
+    "watermark-angle": "0 degree",
+    "watermark-color": "#ffff0000",
 }
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
@@ -334,15 +340,30 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
     if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
+    length_settings = {"card-bleed", "paper-height", "paper-width", "margin-top", "margin-bottom", "margin-left",
+                       "margin-right", "row-spacing", "column-spacing", "watermark-pos-x", "watermark-pos-y"}
     boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
-    string_settings = {"default-document-name", "paper-size", "paper-orientation"}
+    string_settings = {"default-document-name", "paper-size", "paper-orientation", "watermark-text", }
+    number_settings = {"watermark-font-size", }
+    angle_settings = {"watermark-angle", }
+    color_settings = {"watermark-color", }
+
     for key in section.keys():
-        if key in boolean_settings:
+        if key in length_settings:
+            _validate_length(section, defaults, key, MIN_SIZE, MAX_SIZE)
+        elif key in boolean_settings:
             _validate_boolean(section, defaults, key)
         elif key in string_settings:
             pass
+        elif key in color_settings:
+            _validate_color(section, defaults, key)
+        elif key in number_settings:
+            _validate_number(section, defaults, key)
+        elif key in angle_settings:
+            _validate_angle(section, defaults, key)
+
         else:
-            _validate_length(section, defaults, key, MIN_SIZE, MAX_SIZE)
+            raise RuntimeError(f"BUG: Unhandled key found: {key}")
 
     if section["paper-size"] not in PageSizeManager.PageSize:
         _restore_default(section, defaults, "paper-size")
@@ -458,6 +479,28 @@ def _validate_boolean(section: SectionProxy, defaults: SectionProxy, key: str):
 def _validate_three_valued_boolean(section: SectionProxy, defaults: SectionProxy, key: str):
     try:
         section.getboolean(key)
+    except ValueError:
+        _restore_default(section, defaults, key)
+
+
+def _validate_angle(section: SectionProxy, defaults: SectionProxy, key: str):
+    try:
+        value = section.get_quantity(key)
+        if unit_conversion_required := (value.units != unit_registry.degree):
+            value = value.to("°")
+        rounded = clamp_to_supported_range(value, -360*unit_registry.degree, 360*unit_registry.degree)
+        if unit_conversion_required or not math.isclose(value.magnitude, rounded.magnitude):
+            section[key] = str(rounded)
+    # Unit-less values raise AttributeError, non-length values, like grams or seconds, raise DimensionalityError
+    # Invalid expressions raise TokenError
+    except (ValueError, pint.DimensionalityError, AttributeError, tokenize.TokenError):
+        _restore_default(section, defaults, key)
+
+
+def _validate_number(section: SectionProxy, defaults: SectionProxy, key: str):
+    try:
+        if not math.isfinite(section.getfloat(key)):
+            raise ValueError()
     except ValueError:
         _restore_default(section, defaults, key)
 
