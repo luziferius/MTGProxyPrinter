@@ -262,9 +262,9 @@ class CardItem(QGraphicsItemGroup):
         font = item.font()
         font.setPointSizeF(page_layout.watermark_font_size)
         item.setFont(font)
-        item.setX(page_layout.watermark_pos_x)
-        item.setY(page_layout.watermark_pos_y)
-        item.setRotation(page_layout.watermark_angle)
+        item.setX(page_layout.watermark_pos_x.to("pixel", "print").magnitude)
+        item.setY(page_layout.watermark_pos_y.to("pixel", "print").magnitude)
+        item.setRotation(page_layout.watermark_angle.to("degree").magnitude)
 
     def _draw_content(self):
         items = itertools.chain(self.corners, self.bleeds, [self.card_pixmap_item, self.watermark_item])
