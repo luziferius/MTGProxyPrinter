@@ -18,7 +18,6 @@ import enum
 import functools
 import itertools
 import typing
-from typing import List, Iterable
 
 from PyQt5.QtCore import Qt, QSizeF, QPointF, QRectF, pyqtSignal as Signal, QObject, pyqtSlot as Slot, \
     QPersistentModelIndex, QModelIndex, QRect, QPoint, QSize
@@ -257,6 +256,8 @@ class CardItem(QGraphicsItemGroup):
 
     @staticmethod
     def _update_watermark(item: QGraphicsSimpleTextItem, page_layout: PageLayoutSettings):
+        # TODO: This runs the unit conversions and font editing for each item on the page.
+        #  Check if this is a performance issue. If so, move this into the PageScene
         item.setText(page_layout.watermark_text)
         item.setBrush(page_layout.watermark_color)
         font = item.font()
