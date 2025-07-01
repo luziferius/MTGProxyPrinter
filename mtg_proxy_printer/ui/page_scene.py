@@ -41,7 +41,11 @@ ItemDataRole = Qt.ItemDataRole
 ColorGroup = QPalette.ColorGroup
 ColorRole = QPalette.ColorRole
 SortOrder = Qt.SortOrder
-ZERO_WIDTH: QuantityT = 0 * unit_registry.mm
+
+ZERO_WIDTH = 0 * unit_registry.mm
+point = unit_registry.point
+degree = unit_registry.degree
+pixel = unit_registry.pixel
 
 
 @enum.unique
@@ -261,11 +265,11 @@ class CardItem(QGraphicsItemGroup):
         item.setText(page_layout.watermark_text)
         item.setBrush(page_layout.watermark_color)
         font = item.font()
-        font.setPointSizeF(page_layout.watermark_font_size)
+        font.setPointSizeF(page_layout.watermark_font_size.to(point).magnitude)
         item.setFont(font)
-        item.setX(page_layout.watermark_pos_x.to("pixel", "print").magnitude)
-        item.setY(page_layout.watermark_pos_y.to("pixel", "print").magnitude)
-        item.setRotation(page_layout.watermark_angle.to("degree").magnitude)
+        item.setX(page_layout.watermark_pos_x.to(pixel, "print").magnitude)
+        item.setY(page_layout.watermark_pos_y.to(pixel, "print").magnitude)
+        item.setRotation(page_layout.watermark_angle.to(degree).magnitude)
 
     def _draw_content(self):
         items = itertools.chain(self.corners, self.bleeds, [self.card_pixmap_item, self.watermark_item])

@@ -26,6 +26,7 @@ import pint
 from PyQt5.QtCore import QStandardPaths, QLocale
 from PyQt5.QtGui import QPageSize, QPageLayout, QColor
 from PyQt5.QtPrintSupport import QPrinterInfo
+from pint.registry import Unit
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
@@ -53,7 +54,7 @@ __all__ = [
 
 Letter = QPageSize.PageSizeId.Letter
 # https://www.unicode.org/cldr/charts/47/supplemental/territory_information.html
-LOCATION_PAPER_SIZE_TABLE = defaultdict(lambda:PageSizeId.A4, {
+LOCATION_PAPER_SIZE_TABLE = defaultdict(lambda: PageSizeId.A4, {
     Territory.Belize: Letter,
     Territory.Canada: Letter,
     Territory.Chile: Letter,
@@ -86,7 +87,26 @@ def get_default_paper_size() -> str:
     return default
 
 
-mm: QuantityT = unit_registry.mm
+class QuantityLimits(typing.NamedTuple):
+    """
+    Defines acceptable values for Pint quantities.
+    - Minimum and maximum define the acceptable, inclusive range.
+    - Acceptable_units defines the acceptable units for the desired unit dimensionality.
+      For example, inch and mm can be acceptable lengths, light years, parsecs, and other expressions evaluating
+      to a length are not.
+    - target_unit is the fallback unit, if the dimensionality is compatible, but the unit is not acceptable:
+      "1N*1s²/10kg" is a length (100mm), but not of an acceptable unit, so it will be converted to the target unit
+    """
+    minimum: QuantityT
+    maximum: QuantityT
+    acceptable_units: typing.Set[Unit]
+    target_unit: Unit
+
+
+mm = unit_registry.mm
+point = unit_registry.point
+degree = unit_registry.degree
+
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = ConfigParser()
 DEFAULT_SETTINGS = ConfigParser()
@@ -163,12 +183,32 @@ DEFAULT_SETTINGS["documents"] = {
     "print-page-numbers": "False",
     "default-document-name": "",
     "watermark-text": "",
-    "watermark-font-size": "30",
+    "watermark-font-size": "30 points",
     "watermark-pos-x": "10 mm",
     "watermark-pos-y": "5 mm",
     "watermark-angle": "0 degree",
     "watermark-color": "#ffff0000",
 }
+
+DEFAULT_LENGTH_LIMIT = QuantityLimits(0*mm, 10000*mm, {mm}, mm)
+DOCUMENT_SETTINGS_QUANTITY_LIMITS = {
+    # Value range limits and permissible units per settings key.
+    "card-bleed": DEFAULT_LENGTH_LIMIT,
+    "paper-height": DEFAULT_LENGTH_LIMIT,
+    "paper-width": DEFAULT_LENGTH_LIMIT,
+    "margin-top": DEFAULT_LENGTH_LIMIT,
+    "margin-bottom": DEFAULT_LENGTH_LIMIT,
+    "margin-left": DEFAULT_LENGTH_LIMIT,
+    "margin-right": DEFAULT_LENGTH_LIMIT,
+    "row-spacing": DEFAULT_LENGTH_LIMIT,
+    "column-spacing": DEFAULT_LENGTH_LIMIT,
+    "watermark-font-size": QuantityLimits(0*point, 1000*point, {point}, point),
+    "watermark-pos-x": QuantityLimits(-100*mm, 100*mm, {mm}, mm),
+    "watermark-pos-y": QuantityLimits(-100*mm, 100*mm, {mm}, mm),
+    "watermark-angle": QuantityLimits(-360*degree, 360*degree, {degree}, degree),
+}
+
+
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
     "deck-list-search-path": QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory),
@@ -215,9 +255,9 @@ DEFAULT_SETTINGS["export"] = {
     "png-background-color": "#ffffffff",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
-MIN_SIZE = 0 * mm
-MAX_SIZE = 10000 * mm
-ALLOWED_LENGTH_UNITS: typing.Set[QuantityT] = {mm}
+
+
+
 
 
 def round_to_nearest_multiple(value: T, multiple: T) -> T:
@@ -334,34 +374,24 @@ def _validate_images_section(to_validate: ConfigParser, section_name: str = "car
 
 def _validate_documents_section(to_validate: ConfigParser, section_name: str = "documents"):
     card_size = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED
-    card_height = card_size.height.to("mm", "print")
-    card_width = card_size.width.to("mm", "print")
+    card_height = card_size.height.to(mm, "print")
+    card_width = card_size.width.to(mm, "print")
     section = to_validate[section_name]
     if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
-    length_settings = {"card-bleed", "paper-height", "paper-width", "margin-top", "margin-bottom", "margin-left",
-                       "margin-right", "row-spacing", "column-spacing", "watermark-pos-x", "watermark-pos-y"}
     boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
     string_settings = {"default-document-name", "paper-size", "paper-orientation", "watermark-text", }
-    number_settings = {"watermark-font-size", }
-    angle_settings = {"watermark-angle", }
     color_settings = {"watermark-color", }
-
     for key in section.keys():
-        if key in length_settings:
-            _validate_length(section, defaults, key, MIN_SIZE, MAX_SIZE)
+        if key in DOCUMENT_SETTINGS_QUANTITY_LIMITS:
+            _validate_quantity(section, defaults, key, DOCUMENT_SETTINGS_QUANTITY_LIMITS[key])
         elif key in boolean_settings:
             _validate_boolean(section, defaults, key)
         elif key in string_settings:
             pass
         elif key in color_settings:
             _validate_color(section, defaults, key)
-        elif key in number_settings:
-            _validate_number(section, defaults, key)
-        elif key in angle_settings:
-            _validate_angle(section, defaults, key)
-
         else:
             raise RuntimeError(f"BUG: Unhandled key found: {key}")
 
@@ -448,7 +478,8 @@ def _validate_printer_section(to_validate: ConfigParser, section_name: str = "pr
         if default in {"True", "False"}:
             _validate_boolean(section, defaults, key)
         else:
-            _validate_length(section, defaults, key, -100*mm, 100*mm)
+            limit = QuantityLimits(-100*mm, 100*mm, {mm}, mm)
+            _validate_quantity(section, defaults, key, limit)
 
 
 def _validate_export_section(to_validate: ConfigParser, section_name: str = "export"):
@@ -483,28 +514,6 @@ def _validate_three_valued_boolean(section: SectionProxy, defaults: SectionProxy
         _restore_default(section, defaults, key)
 
 
-def _validate_angle(section: SectionProxy, defaults: SectionProxy, key: str):
-    try:
-        value = section.get_quantity(key)
-        if unit_conversion_required := (value.units != unit_registry.degree):
-            value = value.to("°")
-        rounded = clamp_to_supported_range(value, -360*unit_registry.degree, 360*unit_registry.degree)
-        if unit_conversion_required or not math.isclose(value.magnitude, rounded.magnitude):
-            section[key] = str(rounded)
-    # Unit-less values raise AttributeError, non-length values, like grams or seconds, raise DimensionalityError
-    # Invalid expressions raise TokenError
-    except (ValueError, pint.DimensionalityError, AttributeError, tokenize.TokenError):
-        _restore_default(section, defaults, key)
-
-
-def _validate_number(section: SectionProxy, defaults: SectionProxy, key: str):
-    try:
-        if not math.isfinite(section.getfloat(key)):
-            raise ValueError()
-    except ValueError:
-        _restore_default(section, defaults, key)
-
-
 def _validate_non_negative_int(section: SectionProxy, defaults: SectionProxy, key: str):
     try:
         if section.getint(key) < 0:
@@ -513,14 +522,15 @@ def _validate_non_negative_int(section: SectionProxy, defaults: SectionProxy, ke
         _restore_default(section, defaults, key)
 
 
-def _validate_length(section: SectionProxy, defaults: SectionProxy, key: str, minimum: QuantityT, maximum: QuantityT):
+def _validate_quantity(section: SectionProxy, defaults: SectionProxy, key: str, limits: QuantityLimits):
     try:
         value = section.get_quantity(key)
-        if unit_conversion_required := (value.units not in ALLOWED_LENGTH_UNITS):
-            value = value.to("mm", "print")
-        rounded = clamp_to_supported_range(value, minimum, maximum)
-        if unit_conversion_required or not math.isclose(value.magnitude, rounded.magnitude):
-            section[key] = str(rounded)
+        if unit_conversion_required := (value.units not in limits.acceptable_units):
+            value = value.to(limits.target_unit, "print")
+        clamped = clamp_to_supported_range(value, limits.minimum, limits.maximum)
+        # Both value and clamped share the same unit, so comparing magnitudes is fine.
+        if unit_conversion_required or not math.isclose(value.magnitude, clamped.magnitude):
+            section[key] = str(clamped)
     # Unit-less values raise AttributeError, non-length values, like grams or seconds, raise DimensionalityError
     # Invalid expressions raise TokenError
     except (ValueError, pint.DimensionalityError, AttributeError, tokenize.TokenError):
@@ -680,7 +690,6 @@ def _10_migrate_export_section(to_migrate: ConfigParser):
     section = to_migrate["export"]
     section["export-path"] = section["pdf-export-path"]
     del section["pdf-export-path"]
-
 
 
 # Read the settings from file during module import

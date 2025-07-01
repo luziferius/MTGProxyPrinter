@@ -62,7 +62,7 @@ class PageLayoutSettings:
     paper_orientation: str = "Portrait"
     paper_size: str = "Custom"
     watermark_text: str = ""
-    watermark_font_size: float = 0
+    watermark_font_size: QuantityT = 0 * unit_registry.point
     watermark_pos_x: QuantityT = 0 * unit_registry.mm
     watermark_pos_y: QuantityT = 0 * unit_registry.mm
     watermark_angle: QuantityT = 0 * unit_registry.degree
@@ -116,7 +116,7 @@ class PageLayoutSettings:
             document_settings["paper-orientation"],
             document_settings["paper-size"],
             document_settings["watermark-text"],
-            document_settings.getfloat("watermark-font-size"),
+            document_settings.get_quantity("watermark-font-size"),
             document_settings.get_quantity("watermark-pos-x"),
             document_settings.get_quantity("watermark-pos-y"),
             document_settings.get_quantity("watermark-angle"),
