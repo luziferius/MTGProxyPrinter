@@ -321,7 +321,7 @@ class PageConfigWidget(QGroupBox):
             (ui.column_spacing, "column-spacing", mm),
             (ui.watermark_pos_x, "watermark-pos-x", mm),
             (ui.watermark_pos_y, "watermark-pos-y", mm),
-            (ui.watermark_pos_y, "watermark-angle", degree),
+            (ui.watermark_angle, "watermark-angle", degree),
             (ui.watermark_font_size, "watermark-font-size", point),
         ]
         return widgets_with_settings
