@@ -30,7 +30,7 @@ from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, \
-    PageType, unit_registry, ConfigParser, PageSizeManager, QuantityT
+    PageType, unit_registry, ConfigParser, PageSizeManager
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -103,8 +103,10 @@ class PageConfigWidget(QGroupBox):
             checkbox.stateChanged.connect(partial(self.set_boolean_page_layout_item, page_layout, layout_key))
             checkbox.stateChanged.connect(partial(self.page_layout_changed.emit, page_layout))
 
-        ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
-        ui.document_name.textChanged.connect(partial(self.page_layout_changed.emit, page_layout))
+        for line_edit, _ in self._get_string_settings_widgets():
+            layout_key = line_edit.objectName()
+            line_edit.textChanged.connect(partial(setattr, page_layout, layout_key))
+            line_edit.textChanged.connect(partial(self.page_layout_changed.emit, page_layout))
         return page_layout
 
     @staticmethod
@@ -238,6 +240,7 @@ class PageConfigWidget(QGroupBox):
         logger.debug(f"About to load document settings from a document instance")
         ui = self.ui
         layout = self.page_layout
+        # TODO: Maybe reverse the iteration direction and use the _get_*_settings_widgets() helpers?
         for key in layout.__annotations__.keys():
             value: Union[pint.Quantity, bool, str, QColor] = getattr(other, key)
             widget: QWidget = getattr(ui, key)
@@ -307,7 +310,7 @@ class PageConfigWidget(QGroupBox):
         documents_section["paper-orientation"] = PageSizeManager.PageOrientationReverse[self._current_page_orientation()]
         logger.debug("Saving done.")
 
-    def _get_numerical_settings_widgets(self):
+    def _get_numerical_settings_widgets(self) -> List[Tuple[QDoubleSpinBox, str, Unit]]:
         ui = self.ui
         widgets_with_settings: List[Tuple[QDoubleSpinBox, str, Unit]] = [
             (ui.card_bleed, "card-bleed", mm),
