@@ -212,6 +212,8 @@ def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Pat
                 str(layout.draw_sharp_corners),
                 layout.paper_orientation,
                 layout.paper_size,
+                layout.watermark_color.name(layout.watermark_color.NameFormat.HexArgb),
+                layout.watermark_text,
             ),
             f"Obtained: {values}"
         )
@@ -234,6 +236,10 @@ def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Pat
                 quantity_close_to(layout.margin_right),
                 quantity_close_to(layout.margin_top),
                 quantity_close_to(layout.row_spacing),
+                quantity_close_to(layout.watermark_angle),
+                quantity_close_to(layout.watermark_font_size),
+                quantity_close_to(layout.watermark_pos_x),
+                quantity_close_to(layout.watermark_pos_y),
             ),
             f"Obtained: {values}"
         )

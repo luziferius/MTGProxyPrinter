@@ -368,6 +368,7 @@ class PageConfigWidget(QGroupBox):
         for widget, setting, unit in self._get_numerical_settings_widgets():
             if not math.isclose(widget.value(), section.get_quantity(setting).to(unit).magnitude):
                 highlight_widget(widget)
+
         # TODO: Watermark color
         if self._current_page_size() != PageSizeManager.PageSize[section["paper-size"]]:
             highlight_widget(self.ui.paper_size)

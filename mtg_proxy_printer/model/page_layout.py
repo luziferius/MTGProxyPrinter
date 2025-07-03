@@ -14,6 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
+import itertools
 import math
 import typing
 from typing import Generator, Tuple
@@ -41,6 +42,9 @@ del get_logger
 __all__ = [
     "PageLayoutSettings",
 ]
+
+def _is_quantity_setting(pair: typing.Tuple[str, typing.Any]):
+    return isinstance(pair[1], pint.Quantity)
 
 
 @dataclasses.dataclass
@@ -158,11 +162,19 @@ class PageLayoutSettings:
 
     def to_save_file_data(self):
         values = dataclasses.asdict(self)
-        settings = (
-            (key, str(value)) for key, value in values.items() if not isinstance(value, pint.Quantity))
-        dimensions: Generator[Tuple[str, pint.Quantity], None, None] = (
-            (key, value) for key, value in values.items() if isinstance(value, pint.Quantity))
+        settings = itertools.starmap(self._setting_to_str, itertools.filterfalse(_is_quantity_setting, values.items()))
+        dimensions = filter(_is_quantity_setting, values.items())
         return settings, dimensions
+
+    @staticmethod
+    def _setting_to_str(key: str, value: typing.Any) -> typing.Tuple[str, str]:
+        if isinstance(value, str):
+            pass
+        elif isinstance(value, QColor):
+            value = value.name(QColor.NameFormat.HexArgb)
+        else:
+            value = str(value)
+        return key, value
 
     def __lt__(self, other):
         if not isinstance(other, self.__class__):
