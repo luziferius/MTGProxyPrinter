@@ -265,9 +265,9 @@ def round_to_nearest_multiple(value: T, multiple: T) -> T:
     return round(value/multiple)*multiple
 
 
-def clamp_to_supported_range(value: QuantityT, minimum: QuantityT, maximum: QuantityT) -> QuantityT:
+def clamp_to_supported_range(value: QuantityT, limits: QuantityLimits) -> QuantityT:
     """Clamps numerical document settings to the supported value range"""
-    return min(max(value, minimum),  maximum)
+    return min(max(value, limits.minimum),  limits.maximum)
 
 
 def get_boolean_card_filter_keys():
@@ -527,7 +527,7 @@ def _validate_quantity(section: SectionProxy, defaults: SectionProxy, key: str, 
         value = section.get_quantity(key)
         if unit_conversion_required := (value.units not in limits.acceptable_units):
             value = value.to(limits.target_unit, "print")
-        clamped = clamp_to_supported_range(value, limits.minimum, limits.maximum)
+        clamped = clamp_to_supported_range(value, limits)
         # Both value and clamped share the same unit, so comparing magnitudes is fine.
         if unit_conversion_required or not math.isclose(value.magnitude, clamped.magnitude):
             section[key] = str(clamped)

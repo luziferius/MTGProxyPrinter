@@ -194,7 +194,7 @@ def test_parse_card_set_filters(default_settings: ConfigParser, set_filter: str,
 def test_clamp_to_supported_range(value: float, expected: float):
     value_as_distance: pint.Quantity = value*unit_registry.mm
     clamped_value = mtg_proxy_printer.settings.clamp_to_supported_range(
-        value_as_distance, mtg_proxy_printer.settings.MIN_SIZE, mtg_proxy_printer.settings.MAX_SIZE).magnitude
+        value_as_distance, mtg_proxy_printer.settings.DEFAULT_LENGTH_LIMIT).magnitude
     assert_that(clamped_value, is_(close_to(expected, 0.001)))
 
 

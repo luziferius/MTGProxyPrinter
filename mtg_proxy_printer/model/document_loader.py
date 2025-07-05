@@ -537,7 +537,7 @@ class Worker(LoaderSignals):
             elif annotated_type is QuantityT:
                 # Ensure all floats are within the allowed bounds.
                 value = mtg_proxy_printer.settings.clamp_to_supported_range(
-                    value, mtg_proxy_printer.settings.DEFAULT_LENGTH_LIMIT.minimum, mtg_proxy_printer.settings.DEFAULT_LENGTH_LIMIT)
+                    value, mtg_proxy_printer.settings.DEFAULT_LENGTH_LIMIT)
             elif annotated_type is str:
                  pass
             setattr(settings, key, value)
