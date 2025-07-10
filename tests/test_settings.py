@@ -25,6 +25,7 @@ from hamcrest import *
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.units_and_sizes import unit_registry, ConfigParser
+from tests.helpers import quantity_between
 
 
 def between_including(lower: Real, upper: Real):
@@ -34,13 +35,15 @@ def between_including(lower: Real, upper: Real):
 def to_mm_str(value: Real) -> str:
     return str(value*unit_registry.mm)
 
+
 @pytest.fixture
 def default_settings() -> ConfigParser:
     settings = ConfigParser()
     settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
     return settings
 
-def numerical_document_settings_keys() -> Iterable[str]:
+
+def length_document_settings_keys() -> Iterable[str]:
     return (
         key for key, value in mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"].items()
         if value.endswith(" mm")
@@ -100,7 +103,8 @@ def test__validate_documents_section_restore_vertical_paper_dimensions(
         "margin-bottom": equal_to(defaults["margin-bottom"]),
     }))
 
-@pytest.mark.parametrize("setting", numerical_document_settings_keys())
+
+@pytest.mark.parametrize("setting", length_document_settings_keys())
 @pytest.mark.parametrize("unit", ["s", "", "kg", ' " '])
 def test__validate_document_section_restore_paper_dimensions_with_invalid_units(
         default_settings: ConfigParser, setting: str, unit: str):
@@ -112,7 +116,7 @@ def test__validate_document_section_restore_paper_dimensions_with_invalid_units(
     assert_that(documents_section, has_entry(setting, equal_to(defaults[setting])))
 
 
-@pytest.mark.parametrize("setting", numerical_document_settings_keys())
+@pytest.mark.parametrize("setting", length_document_settings_keys())
 @pytest.mark.parametrize("value", [
     "1_000_000_000 nm", "1.0570008340246154e-16 light_year", "11811.023622047245 pixel",  # 1 m
     "-1_000_000_000 nm", "-1.0570008340246154e-16 light_year", "-11811.023622047245 pixel",  # -1 m
@@ -125,12 +129,10 @@ def test__validate_document_section_normalizes_unsupported_length_units_to_mm(
     documents_section = default_settings["documents"]
     documents_section[setting] = value
     mtg_proxy_printer.settings.validate_settings(default_settings)
+    limit = mtg_proxy_printer.settings.DOCUMENT_SETTINGS_QUANTITY_LIMITS[setting]
     assert_that(
         documents_section.get_quantity(setting),
-        all_of(
-            has_property("units", equal_to(unit_registry.mm)),
-            has_property("magnitude", between_including(0, 10000))
-        )
+        is_(quantity_between(limit.minimum, limit.maximum))
     )
 
 
@@ -181,6 +183,7 @@ def test_parse_card_set_filters(default_settings: ConfigParser, set_filter: str,
         mtg_proxy_printer.settings.parse_card_set_filters(default_settings),
         contains_inanyorder(*parsed_set_codes)
     )
+
 
 @pytest.mark.parametrize("value, expected", [
     (-0.01, 0),
