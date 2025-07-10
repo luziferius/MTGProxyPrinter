@@ -23,7 +23,7 @@ import textwrap
 from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, Tuple, TYPE_CHECKING
 
 import pint
-from PyQt5.QtGui import QPageLayout, QPageSize
+from PyQt5.QtGui import QPageLayout, QPageSize, QColor
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, is_, any_of, none, has_item, has_property, equal_to
@@ -508,6 +508,9 @@ class Worker(LoaderSignals):
         is_distance = all_of(
             instance_of(pint.Quantity),
             has_property("dimensionality", equal_to(unit_registry.mm.dimensionality)))
+        is_angle = all_of(
+            instance_of(pint.Quantity),
+            has_property("dimensionality", equal_to(unit_registry.degree.dimensionality)))
         is_bool_str = is_in(("True", "False"))
         assert_that(
             settings,
@@ -527,6 +530,11 @@ class Worker(LoaderSignals):
                 document_name=instance_of(str),
                 paper_orientation=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageOrientation),
                 paper_size=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize),
+                watermark_angle=is_angle,
+                watermark_pos_x=is_distance,
+                watermark_pos_y=is_distance,
+                watermark_text=instance_of(str),
+                watermark_color=matches_regexp("#[0-9a-f]{8}"),
             ),
             "Document settings contain invalid data or data types"
         )
@@ -536,8 +544,10 @@ class Worker(LoaderSignals):
                 value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
             elif annotated_type is QuantityT:
                 # Ensure all floats are within the allowed bounds.
-                value = mtg_proxy_printer.settings.clamp_to_supported_range(
-                    value, mtg_proxy_printer.settings.DEFAULT_LENGTH_LIMIT)
+                limit = mtg_proxy_printer.settings.DOCUMENT_SETTINGS_QUANTITY_LIMITS[key.replace("_", "-")]
+                value = mtg_proxy_printer.settings.clamp_to_supported_range(value, limit)
+            elif annotated_type is QColor:
+                value = QColor(value)
             elif annotated_type is str:
                  pass
             setattr(settings, key, value)
