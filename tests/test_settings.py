@@ -80,10 +80,10 @@ def test_round_to_nearest_multiple(value: Real, multiple: Real, expected: Real):
 def test__validate_documents_section_restore_horizontal_paper_dimensions(
         default_settings: ConfigParser, invalid: float, unit: str):
     documents_section = default_settings["documents"]
-    documents_section["paper-width"] = str(invalid*unit_registry(unit))
+    documents_section["custom-page-width"] = str(invalid*unit_registry(unit))
     mtg_proxy_printer.settings.validate_settings(default_settings)
     assert_that(documents_section, has_entries({
-        "paper-width": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["paper-width"]),
+        "custom-page-width": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["custom-page-width"]),
         "margin-left": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["margin-left"]),
         "margin-right": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["margin-right"]),
     }))
@@ -95,10 +95,10 @@ def test__validate_documents_section_restore_vertical_paper_dimensions(
         default_settings: ConfigParser, invalid: float, unit: str):
     defaults = mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]
     documents_section = default_settings["documents"]
-    documents_section["paper-height"] = str(invalid*unit_registry(unit))
+    documents_section["custom-page-height"] = str(invalid*unit_registry(unit))
     mtg_proxy_printer.settings.validate_settings(default_settings)
     assert_that(documents_section, has_entries({
-        "paper-height": equal_to(defaults["paper-height"]),
+        "custom-page-height": equal_to(defaults["custom-page-height"]),
         "margin-top": equal_to(defaults["margin-top"]),
         "margin-bottom": equal_to(defaults["margin-bottom"]),
     }))
@@ -152,7 +152,7 @@ def test__validate_documents_section_rounds_spacing_value_to_acceptable_value(
 
 @pytest.mark.parametrize("expected", [297, 297 + 1 / 12, 297 + 11 / 12, 298])
 @pytest.mark.parametrize("offset", [0, -1/101, 1/101])
-@pytest.mark.parametrize("settings_key", ["paper-height", "paper-width",])
+@pytest.mark.parametrize("settings_key", ["custom-page-height", "custom-page-width",])
 def test__validate_documents_section_rounds_paper_size_value_to_acceptable_value(
         default_settings: ConfigParser, expected: Union[float, int], offset: float, settings_key: str):
     documents_section = default_settings["documents"]

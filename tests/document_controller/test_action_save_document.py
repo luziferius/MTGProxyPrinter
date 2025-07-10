@@ -113,7 +113,7 @@ def test_subsequent_save_updates_settings(tmp_path: Path, qtbot: QtBot, document
     save_action.apply(document_custom_layout)
 
     modified_layout = copy.copy(document_custom_layout.page_layout)
-    modified_layout.custom_page_width = modified_layout.custom_page_width = 1000*mm
+    modified_layout.custom_page_width = modified_layout.custom_page_width = 1000 * mm
     modified_layout.margin_top = modified_layout.margin_bottom = 13*mm
     modified_layout.margin_left = modified_layout.margin_right= 14*mm
     modified_layout.column_spacing = modified_layout.row_spacing = 2*mm

@@ -314,8 +314,8 @@ class PageConfigWidget(QGroupBox):
         ui = self.ui
         widgets_with_settings: List[Tuple[QDoubleSpinBox, str, Unit]] = [
             (ui.card_bleed, "card-bleed", mm),
-            (ui.custom_page_height, "paper-height", mm),
-            (ui.custom_page_width, "paper-width", mm),
+            (ui.custom_page_height, "custom-page-height", mm),
+            (ui.custom_page_width, "custom-page-width", mm),
             (ui.margin_top, "margin-top", mm),
             (ui.margin_bottom, "margin-bottom", mm),
             (ui.margin_left, "margin-left", mm),

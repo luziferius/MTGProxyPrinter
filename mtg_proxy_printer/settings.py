@@ -170,8 +170,8 @@ DEFAULT_SETTINGS["documents"] = {
     "card-bleed": "0 mm",
     "paper-orientation": PageSizeManager.PageOrientationReverse[Orientation.Portrait],
     "paper-size": get_default_paper_size(),
-    "paper-height": "297 mm",
-    "paper-width": "210 mm",
+    "custom-page-height": "297 mm",
+    "custom-page-width": "210 mm",
     "margin-top": str(DEFAULT_MARGINS),
     "margin-bottom": str(DEFAULT_MARGINS),
     "margin-left": str(DEFAULT_MARGINS),
@@ -194,8 +194,8 @@ DEFAULT_LENGTH_LIMIT = QuantityLimits(0*mm, 10000*mm, {mm}, mm)
 DOCUMENT_SETTINGS_QUANTITY_LIMITS = {
     # Value range limits and permissible units per settings key.
     "card-bleed": DEFAULT_LENGTH_LIMIT,
-    "paper-height": DEFAULT_LENGTH_LIMIT,
-    "paper-width": DEFAULT_LENGTH_LIMIT,
+    "custom-page-height": DEFAULT_LENGTH_LIMIT,
+    "custom-page-width": DEFAULT_LENGTH_LIMIT,
     "margin-top": DEFAULT_LENGTH_LIMIT,
     "margin-bottom": DEFAULT_LENGTH_LIMIT,
     "margin-left": DEFAULT_LENGTH_LIMIT,
@@ -400,26 +400,26 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
     if section["paper-orientation"] not in PageSizeManager.PageOrientation:
         _restore_default(section, defaults, "paper-orientation")
     # Check some semantic properties
-    available_height = section.get_quantity("paper-height") - \
+    available_height = section.get_quantity("custom-page-height") - \
         (section.get_quantity("margin-top") + section.get_quantity("margin-bottom"))
-    available_width = section.get_quantity("paper-width") - \
+    available_width = section.get_quantity("custom-page-width") - \
         (section.get_quantity("margin-left") + section.get_quantity("margin-right"))
 
     if available_height < card_height:
         # Can not fit a single card on a page
-        section["paper-height"] = defaults["paper-height"]
+        section["custom-page-height"] = defaults["custom-page-height"]
         section["margin-top"] = defaults["margin-top"]
         section["margin-bottom"] = defaults["margin-bottom"]
     if available_width < card_width:
         # Can not fit a single card on a page
-        section["paper-width"] = defaults["paper-width"]
+        section["custom-page-width"] = defaults["custom-page-width"]
         section["margin-left"] = defaults["margin-left"]
         section["margin-right"] = defaults["margin-right"]
 
     # Re-calculate, if width or height was reset
-    available_height = section.get_quantity("paper-height") - \
+    available_height = section.get_quantity("custom-page-height") - \
         (section.get_quantity("margin-top") + section.get_quantity("margin-bottom"))
-    available_width = section.get_quantity("paper-width") - \
+    available_width = section.get_quantity("custom-page-width") - \
         (section.get_quantity("margin-left") + section.get_quantity("margin-right"))
     # FIXME: This looks like a dimensional error. Validate and test!
     if section.get_quantity("column-spacing") > (available_spacing_vertical := available_height - card_height):
@@ -564,6 +564,7 @@ def migrate_settings(to_migrate: ConfigParser):
     _08_migrate_images_to_cards_section(to_migrate)
     _09_migrate_application_to_update_checks_section(to_migrate)
     _10_migrate_export_section(to_migrate)
+    _11_migrate_custom_paper_size_keys(to_migrate)
 
 
 def _01_migrate_layout_setting(to_migrate: ConfigParser):
@@ -690,6 +691,15 @@ def _10_migrate_export_section(to_migrate: ConfigParser):
     section = to_migrate["export"]
     section["export-path"] = section["pdf-export-path"]
     del section["pdf-export-path"]
+
+
+def _11_migrate_custom_paper_size_keys(to_migrate: ConfigParser):
+    section = to_migrate["documents"]
+    for key in ("paper-width", "paper-height"):
+        if key in section:
+            _, dim = key.split("-")
+            section[f"custom-page-{dim}"] = section[key]
+            del section[key]
 
 
 # Read the settings from file during module import
