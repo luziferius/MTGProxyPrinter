@@ -28,8 +28,6 @@ from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, is_, any_of, none, has_item, has_property, equal_to
 
-from tests.hasgetter import has_getter
-
 try:
     from hamcrest import contains_exactly
 except ImportError:
