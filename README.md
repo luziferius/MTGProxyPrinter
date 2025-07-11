@@ -20,7 +20,8 @@ in a paged document suitable for printing or PDF export.
 - Multiple export options:
   - Export as PDFs, including optional, automatic splitting into configurable chunks to accommodate file size limits 
     present in various printers.
-  - Export as a PNG image sequence, when PDF export is unsuitable
+  - Export as a PNG image sequence, when PDF export is unsuitable. Background color is configurable,
+    including support for transparent backgrounds
   - Export as individual card images
 - Direct printing using your operating system’s printing support. Can use any available and suitable printer
 - Obtains high-quality images from Scryfall (where available)
