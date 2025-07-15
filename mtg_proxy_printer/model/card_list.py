@@ -146,7 +146,9 @@ class CardListModel(QAbstractTableModel):
         row, column = index.row(), index.column()
         container = self.rows[row]
         card = container.card
-        if not card.is_custom_card and role == ItemDataRole.EditRole and column in self.EDITABLE_COLUMNS:
+        if column == CardListColumns.Copies:
+            return self._set_copies_value(container, card, value)
+        elif not card.is_custom_card and role == ItemDataRole.EditRole and column in self.EDITABLE_COLUMNS:
             return self._set_data_for_official_card(index, value)
         elif card.is_custom_card and role == ItemDataRole.EditRole:
             return self._set_data_for_custom_card(index, value)
@@ -157,9 +159,7 @@ class CardListModel(QAbstractTableModel):
         container = self.rows[row]
         card = container.card
         logger.debug(f"Setting card list model data on official card for column {column} to {value}")
-        if column == CardListColumns.Copies:
-            return self._set_copies_value(container, card, value)
-        elif column == CardListColumns.CollectorNumber:
+        if column == CardListColumns.CollectorNumber:
             card_data = CardIdentificationData(
                 card.language, card.name, card.set_code, value, is_front=card.is_front)
         elif column == CardListColumns.Set:
@@ -184,8 +184,6 @@ class CardListModel(QAbstractTableModel):
             document_card_index = i if (i := document_indices[0][0]).parent().isValid() else document_indices[1][0]
             action = ActionEditCustomCard(document_card_index, value)
 
-        if column == CardListColumns.Copies:
-            return self._set_copies_value(container, card, value)
         if column == CardListColumns.CardName:
             card.name = value
         elif column == CardListColumns.CollectorNumber:

@@ -22,6 +22,8 @@ Because it was requested multiple times, there is a mirror of the application's 
 
 ## Fixed issues
 
+- Fixed crash in the custom card import dialog when trying to change the copies count of a card by double-clicking
+  the Copies cell in the table. 
 - Performance optimization in the page renderer. The app no longer lags massively when working with
   huge paper sizes (like A0, ANSI E) that contain 100+ cards
 - Fixed broken card bleed rendering with excessively large bleeds (30+ mm)
