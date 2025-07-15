@@ -195,11 +195,10 @@ class CardListModel(QAbstractTableModel):
             card.face_number = int(not value)
         elif column == CardListColumns.Set:
             card.set = value
-        if card_indices := list(self.document.find_relevant_index_ranges(card, column.to_page_column())):
-            logger.info(
-                f"Edited custom card present in {len(card_indices)} locations in the document."
-                f"Applying the change to the current document.")
         if action is not None:
+            logger.info(
+                f"Edited custom card present in {len(document_indices)} locations in the document."
+                f"Applying the change to the current document.")
             self.request_action.emit(action)
         return True
 
