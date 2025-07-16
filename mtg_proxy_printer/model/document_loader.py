@@ -512,6 +512,10 @@ class Worker(LoaderSignals):
             instance_of(pint.Quantity),
             has_property("dimensionality", equal_to(unit_registry.degree.dimensionality)))
         is_bool_str = is_in(("True", "False"))
+        is_color = any_of(
+            instance_of(QColor),  # watermark-color key not present, inherits default value
+            matches_regexp(r"#[0-9a-f]{8}"),  # watermark-color present in the save file, encoded as a hex string
+        )
         assert_that(
             settings,
             has_properties(
@@ -534,7 +538,7 @@ class Worker(LoaderSignals):
                 watermark_pos_x=is_distance,
                 watermark_pos_y=is_distance,
                 watermark_text=instance_of(str),
-                watermark_color=matches_regexp(r"#[0-9a-f]{8}"),
+                watermark_color=is_color,
             ),
             "Document settings contain invalid data or data types"
         )
@@ -547,7 +551,8 @@ class Worker(LoaderSignals):
                 limit = mtg_proxy_printer.settings.DOCUMENT_SETTINGS_QUANTITY_LIMITS[key.replace("_", "-")]
                 value = mtg_proxy_printer.settings.clamp_to_supported_range(value, limit)
             elif annotated_type is QColor:
-                value = QColor(value)
+                if isinstance(value, str):
+                    value = QColor(value)
             elif annotated_type is str:
                  pass
             setattr(settings, key, value)
