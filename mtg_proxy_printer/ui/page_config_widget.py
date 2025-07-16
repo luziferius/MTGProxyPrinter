@@ -23,11 +23,11 @@ import pint
 from PyQt5.QtCore import pyqtSlot as Slot, Qt, pyqtSignal as Signal
 from PyQt5.QtPrintSupport import QPrinter
 from PyQt5.QtGui import QPageSize, QPageLayout, QColor
-from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QComboBox
+from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QComboBox, QColorDialog
 from pint.registry import Unit
 
 from mtg_proxy_printer.settings import settings
-from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
+from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget, get_widget_background_color
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, \
     PageType, unit_registry, ConfigParser, PageSizeManager
@@ -90,6 +90,11 @@ class PageConfigWidget(QGroupBox):
         ui.paper_orientation.currentIndexChanged.connect(self.on_page_layout_setting_changed)
         ui.paper_orientation.currentIndexChanged.connect(partial(self.page_layout_changed.emit, page_layout))
 
+        ui.watermark_opacity.valueChanged.connect(self._on_watermark_color_opacity_changed)
+        ui.watermark_opacity.valueChanged.connect(partial(self.page_layout_changed.emit, page_layout))
+
+        ui.watermark_color_button.clicked.connect(self._on_watermark_color_button_clicked)
+
         for spinbox, _, unit in self._get_numerical_settings_widgets():
             layout_key = spinbox.objectName()
             spinbox.valueChanged[float].connect(
@@ -143,6 +148,19 @@ class PageConfigWidget(QGroupBox):
         ui = self.ui
         orientation: QPageLayout.Orientation = ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
         self.page_layout.paper_orientation = PageSizeManager.PageOrientationReverse[orientation]
+
+    @Slot(int)
+    def _on_watermark_color_opacity_changed(self, value: int):
+        self.page_layout.watermark_color.setAlpha(value)
+        self._show_watermark_color(self.page_layout.watermark_color)
+
+    @Slot()
+    def _on_watermark_color_button_clicked(self):
+        selected = QColorDialog.getColor(self.page_layout.watermark_color)
+        selected.setAlpha(self.ui.watermark_opacity.value())
+        self.page_layout.watermark_color = selected
+        self._show_watermark_color(self.page_layout.watermark_color)
+        self.page_layout_changed.emit(self.page_layout)
 
     @Slot()
     def on_page_layout_setting_changed(self):
@@ -228,6 +246,7 @@ class PageConfigWidget(QGroupBox):
             checkbox.setChecked(documents_section.getboolean(setting))
         for line_edit, setting in self._get_string_settings_widgets():
             line_edit.setText(documents_section[setting])
+        self._show_watermark_color(documents_section["watermark-color"])
         self._load_paper_size(documents_section["paper-size"])
         self._load_paper_orientation(documents_section["paper-orientation"])
         self.validate_paper_size_settings()
@@ -260,8 +279,8 @@ class PageConfigWidget(QGroupBox):
                     pass
                 elif isinstance(value, str):  # Load document title and watermark text
                     widget.setText(value)
-                elif isinstance(value, QColor):  # TODO
-                    pass
+                elif isinstance(value, QColor):
+                    self._show_watermark_color(value)
                 else:
                     widget.setChecked(value)
             setattr(self.page_layout, key, value)
@@ -271,6 +290,13 @@ class PageConfigWidget(QGroupBox):
         self.on_page_layout_setting_changed()
         self.page_layout_changed.emit(self.page_layout)
         logger.debug(f"Loading from document settings finished")
+
+    def _show_watermark_color(self, color: Union[str, QColor]):
+        if isinstance(color, QColor):
+            color = color.name(QColor.NameFormat.HexArgb)
+        sheet = "QLabel {" + f"background-color: {color}" + "}"
+        self.ui.watermark_color.setStyleSheet(sheet)
+
 
     def _load_paper_size(self, size: str):
         page_size = PageSizeManager.PageSize[size]
@@ -305,7 +331,8 @@ class PageConfigWidget(QGroupBox):
             documents_section[setting] = str(checkbox.isChecked())
         for line_edit, setting in self._get_string_settings_widgets():
             documents_section[setting] = line_edit.text()
-        # TODO: Watermark color
+        documents_section["watermark-color"] = get_widget_background_color(self.ui.watermark_color).name(
+            QColor.NameFormat.HexArgb)
         documents_section["paper-size"] = PageSizeManager.PageSizeReverse[self._current_page_size()]
         documents_section["paper-orientation"] = PageSizeManager.PageOrientationReverse[self._current_page_orientation()]
         logger.debug("Saving done.")
@@ -359,6 +386,7 @@ class PageConfigWidget(QGroupBox):
     @highlight_differing_settings.register
     def _(self, to_compare: ConfigParser):
         section = to_compare["documents"]
+        ui = self.ui
         for widget, setting in self._get_string_settings_widgets():
             if widget.text() != section[setting]:
                 highlight_widget(widget)
@@ -368,8 +396,7 @@ class PageConfigWidget(QGroupBox):
         for widget, setting, unit in self._get_numerical_settings_widgets():
             if not math.isclose(widget.value(), section.get_quantity(setting).to(unit).magnitude):
                 highlight_widget(widget)
-
-        # TODO: Watermark color
+        self._highlight_watermark_color_widgets(section.get_color("watermark-color"))
         if self._current_page_size() != PageSizeManager.PageSize[section["paper-size"]]:
             highlight_widget(self.ui.paper_size)
         if self._current_page_orientation() != PageSizeManager.PageOrientation[section["paper-orientation"]]:
@@ -389,7 +416,17 @@ class PageConfigWidget(QGroupBox):
             name = spinbox.objectName()
             if not math.isclose(spinbox.value(), getattr(to_compare, name).to(unit).magnitude):
                 highlight_widget(spinbox)
+        self._highlight_watermark_color_widgets(to_compare.watermark_color)
         if self._current_page_size() != PageSizeManager.PageSize[to_compare.paper_size]:
             highlight_widget(self.ui.paper_size)
         if self._current_page_orientation() != PageSizeManager.PageOrientation[to_compare.paper_orientation]:
             highlight_widget(self.ui.paper_orientation)
+
+    def _highlight_watermark_color_widgets(self, color_to_compare: QColor):
+        ui = self.ui
+        # TODO: Is this comparison against the page_layout safe? Everything else compares against UI state.
+        if self.page_layout.watermark_color != color_to_compare:
+            for widget in (
+                    ui.watermark_color, ui.watermark_color_label,
+                    ui.watermark_color_button, ui.watermark_opacity):
+                highlight_widget(widget)
