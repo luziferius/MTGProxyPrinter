@@ -246,7 +246,8 @@ class PageConfigWidget(QGroupBox):
             checkbox.setChecked(documents_section.getboolean(setting))
         for line_edit, setting in self._get_string_settings_widgets():
             line_edit.setText(documents_section[setting])
-        self._show_watermark_color(documents_section["watermark-color"])
+        self._show_watermark_color(documents_section.get_color("watermark-color"))
+
         self._load_paper_size(documents_section["paper-size"])
         self._load_paper_orientation(documents_section["paper-orientation"])
         self.validate_paper_size_settings()
@@ -291,11 +292,11 @@ class PageConfigWidget(QGroupBox):
         self.page_layout_changed.emit(self.page_layout)
         logger.debug(f"Loading from document settings finished")
 
-    def _show_watermark_color(self, color: Union[str, QColor]):
-        if isinstance(color, QColor):
-            color = color.name(QColor.NameFormat.HexArgb)
-        sheet = "QLabel {" + f"background-color: {color}" + "}"
+    def _show_watermark_color(self, color: QColor):
+        sheet = "QLabel {" + f"background-color: {color.name(QColor.NameFormat.HexArgb)}" + "}"
         self.ui.watermark_color.setStyleSheet(sheet)
+        if self.ui.watermark_opacity.value() != color.alpha():
+            self.ui.watermark_opacity.setValue(color.alpha())
 
 
     def _load_paper_size(self, size: str):
@@ -331,8 +332,7 @@ class PageConfigWidget(QGroupBox):
             documents_section[setting] = str(checkbox.isChecked())
         for line_edit, setting in self._get_string_settings_widgets():
             documents_section[setting] = line_edit.text()
-        documents_section["watermark-color"] = get_widget_background_color(self.ui.watermark_color).name(
-            QColor.NameFormat.HexArgb)
+        documents_section["watermark-color"] = self.page_layout.watermark_color.name(QColor.NameFormat.HexArgb)
         documents_section["paper-size"] = PageSizeManager.PageSizeReverse[self._current_page_size()]
         documents_section["paper-orientation"] = PageSizeManager.PageOrientationReverse[self._current_page_orientation()]
         logger.debug("Saving done.")
@@ -386,7 +386,6 @@ class PageConfigWidget(QGroupBox):
     @highlight_differing_settings.register
     def _(self, to_compare: ConfigParser):
         section = to_compare["documents"]
-        ui = self.ui
         for widget, setting in self._get_string_settings_widgets():
             if widget.text() != section[setting]:
                 highlight_widget(widget)
@@ -424,7 +423,6 @@ class PageConfigWidget(QGroupBox):
 
     def _highlight_watermark_color_widgets(self, color_to_compare: QColor):
         ui = self.ui
-        # TODO: Is this comparison against the page_layout safe? Everything else compares against UI state.
         if self.page_layout.watermark_color != color_to_compare:
             for widget in (
                     ui.watermark_color, ui.watermark_color_label,
