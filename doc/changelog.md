@@ -2,11 +2,14 @@
 
 # Next version (in development)
 
-Because it was requested multiple times, there is a mirror of the application's source code repository on [GitHub](https://github.com/luziferius/MTGProxyPrinter/).
-
 ## New features
 
 - Configurable background color for PNG exports, including support for semi- or fully transparent backgrounds.
+- Basic support for text-based watermarks on cards.
+  - Configurable are the watermark text, text color, opacity, size, position and rotation
+  - When enabled, watermarks are printed on all cards. It is currently not possible to combine marked front sides
+    with unmarked back sides in the same document.
+  - There may be additional improvements in the future, like configurable text outlines, font selection, etc.
 
 ## Changed features
 
