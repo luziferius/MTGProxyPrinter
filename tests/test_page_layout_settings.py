@@ -139,7 +139,7 @@ def test_page_layout_lt_raises_type_error_on_incompatible_types(page_layout: Pag
 def test_page_layout_gt(page_layout: PageLayoutSettings):
     page_layout.paper_size = "Custom"
     page_layout.paper_orientation = "Portrait"
-    page_layout.custom_page_width = 10*mm
+    page_layout.custom_page_width = 10 * mm
     assert_that(page_layout.compute_page_card_capacity(PageType.REGULAR), is_(0))
     assert_that(page_layout, is_not(greater_than(page_layout)))
 
@@ -151,8 +151,8 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
 
 @pytest.mark.parametrize("values", [
     {
-        "paper-height": "200 mm",
-        "paper-width": "100 mm",
+        "custom-page-height": "200 mm",
+        "custom-page-width": "100 mm",
         "margin-top": "9 mm",
         "margin-bottom": "8 mm",
         "margin-left": "7 mm",
@@ -167,8 +167,8 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
         "paper-size": "Custom",
     },
     {
-        "paper-height": "200 millimeter",
-        "paper-width": "100 millimeter",
+        "custom-page-height": "200 millimeter",
+        "custom-page-width": "100 millimeter",
         "margin-top": "9 millimeter",
         "margin-bottom": "8 millimeter",
         "margin-left": "7 millimeter",

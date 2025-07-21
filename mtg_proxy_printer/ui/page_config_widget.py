@@ -17,19 +17,20 @@
 import functools
 from functools import partial
 import math
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Any
 
+import pint
 from PyQt5.QtCore import pyqtSlot as Slot, Qt, pyqtSignal as Signal
 from PyQt5.QtPrintSupport import QPrinter
-from PyQt5.QtGui import QPageSize, QPageLayout
-from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QComboBox
-
+from PyQt5.QtGui import QPageSize, QPageLayout, QColor
+from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QComboBox, QColorDialog
+from pint.registry import Unit
 
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, \
-    PageType, unit_registry, ConfigParser, PageSizeManager, QuantityT
+    PageType, unit_registry, ConfigParser, PageSizeManager
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -41,6 +42,20 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 CheckState = Qt.CheckState
+DISTANCE_UNIT = unit_registry.UnitsContainer({"[length]": 1})
+mm = unit_registry.mm
+degree = unit_registry.degree
+point = unit_registry.point
+
+
+def is_pint_distance(value: Any) -> bool:
+    return isinstance(value, pint.Quantity) and value.dimensionality == DISTANCE_UNIT
+
+def is_pint_angle(value: Any) -> bool:
+    return isinstance(value, pint.Quantity) and value.units == degree
+
+def is_pint_point(value: Any) -> bool:
+    return isinstance(value, pint.Quantity) and value.units == point
 
 
 class PageConfigWidget(QGroupBox):
@@ -75,10 +90,15 @@ class PageConfigWidget(QGroupBox):
         ui.paper_orientation.currentIndexChanged.connect(self.on_page_layout_setting_changed)
         ui.paper_orientation.currentIndexChanged.connect(partial(self.page_layout_changed.emit, page_layout))
 
-        for spinbox, _ in self._get_decimal_settings_widgets():
+        ui.watermark_opacity.valueChanged.connect(self._on_watermark_color_opacity_changed)
+        ui.watermark_opacity.valueChanged.connect(partial(self.page_layout_changed.emit, page_layout))
+
+        ui.watermark_color_button.clicked.connect(self._on_watermark_color_button_clicked)
+
+        for spinbox, _, unit in self._get_numerical_settings_widgets():
             layout_key = spinbox.objectName()
             spinbox.valueChanged[float].connect(
-                partial(self.set_numerical_page_layout_item, page_layout, layout_key, "mm"))
+                partial(self.set_numerical_page_layout_item, page_layout, layout_key, unit))
             spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
             spinbox.valueChanged[float].connect(self.on_page_layout_setting_changed)
             spinbox.valueChanged[float].connect(partial(self.page_layout_changed.emit, page_layout))
@@ -88,18 +108,20 @@ class PageConfigWidget(QGroupBox):
             checkbox.stateChanged.connect(partial(self.set_boolean_page_layout_item, page_layout, layout_key))
             checkbox.stateChanged.connect(partial(self.page_layout_changed.emit, page_layout))
 
-        ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
-        ui.document_name.textChanged.connect(partial(self.page_layout_changed.emit, page_layout))
+        for line_edit, _ in self._get_string_settings_widgets():
+            layout_key = line_edit.objectName()
+            line_edit.textChanged.connect(partial(setattr, page_layout, layout_key))
+            line_edit.textChanged.connect(partial(self.page_layout_changed.emit, page_layout))
         return page_layout
 
     @staticmethod
-    def set_numerical_page_layout_item(page_layout: PageLayoutSettings, layout_key: str, unit: str, value: float):
+    def set_numerical_page_layout_item(page_layout: PageLayoutSettings, layout_key: str, unit: Unit, value: float):
         # Implementation note: This call is placed here, because stuffing it into a lambda defined within a while loop
         # somehow uses the wrong references and will set the attribute that was processed last in the loop.
         # This method can be used via functools.partial to reduce the signature to (float) -> None,
         # which can be connected to the valueChanged[float] signal just fine.
         # Also, functools.partial does not exhibit the same issue as the lambda expression shows.
-        setattr(page_layout, layout_key, value*unit_registry.parse_units(unit))
+        setattr(page_layout, layout_key, value*unit)
 
     @staticmethod
     def set_boolean_page_layout_item(page_layout: PageLayoutSettings, layout_key: str, value: CheckState):
@@ -126,6 +148,19 @@ class PageConfigWidget(QGroupBox):
         ui = self.ui
         orientation: QPageLayout.Orientation = ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
         self.page_layout.paper_orientation = PageSizeManager.PageOrientationReverse[orientation]
+
+    @Slot(int)
+    def _on_watermark_color_opacity_changed(self, value: int):
+        self.page_layout.watermark_color.setAlpha(value)
+        self._show_watermark_color(self.page_layout.watermark_color)
+
+    @Slot()
+    def _on_watermark_color_button_clicked(self):
+        selected = QColorDialog.getColor(self.page_layout.watermark_color)
+        selected.setAlpha(self.ui.watermark_opacity.value())
+        self.page_layout.watermark_color = selected
+        self._show_watermark_color(self.page_layout.watermark_color)
+        self.page_layout_changed.emit(self.page_layout)
 
     @Slot()
     def on_page_layout_setting_changed(self):
@@ -165,8 +200,8 @@ class PageConfigWidget(QGroupBox):
         """
         ui = self.ui
         oversized = CardSizes.OVERSIZED
-        available_width = self._current_page_width() - oversized.width.to("mm", "print").magnitude
-        available_height = self._current_page_height() - oversized.height.to("mm", "print").magnitude
+        available_width = self._current_page_width() - oversized.width.to(mm, "print").magnitude
+        available_height = self._current_page_height() - oversized.height.to(mm, "print").magnitude
         ui.margin_left.setMaximum(
             max(0, available_width - ui.margin_right.value())
         )
@@ -203,14 +238,16 @@ class PageConfigWidget(QGroupBox):
     def load_document_settings_from_config(self, new_config: ConfigParser):
         logger.debug(f"About to load document settings from the global settings")
         documents_section = new_config["documents"]
-        for spinbox, setting in self._get_decimal_settings_widgets():
-            value = documents_section.get_quantity(setting).to("mm")
+        for spinbox, setting, unit in self._get_numerical_settings_widgets():
+            value = documents_section.get_quantity(setting).to(unit)
             spinbox.setValue(value.magnitude)
             setattr(self.page_layout, spinbox.objectName(), spinbox.value()*value.units)
         for checkbox, setting in self._get_boolean_settings_widgets():
             checkbox.setChecked(documents_section.getboolean(setting))
         for line_edit, setting in self._get_string_settings_widgets():
             line_edit.setText(documents_section[setting])
+        self._show_watermark_color(documents_section.get_color("watermark-color"))
+
         self._load_paper_size(documents_section["paper-size"])
         self._load_paper_orientation(documents_section["paper-orientation"])
         self.validate_paper_size_settings()
@@ -223,17 +260,29 @@ class PageConfigWidget(QGroupBox):
         logger.debug(f"About to load document settings from a document instance")
         ui = self.ui
         layout = self.page_layout
+        # TODO: Maybe reverse the iteration direction and use the _get_*_settings_widgets() helpers?
         for key in layout.__annotations__.keys():
-            value: Union[QuantityT, bool, str] = getattr(other, key)
-            widget = getattr(ui, key)
-            with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
-                if isinstance(widget, QDoubleSpinBox):
-                    widget.setValue(value.to("mm").magnitude)
-                    value = widget.value()*unit_registry.mm
-                elif isinstance(widget, QLineEdit):
-                    widget.setText(value)
-                elif isinstance(widget, QComboBox):
+            value: Union[pint.Quantity, bool, str, QColor] = getattr(other, key)
+            widget: QWidget = getattr(ui, key)
+            with (BlockedSignals(widget)):  # Don’t call the validation methods in each iteration
+                if is_pint_point(value):  # Points are a kind of distance, so catch that first
+                    value = value.to(point).magnitude
+                    widget.setValue(value)
+                    value = value*point
+                elif is_pint_distance(value):
+                    value = value.to(mm).magnitude
+                    widget.setValue(value)
+                    value = widget.value()*mm
+                elif is_pint_angle(value):
+                    value = value.to(degree).magnitude
+                    widget.setValue(value)
+                    value = widget.value()*degree
+                elif isinstance(widget, QComboBox):  # Ignore paper size attributes
                     pass
+                elif isinstance(value, str):  # Load document title and watermark text
+                    widget.setText(value)
+                elif isinstance(value, QColor):
+                    self._show_watermark_color(value)
                 else:
                     widget.setChecked(value)
             setattr(self.page_layout, key, value)
@@ -243,6 +292,13 @@ class PageConfigWidget(QGroupBox):
         self.on_page_layout_setting_changed()
         self.page_layout_changed.emit(self.page_layout)
         logger.debug(f"Loading from document settings finished")
+
+    def _show_watermark_color(self, color: QColor):
+        sheet = "QLabel {" + f"background-color: {color.name(QColor.NameFormat.HexArgb)}" + "}"
+        self.ui.watermark_color.setStyleSheet(sheet)
+        if self.ui.watermark_opacity.value() != color.alpha():
+            self.ui.watermark_opacity.setValue(color.alpha())
+
 
     def _load_paper_size(self, size: str):
         page_size = PageSizeManager.PageSize[size]
@@ -271,28 +327,33 @@ class PageConfigWidget(QGroupBox):
     def save_document_settings_to_config(self):
         logger.info("About to save document settings to the global settings")
         documents_section = settings["documents"]
-        for spinbox, setting in self._get_decimal_settings_widgets():
-            documents_section[setting] = str(spinbox.value()*unit_registry.mm)
+        for spinbox, setting, unit in self._get_numerical_settings_widgets():
+            documents_section[setting] = str(spinbox.value()*unit)
         for checkbox, setting in self._get_boolean_settings_widgets():
             documents_section[setting] = str(checkbox.isChecked())
         for line_edit, setting in self._get_string_settings_widgets():
             documents_section[setting] = line_edit.text()
+        documents_section["watermark-color"] = self.page_layout.watermark_color.name(QColor.NameFormat.HexArgb)
         documents_section["paper-size"] = PageSizeManager.PageSizeReverse[self._current_page_size()]
         documents_section["paper-orientation"] = PageSizeManager.PageOrientationReverse[self._current_page_orientation()]
         logger.debug("Saving done.")
 
-    def _get_decimal_settings_widgets(self):
+    def _get_numerical_settings_widgets(self) -> List[Tuple[QDoubleSpinBox, str, Unit]]:
         ui = self.ui
-        widgets_with_settings: List[Tuple[QDoubleSpinBox, str]] = [
-            (ui.card_bleed, "card-bleed"),
-            (ui.custom_page_height, "paper-height"),
-            (ui.custom_page_width, "paper-width"),
-            (ui.margin_top, "margin-top"),
-            (ui.margin_bottom, "margin-bottom"),
-            (ui.margin_left, "margin-left"),
-            (ui.margin_right, "margin-right"),
-            (ui.row_spacing, "row-spacing"),
-            (ui.column_spacing, "column-spacing"),
+        widgets_with_settings: List[Tuple[QDoubleSpinBox, str, Unit]] = [
+            (ui.card_bleed, "card-bleed", mm),
+            (ui.custom_page_height, "custom-page-height", mm),
+            (ui.custom_page_width, "custom-page-width", mm),
+            (ui.margin_top, "margin-top", mm),
+            (ui.margin_bottom, "margin-bottom", mm),
+            (ui.margin_left, "margin-left", mm),
+            (ui.margin_right, "margin-right", mm),
+            (ui.row_spacing, "row-spacing", mm),
+            (ui.column_spacing, "column-spacing", mm),
+            (ui.watermark_pos_x, "watermark-pos-x", mm),
+            (ui.watermark_pos_y, "watermark-pos-y", mm),
+            (ui.watermark_angle, "watermark-angle", degree),
+            (ui.watermark_font_size, "watermark-font-size", point),
         ]
         return widgets_with_settings
 
@@ -309,6 +370,7 @@ class PageConfigWidget(QGroupBox):
         ui = self.ui
         widgets_with_settings: List[Tuple[QLineEdit, str]] = [
             (ui.document_name, "default-document-name"),
+            (ui.watermark_text, "watermark-text"),
         ]
         return widgets_with_settings
 
@@ -331,9 +393,10 @@ class PageConfigWidget(QGroupBox):
         for widget, setting in self._get_boolean_settings_widgets():
             if widget.isChecked() is not section.getboolean(setting):
                 highlight_widget(widget)
-        for widget, setting in self._get_decimal_settings_widgets():
-            if not math.isclose(widget.value(), section.get_quantity(setting).to("mm").magnitude):
+        for widget, setting, unit in self._get_numerical_settings_widgets():
+            if not math.isclose(widget.value(), section.get_quantity(setting).to(unit).magnitude):
                 highlight_widget(widget)
+        self._highlight_watermark_color_widgets(section.get_color("watermark-color"))
         if self._current_page_size() != PageSizeManager.PageSize[section["paper-size"]]:
             highlight_widget(self.ui.paper_size)
         if self._current_page_orientation() != PageSizeManager.PageOrientation[section["paper-orientation"]]:
@@ -349,11 +412,20 @@ class PageConfigWidget(QGroupBox):
             name = checkbox.objectName()
             if checkbox.isChecked() is not getattr(to_compare, name):
                 highlight_widget(checkbox)
-        for spinbox, _ in self._get_decimal_settings_widgets():
+        for spinbox, _, unit in self._get_numerical_settings_widgets():
             name = spinbox.objectName()
-            if not math.isclose(spinbox.value(), getattr(to_compare, name).to("mm").magnitude):
+            if not math.isclose(spinbox.value(), getattr(to_compare, name).to(unit).magnitude):
                 highlight_widget(spinbox)
+        self._highlight_watermark_color_widgets(to_compare.watermark_color)
         if self._current_page_size() != PageSizeManager.PageSize[to_compare.paper_size]:
             highlight_widget(self.ui.paper_size)
         if self._current_page_orientation() != PageSizeManager.PageOrientation[to_compare.paper_orientation]:
             highlight_widget(self.ui.paper_orientation)
+
+    def _highlight_watermark_color_widgets(self, color_to_compare: QColor):
+        ui = self.ui
+        if self.page_layout.watermark_color != color_to_compare:
+            for widget in (
+                    ui.watermark_color, ui.watermark_color_label,
+                    ui.watermark_color_button, ui.watermark_opacity):
+                highlight_widget(widget)
