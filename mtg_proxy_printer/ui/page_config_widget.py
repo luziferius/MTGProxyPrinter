@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLine
 from pint.registry import Unit
 
 from mtg_proxy_printer.settings import settings
-from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget, get_widget_background_color
+from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, \
     PageType, unit_registry, ConfigParser, PageSizeManager
@@ -265,7 +265,11 @@ class PageConfigWidget(QGroupBox):
             value: Union[pint.Quantity, bool, str, QColor] = getattr(other, key)
             widget: QWidget = getattr(ui, key)
             with (BlockedSignals(widget)):  # Don’t call the validation methods in each iteration
-                if is_pint_distance(value):
+                if is_pint_point(value):  # Points are a kind of distance, so catch that first
+                    value = value.to(point).magnitude
+                    widget.setValue(value)
+                    value = value*point
+                elif is_pint_distance(value):
                     value = value.to(mm).magnitude
                     widget.setValue(value)
                     value = widget.value()*mm
@@ -273,9 +277,6 @@ class PageConfigWidget(QGroupBox):
                     value = value.to(degree).magnitude
                     widget.setValue(value)
                     value = widget.value()*degree
-                elif is_pint_point(value):
-                    value = value.to(point).magnitude
-                    widget.setValue(value)
                 elif isinstance(widget, QComboBox):  # Ignore paper size attributes
                     pass
                 elif isinstance(value, str):  # Load document title and watermark text
