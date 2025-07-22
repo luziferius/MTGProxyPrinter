@@ -38,6 +38,8 @@ from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 from tests.helpers import create_save_database_with
 
+OPEN_DATABASE = "mtg_proxy_printer.model.document_loader.open_database"
+
 mm: Unit = unit_registry.mm
 degree = unit_registry.degree
 
@@ -69,7 +71,7 @@ def page_layout() -> PageLayoutSettings:
 def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, user_version: int):
     empty_save_database.execute(f"PRAGMA user_version = {user_version};")
     assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(user_version))
-    with unittest.mock.patch("mtg_proxy_printer.model.document_loader.open_database") as mock:
+    with unittest.mock.patch(OPEN_DATABASE) as mock:
         mock.return_value = empty_save_database
         assert_that(
             calling(DocumentLoader._open_validate_and_migrate_save_file).with_args(Path()),
@@ -104,9 +106,7 @@ def test_document_with_card_loads_correctly(
         page_layout
     )
     loader.save_path = save_path = Path("/tmp/invalid.mtgproxies")
-    with unittest.mock.patch(
-            "mtg_proxy_printer.model.document_loader.open_database",
-            return_value=empty_save_database) as open_database, \
+    with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database, \
             qtbot.wait_signal(loader.load_requested), \
             qtbot.assert_not_emitted(loader.loading_file_failed):
         loader.run()
@@ -129,8 +129,7 @@ def test_empty_document_loads_correctly(
         empty_save_database: sqlite3.Connection, page_layout: PageLayoutSettings):
     create_save_database_with(empty_save_database, [], [], page_layout)
     loader.save_path = save_path = Path("/tmp/invalid.mtgproxies")
-    with unittest.mock.patch(
-            "mtg_proxy_printer.model.document_loader.open_database", return_value=empty_save_database) as mock, \
+    with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as mock, \
         qtbot.wait_signal(loader.load_requested), \
         qtbot.assert_not_emitted(loader.loading_file_failed):
             loader.run()
@@ -158,9 +157,7 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
     )
     pytest.skip("Fix document loader tests")
     save_path = Path("/tmp/invalid.mtgproxies")
-    with unittest.mock.patch(
-            "mtg_proxy_printer.model.document_loader.open_database",
-            return_value=empty_save_database) as open_database, \
+    with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database, \
         qtbot.waitSignals([loader.load_requested]):
             loader.load_document(save_path)
     open_database.assert_called_once()
@@ -199,9 +196,7 @@ def test_invalid_data_in_card_columns_raises_exception(
         "Setup failed: Data mismatch"
     )
     pytest.skip("Fix document loader tests")
-    with unittest.mock.patch(
-            "mtg_proxy_printer.model.document_loader.open_database",
-            return_value=empty_save_database) as open_database, \
+    with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database, \
         qtbot.waitSignal(loader.loading_file_failed, raising=True), \
         qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(Path("/tmp/invalid.mtgproxies"))
@@ -227,9 +222,7 @@ def test_protects_against_infinite_save_data(
         SELECT * FROM card_gen
         """))
     pytest.skip("Fix document loader tests")
-    with unittest.mock.patch(
-            "mtg_proxy_printer.model.document_loader.open_database",
-            return_value=empty_save_database) as open_database, \
+    with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database, \
         qtbot.waitSignal(loader.loading_file_failed, raising=True), \
         qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(Path("/tmp/invalid.mtgproxies"))
@@ -299,12 +292,11 @@ def test_protects_against_infinite_settings_data(
     empty_save_database.execute("DROP TABLE DocumentSettings")
     empty_save_database.execute(script)
     pytest.skip("Fix document loader tests")
-    with unittest.mock.patch("mtg_proxy_printer.model.document_loader.open_database") as mock:
-        mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, raising=True), \
-                qtbot.assertNotEmitted(loader.load_requested):
+    with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database, \
+        qtbot.waitSignal(loader.loading_file_failed, raising=True), \
+        qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(Path("/tmp/invalid.mtgproxies"))
-        mock.assert_called_once()
+    open_database.assert_called_once()
     assert_document_is_empty(document)
     assert_that(document.save_file_path, is_(none()))
 
@@ -323,9 +315,7 @@ def test_cancelling_loading_does_not_crash(
     )
     pytest.skip("Fix document loader tests")
     loader.begin_loading_loop.connect(loader.cancel)
-    with unittest.mock.patch(
-            "mtg_proxy_printer.model.document_loader.open_database",
-            return_value=empty_save_database) as open_database:
+    with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database:
         loader.load_document(Path("/tmp/invalid.mtgproxies"))
     open_database.assert_called_once()
 
@@ -339,7 +329,7 @@ def test_loads_check_card(
         document.page_layout
     )
     pytest.skip("Fix document loader tests")
-    with unittest.mock.patch("mtg_proxy_printer.model.document_loader.open_database") as open_database:
+    with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database:
         open_database.return_value = empty_save_database
         with qtbot.wait_signal(document.action_applied), \
                 qtbot.assert_not_emitted(loader.loading_file_failed):
@@ -419,8 +409,7 @@ def test_load_correctly_sets_document_title(
     page_layout.document_name = title
     create_save_database_with(empty_save_database, [], [], page_layout)
     with unittest.mock.patch(
-            "mtg_proxy_printer.model.document_loader.open_database",
-            return_value=empty_save_database), \
+            OPEN_DATABASE, return_value=empty_save_database), \
             qtbot.wait_signal(document.action_applied, timeout=1000), \
             qtbot.assert_not_emitted(loader.loading_file_failed):
         loader.load_document(Path("/tmp/invalid.mtgproxies"))
