@@ -2,14 +2,18 @@
 
 # Next version (in development)
 
-Because it was requested multiple times, there is a mirror of the application's source code repository on [GitHub](https://github.com/luziferius/MTGProxyPrinter/).
-
 ## New features
 
 - Configurable background color for PNG exports, including support for semi- or fully transparent backgrounds.
+- Basic support for text-based watermarks on cards.
+  - Configurable are the watermark text, text color, opacity, size, position and rotation
+  - When enabled, watermarks are printed on all cards. It is currently not possible to combine marked front sides
+    with unmarked back sides in the same document.
+  - There may be additional improvements in the future, like configurable text outlines, font selection, etc.
 
 ## Changed features
 
+- Rearranged the menu entries in the main window to be more logical.
 - Reworked paper size configuration: 
     - The document settings now provide a list of pre-defined paper sizes to choose from. Only paper sizes that can
       fit an oversized card in both landscape and portrait orientation are available.
@@ -21,6 +25,8 @@ Because it was requested multiple times, there is a mirror of the application's 
 
 ## Fixed issues
 
+- Fixed crash in the custom card import dialog when trying to change the copies count of a card by double-clicking
+  the Copies cell in the table. 
 - Performance optimization in the page renderer. The app no longer lags massively when working with
   huge paper sizes (like A0, ANSI E) that contain 100+ cards
 - Fixed broken card bleed rendering with excessively large bleeds (30+ mm)

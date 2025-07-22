@@ -14,12 +14,13 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
+import itertools
 import math
 import typing
 from typing import Generator, Tuple
 
 import pint
-from PyQt5.QtGui import QPageLayout, QPageSize
+from PyQt5.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
 from PyQt5.QtCore import QMarginsF, QSizeF
 
 try:
@@ -42,6 +43,9 @@ __all__ = [
     "PageLayoutSettings",
 ]
 
+def _is_quantity_setting(pair: typing.Tuple[str, typing.Any]):
+    return isinstance(pair[1], pint.Quantity)
+
 
 @dataclasses.dataclass
 class PageLayoutSettings:
@@ -61,6 +65,12 @@ class PageLayoutSettings:
     custom_page_width: Quantity = 0 * unit_registry.mm
     paper_orientation: str = "Portrait"
     paper_size: str = "Custom"
+    watermark_angle: Quantity = 0 * unit_registry.degree
+    watermark_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Transparent)
+    watermark_font_size: Quantity = 0 * unit_registry.point
+    watermark_pos_x: Quantity = 0 * unit_registry.mm
+    watermark_pos_y: Quantity = 0 * unit_registry.mm
+    watermark_text: str = ""
 
     @property
     def page_height(self) -> Quantity:
@@ -105,10 +115,16 @@ class PageLayoutSettings:
             document_settings.get_quantity("margin-left"),
             document_settings.get_quantity("margin-right"),
             document_settings.get_quantity("margin-top"),
-            document_settings.get_quantity("paper-height"),
-            document_settings.get_quantity("paper-width"),
+            document_settings.get_quantity("custom-page-height"),
+            document_settings.get_quantity("custom-page-width"),
             document_settings["paper-orientation"],
             document_settings["paper-size"],
+            document_settings.get_quantity("watermark-angle"),
+            document_settings.get_color("watermark-color"),
+            document_settings.get_quantity("watermark-font-size"),
+            document_settings.get_quantity("watermark-pos-x"),
+            document_settings.get_quantity("watermark-pos-y"),
+            document_settings["watermark-text"],
         )
 
     def to_page_layout(self, render_mode: "RenderMode") -> QPageLayout:
@@ -146,11 +162,19 @@ class PageLayoutSettings:
 
     def to_save_file_data(self):
         values = dataclasses.asdict(self)
-        settings = (
-            (key, str(value)) for key, value in values.items() if not isinstance(value, pint.Quantity))
-        dimensions: Generator[Tuple[str, pint.Quantity], None, None] = (
-            (key, value) for key, value in values.items() if isinstance(value, pint.Quantity))
+        settings = itertools.starmap(self._setting_to_str, itertools.filterfalse(_is_quantity_setting, values.items()))
+        dimensions = filter(_is_quantity_setting, values.items())
         return settings, dimensions
+
+    @staticmethod
+    def _setting_to_str(key: str, value: typing.Any) -> typing.Tuple[str, str]:
+        if isinstance(value, str):
+            pass
+        elif isinstance(value, QColor):
+            value = value.name(QColor.NameFormat.HexArgb)
+        else:
+            value = str(value)
+        return key, value
 
     def __lt__(self, other):
         if not isinstance(other, self.__class__):

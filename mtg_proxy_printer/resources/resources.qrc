@@ -25,6 +25,8 @@
     <!-- Application icon -->
     <file>icons/MTGPP.png</file>
     <file>icons/MTGPP_clean.png</file>
+    <!-- Ko-Fi icon -->
+    <file>icons/kofi_symbol.svg</file>
 
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
     <file>icons/breeze/index.theme</file>
@@ -60,6 +62,7 @@
     <file>icons/breeze/actions/16/list-add.svg</file>
     <file>icons/breeze/actions/16/shuffle.svg</file>
     <file>icons/breeze/actions/16/transform-rotate.svg</file>
+    <file>icons/breeze/actions/16/translate.svg</file>
     <file>icons/breeze/actions/16/view-hidden.svg</file>
     <file>icons/breeze/actions/16/viewpdf.svg</file>
 

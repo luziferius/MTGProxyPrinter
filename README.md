@@ -6,6 +6,8 @@ Print Magic: The Gathering cards for play-testing purposes.
 then you are looking at a Git mirror of the [fossil](https://fossil-scm.org)-based source repository
 located at [https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter](https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter))
 
+Support development: [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/R6R61HDVYE)
+
 ## Feature overview
 
 The application supports importing deck lists from locally stored files or various deck list building websites, 
@@ -18,7 +20,8 @@ in a paged document suitable for printing or PDF export.
 - Multiple export options:
   - Export as PDFs, including optional, automatic splitting into configurable chunks to accommodate file size limits 
     present in various printers.
-  - Export as a PNG image sequence, when PDF export is unsuitable
+  - Export as a PNG image sequence, when PDF export is unsuitable. Background color is configurable,
+    including support for transparent backgrounds
   - Export as individual card images
 - Direct printing using your operating system’s printing support. Can use any available and suitable printer
 - Obtains high-quality images from Scryfall (where available)

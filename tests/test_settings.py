@@ -25,6 +25,7 @@ from hamcrest import *
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.units_and_sizes import unit_registry, ConfigParser
+from tests.helpers import quantity_between
 
 
 def between_including(lower: Real, upper: Real):
@@ -34,13 +35,15 @@ def between_including(lower: Real, upper: Real):
 def to_mm_str(value: Real) -> str:
     return str(value*unit_registry.mm)
 
+
 @pytest.fixture
 def default_settings() -> ConfigParser:
     settings = ConfigParser()
     settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
     return settings
 
-def numerical_document_settings_keys() -> Iterable[str]:
+
+def length_document_settings_keys() -> Iterable[str]:
     return (
         key for key, value in mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"].items()
         if value.endswith(" mm")
@@ -77,10 +80,10 @@ def test_round_to_nearest_multiple(value: Real, multiple: Real, expected: Real):
 def test__validate_documents_section_restore_horizontal_paper_dimensions(
         default_settings: ConfigParser, invalid: float, unit: str):
     documents_section = default_settings["documents"]
-    documents_section["paper-width"] = str(invalid*unit_registry(unit))
+    documents_section["custom-page-width"] = str(invalid*unit_registry(unit))
     mtg_proxy_printer.settings.validate_settings(default_settings)
     assert_that(documents_section, has_entries({
-        "paper-width": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["paper-width"]),
+        "custom-page-width": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["custom-page-width"]),
         "margin-left": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["margin-left"]),
         "margin-right": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["margin-right"]),
     }))
@@ -92,15 +95,16 @@ def test__validate_documents_section_restore_vertical_paper_dimensions(
         default_settings: ConfigParser, invalid: float, unit: str):
     defaults = mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]
     documents_section = default_settings["documents"]
-    documents_section["paper-height"] = str(invalid*unit_registry(unit))
+    documents_section["custom-page-height"] = str(invalid*unit_registry(unit))
     mtg_proxy_printer.settings.validate_settings(default_settings)
     assert_that(documents_section, has_entries({
-        "paper-height": equal_to(defaults["paper-height"]),
+        "custom-page-height": equal_to(defaults["custom-page-height"]),
         "margin-top": equal_to(defaults["margin-top"]),
         "margin-bottom": equal_to(defaults["margin-bottom"]),
     }))
 
-@pytest.mark.parametrize("setting", numerical_document_settings_keys())
+
+@pytest.mark.parametrize("setting", length_document_settings_keys())
 @pytest.mark.parametrize("unit", ["s", "", "kg", ' " '])
 def test__validate_document_section_restore_paper_dimensions_with_invalid_units(
         default_settings: ConfigParser, setting: str, unit: str):
@@ -112,7 +116,7 @@ def test__validate_document_section_restore_paper_dimensions_with_invalid_units(
     assert_that(documents_section, has_entry(setting, equal_to(defaults[setting])))
 
 
-@pytest.mark.parametrize("setting", numerical_document_settings_keys())
+@pytest.mark.parametrize("setting", length_document_settings_keys())
 @pytest.mark.parametrize("value", [
     "1_000_000_000 nm", "1.0570008340246154e-16 light_year", "11811.023622047245 pixel",  # 1 m
     "-1_000_000_000 nm", "-1.0570008340246154e-16 light_year", "-11811.023622047245 pixel",  # -1 m
@@ -125,12 +129,10 @@ def test__validate_document_section_normalizes_unsupported_length_units_to_mm(
     documents_section = default_settings["documents"]
     documents_section[setting] = value
     mtg_proxy_printer.settings.validate_settings(default_settings)
+    limit = mtg_proxy_printer.settings.DOCUMENT_SETTINGS_QUANTITY_LIMITS[setting]
     assert_that(
         documents_section.get_quantity(setting),
-        all_of(
-            has_property("units", equal_to(unit_registry.mm)),
-            has_property("magnitude", between_including(0, 10000))
-        )
+        is_(quantity_between(limit.minimum, limit.maximum))
     )
 
 
@@ -150,7 +152,7 @@ def test__validate_documents_section_rounds_spacing_value_to_acceptable_value(
 
 @pytest.mark.parametrize("expected", [297, 297 + 1 / 12, 297 + 11 / 12, 298])
 @pytest.mark.parametrize("offset", [0, -1/101, 1/101])
-@pytest.mark.parametrize("settings_key", ["paper-height", "paper-width",])
+@pytest.mark.parametrize("settings_key", ["custom-page-height", "custom-page-width",])
 def test__validate_documents_section_rounds_paper_size_value_to_acceptable_value(
         default_settings: ConfigParser, expected: Union[float, int], offset: float, settings_key: str):
     documents_section = default_settings["documents"]
@@ -182,6 +184,7 @@ def test_parse_card_set_filters(default_settings: ConfigParser, set_filter: str,
         contains_inanyorder(*parsed_set_codes)
     )
 
+
 @pytest.mark.parametrize("value, expected", [
     (-0.01, 0),
     (0, 0),
@@ -194,7 +197,7 @@ def test_parse_card_set_filters(default_settings: ConfigParser, set_filter: str,
 def test_clamp_to_supported_range(value: float, expected: float):
     value_as_distance: pint.Quantity = value*unit_registry.mm
     clamped_value = mtg_proxy_printer.settings.clamp_to_supported_range(
-        value_as_distance, mtg_proxy_printer.settings.MIN_SIZE, mtg_proxy_printer.settings.MAX_SIZE).magnitude
+        value_as_distance, mtg_proxy_printer.settings.DEFAULT_LENGTH_LIMIT).magnitude
     assert_that(clamped_value, is_(close_to(expected, 0.001)))
 
 

@@ -26,6 +26,7 @@ import pint
 from PyQt5.QtCore import QStandardPaths, QLocale
 from PyQt5.QtGui import QPageSize, QPageLayout, QColor
 from PyQt5.QtPrintSupport import QPrinterInfo
+from pint.registry import Unit
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
@@ -53,7 +54,7 @@ __all__ = [
 
 Letter = QPageSize.PageSizeId.Letter
 # https://www.unicode.org/cldr/charts/47/supplemental/territory_information.html
-LOCATION_PAPER_SIZE_TABLE = defaultdict(lambda:PageSizeId.A4, {
+LOCATION_PAPER_SIZE_TABLE = defaultdict(lambda: PageSizeId.A4, {
     Territory.Belize: Letter,
     Territory.Canada: Letter,
     Territory.Chile: Letter,
@@ -86,7 +87,26 @@ def get_default_paper_size() -> str:
     return default
 
 
-mm: Quantity = unit_registry.mm
+class QuantityLimits(typing.NamedTuple):
+    """
+    Defines acceptable values for Pint quantities.
+    - Minimum and maximum define the acceptable, inclusive range.
+    - Acceptable_units defines the acceptable units for the desired unit dimensionality.
+      For example, inch and mm can be acceptable lengths, light years, parsecs, and other expressions evaluating
+      to a length are not.
+    - target_unit is the fallback unit, if the dimensionality is compatible, but the unit is not acceptable:
+      "1N*1s²/10kg" is a length (100mm), but not of an acceptable unit, so it will be converted to the target unit
+    """
+    minimum: Quantity
+    maximum: Quantity
+    acceptable_units: typing.Set[Unit]
+    target_unit: Unit
+
+
+mm = unit_registry.mm
+point = unit_registry.point
+degree = unit_registry.degree
+
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = ConfigParser()
 DEFAULT_SETTINGS = ConfigParser()
@@ -150,8 +170,8 @@ DEFAULT_SETTINGS["documents"] = {
     "card-bleed": "0 mm",
     "paper-orientation": PageSizeManager.PageOrientationReverse[Orientation.Portrait],
     "paper-size": get_default_paper_size(),
-    "paper-height": "297 mm",
-    "paper-width": "210 mm",
+    "custom-page-height": "297 mm",
+    "custom-page-width": "210 mm",
     "margin-top": str(DEFAULT_MARGINS),
     "margin-bottom": str(DEFAULT_MARGINS),
     "margin-left": str(DEFAULT_MARGINS),
@@ -162,7 +182,33 @@ DEFAULT_SETTINGS["documents"] = {
     "print-sharp-corners": "False",
     "print-page-numbers": "False",
     "default-document-name": "",
+    "watermark-text": "",
+    "watermark-font-size": "30 points",
+    "watermark-pos-x": "10 mm",
+    "watermark-pos-y": "5 mm",
+    "watermark-angle": "0 degree",
+    "watermark-color": "#ffff0000",
 }
+
+DEFAULT_LENGTH_LIMIT = QuantityLimits(0*mm, 10000*mm, {mm}, mm)
+DOCUMENT_SETTINGS_QUANTITY_LIMITS = {
+    # Value range limits and permissible units per settings key.
+    "card-bleed": DEFAULT_LENGTH_LIMIT,
+    "custom-page-height": DEFAULT_LENGTH_LIMIT,
+    "custom-page-width": DEFAULT_LENGTH_LIMIT,
+    "margin-top": DEFAULT_LENGTH_LIMIT,
+    "margin-bottom": DEFAULT_LENGTH_LIMIT,
+    "margin-left": DEFAULT_LENGTH_LIMIT,
+    "margin-right": DEFAULT_LENGTH_LIMIT,
+    "row-spacing": DEFAULT_LENGTH_LIMIT,
+    "column-spacing": DEFAULT_LENGTH_LIMIT,
+    "watermark-font-size": QuantityLimits(0*point, 1000*point, {point}, point),
+    "watermark-pos-x": QuantityLimits(-100*mm, 100*mm, {mm}, mm),
+    "watermark-pos-y": QuantityLimits(-100*mm, 100*mm, {mm}, mm),
+    "watermark-angle": QuantityLimits(-360*degree, 360*degree, {degree}, degree),
+}
+
+
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
     "deck-list-search-path": QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory),
@@ -209,8 +255,8 @@ DEFAULT_SETTINGS["export"] = {
     "png-background-color": "#ffffffff",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
-MIN_SIZE = 0 * mm
-MAX_SIZE = 10000 * mm
+
+
 ALLOWED_LENGTH_UNITS: typing.Set[Quantity] = {mm}
 
 
@@ -219,9 +265,9 @@ def round_to_nearest_multiple(value: T, multiple: T) -> T:
     return round(value/multiple)*multiple
 
 
-def clamp_to_supported_range(value: Quantity, minimum: Quantity, maximum: Quantity) -> Quantity:
+def clamp_to_supported_range(value: Quantity, limits: Quantity) -> Quantity:
     """Clamps numerical document settings to the supported value range"""
-    return min(max(value, minimum),  maximum)
+    return min(max(value, limits.minimum),  limits.maximum)
 
 
 def get_boolean_card_filter_keys():
@@ -328,47 +374,52 @@ def _validate_images_section(to_validate: ConfigParser, section_name: str = "car
 
 def _validate_documents_section(to_validate: ConfigParser, section_name: str = "documents"):
     card_size = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED
-    card_height = card_size.height.to("mm", "print")
-    card_width = card_size.width.to("mm", "print")
+    card_height = card_size.height.to(mm, "print")
+    card_width = card_size.width.to(mm, "print")
     section = to_validate[section_name]
     if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
     boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
-    string_settings = {"default-document-name", "paper-size", "paper-orientation"}
+    string_settings = {"default-document-name", "paper-size", "paper-orientation", "watermark-text", }
+    color_settings = {"watermark-color", }
     for key in section.keys():
-        if key in boolean_settings:
+        if key in DOCUMENT_SETTINGS_QUANTITY_LIMITS:
+            _validate_quantity(section, defaults, key, DOCUMENT_SETTINGS_QUANTITY_LIMITS[key])
+        elif key in boolean_settings:
             _validate_boolean(section, defaults, key)
         elif key in string_settings:
             pass
+        elif key in color_settings:
+            _validate_color(section, defaults, key)
         else:
-            _validate_length(section, defaults, key, MIN_SIZE, MAX_SIZE)
+            raise RuntimeError(f"BUG: Unhandled key found: {key}")
 
     if section["paper-size"] not in PageSizeManager.PageSize:
         _restore_default(section, defaults, "paper-size")
     if section["paper-orientation"] not in PageSizeManager.PageOrientation:
         _restore_default(section, defaults, "paper-orientation")
     # Check some semantic properties
-    available_height = section.get_quantity("paper-height") - \
+    available_height = section.get_quantity("custom-page-height") - \
         (section.get_quantity("margin-top") + section.get_quantity("margin-bottom"))
-    available_width = section.get_quantity("paper-width") - \
+    available_width = section.get_quantity("custom-page-width") - \
         (section.get_quantity("margin-left") + section.get_quantity("margin-right"))
 
     if available_height < card_height:
         # Can not fit a single card on a page
-        section["paper-height"] = defaults["paper-height"]
+        section["custom-page-height"] = defaults["custom-page-height"]
         section["margin-top"] = defaults["margin-top"]
         section["margin-bottom"] = defaults["margin-bottom"]
     if available_width < card_width:
         # Can not fit a single card on a page
-        section["paper-width"] = defaults["paper-width"]
+        section["custom-page-width"] = defaults["custom-page-width"]
         section["margin-left"] = defaults["margin-left"]
         section["margin-right"] = defaults["margin-right"]
 
     # Re-calculate, if width or height was reset
-    available_height = section.get_quantity("paper-height") - \
+    available_height = section.get_quantity("custom-page-height") - \
         (section.get_quantity("margin-top") + section.get_quantity("margin-bottom"))
-    available_width = section.get_quantity("paper-width") - \
+    available_width = section.get_quantity("custom-page-width") - \
         (section.get_quantity("margin-left") + section.get_quantity("margin-right"))
     # FIXME: This looks like a dimensional error. Validate and test!
     if section.get_quantity("column-spacing") > (available_spacing_vertical := available_height - card_height):
@@ -427,7 +478,8 @@ def _validate_printer_section(to_validate: ConfigParser, section_name: str = "pr
         if default in {"True", "False"}:
             _validate_boolean(section, defaults, key)
         else:
-            _validate_length(section, defaults, key, -100*mm, 100*mm)
+            limit = QuantityLimits(-100*mm, 100*mm, {mm}, mm)
+            _validate_quantity(section, defaults, key, limit)
 
 
 def _validate_export_section(to_validate: ConfigParser, section_name: str = "export"):
@@ -470,14 +522,15 @@ def _validate_non_negative_int(section: SectionProxy, defaults: SectionProxy, ke
         _restore_default(section, defaults, key)
 
 
-def _validate_length(section: SectionProxy, defaults: SectionProxy, key: str, minimum: Quantity, maximum: Quantity):
+def _validate_quantity(section: SectionProxy, defaults: SectionProxy, key: str, limits: Quantity):
     try:
         value = section.get_quantity(key)
-        if unit_conversion_required := (value.units not in ALLOWED_LENGTH_UNITS):
-            value = value.to("mm", "print")
-        rounded = clamp_to_supported_range(value, minimum, maximum)
-        if unit_conversion_required or not math.isclose(value.magnitude, rounded.magnitude):
-            section[key] = str(rounded)
+        if unit_conversion_required := (value.units not in limits.acceptable_units):
+            value = value.to(limits.target_unit, "print")
+        clamped = clamp_to_supported_range(value, limits)
+        # Both value and clamped share the same unit, so comparing magnitudes is fine.
+        if unit_conversion_required or not math.isclose(value.magnitude, clamped.magnitude):
+            section[key] = str(clamped)
     # Unit-less values raise AttributeError, non-length values, like grams or seconds, raise DimensionalityError
     # Invalid expressions raise TokenError
     except (ValueError, pint.DimensionalityError, AttributeError, tokenize.TokenError):
@@ -511,6 +564,7 @@ def migrate_settings(to_migrate: ConfigParser):
     _08_migrate_images_to_cards_section(to_migrate)
     _09_migrate_application_to_update_checks_section(to_migrate)
     _10_migrate_export_section(to_migrate)
+    _11_migrate_custom_paper_size_keys(to_migrate)
 
 
 def _01_migrate_layout_setting(to_migrate: ConfigParser):
@@ -638,6 +692,14 @@ def _10_migrate_export_section(to_migrate: ConfigParser):
     section["export-path"] = section["pdf-export-path"]
     del section["pdf-export-path"]
 
+
+def _11_migrate_custom_paper_size_keys(to_migrate: ConfigParser):
+    section = to_migrate["documents"]
+    for key in ("paper-width", "paper-height"):
+        if key in section:
+            _, dim = key.split("-")
+            section[f"custom-page-{dim}"] = section[key]
+            del section[key]
 
 
 # Read the settings from file during module import

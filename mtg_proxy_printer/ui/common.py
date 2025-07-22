@@ -21,11 +21,12 @@ except ImportError:
 
 from pathlib import Path
 import platform
+import re
 from typing import Union, Dict
 
 from PyQt5.QtCore import QFile, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
 from PyQt5.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit, QDialog
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import QIcon, QPixmap, QColor, QColorConstants
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
 
@@ -47,6 +48,7 @@ __all__ = [
     "format_size",
     "WizardBase",
     "get_card_image_tooltip",
+    "get_widget_background_color",
     "show_wizard_or_dialog",
 ]
 
@@ -182,6 +184,19 @@ def format_size(size_bytes: float) -> str:
             return template.format(size=f"{size_bytes:3.2f}", unit=unit)
         size_bytes /= 1024
     return template.format(size=f"{size_bytes:.2f}", unit="YiB")
+
+
+def get_widget_background_color(widget: QWidget) -> QColor:
+    """
+    Returns the widget's background color, if set via a style sheet.
+
+    :returns: QColor set via the attached style sheet. QColorConstants.Transparent if no style sheet is set.
+    """
+    if style_sheet := widget.styleSheet():
+        class_name = widget.__class__.__name__
+        name = re.match(class_name+r"\s*\{\s*background-color\s*:\s*(?P<name>#.+)}", style_sheet)["name"]
+        return QColor(name)
+    return QColorConstants.Transparent
 
 
 class WizardBase(QWizard):

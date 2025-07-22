@@ -22,6 +22,7 @@ import textwrap
 
 
 import pint
+from PyQt5.QtGui import QColorConstants
 from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *
@@ -39,16 +40,19 @@ from tests.helpers import create_save_database_with
 
 CardType = mtg_proxy_printer.model.document_loader.CardType
 mm: Unit = unit_registry.mm
+degree = unit_registry.degree
 
 
 @pytest.fixture()
 def page_layout() -> PageLayoutSettings:
     page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
-        custom_page_height=300*mm, custom_page_width=200*mm,
+        custom_page_height=300 * mm, custom_page_width=200 * mm,
         margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
         row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
         draw_cut_markers=True, draw_sharp_corners=False, draw_page_numbers=True,
         paper_size="Custom", paper_orientation="Portrait",
+        watermark_angle=1*degree, watermark_color=QColorConstants.Cyan, watermark_font_size=60*unit_registry.point,
+        watermark_pos_x=23*mm, watermark_pos_y=24*mm, watermark_text="Watermark",
     )
     assert_that(
         page_layout.compute_page_card_capacity(PageType.OVERSIZED), is_(greater_than_or_equal_to(1)), "Setup failed"

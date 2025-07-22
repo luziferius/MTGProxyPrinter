@@ -141,8 +141,8 @@ def test_set_line_edits(qtbot: QtBot, widget: PageConfigWidget, attribute_name: 
 
 
 ZeroMarginsSettings = {
-    "paper-height": "297 mm",
-    "paper-width": "210 mm",
+    "custom-page-height": "297 mm",
+    "custom-page-width": "210 mm",
     "margin-top": "0 mm",
     "margin-bottom": "0 mm",
     "margin-left": "0 mm",
@@ -154,8 +154,8 @@ ZeroMarginsSettings = {
 
 @pytest.mark.parametrize("value", [-1*mm, 0*mm, 1*mm, 200*mm, 1000*mm])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value, max_value", [
-    ("paper-height", "custom_page_height", 126*mm, 10000*mm),
-    ("paper-width", "custom_page_width", 88*mm, 10000*mm),
+    ("custom-page-height", "custom_page_height", 126*mm, 10000*mm),
+    ("custom-page-width", "custom_page_width", 88*mm, 10000*mm),
     ("margin-top", "margin_top", 0*mm, 170.85*mm),
     ("margin-bottom", "margin_bottom", 0*mm, 170.85*mm),
     ("margin-left", "margin_left", 0*mm, 121.95*mm),
@@ -208,8 +208,8 @@ def test_load_boolean_checkboxes_from_config(
 
 @pytest.mark.parametrize("value", [-1*mm, 0*mm, 1*mm, 200*mm, 1000*mm])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value, max_value", [
-    ("paper-height", "custom_page_height", 126*mm, 10000*mm),
-    ("paper-width", "custom_page_width", 88*mm, 10000*mm),
+    ("custom-page-height", "custom_page_height", 126*mm, 10000*mm),
+    ("custom-page-width", "custom_page_width", 88*mm, 10000*mm),
     ("margin-top", "margin_top", 0*mm, 170.85*mm),
     ("margin-bottom", "margin_bottom", 0*mm, 170.85*mm),
     ("margin-left", "margin_left", 0*mm, 121.95*mm),
