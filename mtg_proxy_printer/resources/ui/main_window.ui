@@ -93,6 +93,7 @@
     <addaction name="action_web_project_on_pypi"/>
     <addaction name="separator"/>
     <addaction name="action_web_contribute_translations"/>
+    <addaction name="action_web_kofi"/>
    </widget>
    <addaction name="menu_application"/>
    <addaction name="menu_file"/>
@@ -435,6 +436,11 @@ use this to reduce the initial deck shuffling required</string>
    </property>
    <property name="text">
     <string>Contribute Translations</string>
+   </property>
+  </action>
+  <action name="action_web_kofi">
+   <property name="text">
+    <string>Support development on Ko-Fi</string>
    </property>
   </action>
   <action name="action_web_project_on_pypi">

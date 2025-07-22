@@ -116,11 +116,13 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def _setup_web_action_signals(ui: Ui_MainWindow):
+        ui.action_web_kofi.setIcon(mtg_proxy_printer.ui.common.load_icon("kofi_symbol.svg"))
         for action, link in [
             (ui.action_web_contribute_translations, "https://crowdin.com/project/mtgproxyprinter"),
             (ui.action_web_source_code, "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/index"),
             (ui.action_web_source_code_github, "https://github.com/luziferius/MTGProxyPrinter/"),
             (ui.action_web_project_on_pypi, "https://pypi.org/project/MTGProxyPrinter/"),
+            (ui.action_web_kofi, "https://ko-fi.com/luziferius")
         ]:
             url = QUrl(link, QUrl.ParsingMode.StrictMode)
             action.triggered.connect(partial(QDesktopServices.openUrl, url))
