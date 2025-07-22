@@ -156,6 +156,7 @@ def create_save_database_with(
     )
     return save
 
+
 def assert_relation_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, name: str):
     assert_that(
         card_db.db.execute(f'SELECT * FROM "{name}"').fetchall(),

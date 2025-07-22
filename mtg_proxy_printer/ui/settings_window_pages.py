@@ -17,12 +17,11 @@ import json
 import logging
 from functools import partial
 import pathlib
-import re
 import typing
 from abc import abstractmethod
 
 from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
-from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon, QColor, QColorConstants
+from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon, QColor
 from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox, \
     QColorDialog
 
@@ -30,7 +29,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.ui.common import highlight_widget, load_file
+from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, QuantityT
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
@@ -561,6 +560,7 @@ class ExportSettingsPage(Page):
         super().__init__(parent, flags)
         self.ui = ui = Ui_ExportSettingsPage()
         ui.setupUi(self)
+        self._get_png_background_color = partial(get_widget_background_color, ui.png_background_color)
 
     def load(self, settings: ConfigParser):
         ui = self.ui
@@ -608,12 +608,6 @@ class ExportSettingsPage(Page):
             QColorDialog.ColorDialogOption.ShowAlphaChannel)
         if selected.isValid():
             self._set_png_background_color_display(selected)
-
-    def _get_png_background_color(self) -> QColor:
-        if style_sheet := self.ui.png_background_color.styleSheet():
-            name = re.match(r"QLabel\s*\{\s*background-color\s*:\s*(?P<name>#.+)}", style_sheet)["name"]
-            return QColor(name)
-        return QColorConstants.Transparent
 
     def _set_png_background_color_display(self, color: QColor):
         # Can't use formatting, because embedded curly braces in the CSS style sheet

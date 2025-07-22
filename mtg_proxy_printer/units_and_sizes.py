@@ -29,7 +29,7 @@ except ImportError:  # Compatibility with Python < 3.11
     from typing_extensions import NotRequired
 
 from PySide6.QtCore import QSize, QObject
-from PySide6.QtGui import QPageSize, QPageLayout
+from PySide6.QtGui import QPageSize, QPageLayout, QColor
 
 try:
     from pint.facets.plain.registry import QuantityT, UnitT
@@ -86,6 +86,10 @@ class SectionProxy(configparser.SectionProxy):
         raw_value = self.get(option, fallback, raw=raw, vars=vars)
         return unit_registry.parse_expression(raw_value)
 
+    def get_color(self, option: str, fallback: str = None, *, raw=False, vars=None) -> QColor:
+        raw_value = self.get(option, fallback, raw=raw, vars=vars)
+        return QColor(raw_value)
+
 
 class ConfigParser(configparser.ConfigParser):
 
@@ -94,6 +98,10 @@ class ConfigParser(configparser.ConfigParser):
     def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> QuantityT:
         raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
         return unit_registry.parse_expression(raw_value)
+
+    def get_color(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> QColor:
+        raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
+        return QColor(raw_value)
 
 
 configparser.SectionProxy = SectionProxy

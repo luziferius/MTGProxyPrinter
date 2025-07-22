@@ -20,14 +20,19 @@ import typing
 from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
-from PySide6.QtCore import QItemSelectionModel
+from PySide6.QtCore import QItemSelectionModel, Qt
 
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
-from mtg_proxy_printer.model.card_list import CardListModel, CardListModelRow, CardListColumns
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.model.card import CustomCard, MTGSet
+from mtg_proxy_printer.model.carddb import CardIdentificationData
+from mtg_proxy_printer.model.card_list import CardListModel, CardListModelRow, CardListColumns, \
+    CardListToPageColumnMapping
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.units_and_sizes import CardSizes
 
 from tests.helpers import fill_card_database_with_json_cards
 
+ItemDataRole = Qt.ItemDataRole
 OVERSIZED_ID = "650722b4-d72b-4745-a1a5-00a34836282b"
 REGULAR_ID = "0000579f-7b35-4ed3-b44c-db2a538066fe"
 FOREST_ID = "7ef83f4c-d3ff-4905-a16d-f2bae673a5b2"
@@ -260,4 +265,51 @@ def test_remove_all_basic_lands(
     assert_that(
         remaining,
         contains_exactly(*expected_remaining)
+    )
+
+
+@pytest.mark.parametrize("column, value", [
+    (CardListColumns.CardName, "New"),
+    (CardListColumns.Set, MTGSet("NEW", "New Set")),
+    (CardListColumns.IsFront, False),
+    (CardListColumns.CollectorNumber, "123"),
+    (CardListColumns.Language, "ph"),
+    (CardListColumns.Copies, 5),
+])
+def test_editing_custom_card_sets_data(
+        qtbot: QtBot, document: Document, column: CardListColumns, value: typing.Any):
+    model = _populate_card_db_and_create_model(qtbot, document)
+    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, CardSizes.REGULAR, 1, False, b"")
+    model.add_cards(Counter([card]))
+    ActionAddCard(card, 1).apply(document)
+    card_list_index = model.index(0, column)
+    model.setData(card_list_index, value, ItemDataRole.EditRole)
+    assert_that(
+        model.data(card_list_index, ItemDataRole.EditRole), is_(equal_to(value))
+    )
+
+
+@pytest.mark.parametrize("column, value", [
+    (CardListColumns.CardName, "New"),
+    (CardListColumns.Set, MTGSet("NEW", "New Set")),
+    (CardListColumns.IsFront, False),
+    (CardListColumns.CollectorNumber, "123"),
+    (CardListColumns.Language, "ph"),
+])
+def test_editing_custom_card_propagates_to_instances_in_the_document(
+        qtbot: QtBot, document: Document, column: CardListColumns, value: typing.Any):
+    model = _populate_card_db_and_create_model(qtbot, document)
+    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, CardSizes.REGULAR, 1, False, b"")
+    model.add_cards(Counter([card]))
+    ActionAddCard(card, 1).apply(document)
+    model.setData(model.index(0, column), value)
+    document_page_index = document.index(0, 0)
+    if column == CardListColumns.CardName:
+        assert_that(
+            document.data(document_page_index, ItemDataRole.DisplayRole), contains_string(value)
+        )
+    target_column = CardListToPageColumnMapping[column]
+    document_card_index = document.index(0, target_column, document_page_index)
+    assert_that(
+        document.data(document_card_index, ItemDataRole.EditRole), is_(equal_to(value))
     )
