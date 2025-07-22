@@ -551,7 +551,6 @@ class PageScene(QGraphicsScene):
     def draw_card(self, index: QModelIndex, page_type: PageType, next_item: CardItem = None):
         position = self._compute_position_for_image(index.row(), page_type)
         if index.data(ItemDataRole.DisplayRole) is not None:  # Card has a QPixmap set
-            card
             card_item = CardItem(index, self.document)
             self.addItem(card_item)
             card_item.setPos(position)
