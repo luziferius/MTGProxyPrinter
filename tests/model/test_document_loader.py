@@ -27,7 +27,7 @@ from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *
 
-import mtg_proxy_printer.model.document_loader
+from mtg_proxy_printer.model.document_loader import DocumentLoader, CardType
 from tests.helpers import quantity_close_to
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, Unit, CardSizes, Quantity
 from mtg_proxy_printer.model.card import CheckCard
@@ -38,14 +38,19 @@ from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 from tests.helpers import create_save_database_with
 
-CardType = mtg_proxy_printer.model.document_loader.CardType
 mm: Unit = unit_registry.mm
 degree = unit_registry.degree
 
 
 @pytest.fixture()
+def loader(document: Document):
+    loader = DocumentLoader(document, Path(""))
+    return loader
+
+
+@pytest.fixture()
 def page_layout() -> PageLayoutSettings:
-    page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
+    page_layout = PageLayoutSettings(
         custom_page_height=300 * mm, custom_page_width=200 * mm,
         margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
         row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
@@ -64,11 +69,10 @@ def page_layout() -> PageLayoutSettings:
 def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, user_version: int):
     empty_save_database.execute(f"PRAGMA user_version = {user_version};")
     assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(user_version))
-    worker = mtg_proxy_printer.model.document_loader.Worker
     with unittest.mock.patch("mtg_proxy_printer.model.document_loader.open_database") as mock:
         mock.return_value = empty_save_database
         assert_that(
-            calling(worker._open_validate_and_migrate_save_file).with_args(Path()),
+            calling(DocumentLoader._open_validate_and_migrate_save_file).with_args(Path()),
             raises(AssertionError)
         )
         mock.assert_called_once()
@@ -92,21 +96,22 @@ def disabled_check_constraints(db: sqlite3.Connection):
 
 
 def test_document_with_card_loads_correctly(
-        qtbot: QtBot, document: Document, empty_save_database: sqlite3.Connection, page_layout: PageLayoutSettings):
+        qtbot: QtBot, loader: DocumentLoader, empty_save_database: sqlite3.Connection, page_layout: PageLayoutSettings):
     create_save_database_with(
         empty_save_database,
         [(1, CardSizes.REGULAR)],
         [(1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe", CardType.REGULAR)],
         page_layout
     )
-    pytest.skip("Fix document loader tests")
-    save_path = Path("/tmp/invalid.mtgproxies")
+    loader.save_path = save_path = Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch(
             "mtg_proxy_printer.model.document_loader.open_database",
             return_value=empty_save_database) as open_database, \
-            qtbot.waitSignals([loader.finished, loader.load_requested, document.page_layout_changed]):
-        loader.load_document(save_path)
+            qtbot.wait_signal(loader.load_requested), \
+            qtbot.assert_not_emitted(loader.loading_file_failed):
+        loader.run()
     open_database.assert_called_once()
+    document = loader.document
     assert_that(document.rowCount(), is_(equal_to(1)))
     page_index = document.index(0, 0)
     assert_that(page_index.isValid())
@@ -120,17 +125,17 @@ def test_document_with_card_loads_correctly(
 
 
 def test_empty_document_loads_correctly(
-        qtbot: QtBot, document: Document,
+        qtbot: QtBot, loader: DocumentLoader,
         empty_save_database: sqlite3.Connection, page_layout: PageLayoutSettings):
     create_save_database_with(empty_save_database, [], [], page_layout)
-    pytest.skip("Fix document loader tests")
-    save_path = Path("/tmp/invalid.mtgproxies")
-    with unittest.mock.patch("mtg_proxy_printer.model.document_loader.open_database") as mock:
-        mock.return_value = empty_save_database
-        with qtbot.waitSignals([loader.load_requested, document.page_layout_changed]), \
-                qtbot.assert_not_emitted(loader.loading_file_failed):
-            loader.load_document(save_path)
+    loader.save_path = save_path = Path("/tmp/invalid.mtgproxies")
+    with unittest.mock.patch(
+            "mtg_proxy_printer.model.document_loader.open_database", return_value=empty_save_database) as mock, \
+        qtbot.wait_signal(loader.load_requested), \
+        qtbot.assert_not_emitted(loader.loading_file_failed):
+            loader.run()
     mock.assert_called_once()
+    document = loader.document
     assert_that(document.rowCount(), is_(equal_to(1)))
     page_index = document.index(0, 0)
     assert_that(page_index.isValid())

@@ -53,6 +53,7 @@ class ActionLoadDocument(DocumentAction):
         self.actions.append(ActionNewDocument().apply(document))
         self.actions.append(ActionEditDocumentSettings(self.page_layout).apply(document))
         document.set_currently_edited_page(document.pages[0])
+        document.save_file_path = self.save_path
         if self.loaded_cards:
             for copies, card in self._batch_page_content(self.loaded_cards[0]):
                 self.actions.append(ActionAddCard(card, copies).apply(document))
