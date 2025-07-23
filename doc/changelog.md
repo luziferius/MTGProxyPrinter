@@ -33,11 +33,14 @@ There may be one or two pure bug fixing releases for the old tech stack, if seve
 
 ## Fixed issues
 
+- Fixed rare crash-loop at application start that may occur after installing an application update. It was caused by the
+  card database migration code failing to run on a corrupted card database, breaking the application completely.
+  - Now, the card database will be deleted and re-created in those cases.
 - Fixed crash in the custom card import dialog when trying to change the copies count of a card by double-clicking
   the Copies cell in the table. 
 - Performance optimization in the page renderer. The app no longer lags massively when working with
-  huge paper sizes (like A0, ANSI E) that contain 100+ cards
-- Fixed broken card bleed rendering with excessively large bleeds (30+ mm)
+  huge paper sizes (like A0, ANSI E) that contain 100+ cards.
+- Fixed broken card bleed rendering with *excessively* large bleeds (30+ mm)
 
 # Version 0.32.0 (2025-05-26)  <a name="v0_32_0"></a>
 
