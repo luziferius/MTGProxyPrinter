@@ -2,6 +2,14 @@
 
 # Next version (in development)
 
+## Deprecation notice
+
+This version will be the last feature release providing builds compatible with Python 3.8, Qt 5 and Windows 7.
+All of these reached end-of-life, and other libraries used in the application dropped support for those,
+forcing the use of outdated versions, and adding compatibility workarounds. Windows 7 was a somewhat viable target when
+the project started, but that is no more.  
+There may be one or two pure bug fixing releases for the old tech stack, if severe issues get found in this version.
+
 ## New features
 
 - Configurable background color for PNG exports, including support for semi- or fully transparent backgrounds.
