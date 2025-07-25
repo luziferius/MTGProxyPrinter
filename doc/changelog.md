@@ -1,13 +1,19 @@
 # Changelog
 
+# Version 0.33.1 (2025-07-25)  <a name="v0_33_1"></a>
+
+## Fixed issues
+
+- Fixed broken PDF export
+
 # Version 0.33.0 (2025-07-25)  <a name="v0_33_0"></a>
 
 ## Deprecation notice
 
-This version will be the last feature release providing builds compatible with Python 3.8, Qt 5 and Windows 7.
+Version 0.33 will be the last feature release providing builds compatible with Python 3.8, Qt 5 and Windows 7.
 All of these reached end-of-life; other libraries used in the application dropped support for those,
-forcing the use of outdated versions, and adding compatibility workarounds. Windows 7 was a somewhat viable target when
-the project started, but that is no more.  
+forcing the use of outdated versions, and requiring adding compatibility workarounds.
+Windows 7 was a somewhat viable target when the project started, but that is no more.  
 There may be one or two pure bug fixing releases for the old tech stack, if severe issues get found in this version.
 
 ## New features
