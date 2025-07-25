@@ -737,6 +737,11 @@ class DatabaseMigrationRunner(Runnable):
 
     def connect_main_window_signals(self, main_window: "MainWindow"):
         progress_bars = main_window.progress_bars
+        # Using a blocking queued connection makes the migrator wait until the user acknowledges the error.
+        # Otherwise, the "this app needs additional card data downloads" dialog will pop over the error and requires
+        # the user to handle them out of sequence.
+        self.total_update_signals.error_occurred.connect(
+            main_window.on_error_occurred, Qt.ConnectionType.BlockingQueuedConnection)
         self.connect_progress_signals(
             self.total_update_signals,
             progress_bars.begin_outer_progress,
@@ -773,19 +778,50 @@ class DatabaseMigrationRunner(Runnable):
         logger.info(f"Migrating database from version {begin_schema_version} to {target_version}. "
                     f"About to run {target_version-begin_schema_version} migration scripts.")
         top_level_progress_meter = self._create_top_level_progress_meter(begin_schema_version, target_version)
-        for source_version in range(begin_schema_version, target_version):
-            script = self.migration_scripts[source_version]
-            self._migrate_version(db, source_version, script)
+        try:
+            for source_version in range(begin_schema_version, target_version):
+                script = self.migration_scripts[source_version]
+                self._migrate_version(db, source_version, script)
+                top_level_progress_meter.advance()
+            current_schema_version = self._get_schema_version(db)
+            logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
+            db.execute("ANALYZE\n")
             top_level_progress_meter.advance()
-        current_schema_version = self._get_schema_version(db)
-        logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
-        db.execute("ANALYZE\n")
-        top_level_progress_meter.advance()
-        db.execute("VACUUM\n")
-        top_level_progress_meter.advance()
+            db.execute("VACUUM\n")
+            top_level_progress_meter.advance()
+        except sqlite3.Error as e:
+            self.script_update_signals.update_completed.emit()  # Close the inner progress bar that was left open
+            if e.sqlite_errorcode == sqlite3.SQLITE_BUSY:
+                raise e
+            else:
+                self._recreate_carddb_on_failed_migration(db, e)
         top_level_progress_meter.finish()
         logger.info("Rebuild done.")
         self.release_instance()
+
+    def _recreate_carddb_on_failed_migration(self, db: sqlite3.Connection, e: sqlite3.Error):
+        logger.exception(
+            "Database migration failed! Card database may be corrupt. "
+            "Trying to recover by deleting and re-creating the database"
+        )
+        msg = QCoreApplication.translate(
+            "DatabaseMigrationRunner",
+            "Card database migration failed! Will try to re-create it from scratch.\nThis will wipe any previously "
+            "downloaded card data and require re-downloading it.\nReported error message:\n\n{error_message}",
+            "Applying card database migrations required after an app upgrade failed, "
+            "presumably because the data on disk got corrupted somehow.").format(error_message=str(e))
+        self.total_update_signals.error_occurred.emit(msg)
+        db.close()
+        del db
+        base_name = self.db_path.name
+        base_dir = self.db_path.parent
+        for file in (self.db_path, base_dir / f"{base_name}-shm", base_dir / f"{base_name}-wal"):
+            logger.debug(f"Deleting {file}")
+            file.unlink(missing_ok=True)
+        logger.info("Potentially corrupt database files deleted")
+        db = mtg_proxy_printer.sqlite_helpers.open_database(self.db_path, "carddb")
+        db.commit()
+        logger.info("Re-created database after deleting the corrupted card database.")
 
     def _create_top_level_progress_meter(self, begin_schema_version: int, target_version: int) -> ProgressMeter:
         signals = self.total_update_signals
