@@ -1,11 +1,11 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.33.0 (2025-07-25)  <a name="v0_33_0"></a>
 
 ## Deprecation notice
 
 This version will be the last feature release providing builds compatible with Python 3.8, Qt 5 and Windows 7.
-All of these reached end-of-life, and other libraries used in the application dropped support for those,
+All of these reached end-of-life; other libraries used in the application dropped support for those,
 forcing the use of outdated versions, and adding compatibility workarounds. Windows 7 was a somewhat viable target when
 the project started, but that is no more.  
 There may be one or two pure bug fixing releases for the old tech stack, if severe issues get found in this version.
