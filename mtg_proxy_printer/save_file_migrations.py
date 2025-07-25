@@ -19,7 +19,6 @@ import textwrap
 
 from PySide6.QtCore import QSizeF
 from PySide6.QtGui import QPageSize, QPageLayout
-from pint.registry import Quantity
 
 from mtg_proxy_printer.units_and_sizes import PageSizeManager
 

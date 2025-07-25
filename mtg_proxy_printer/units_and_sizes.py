@@ -36,6 +36,11 @@ try:
 except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
     QuantityT = UnitT = typing.Any
 
+try:
+    from pint.registry import Unit, Quantity
+except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
+    Quantity = Unit = typing.Any
+
 import pint
 
 import mtg_proxy_printer.natsort

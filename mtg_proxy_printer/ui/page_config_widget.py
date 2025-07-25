@@ -24,13 +24,12 @@ from PySide6.QtCore import Slot, Qt, Signal
 from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtGui import QPageSize, QPageLayout, QColor
 from PySide6.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QComboBox, QColorDialog
-from pint.registry import Unit
 
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, \
-    PageType, unit_registry, ConfigParser, PageSizeManager
+    PageType, unit_registry, ConfigParser, PageSizeManager, Unit
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import asyncio
+import asyncio.subprocess
 import itertools
 from pathlib import Path
 from typing import Union, List
@@ -21,7 +22,11 @@ Argument = Union[str, Path]
 
 async def run(prog: str, *args: List[Argument]):
     proc = await asyncio.create_subprocess_exec(
-        prog, *args)
+        prog, *args,
+        stdin=asyncio.subprocess.DEVNULL,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
     await proc.wait()
 
 
