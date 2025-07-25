@@ -13,11 +13,16 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from pathlib import Path
 
-PROGRAMNAME = "MTGProxyPrinter"
-__version__ = "0.33.1"
-COPYRIGHT = "(C) 2020-2025 Thomas Hess"
-HOME_PAGE = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter"
+import mtg_proxy_printer.print
+from mtg_proxy_printer.model.document import Document
 
-DOWNLOAD_WEB_PAGE = f"{HOME_PAGE}/uv/download.html"
-USER_AGENT = f"{PROGRAMNAME}/{__version__} ({HOME_PAGE})"
+from hamcrest import *
+
+
+def test_export_pdf_creates_a_pdf_file(tmp_path: Path, document_light: Document):
+    file_path = tmp_path/"test.pdf"
+    mtg_proxy_printer.print.export_pdf(document_light, str(file_path))
+    assert_that(file_path.is_file(), is_(True))
+    assert_that(file_path.read_bytes()[:5], equal_to(b"%PDF-"))
