@@ -108,7 +108,7 @@ class PNGRenderer(AsyncTask):
             self.task_completed.emit()
 
 
-def export_pdf(document: Document, file_path: str, parent: "SavePDFDialog" = None):
+def export_pdf(document: Document, file_path: str, parent: "SavePDFDialog"):
     main_window = parent.parent()
     total_pages = document.rowCount()
     pages_to_print = settings["export"].getint("pdf-page-count-limit") or total_pages
