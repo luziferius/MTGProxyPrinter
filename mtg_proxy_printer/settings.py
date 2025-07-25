@@ -26,13 +26,13 @@ import pint
 from PyQt5.QtCore import QStandardPaths, QLocale
 from PyQt5.QtGui import QPageSize, QPageLayout, QColor
 from PyQt5.QtPrintSupport import QPrinterInfo
-from pint.registry import Unit
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import \
-    CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT, PageSizeManager, is_acceptable_page_size
+    CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT, PageSizeManager, is_acceptable_page_size, \
+    Unit
 
 StandardLocation = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
