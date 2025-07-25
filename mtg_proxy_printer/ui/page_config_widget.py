@@ -24,7 +24,6 @@ from PyQt5.QtPrintSupport import QPrinter
 from PyQt5.QtGui import QPageSize, QPageLayout, QColor
 from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QComboBox, QColorDialog
 from pint.registry import Unit, Quantity
-
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
@@ -41,6 +40,8 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 CheckState = Qt.CheckState
+UserRole = Qt.ItemDataRole.UserRole
+NameFormat = QColor.NameFormat
 DISTANCE_UNIT = unit_registry.UnitsContainer({"[length]": 1})
 mm = unit_registry.mm
 degree = unit_registry.degree
@@ -50,8 +51,10 @@ point = unit_registry.point
 def is_pint_distance(value: Any) -> bool:
     return isinstance(value, Quantity) and value.dimensionality == DISTANCE_UNIT
 
+
 def is_pint_angle(value: Any) -> bool:
     return isinstance(value, Quantity) and value.units == degree
+
 
 def is_pint_point(value: Any) -> bool:
     return isinstance(value, Quantity) and value.units == point
@@ -139,13 +142,13 @@ class PageConfigWidget(QGroupBox):
         ui.custom_page_width.setEnabled(custom_paper_size_selected)  # 3 UI elements for custom paper sizes
         ui.custom_page_height.setEnabled(custom_paper_size_selected)
         ui.flip_page_dimensions.setEnabled(custom_paper_size_selected)
-        selected_paper_size_item: QPageSize.PageSizeId = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
+        selected_paper_size_item: QPageSize.PageSizeId = ui.paper_size.currentData(UserRole)
         self.page_layout.paper_size = PageSizeManager.PageSizeReverse[selected_paper_size_item]
 
     @Slot()
     def _on_paper_orientation_changed(self):
         ui = self.ui
-        orientation: QPageLayout.Orientation = ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
+        orientation: QPageLayout.Orientation = ui.paper_orientation.currentData(UserRole)
         self.page_layout.paper_orientation = PageSizeManager.PageOrientationReverse[orientation]
 
     @Slot(int)
@@ -219,9 +222,9 @@ class PageConfigWidget(QGroupBox):
         ui = self.ui
         if not ui.paper_size.currentIndex():
             return ui.custom_page_height.value()
-        page_size: QPageSize.PageSizeId = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
+        page_size: QPageSize.PageSizeId = ui.paper_size.currentData(UserRole)
         size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
-        orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)]
+        orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(UserRole)]
         return size.height() if orientation == "Portrait" else size.width()
 
     def _current_page_width(self) -> float:
@@ -229,9 +232,9 @@ class PageConfigWidget(QGroupBox):
         ui = self.ui
         if not ui.paper_size.currentIndex():
             return ui.custom_page_width.value()
-        page_size: QPageSize.PageSizeId = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
+        page_size: QPageSize.PageSizeId = ui.paper_size.currentData(UserRole)
         size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
-        orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)]
+        orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(UserRole)]
         return size.width() if orientation == "Portrait" else size.height()
 
     def load_document_settings_from_config(self, new_config: ConfigParser):
@@ -293,18 +296,17 @@ class PageConfigWidget(QGroupBox):
         logger.debug(f"Loading from document settings finished")
 
     def _show_watermark_color(self, color: QColor):
-        sheet = "QLabel {" + f"background-color: {color.name(QColor.NameFormat.HexArgb)}" + "}"
+        sheet = "QLabel {" + f"background-color: {color.name(NameFormat.HexArgb)}" + "}"
         self.ui.watermark_color.setStyleSheet(sheet)
         if self.ui.watermark_opacity.value() != color.alpha():
             self.ui.watermark_opacity.setValue(color.alpha())
-
 
     def _load_paper_size(self, size: str):
         page_size = PageSizeManager.PageSize[size]
         combo_box = self.ui.paper_size
         model = combo_box.model()
         for row in range(model.rowCount()):
-            if model.data(model.index(row, 0), Qt.ItemDataRole.UserRole) == page_size:
+            if model.data(model.index(row, 0), UserRole) == page_size:
                 # Blocks premature execution of validation logic triggered via change signals
                 # that should not run *right now*.
                 with BlockedSignals(combo_box):
@@ -316,7 +318,7 @@ class PageConfigWidget(QGroupBox):
         combo_box = self.ui.paper_orientation
         model = combo_box.model()
         for row in range(model.rowCount()):
-            if model.data(model.index(row, 0), Qt.ItemDataRole.UserRole) == orientation:
+            if model.data(model.index(row, 0), UserRole) == orientation:
                 # Blocks premature execution of validation logic triggered via change signals
                 # that should not run *right now*.
                 with BlockedSignals(combo_box):
@@ -332,7 +334,7 @@ class PageConfigWidget(QGroupBox):
             documents_section[setting] = str(checkbox.isChecked())
         for line_edit, setting in self._get_string_settings_widgets():
             documents_section[setting] = line_edit.text()
-        documents_section["watermark-color"] = self.page_layout.watermark_color.name(QColor.NameFormat.HexArgb)
+        documents_section["watermark-color"] = self.page_layout.watermark_color.name(NameFormat.HexArgb)
         documents_section["paper-size"] = PageSizeManager.PageSizeReverse[self._current_page_size()]
         documents_section["paper-orientation"] = PageSizeManager.PageOrientationReverse[self._current_page_orientation()]
         logger.debug("Saving done.")
@@ -374,10 +376,10 @@ class PageConfigWidget(QGroupBox):
         return widgets_with_settings
 
     def _current_page_size(self) -> QPrinter.PageSize:
-        return self.ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
+        return self.ui.paper_size.currentData(UserRole)
 
     def _current_page_orientation(self) -> QPageLayout.Orientation:
-        return self.ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
+        return self.ui.paper_orientation.currentData(UserRole)
 
     @functools.singledispatchmethod
     def highlight_differing_settings(self, to_compare: Union[ConfigParser, PageLayoutSettings]):

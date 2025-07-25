@@ -30,7 +30,7 @@ import time
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import List, Dict, Union, Tuple, Any, Generator, Callable, Iterable
+from typing import List, Dict, Union, Tuple, Any, Generator, Callable, Iterable, TYPE_CHECKING
 
 from PyQt5.QtCore import QCoreApplication, Qt
 
@@ -43,6 +43,8 @@ from mtg_proxy_printer.runner import AsyncTask
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.model.carddb import CardDatabase, with_database_write_lock
+if TYPE_CHECKING:
+    from mtg_proxy_printer.ui.main_window import MainWindow
 
 
 logger = get_logger(__name__)
@@ -730,6 +732,14 @@ class DatabaseMigrationTask(AsyncTask):
         self.migration_scripts = migration_scripts or MIGRATION_SCRIPTS
         logger.debug(f"Created {self.__class__.__name__} instance.")
 
+    def connect_main_window_signals(self, main_window: "MainWindow"):
+        # Using a blocking queued connection makes the migrator wait until the user acknowledges the error.
+        # Otherwise, the "this app needs additional card data downloads" dialog will pop over the error and requires
+        # the user to handle them out of sequence.
+        self.error_occurred.connect(
+            main_window.on_error_occurred, Qt.ConnectionType.BlockingQueuedConnection
+        )
+
     @with_database_write_lock()
     def run(self):
         """
@@ -747,18 +757,49 @@ class DatabaseMigrationTask(AsyncTask):
                     f"About to run {target_version-begin_schema_version} migration scripts.")
         self._begin_top_level_progress(begin_schema_version, target_version)
         self.request_register_subtask.emit(self.script_update_signals)
-        for source_version in range(begin_schema_version, target_version):
-            script = self.migration_scripts[source_version]
-            self._migrate_version(db, source_version, script)
+        try:
+            for source_version in range(begin_schema_version, target_version):
+                script = self.migration_scripts[source_version]
+                self._migrate_version(db, source_version, script)
+                self.advance_progress.emit()
+            current_schema_version = self._get_schema_version(db)
+            logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
+            db.execute("ANALYZE\n")
             self.advance_progress.emit()
-        current_schema_version = self._get_schema_version(db)
-        logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
-        db.execute("ANALYZE\n")
-        self.advance_progress.emit()
-        db.execute("VACUUM\n")
-        self.advance_progress.emit()
+            db.execute("VACUUM\n")
+            self.advance_progress.emit()
+        except sqlite3.Error as e:
+            self.script_update_signals.task_completed.emit()  # Close the inner progress bar that was left open
+            if e.sqlite_errorcode == sqlite3.SQLITE_BUSY:
+                raise e
+            else:
+                self._recreate_carddb_on_failed_migration(db, e)
         self.task_completed.emit()
         logger.info("Rebuild done.")
+
+    def _recreate_carddb_on_failed_migration(self, db: sqlite3.Connection, e: sqlite3.Error):
+        logger.exception(
+            "Database migration failed! Card database may be corrupt. "
+            "Trying to recover by deleting and re-creating the database"
+        )
+        msg = QCoreApplication.translate(
+            "DatabaseMigrationRunner",
+            "Card database migration failed! Will try to re-create it from scratch.\nThis will wipe any previously "
+            "downloaded card data and require re-downloading it.\nReported error message:\n\n{error_message}",
+            "Applying card database migrations required after an app upgrade failed, "
+            "presumably because the data on disk got corrupted somehow.").format(error_message=str(e))
+        self.error_occurred.emit(msg)
+        db.close()
+        del db
+        base_name = self.db_path.name
+        base_dir = self.db_path.parent
+        for file in (self.db_path, base_dir / f"{base_name}-shm", base_dir / f"{base_name}-wal"):
+            logger.debug(f"Deleting {file}")
+            file.unlink(missing_ok=True)
+        logger.info("Potentially corrupt database files deleted")
+        db = mtg_proxy_printer.sqlite_helpers.open_database(self.db_path, "carddb")
+        db.commit()
+        logger.info("Re-created database after deleting the corrupted card database.")
 
     def _begin_top_level_progress(self, begin_schema_version: int, target_version: int):
         steps = target_version - begin_schema_version + 2  # ANALYZE and VACUUM (2 steps) are run as top-level tasks

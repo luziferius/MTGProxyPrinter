@@ -35,6 +35,11 @@ try:
     from pint import Quantity, Unit
 except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
     Quantity = Unit = typing.Any
+try:
+    from pint.registry import Unit, Quantity
+except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
+    Quantity = Unit = typing.Any
+
 import pint
 import pint.facets.context.objects
 

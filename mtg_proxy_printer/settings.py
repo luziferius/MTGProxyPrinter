@@ -26,13 +26,13 @@ import pint
 from PyQt5.QtCore import QStandardPaths, QLocale
 from PyQt5.QtGui import QPageSize, QPageLayout, QColor
 from PyQt5.QtPrintSupport import QPrinterInfo
-from pint.registry import Unit
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import \
-    CardSizes, ConfigParser, SectionProxy, unit_registry, T, Quantity, PageSizeManager, is_acceptable_page_size
+    CardSizes, ConfigParser, SectionProxy, unit_registry, T, Quantity, PageSizeManager, is_acceptable_page_size, \
+    Unit
 
 StandardLocation = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
@@ -265,7 +265,7 @@ def round_to_nearest_multiple(value: T, multiple: T) -> T:
     return round(value/multiple)*multiple
 
 
-def clamp_to_supported_range(value: Quantity, limits: Quantity) -> Quantity:
+def clamp_to_supported_range(value: Quantity, limits: QuantityLimits) -> Quantity:
     """Clamps numerical document settings to the supported value range"""
     return min(max(value, limits.minimum),  limits.maximum)
 
@@ -522,7 +522,7 @@ def _validate_non_negative_int(section: SectionProxy, defaults: SectionProxy, ke
         _restore_default(section, defaults, key)
 
 
-def _validate_quantity(section: SectionProxy, defaults: SectionProxy, key: str, limits: Quantity):
+def _validate_quantity(section: SectionProxy, defaults: SectionProxy, key: str, limits: QuantityLimits):
     try:
         value = section.get_quantity(key)
         if unit_conversion_required := (value.units not in limits.acceptable_units):
@@ -656,8 +656,8 @@ def _07_migrate_document_settings_to_pint(to_migrate: ConfigParser):
     if "margin-top-mm" not in section:
         return
     for key in ("card-bleed", "paper-height", "paper-width",
-            "margin-top", "margin-bottom", "margin-left", "margin-right",
-            "row-spacing", "column-spacing"):
+                "margin-top", "margin-bottom", "margin-left", "margin-right",
+                "row-spacing", "column-spacing"):
         old_key = f"{key}-mm"
         if old_key in section:
             section[key] = f"{section[old_key]} mm"

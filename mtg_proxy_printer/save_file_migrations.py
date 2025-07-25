@@ -19,7 +19,6 @@ import textwrap
 
 from PyQt5.QtCore import QSizeF
 from PyQt5.QtGui import QPageSize, QPageLayout
-from pint.registry import Quantity
 
 from mtg_proxy_printer.units_and_sizes import PageSizeManager
 

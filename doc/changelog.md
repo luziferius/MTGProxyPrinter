@@ -1,6 +1,20 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.33.1 (2025-07-25)  <a name="v0_33_1"></a>
+
+## Fixed issues
+
+- Fixed broken PDF export
+
+# Version 0.33.0 (2025-07-25)  <a name="v0_33_0"></a>
+
+## Deprecation notice
+
+Version 0.33 will be the last feature release providing builds compatible with Python 3.8, Qt 5 and Windows 7.
+All of these reached end-of-life; other libraries used in the application dropped support for those,
+forcing the use of outdated versions, and requiring adding compatibility workarounds.
+Windows 7 was a somewhat viable target when the project started, but that is no more.  
+There may be one or two pure bug fixing releases for the old tech stack, if severe issues get found in this version.
 
 ## New features
 
@@ -25,11 +39,14 @@
 
 ## Fixed issues
 
+- Fixed rare crash-loop at application start that may occur after installing an application update. It was caused by the
+  card database migration code failing to run on a corrupted card database, breaking the application completely.
+  - Now, the card database will be deleted and re-created in those cases.
 - Fixed crash in the custom card import dialog when trying to change the copies count of a card by double-clicking
   the Copies cell in the table. 
 - Performance optimization in the page renderer. The app no longer lags massively when working with
-  huge paper sizes (like A0, ANSI E) that contain 100+ cards
-- Fixed broken card bleed rendering with excessively large bleeds (30+ mm)
+  huge paper sizes (like A0, ANSI E) that contain 100+ cards.
+- Fixed broken card bleed rendering with *excessively* large bleeds (30+ mm)
 
 # Version 0.32.0 (2025-05-26)  <a name="v0_32_0"></a>
 

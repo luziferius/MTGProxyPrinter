@@ -235,7 +235,6 @@ class PDFPrinter(QPdfWriter):
         self.scene.on_current_page_changed(index)
 
 
-
 class Renderer(QObject):
 
     def __init__(self, document: Document, parent: QObject = None):
