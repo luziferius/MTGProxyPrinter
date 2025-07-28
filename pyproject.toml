@@ -77,7 +77,7 @@ Changelog = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/do
 Translations = "https://crowdin.com/project/mtgproxyprinter"
 Repository = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/timeline"
 Github = "https://github.com/luziferius/MTGProxyPrinter/"
-
+funding = "https://ko-fi.com/luziferius"
 
 [project.gui-scripts]
 mtg-proxy-printer = "mtg_proxy_printer.__main__:main"
