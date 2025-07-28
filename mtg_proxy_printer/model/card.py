@@ -19,8 +19,8 @@ import enum
 import functools
 from typing import Optional, Union
 
-from PyQt5.QtCore import QRect, QPoint, QSize, Qt, QPointF
-from PyQt5.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform
+from PySide6.QtCore import QRect, QPoint, QSize, Qt, QPointF
+from PySide6.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform
 
 from mtg_proxy_printer.units_and_sizes import CardSize, PageType, CardSizes, UUID
 
@@ -28,6 +28,7 @@ ItemDataRole = Qt.ItemDataRole
 RenderHint = QPainter.RenderHint
 SmoothTransformation = Qt.TransformationMode.SmoothTransformation
 IgnoreAspectRatio = Qt.AspectRatioMode.IgnoreAspectRatio
+
 
 @dataclasses.dataclass(frozen=True)
 class MTGSet:
@@ -265,7 +266,7 @@ class CheckCard:
         combined_image = QPixmap(card_size)
         combined_image.fill(QColorConstants.Transparent)
         painter = QPainter(combined_image)
-        painter.setRenderHints(RenderHint.SmoothPixmapTransform | RenderHint.HighQualityAntialiasing)
+        painter.setRenderHints(RenderHint.SmoothPixmapTransform)
         transformation = QTransform()
         transformation.rotate(90)
         transformation.scale(horizontal_scaling_factor, vertical_scaling_factor)

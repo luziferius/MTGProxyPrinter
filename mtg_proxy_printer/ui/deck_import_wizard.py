@@ -20,10 +20,11 @@ import typing
 import urllib.error
 import urllib.parse
 
-from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
+from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, \
     QSize, QUrl
-from PyQt5.QtGui import QValidator, QIcon, QDesktopServices
-from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
+from PySide6.QtGui import QValidator, QIcon, QDesktopServices
+from PySide6.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
+
 
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import SectionProxy
@@ -116,14 +117,14 @@ class LoadListPage(QWizardPage):
         ui.deck_list_download_url_line_edit.setToolTip(
             self.tr("Supported websites:\n{supported_sites}").format(supported_sites=supported_sites))
         ui.translate_deck_list_target_language.setModel(language_model)
-        self.registerField("deck_list*", ui.deck_list, "plainText", ui.deck_list.textChanged)
+        self.registerField("deck_list*", ui.deck_list)
         self.registerField("print-guessing-enable", ui.print_guessing_enable)
         self.registerField("print-guessing-prefer-already-downloaded", ui.print_guessing_prefer_already_downloaded)
         self.registerField("translate-deck-list-enable", ui.translate_deck_list_enable)
-        self.registerField("deck-list-downloaded", self, "deck_list_downloader", self.deck_list_downloader_changed)
+        self.registerField("deck-list-downloaded", self, "deck_list_downloader", "deck_list_downloader_changed(str)")
         self.registerField(
             "translate-deck-list-target-language", ui.translate_deck_list_target_language,
-            "currentText", ui.translate_deck_list_target_language.currentTextChanged
+            "currentText", "currentTextChanged(str)"
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -599,8 +600,9 @@ class DeckImportWizard(WizardBase):
     }
 
     def __init__(self, document: Document, language_model: QStringListModel,
-                 parent: QWidget = None, flags=Qt.WindowFlags()):
+                 parent: QWidget = None, flags=Qt.WindowType.Window):
         super().__init__(QSize(1000, 600), parent, flags)
+        self.setDefaultProperty("QPlainTextEdit", "plainText", SIGNAL("textChanged()"))
         self.select_deck_parser_page = SelectDeckParserPage(document, self)
         self.load_list_page = LoadListPage(language_model, self)
         self.summary_page = SummaryPage(document, self)

@@ -23,9 +23,9 @@ from hamcrest import *
 from pytestqt.qtbot import QtBot
 import pytest
 
-from PyQt5.QtCore import QStringListModel, Qt, QPoint, QObject
-from PyQt5.QtWidgets import QCheckBox, QWizard, QTableView, QComboBox, QLineEdit
-from PyQt5.QtTest import QTest
+from PySide6.QtCore import QStringListModel, Qt, QPoint, QObject
+from PySide6.QtWidgets import QCheckBox, QWizard, QTableView, QComboBox, QLineEdit
+from PySide6.QtTest import QTest
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData

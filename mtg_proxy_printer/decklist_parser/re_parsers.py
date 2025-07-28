@@ -18,7 +18,7 @@ from collections import Counter
 import re
 import typing
 
-from PyQt5.QtCore import QObject, QCoreApplication
+from PySide6.QtCore import QObject, QCoreApplication
 
 from mtg_proxy_printer.decklist_parser.common import ParsedDeck, ParserBase
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
@@ -179,6 +179,7 @@ class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
             QCoreApplication.translate(
                 "MagicWorkstationDeckDataFormatParser", "Magic Workstation Deck Data Format"): ["mwDeck"],
         }
+
     PREFIXES_TO_SKIP = frozenset({"//"})
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):

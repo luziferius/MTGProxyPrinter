@@ -18,9 +18,10 @@ import enum
 import typing
 from functools import partial
 
-from PyQt5.QtCore import Qt, QEvent
-from PyQt5.QtWidgets import QGraphicsView, QWidget, QAction
-from PyQt5.QtGui import QWheelEvent, QKeySequence, QPalette, QResizeEvent
+from PySide6.QtCore import Qt, QEvent
+from PySide6.QtWidgets import QGraphicsView, QWidget
+from PySide6.QtGui import QWheelEvent, QKeySequence, QPalette, QResizeEvent, QAction
+
 
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger

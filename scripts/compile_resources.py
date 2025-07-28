@@ -74,7 +74,7 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.L
 
 
 def compile():
-    command = ("pyrcc5", "-compress", "9", str(SOURCES_PATH))  # noqa  # "pyrcc5" is a program name, not a typo
+    command = ("pyside6-rcc", "--compress", "9", "--generator", "python", str(SOURCES_PATH))
     compiled = subprocess.check_output(command, universal_newlines=True)  # type: str
     # The resource compiler outputs > 15000 lines with extremely low line length.
     # Reduce the file size by removing a good percentage of those line breaks
@@ -83,7 +83,6 @@ def compile():
     joined_chunks = ("".join(items) for items in chunks)
     compiled = "\\\n".join(joined_chunks)
     TARGET_PATH.write_text(compiled, "utf-8")
-
 
 def clean():
     TARGET_PATH.unlink(missing_ok=True)

@@ -19,8 +19,8 @@ import math
 import typing
 
 from pint import Quantity
-from PyQt5.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
-from PyQt5.QtCore import QMarginsF, QSizeF
+from PySide6.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
+from PySide6.QtCore import QMarginsF, QSizeF
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers

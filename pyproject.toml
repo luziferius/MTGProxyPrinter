@@ -37,7 +37,7 @@ classifiers = [
 # falling back to the slow pure Python backend.
 dependencies = [
     "platformdirs >= 2.6.0",
-    "PyQt5",
+    "PySide6_Essentials >= 6.7.0",
     "ijson >= 3.2.0",
     "ijson >= 3.2.1; python_version >= '3.12'",
     "Pint >= 0.22",
@@ -57,15 +57,11 @@ dev = [
     "pytest-timeout",
     "pytest-qt >= 2.0",
     "tox >= 4.0",
-    "PySide2; platform_system == 'Windows' and python_version < '3.12'",  # Used for lrelease: Compiling translations
-    "PySide6_Essentials; platform_system == 'Windows' and python_version >= '3.12'",  # Used for lrelease: Compiling translations
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
 package = [
     "build",
     "cx_Freeze >= 7.2; platform.python_implementation == 'CPython'",
-    "PySide2; platform_system == 'Windows' and python_version < '3.12'",  # Used for lrelease: Compiling translations
-    "PySide6_Essentials; platform_system == 'Windows' and python_version >= '3.12'",  # Used for lrelease: Compiling translations
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
 
@@ -108,7 +104,7 @@ version = {attr= "mtg_proxy_printer.meta_data.__version__"}
 requires = [
     "setuptools >= 77",
     "wheel >= 0.45",
-    "PyQt5",
+    "PySide6_Essentials >= 6.7.0",
     "build",
 ]
 build-backend = "setuptools.build_meta"

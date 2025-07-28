@@ -25,9 +25,9 @@ from hamcrest import *
 import pytest
 
 from pint import Quantity, Unit
-from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
-from PyQt5.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QPainter
-from PyQt5.QtCore import QPoint
+from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
+from PySide6.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QPainter
+from PySide6.QtCore import QPoint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene, NeighborsPresent

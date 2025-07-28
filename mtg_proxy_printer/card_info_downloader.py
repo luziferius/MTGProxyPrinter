@@ -30,7 +30,7 @@ import urllib.parse
 import urllib.request
 
 import ijson
-from PyQt5.QtCore import pyqtSignal as Signal, QObject, Qt, QThreadPool
+from PySide6.QtCore import Signal, QObject, Qt, QThreadPool
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock

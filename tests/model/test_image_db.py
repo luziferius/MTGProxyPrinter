@@ -17,8 +17,8 @@
 import io
 
 import pytest
-from PyQt5.QtCore import QBuffer, QIODevice
-from PyQt5.QtGui import QPixmap
+from PySide6.QtCore import QBuffer, QIODevice
+from PySide6.QtGui import QPixmap
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 

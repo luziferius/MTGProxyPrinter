@@ -23,7 +23,7 @@ import urllib.parse
 import urllib.error
 
 import ijson
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool
+from PySide6.QtCore import QObject, Signal, QThreadPool
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data

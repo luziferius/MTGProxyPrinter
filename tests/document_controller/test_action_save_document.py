@@ -20,7 +20,7 @@ import textwrap
 
 from hamcrest import *
 from pint import Unit
-from PyQt5.QtCore import QModelIndex, Qt
+from PySide6.QtCore import QModelIndex, Qt
 import pytest
 from pytestqt.qtbot import QtBot
 

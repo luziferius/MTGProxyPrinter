@@ -14,8 +14,8 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import pyqtSlot as Slot, Qt
-from PyQt5.QtWidgets import QWidget, QLabel, QProgressBar
+from PySide6.QtCore import Slot, Qt
+from PySide6.QtWidgets import QWidget, QLabel, QProgressBar
 
 from mtg_proxy_printer.runner import ProgressSignalContainer
 
@@ -38,7 +38,7 @@ __all__ = [
 
 class ProgressBar(QWidget):
 
-    def __init__(self, parent: QWidget = None, flags=Qt.WindowType()):
+    def __init__(self, parent: QWidget = None, flags=Qt.WindowType.Widget):
         super().__init__(parent, flags)
         self.ui = ui = Ui_ProgressBar()
         ui.setupUi(self)

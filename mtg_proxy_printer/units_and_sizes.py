@@ -13,20 +13,19 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
 """Contains some constants, type definitions and the unit parsing support code"""
+
 import configparser
 import enum
 import functools
 import re
 import sqlite3
 import typing
-from typing import Type, Optional, NamedTuple, TypedDict, Union, NotRequired
-
-from PyQt5.QtCore import QSize, QObject
-from PyQt5.QtGui import QPageSize, QPageLayout, QColor
+from typing import Type, NamedTuple, TypedDict, Union, NotRequired
 
 from pint import UnitRegistry, Quantity, Context, Unit
+from PySide6.QtCore import QSize, QObject
+from PySide6.QtGui import QPageSize, QPageLayout, QColor
 
 import mtg_proxy_printer.natsort
 
@@ -338,17 +337,13 @@ def is_acceptable_page_size(page_size: Union[PageSizeId, QPageSize]) -> bool:
 
 
 def read_page_size_enum() -> dict[str, PageSizeId]:
-    result = _read_enum(QPageSize, PageSizeId, {"Custom": PageSizeId.Custom})
-    del result["LastPageSize"]
-
-    for item, value in list(result.items()):
-        if not is_acceptable_page_size(value):
-            del result[item]
+    result = {"Custom": PageSizeId.Custom}
+    result.update({item.name: item for item in PageSizeId if is_acceptable_page_size(item)})
     return result
 
 
 class PageSizeManager(QObject):
     PageSize = read_page_size_enum()
     PageSizeReverse = {value: key for key, value in read_page_size_enum().items()}
-    PageOrientation = _read_enum(QPageLayout, QPageLayout.Orientation)
-    PageOrientationReverse = {value: key for key, value in _read_enum(QPageLayout, QPageLayout.Orientation).items()}
+    PageOrientation = {item.name: item for item in QPageLayout.Orientation}
+    PageOrientationReverse = {item: item.name for item in QPageLayout.Orientation}

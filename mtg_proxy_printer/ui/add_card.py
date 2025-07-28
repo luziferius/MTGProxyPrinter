@@ -16,9 +16,9 @@
 
 from typing import Union, Type, Optional
 
-from PyQt5.QtCore import QStringListModel, pyqtSlot as Slot, pyqtSignal as Signal, Qt, QItemSelectionModel, QItemSelection
-from PyQt5.QtWidgets import QWidget, QDialogButtonBox
-from PyQt5.QtGui import QIcon
+from PySide6.QtCore import QStringListModel, Slot, Signal, Qt, QItemSelectionModel, QItemSelection
+from PySide6.QtWidgets import QWidget, QDialogButtonBox
+from PySide6.QtGui import QIcon
 
 import mtg_proxy_printer.model.card
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard

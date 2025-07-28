@@ -18,9 +18,9 @@ import pathlib
 import typing
 from functools import partial
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, Qt, QItemSelectionModel, QEvent, QObject, QTimer
-from PyQt5.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
-from PyQt5.QtGui import QIcon, QStandardItemModel, QResizeEvent
+from PySide6.QtCore import QStringListModel, Signal, Qt, QItemSelectionModel, QEvent, QObject, QTimer
+from PySide6.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
+from PySide6.QtGui import QIcon, QStandardItemModel, QResizeEvent
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.units_and_sizes import ConfigParser

@@ -20,9 +20,9 @@ import pathlib
 import typing
 from abc import abstractmethod
 
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
-from PyQt5.QtGui import QDesktopServices, QStandardItem, QIcon, QColor
-from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox, \
+from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
+from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon, QColor
+from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox, \
     QColorDialog
 
 import mtg_proxy_printer.app_dirs
@@ -75,7 +75,6 @@ class PageMetadata(typing.NamedTuple):
     icon_name: OptStr
     tooltip: OptStr = None
 
-
 class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
 
@@ -117,7 +116,7 @@ class Page(QWidget):
 
     def clear_highlight(self):
         """Clears all GUI widget highlights."""
-        for item in self.findChildren((QWidget,), options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
+        for item in self.findChildren(QWidget, options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
             item.setGraphicsEffect(None)
 
 
@@ -506,7 +505,7 @@ class PrinterSettingsPage(Page):
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(self.tr("Printer settings"), "document-print", self.tr("Configure the printer"))
 
-    def __init__(self, parent=None, flags=Qt.WindowFlags()):
+    def __init__(self, parent=None, flags=Qt.WindowType.Widget):
         super().__init__(parent, flags)
         self.ui = ui = Ui_PrinterSettingsPage()
         ui.setupUi(self)
@@ -557,7 +556,7 @@ class ExportSettingsPage(Page):
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(self.tr("Export settings"), "viewpdf", self.tr("Configure the PDF/PNG export"))
 
-    def __init__(self, parent=None, flags=Qt.WindowFlags()):
+    def __init__(self, parent=None, flags=Qt.WindowType.Widget):
         super().__init__(parent, flags)
         self.ui = ui = Ui_ExportSettingsPage()
         ui.setupUi(self)

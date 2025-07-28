@@ -18,7 +18,7 @@
 from typing import Iterable, Optional, BinaryIO, Union
 from io import BufferedIOBase
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal
+from PySide6.QtCore import QObject, Signal
 from delegateto import delegate
 
 from mtg_proxy_printer.logger import get_logger

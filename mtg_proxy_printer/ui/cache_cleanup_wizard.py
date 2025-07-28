@@ -21,9 +21,9 @@ import math
 import pathlib
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QItemSelectionModel, QSize
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QItemSelectionModel, QSize
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QWidget, QWizard, QWizardPage
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
@@ -449,7 +449,7 @@ class CacheCleanupWizard(WizardBase):
     }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
-                 parent: QWidget = None, flags=Qt.WindowFlags()):
+                 parent: QWidget = None, flags=Qt.WindowType.Window):
         super().__init__(QSize(1024, 768), parent, flags)
         self.image_db = image_db
         self.addPage(FilterSetupPage(self))

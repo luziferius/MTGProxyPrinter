@@ -15,7 +15,7 @@
 
 
 from pint import Quantity
-from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QLineEdit
+from PySide6.QtWidgets import QCheckBox, QDoubleSpinBox, QLineEdit
 
 import pytest
 from pytestqt.qtbot import QtBot

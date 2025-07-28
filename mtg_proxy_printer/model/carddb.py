@@ -24,8 +24,8 @@ import sqlite3
 import threading
 from typing import NamedTuple, TypeVar, Optional, Literal, Sequence, Any, Union, LiteralString
 
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QObject, Signal, Slot
 
 from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, OptionalCard, CardList, CustomCard
 from mtg_proxy_printer.model.imagedb_files import CacheContent

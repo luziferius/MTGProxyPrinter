@@ -21,7 +21,7 @@ from typing import Optional, Callable
 import urllib.error
 import urllib.request
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal
+from PySide6.QtCore import QObject, Signal
 import delegateto
 
 from mtg_proxy_printer.meta_data import USER_AGENT

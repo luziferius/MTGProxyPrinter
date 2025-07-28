@@ -18,9 +18,9 @@ from typing import Union
 from itertools import combinations
 from typing import Union
 
-from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel, QObject, QEvent
-from PyQt5.QtGui import QKeyEvent, QFocusEvent
-from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox, QLineEdit, \
+from PySide6.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel, QObject, QEvent
+from PySide6.QtGui import QKeyEvent, QFocusEvent
+from PySide6.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox, QLineEdit, \
     QApplication
 
 from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType
@@ -117,7 +117,7 @@ class SetEditorDelegate(FastComboBoxDelegate):
     """
     class CustomCardSetEditor(QWidget):
         """A widget holding two line edits, allowing the user to freely edit the set name & code of custom cards."""
-        def __init__(self, parent: QWidget = None, flags=Qt.WindowFlags()):
+        def __init__(self, parent: QWidget = None, flags=Qt.WindowType.Widget):
             super().__init__(parent, flags)
             self.ui = ui = Ui_SetEditor()
             ui.setupUi(self)

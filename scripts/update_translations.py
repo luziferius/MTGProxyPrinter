@@ -21,7 +21,6 @@ Management script for application translations
 """
 
 import argparse
-import itertools
 import json
 import math
 import pathlib
@@ -97,16 +96,6 @@ def verify_crowdin_cli_present():
 
 def register_new_raw_strings():
     TRANSLATIONS_DIR.mkdir(parents=True, exist_ok=True)
-    # PyQt5
-    package = pathlib.Path("mtg_proxy_printer")
-    files = list(itertools.chain(package.rglob("*.py"), package.rglob("*.ui")))
-    subprocess.call([
-        "pylupdate5",
-        "-noobsolete", "-verbose",
-        *files,
-        "-ts", SOURCES_PATH
-    ])
-    ''' PySide6
     subprocess.call([
         "pyside6-lupdate",
         "-source-language", "en_US",
@@ -115,7 +104,6 @@ def register_new_raw_strings():
         "mtg_proxy_printer",
         "-ts", SOURCES_PATH
     ])
-    '''
 
 
 def upload_raw_strings(args: Namespace):
@@ -165,11 +153,10 @@ def get_lrelease():
         import sys
         exe = pathlib.Path(sys.executable)
         venv = exe.parent.parent
-        lrelease5 = venv / "Lib" / "site-packages" / "PySide2" / "lrelease.exe"
         lrelease6 = venv / "Lib" / "site-packages" / "PySide6" / "lrelease.exe"
-        if not lrelease5.is_file() and not lrelease6.is_file():
+        if not lrelease6.is_file():
             raise RuntimeError("No fallback lrelease executable found")
-        return lrelease5 if lrelease5.is_file() else lrelease6
+        return lrelease6
     else:
         return "lrelease"
 

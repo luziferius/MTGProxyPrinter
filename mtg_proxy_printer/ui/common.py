@@ -19,11 +19,10 @@ import platform
 import re
 from typing import Union
 
-from PyQt5.QtCore import QFile, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
-from PyQt5.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit, QDialog
-from PyQt5.QtGui import QIcon, QPixmap, QColor, QColorConstants
-# noinspection PyUnresolvedReferences
-from PyQt5 import uic
+from PySide6.QtCore import QFile, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
+from PySide6.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit, QDialog
+from PySide6.QtGui import QIcon, QPixmap, QColor, QColorConstants
+from PySide6.QtUiTools import loadUiType
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.units_and_sizes import OptStr
@@ -122,8 +121,7 @@ class BlockedSignals:
 
 def load_ui_from_file(name: str):
     """
-    Returns the Ui class type from uic.loadUiType(), loading the ui file with the given name.
-
+    Returns the Ui class type as returned by PySide6.QtUiTools.loadUiType(), loading the ui file with the given name.
     :param name: Path to the UI file
     :return: class implementing the requested Ui
     :raises FileNotFoundError: If the given ui file does not exist
@@ -133,7 +131,10 @@ def load_ui_from_file(name: str):
         error_message = f"UI file not found: {file_path}"
         logger.error(error_message)
         raise FileNotFoundError(error_message)
-    base_type, _ = uic.loadUiType(file_path, from_imports=True)
+    try:
+        base_type, _ = loadUiType(file_path)
+    except TypeError as e:
+        raise RuntimeError(f"Ui compilation failed for path {file_path}") from e
     return base_type
 
 def load_icon(name: str) -> QIcon:

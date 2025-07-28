@@ -26,8 +26,8 @@ import threading
 from typing import Optional, Iterable, TYPE_CHECKING, Union, Callable
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QModelIndex, Qt, QThreadPool
-from PyQt5.QtGui import QPixmap, QColorConstants
+from PySide6.QtCore import QObject, Signal, Slot, QModelIndex, Qt, QThreadPool
+from PySide6.QtGui import QPixmap, QColorConstants
 
 if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document

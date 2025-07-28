@@ -20,7 +20,7 @@ import itertools
 import operator
 from typing import Self, TypeVar, TYPE_CHECKING, Iterable
 
-from PyQt5.QtCore import QCoreApplication
+from PySide6.QtCore import QCoreApplication
 
 if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document

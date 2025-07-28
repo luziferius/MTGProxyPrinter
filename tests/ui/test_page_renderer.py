@@ -18,8 +18,8 @@ from unittest.mock import patch
 
 import pytest
 from hamcrest import *
-from PyQt5.QtCore import QEvent
-from PyQt5.QtWidgets import QAction
+from PySide6.QtCore import QEvent
+from PySide6.QtGui import QAction
 
 from mtg_proxy_printer.ui.page_renderer import PageRenderer, ZoomDirection
 
@@ -55,4 +55,4 @@ def test_renderer_redraws_scene_on_palette_change(renderer: PageRenderer, palett
 def test_renderer_zoom_action_triggers_zoom(renderer: PageRenderer, zoom_action: str, direction: ZoomDirection):
     action: QAction = getattr(renderer, zoom_action)
     action.trigger()
-    renderer._perform_zoom_step.assert_called_once_with(direction, False)
+    renderer._perform_zoom_step.assert_called_once_with(direction)

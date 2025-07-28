@@ -20,7 +20,7 @@ import sqlite3
 import unittest.mock
 import textwrap
 
-from PyQt5.QtGui import QColorConstants
+from PySide6.QtGui import QColorConstants
 from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *

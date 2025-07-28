@@ -24,8 +24,8 @@ import mtg_proxy_printer.model.document_loader
 from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, unit_registry, StrDict
 from mtg_proxy_printer.ui.page_scene import RenderMode
 
-from PyQt5.QtGui import QPageLayout, QPageSize
-from PyQt5.QtCore import QMarginsF
+from PySide6.QtGui import QPageLayout, QPageSize
+from PySide6.QtCore import QMarginsF
 import pytest
 from hamcrest import *
 

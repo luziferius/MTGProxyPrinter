@@ -16,7 +16,7 @@
 
 from functools import partial
 
-from PyQt5.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget
 
 from mtg_proxy_printer.ui.common import load_ui_from_file
 from mtg_proxy_printer.logger import get_logger

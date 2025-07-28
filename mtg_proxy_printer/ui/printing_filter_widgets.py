@@ -18,9 +18,9 @@
 import abc
 from functools import partial
 
-from PyQt5.QtCore import QUrl
-from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtWidgets import QGroupBox, QWidget, QCheckBox, QPushButton
+from PySide6.QtCore import QUrl
+from PySide6.QtGui import QDesktopServices
+from PySide6.QtWidgets import QGroupBox, QWidget, QCheckBox, QPushButton
 
 from mtg_proxy_printer.units_and_sizes import ConfigParser, SectionProxy
 from mtg_proxy_printer.ui.common import highlight_widget

@@ -23,8 +23,8 @@ import textwrap
 from typing import Counter, Iterable, NamedTuple, Optional, TYPE_CHECKING
 
 from pint import Quantity
-from PyQt5.QtGui import QPageLayout, QPageSize, QColor
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, Qt
+from PySide6.QtGui import QPageLayout, QPageSize, QColor
+from PySide6.QtCore import QObject, Signal, QThreadPool, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, is_, any_of, none, has_item, has_property, equal_to, contains_exactly
 

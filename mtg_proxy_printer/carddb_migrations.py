@@ -33,7 +33,7 @@ import urllib.parse
 from textwrap import dedent
 from typing import Union, Any, Generator, Callable, Iterable, LiteralString
 
-from PyQt5.QtCore import QCoreApplication, Qt
+from PySide6.QtCore import QCoreApplication, Qt
 
 from mtg_proxy_printer.progress_meter import ProgressMeter
 from mtg_proxy_printer.runner import Runnable, ProgressSignalContainer
