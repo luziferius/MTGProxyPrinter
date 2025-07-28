@@ -198,10 +198,10 @@ class FileImportTask(AsyncTask):
     def run(self):
         card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
         self.worker = worker = DatabaseImportWorker(card_db)
-        worker.card_data_updated.connect(self.task_completed)
         worker.download_begins.connect(self.begin_task)
         worker.download_progress.connect(self.set_progress)
-        worker.download_finished.connect(self.task_completed)
+        worker.task_completed.connect(self.task_completed)
+        worker.task_completed.connect(self.task_deleted)
         worker.network_error_occurred.connect(self.network_error_occurred)
         worker.other_error_occurred.connect(self.error_occurred)
 
@@ -221,10 +221,10 @@ class ApiImportTask(AsyncTask):
     def run(self):
         card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
         self.worker = worker = DatabaseImportWorker(card_db)
-        worker.card_data_updated.connect(self.task_completed)
         worker.download_begins.connect(self.begin_task)
         worker.download_progress.connect(self.set_progress)
-        worker.download_finished.connect(self.task_completed)
+        worker.task_completed.connect(self.task_completed)
+        worker.task_completed.connect(self.task_deleted)
         worker.network_error_occurred.connect(self.network_error_occurred)
         worker.other_error_occurred.connect(self.error_occurred)
 
@@ -305,19 +305,17 @@ class ApiStreamWorker(CardInfoWorkerBase):
         return total_cards_available
 
 
-
 class DatabaseImportWorker(DownloaderBase):
     """
     This class implements importing a CardStream into the given CardDatabase instance
     """
-    card_data_updated = Signal()
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  db: sqlite3.Connection = None, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
         self.model = model
-        self.card_data_updated.connect(model.card_data_updated, QueuedConnection)
+        self.task_completed.connect(model.card_data_updated, QueuedConnection)
         self._db = db
         self.should_run = True
         self.set_code_cache: dict[str, int] = {}
@@ -459,7 +457,6 @@ class DatabaseImportWorker(DownloaderBase):
         db.commit()
         self.advance_progress.emit()
         self.task_completed.emit()
-        self.card_data_updated.emit()
         return index
 
     @functools.lru_cache(maxsize=1)
@@ -677,8 +674,7 @@ class DatabaseImportWorker(DownloaderBase):
                 face_ids.append(card_face_id)
         return face_ids
 
-    def _update_card_filters(
-            self, printing_id: int, filter_data: dict[str, bool]):
+    def _update_card_filters(self, printing_id: int, filter_data: dict[str, bool]):
         printing_filter_ids = self._read_printing_filters_from_db()
         db = self.db
         active_printing_filters = set(
