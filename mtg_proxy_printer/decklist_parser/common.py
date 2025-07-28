@@ -50,7 +50,7 @@ ParsedDeck = tuple[CardCounter, list[str]]
 class ParserBase(QObject):
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, list[str]]:
+    def supported_file_types() -> dict[str, list[str]]:
         return {}
 
     incompatible_file_format = Signal()

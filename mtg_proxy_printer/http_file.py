@@ -17,7 +17,7 @@ from functools import cache
 import http.client
 import socket
 import time
-from typing import Optional, Dict, Callable
+from typing import Optional, Callable
 import urllib.error
 import urllib.request
 
@@ -61,7 +61,7 @@ class MeteredSeekableHTTPFile(QObject):
     total_bytes_processed = Signal(int)  # Emitted after each read chunk, carries the total number of bytes read
     getcode: Callable[[], int]
 
-    def __init__(self, url: str, headers: Dict[str, str] = None, parent: QObject = None, *,
+    def __init__(self, url: str, headers: dict[str, str] = None, parent: QObject = None, *,
                  ui_hint: str = "", retry_limit: int = 10):
         """
         :param url: The URL to fetch

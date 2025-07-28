@@ -28,7 +28,7 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-MatchType = typing.Dict[str, str]
+MatchType = dict[str, str]
 
 __all__ = [
     "GenericRegularExpressionDeckParser",
@@ -174,7 +174,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
 class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, list[str]]:
+    def supported_file_types() -> dict[str, list[str]]:
         return {
             QCoreApplication.translate(
                 "MagicWorkstationDeckDataFormatParser", "Magic Workstation Deck Data Format"): ["mwDeck"],
@@ -194,7 +194,7 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     """
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, list[str]]:
+    def supported_file_types() -> dict[str, list[str]]:
         return {
             # Magic Arena typically uses the clipboard. Some sites offer downloads with the .txt ending.
             # XMage also lists the .mtga suffix, so add that too.
@@ -229,7 +229,7 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
     """
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, list[str]]:
+    def supported_file_types() -> dict[str, list[str]]:
         return {
             # Tappedout and Scryfall exports them with .dek suffix, Moxfield uses .txt
             QCoreApplication.translate("MTGOnlineParser", "Magic Online (MTGO) deck file"): ["dek", "txt"],
@@ -252,7 +252,7 @@ class XMageParser(GenericRegularExpressionDeckParser):
     """
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, list[str]]:
+    def supported_file_types() -> dict[str, list[str]]:
         return {
             QCoreApplication.translate("XMageParser", "XMage Deck file"): ["dck"],
         }

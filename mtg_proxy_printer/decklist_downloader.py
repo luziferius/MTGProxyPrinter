@@ -26,7 +26,7 @@ import urllib.parse
 from io import StringIO
 import platform
 import re
-from typing import Type, Counter, Iterable, Optional, Dict, Any, Union
+from typing import Type, Counter, Iterable, Optional, Any, Union
 
 import ijson
 from PyQt5.QtGui import QValidator
@@ -396,7 +396,7 @@ class TCGPlayerDownloader(DecklistDownloader):
         items: JSONKeyValueType = ijson.kvitems(data, "result.deck.subDecks")
         result = Counter()
         for _, counts in items:  # Ignore the board type "maindeck"/"sideboard"
-            for card in counts:  # type: Dict[str, int]
+            for card in counts:  # type: dict[str, int]
                 # card IDs are supplied as integers, but used elsewhere as strings. So convert them to strings
                 result[str(card["cardID"])] += card["quantity"]
         return result
@@ -428,7 +428,7 @@ class ManaboxDownloader(DecklistDownloader):
         return f"https://cloud.manabox.app/decks/{deck_id}"
 
     def post_process(self, data: bytes) -> str:
-        cards: Iterable[Dict[str, Any]] = ijson.items(data, "cards.item")
+        cards: Iterable[dict[str, Any]] = ijson.items(data, "cards.item")
         buffer = io.StringIO()
         writer = csv.writer(buffer, self.PARSER_CLASS.Dialect)
         writer.writerow(("scryfall_id", "count", "lang", "name", "set_code", "collector_number"))
@@ -439,7 +439,7 @@ class ManaboxDownloader(DecklistDownloader):
         return buffer.getvalue()
 
 
-AVAILABLE_DOWNLOADERS: Dict[str, Type[DecklistDownloader]] = {
+AVAILABLE_DOWNLOADERS: dict[str, Type[DecklistDownloader]] = {
     downloader.__name__: downloader for downloader in [
         ArchidektDownloader,
         CubeCobraDownloader,

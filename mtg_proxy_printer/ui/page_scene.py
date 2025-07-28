@@ -399,7 +399,7 @@ class PageScene(QGraphicsScene):
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
         """Draws the canvas, when the currently selected page changes."""
         logger.debug(f"Current page changed to page {selected_page.row()}")
-        page_types: typing.Set[PageType] = {
+        page_types: set[PageType] = {
             self.selected_page.data(ItemDataRole.UserRole),
             selected_page.data(ItemDataRole.UserRole)
         }

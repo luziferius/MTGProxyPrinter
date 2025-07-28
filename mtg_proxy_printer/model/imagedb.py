@@ -23,7 +23,7 @@ import shutil
 import socket
 import string
 import threading
-from typing import Set, Optional, Iterable, TYPE_CHECKING, Dict, Union, Callable
+from typing import Optional, Iterable, TYPE_CHECKING, Union, Callable
 import urllib.error
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QModelIndex, Qt, QThreadPool
@@ -56,7 +56,7 @@ __all__ = [
 ]
 
 PathSizeList = list[tuple[pathlib.Path, int]]
-ImageKeySet = Set[ImageKey]
+ImageKeySet = set[ImageKey]
 BatchActions = Union[ActionImportDeckList]
 SingleActions = ActionAddCard | ActionReplaceCard
 IndexList = list[QModelIndex]
@@ -116,8 +116,8 @@ class ImageDatabase(QObject):
         # Caches loaded images in a map from scryfall_id to image. If a file is already loaded, use the loaded instance
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.
-        self.loaded_images: Dict[ImageKey, QPixmap] = {}
-        self.images_on_disk: Set[ImageKey] = set()
+        self.loaded_images: dict[ImageKey, QPixmap] = {}
+        self.images_on_disk: set[ImageKey] = set()
         QThreadPool.globalInstance().start(InitOnDiskDataRunner(self.images_on_disk, db_path))
         self.download_worker = ImageDownloader(self)
         logger.info(f"Created {self.__class__.__name__} instance.")

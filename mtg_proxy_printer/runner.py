@@ -38,7 +38,7 @@ class ProgressSignalContainer(QObject):
 
 
 class Runnable(QRunnable):
-    INSTANCES: typing.Dict[int, "Runnable"] = {}
+    INSTANCES: dict[int, "Runnable"] = {}
 
     def __init__(self):
         super().__init__()

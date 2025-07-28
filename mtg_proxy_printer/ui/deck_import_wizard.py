@@ -370,7 +370,7 @@ class SelectDeckParserPage(QWizardPage):
         used_downloader: str = self.field("deck-list-downloaded")
         if used_downloader:
             parser_to_use = AVAILABLE_DOWNLOADERS[used_downloader].PARSER_CLASS
-            parser_table: typing.Dict[typing.Type[ParserBase], QRadioButton] = {
+            parser_table: dict[typing.Type[ParserBase], QRadioButton] = {
                 re_parsers.MagicWorkstationDeckDataFormatParser: ui.select_parser_magic_workstation,
                 re_parsers.MTGArenaParser: ui.select_parser_mtg_arena,
                 re_parsers.MTGOnlineParser: ui.select_parser_mtg_online,

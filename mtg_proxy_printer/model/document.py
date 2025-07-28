@@ -107,7 +107,7 @@ class Document(QAbstractItemModel):
         self.loader.load_requested.connect(self.apply)
         self.pages: list[Page] = [first_page := Page()]
         # Mapping from page id() to list index in the page list
-        self.page_index_cache: typing.Dict[int, int] = {id(first_page): 0}
+        self.page_index_cache: dict[int, int] = {id(first_page): 0}
         self.currently_edited_page = first_page
         self.page_layout = PageLayoutSettings.create_from_settings()
         logger.debug(f"Loaded document settings from configuration file: {self.page_layout}")
@@ -422,12 +422,12 @@ class Document(QAbstractItemModel):
             if not (card := container.card).is_custom_card
                and card.image_file is not image_db.get_blank(card.size))
 
-    def get_all_image_keys_in_document(self) -> typing.Set[ImageKey]:
+    def get_all_image_keys_in_document(self) -> set[ImageKey]:
         return set(itertools.chain.from_iterable(
             map(self._get_page_content_as_image_keys, self.pages)
         ))
 
-    def get_all_custom_cards(self) -> typing.Set[CustomCard]:
+    def get_all_custom_cards(self) -> set[CustomCard]:
         result = set()
         for page in self.pages:
             for container in page:

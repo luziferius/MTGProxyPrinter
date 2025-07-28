@@ -21,7 +21,7 @@ import functools
 import re
 import sqlite3
 import typing
-from typing import Type, Dict, Optional, Set, NamedTuple, TypedDict, Union, NotRequired
+from typing import Type, Optional, NamedTuple, TypedDict, Union, NotRequired
 
 from PyQt5.QtCore import QSize, QObject
 from PyQt5.QtGui import QPageSize, QPageLayout, QColor
@@ -62,10 +62,10 @@ DEFAULT_SAVE_SUFFIX = "mtgproxies"
 # typing shortcuts
 ShouldBeUUID = WEB_URI = API_URI = str
 Colors = list[str]
-StringSet = Set[str]
+StringSet = set[str]
 OptStr = Optional[str]
 IntList = list[int]
-StrDict = Dict[str, str]
+StrDict = dict[str, str]
 T = typing.TypeVar("T")
 PageSizeId = QPageSize.PageSizeId
 mm: Unit = unit_registry.mm
@@ -270,15 +270,15 @@ class CardDataType(_CardPreviewFields):
     image_status: str
     image_uris: NotRequired[ImageUriType]
     oversized: bool
-    prices: Dict[str, float]
+    prices: dict[str, float]
     printed_name: NotRequired[str]
     printed_text: NotRequired[str]
     printed_type_line: NotRequired[str]
     promo: bool
     promo_types: NotRequired[list[str]]
-    purchase_uris: NotRequired[Dict[str, ShouldBeUUID]]
+    purchase_uris: NotRequired[dict[str, ShouldBeUUID]]
     rarity: str
-    related_uris: Dict[str, WEB_URI]
+    related_uris: dict[str, WEB_URI]
     released_at: str
     reprint: bool
     scryfall_set_uri: WEB_URI
@@ -312,7 +312,7 @@ class BulkDataType(TypedDict):
     content_encoding: str
 
 
-def _read_enum(container: Type, enum_class: Type[T], accumulator: Dict[str, T] = None) -> Dict[str, T]:
+def _read_enum(container: Type, enum_class: Type[T], accumulator: dict[str, T] = None) -> dict[str, T]:
     if accumulator is None:
         accumulator = {}
     for item in mtg_proxy_printer.natsort.natural_sorted(dir(container)):
@@ -337,7 +337,7 @@ def is_acceptable_page_size(page_size: Union[PageSizeId, QPageSize]) -> bool:
         and size.height() >= card_height <= size.width()
 
 
-def read_page_size_enum() -> Dict[str, PageSizeId]:
+def read_page_size_enum() -> dict[str, PageSizeId]:
     result = _read_enum(QPageSize, PageSizeId, {"Custom": PageSizeId.Custom})
     del result["LastPageSize"]
 

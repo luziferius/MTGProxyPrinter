@@ -97,7 +97,7 @@ class QuantityLimits(typing.NamedTuple):
     """
     minimum: Quantity
     maximum: Quantity
-    acceptable_units: typing.Set[Unit]
+    acceptable_units: set[Unit]
     target_unit: Unit
 
 
@@ -275,7 +275,7 @@ def get_boolean_card_filter_keys():
     return keys
 
 
-def parse_card_set_filters(input_settings: ConfigParser = settings) -> typing.Set[str]:
+def parse_card_set_filters(input_settings: ConfigParser = settings) -> set[str]:
     """Parses the hidden sets filter setting into a set of lower-case MTG set codes."""
     raw = input_settings["card-filter"]["hidden-sets"]
     raw = raw.lower()
@@ -535,7 +535,7 @@ def _validate_quantity(section: SectionProxy, defaults: SectionProxy, key: str, 
         _restore_default(section, defaults, key)
 
 
-def _validate_string_is_in_set(section: SectionProxy, defaults: SectionProxy, valid_options: typing.Set[str], key: str):
+def _validate_string_is_in_set(section: SectionProxy, defaults: SectionProxy, valid_options: set[str], key: str):
     """Checks if the value of the option is one of the allowed values, as determined by the given set of strings."""
     if section[key] not in valid_options:
         _restore_default(section, defaults, key)

@@ -80,7 +80,7 @@ def test_going_back_to_textual_deck_list_resets_parsed_cards_model(qtbot: QtBot,
 ])
 def test_remove_basic_lands_button_works(
         qtbot: QtBot, document: Document,
-        removal_settings: typing.Dict[str, str], expected_cards: list[str]):
+        removal_settings: dict[str, str], expected_cards: list[str]):
     deck_list = "\n".join(("1 Forest", "1 Snow-Covered Forest", "1 Wastes"))
     wizard = create_and_show_wizard(
         qtbot, document, ["english_basic_Forest", "english_basic_Snow_Forest", "english_basic_Wastes"]

@@ -17,7 +17,7 @@ from functools import lru_cache, cache
 from pathlib import Path
 import platform
 import re
-from typing import Union, Dict
+from typing import Union
 
 from PyQt5.QtCore import QFile, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
 from PyQt5.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit, QDialog
@@ -196,7 +196,7 @@ def get_widget_background_color(widget: QWidget) -> QColor:
 
 class WizardBase(QWizard):
     """Base class for wizards based on QWizard"""
-    BUTTON_ICONS: Dict[QWizard.WizardButton, str] = {}
+    BUTTON_ICONS: dict[QWizard.WizardButton, str] = {}
 
     def __init__(self, window_size: QSize, parent: QWidget, flags):
         super().__init__(parent, flags)

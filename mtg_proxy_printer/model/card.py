@@ -295,6 +295,6 @@ class CheckCard:
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
 
 
-AnyCardType = Card | CheckCard | CustomCard
+AnyCardType = Union[Card, CheckCard, CustomCard]
 CardList = list[AnyCardType]
 OptionalCard = Optional[AnyCardType]

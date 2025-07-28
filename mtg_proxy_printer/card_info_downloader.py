@@ -401,7 +401,7 @@ class DatabaseImportWorker(DownloaderBase):
         self.card_data_updated.connect(model.card_data_updated, QueuedConnection)
         self._db = db
         self.should_run = True
-        self.set_code_cache: typing.Dict[str, int] = {}
+        self.set_code_cache: dict[str, int] = {}
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @property
@@ -546,7 +546,7 @@ class DatabaseImportWorker(DownloaderBase):
         return index
 
     @functools.lru_cache(maxsize=1)
-    def _read_printing_filters_from_db(self) -> typing.Dict[str, int]:
+    def _read_printing_filters_from_db(self) -> dict[str, int]:
         return dict(self.db.execute("SELECT filter_name, filter_id FROM DisplayFilters"))
 
     def _parse_single_printing(self, card: CardDataType):
@@ -761,14 +761,14 @@ class DatabaseImportWorker(DownloaderBase):
         return face_ids
 
     def _update_card_filters(
-            self, printing_id: int, filter_data: typing.Dict[str, bool]):
+            self, printing_id: int, filter_data: dict[str, bool]):
         printing_filter_ids = self._read_printing_filters_from_db()
         db = self.db
         active_printing_filters = set(
             (printing_id, printing_filter_ids[filter_name])
             for filter_name, filter_applies in filter_data.items() if filter_applies
         )
-        stored_printing_filters: typing.Set[tuple[int, int]] = set(db.execute(
+        stored_printing_filters: set[tuple[int, int]] = set(db.execute(
             "SELECT printing_id, filter_id FROM PrintingDisplayFilter WHERE printing_id = ?",
             (printing_id,)
         ))
@@ -799,7 +799,7 @@ def _get_related_cards(card: CardDataType):
             yield RelatedPrintingData(card_id, related_id)
 
 
-def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
+def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
     legalities = card["legalities"]
     return {
         # Racism filter

@@ -21,7 +21,7 @@ import os
 import sqlite3
 from numbers import Real
 from pathlib import Path
-from typing import Literal, Dict, Any, Callable, Union
+from typing import Literal, Any, Callable, Union
 from unittest.mock import patch, MagicMock
 
 from pint import Quantity
@@ -123,7 +123,7 @@ def fill_card_database_with_json_cards(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_files_or_names: list[Union[str, CardDataType]],
-        filter_settings: Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+        filter_settings: dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     data = load_multiple_json_cards(json_files_or_names)
     populate_database(qtbot, card_db, data, filter_settings)
     return card_db
@@ -133,7 +133,7 @@ def fill_card_database_with_json_card(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_file_or_name: Union[str, CardDataType],
-        filter_settings: Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+        filter_settings: dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], filter_settings)
 
 

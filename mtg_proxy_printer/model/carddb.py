@@ -22,7 +22,7 @@ import functools
 from pathlib import Path
 import sqlite3
 import threading
-from typing import NamedTuple, TypeVar, Set, Optional, Dict, Literal, Sequence, Any, Union, LiteralString
+from typing import NamedTuple, TypeVar, Optional, Literal, Sequence, Any, Union, LiteralString
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot
@@ -104,7 +104,7 @@ class CardDatabase(QObject):
     Provides methods for data access.
     """
     card_data_updated = Signal()
-    custom_cards: Dict[UUID, CustomCard] = {}
+    custom_cards: dict[UUID, CustomCard] = {}
 
     def __init__(self, db_path: Union[Literal[":memory:"], Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
                  check_same_thread: bool = True, register_exit_hooks: bool = True):
@@ -223,7 +223,7 @@ class CardDatabase(QObject):
         return self._read_scalar_list_from_db(query, parameters)
 
     def get_basic_land_oracle_ids(
-            self, include_wastes: bool = False, include_snow_basics: bool = False) -> Set[str]:
+            self, include_wastes: bool = False, include_snow_basics: bool = False) -> set[str]:
         """Returns the oracle ids of all Basic lands."""
         names = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']
         # Ordering matters: This order also supports Snow-Covered Wastes

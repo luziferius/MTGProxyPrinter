@@ -31,7 +31,7 @@ import typing
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import Dict, Union, Any, Generator, Callable, Iterable, LiteralString
+from typing import Union, Any, Generator, Callable, Iterable, LiteralString
 
 from PyQt5.QtCore import QCoreApplication, Qt
 
@@ -135,7 +135,7 @@ class Migrate_21_to_22(MigrationScript):
         return 4 + api_call_count  # 4 SQL statements in the script
 
 
-MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
+MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
     9: MigrationScript([
         # Schema version 9 did not store if a card was a front or back face.
         # This information can only be obtained by re-populating
@@ -722,7 +722,7 @@ class DatabaseMigrationRunner(Runnable):
     Scripts combining multiple version upgrades in one SQL script are not supported.
     """
 
-    def __init__(self, card_db: CardDatabase, migration_scripts: Dict[int, MigrationScript] = None):
+    def __init__(self, card_db: CardDatabase, migration_scripts: dict[int, MigrationScript] = None):
         super().__init__()
         self.total_update_signals = ProgressSignalContainer()
         self.script_update_signals = ProgressSignalContainer()

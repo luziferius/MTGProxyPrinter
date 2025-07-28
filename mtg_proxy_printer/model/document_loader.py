@@ -20,7 +20,7 @@ import itertools
 import pathlib
 import sqlite3
 import textwrap
-from typing import Counter, Dict, Iterable, NamedTuple, Optional, TYPE_CHECKING
+from typing import Counter, Iterable, NamedTuple, Optional, TYPE_CHECKING
 
 from pint import Quantity
 from PyQt5.QtGui import QPageLayout, QPageSize, QColor
@@ -84,7 +84,7 @@ class CardRow(NamedTuple):
 
 
 sqlite3.register_adapter(CardType, lambda item: item.value)
-CustomCards = Dict[str, Card]
+CustomCards = dict[str, Card]
 
 
 def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[tuple[T, ...]]:

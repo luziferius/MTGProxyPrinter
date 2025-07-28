@@ -54,12 +54,12 @@ except ModuleNotFoundError:
     Ui_ExportSettingsPage = load_ui_from_file("settings_window/export_settings_page")
 
 CheckState = Qt.CheckState
-bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
+bool_to_check_state: dict[typing.Optional[bool], CheckState] = {
     True: CheckState.Checked,
     False: CheckState.Unchecked,
     None: CheckState.PartiallyChecked,
 }
-check_state_to_bool_str: typing.Dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
+check_state_to_bool_str: dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 ItemDataRole = Qt.ItemDataRole
 StandardLocation = QStandardPaths.StandardLocation
@@ -302,7 +302,7 @@ class GeneralSettingsPage(Page):
         ui.add_card_widget_style_combo_box.addItem(self.tr("Horizontal layout"), "horizontal")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Columnar layout"), "columnar")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Tabbed layout"), "tabbed")
-        progress: typing.Dict[str, int] = json.loads(load_file("translations/progress.json", self))
+        progress: dict[str, int] = json.loads(load_file("translations/progress.json", self))
         for display_text, language_code in [
             (self.tr("System default"), ""),
             (self.tr("English (US) [{progress}%]"), "en_US"),
