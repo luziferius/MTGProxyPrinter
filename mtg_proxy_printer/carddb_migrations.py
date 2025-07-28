@@ -31,7 +31,7 @@ import typing
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import Union, Any, Generator, Callable, Iterable, LiteralString
+from typing import Any, Generator, Callable, Iterable, LiteralString
 
 from PySide6.QtCore import QCoreApplication, Qt
 
@@ -57,7 +57,7 @@ __all__ = [
 # Original dedent is annotated as str -> str, so overwrite that with LiteralString -> LiteralString,
 # allowing the type checker to detect SQL injections
 dedent: Callable[[LiteralString], LiteralString]
-Statement = Union[LiteralString, tuple[LiteralString, list[tuple[Any, ...]]]]
+Statement = LiteralString | tuple[LiteralString, list[tuple[Any, ...]]]
 
 
 @dataclasses.dataclass

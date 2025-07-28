@@ -14,7 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Union, Type, Optional
+from typing import Type
 
 from PySide6.QtCore import QStringListModel, Slot, Signal, Qt, QItemSelectionModel, QItemSelection
 from PySide6.QtWidgets import QWidget, QDialogButtonBox
@@ -47,7 +47,7 @@ __all__ = [
     "HorizontalAddCardWidget",
 ]
 
-UiTypes = Union[Type[Ui_VerticalAddCardWidget], Type[Ui_HorizontalAddCardWidget]]
+UiTypes = Type[Ui_VerticalAddCardWidget] | Type[Ui_HorizontalAddCardWidget]
 StandardButton = QDialogButtonBox.StandardButton
 ItemDataRole = Qt.ItemDataRole
 SelectionFlag = QItemSelectionModel.SelectionFlag

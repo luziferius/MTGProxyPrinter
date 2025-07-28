@@ -154,7 +154,7 @@ class ScryfallCSVParser(BaseCSVParser):
                 logger.info("Not enough data available to select a printing for the given line. Skipping.")
         return cards
 
-    def _handle_removed_printing(self, scryfall_id: str, language: str, guess_printing: bool) -> typing.Optional[Card]:
+    def _handle_removed_printing(self, scryfall_id: str, language: str, guess_printing: bool) -> Card | None:
         if self.card_db.is_removed_printing(scryfall_id):
             choices = self.card_db.get_replacement_card_for_unknown_printing(
                 CardIdentificationData(language, scryfall_id=scryfall_id, is_front=True),

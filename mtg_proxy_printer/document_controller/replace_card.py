@@ -45,7 +45,7 @@ class ActionReplaceCard(DocumentAction):
 
     def __init__(self, new_card: Card, page: int, slot: int):
         self.card = new_card
-        self.old_card: typing.Optional[Card] = None
+        self.old_card: Card | None = None
         # The new card may have a different size than the old one. Most likely when the commander card of old
         # pre-constructed commander decks is swapped for the over-sized display card that was included in those decks.
         # In those cases, the swap may create a mixed-size page, which has to be mitigated. In those, and only those,

@@ -154,7 +154,7 @@ def test__validate_documents_section_rounds_spacing_value_to_acceptable_value(
 @pytest.mark.parametrize("offset", [0, -1/101, 1/101])
 @pytest.mark.parametrize("settings_key", ["custom-page-height", "custom-page-width",])
 def test__validate_documents_section_rounds_paper_size_value_to_acceptable_value(
-        default_settings: ConfigParser, expected: Union[float, int], offset: float, settings_key: str):
+        default_settings: ConfigParser, expected: float | int, offset: float, settings_key: str):
     documents_section = default_settings["documents"]
     documents_section[settings_key] = to_mm_str(expected + offset)
     mtg_proxy_printer.settings.validate_settings(default_settings)

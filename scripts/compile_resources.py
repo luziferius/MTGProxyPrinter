@@ -34,21 +34,21 @@ import argparse
 import itertools
 from pathlib import Path
 import subprocess
-import typing
+from typing import NamedTuple, TypeVar, Iterable, Callable
 
 
 main_package = "mtg_proxy_printer"
 PACKAGE_PATH = (Path(__file__).parent.with_name(main_package)).resolve()
 SOURCES_PATH = PACKAGE_PATH / "resources" / "resources.qrc"
 TARGET_PATH = PACKAGE_PATH / "ui" / "compiled_resources.py"
-T = typing.TypeVar("T")
+T = TypeVar("T")
 
 
-class Namespace(typing.NamedTuple):
-    command: typing.Callable[[], None]
+class Namespace(NamedTuple):
+    command: Callable[[], None]
 
 
-def parse_args(args: typing.List[str] = None)-> Namespace:
+def parse_args(args: list[str] = None)-> Namespace:
     parser = argparse.ArgumentParser(
         description="Compile Qt resources into an importable module. "
                     "Compilation must be run during the packaging process"
@@ -67,7 +67,7 @@ def parse_args(args: typing.List[str] = None)-> Namespace:
     return parsed
 
 
-def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.List[typing.Tuple[T, ...]]:
+def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> list[tuple[T, ...]]:
     """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
     iterable = iter(iterable)
     return list(iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ()))
@@ -83,6 +83,7 @@ def compile():
     joined_chunks = ("".join(items) for items in chunks)
     compiled = "\\\n".join(joined_chunks)
     TARGET_PATH.write_text(compiled, "utf-8")
+
 
 def clean():
     TARGET_PATH.unlink(missing_ok=True)

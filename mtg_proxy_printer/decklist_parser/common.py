@@ -121,7 +121,7 @@ class ParserBase(QObject):
         return False
 
     @profile
-    def guess_printing(self, card_data: CardIdentificationData) -> typing.Optional[Card]:
+    def guess_printing(self, card_data: CardIdentificationData) -> Card | None:
         logger.info(f"Guessing card printing for {card_data}")
         if card_data.name:
             card_data.name = card_data.name.strip()

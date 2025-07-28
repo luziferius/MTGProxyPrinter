@@ -15,7 +15,7 @@
 
 
 import functools
-from typing import Iterable, Optional, TYPE_CHECKING
+from typing import Iterable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -105,7 +105,7 @@ class ActionRemovePage(DocumentAction):
         self.position = position
         self.count = count
         self.removed_pages: list[Page] = []
-        self.currently_edited_page: Optional[Page] = None  # Set, if the currently edited page is removed
+        self.currently_edited_page: Page | None = None  # Set, if the currently edited page is removed
         self.removed_all_pages: bool = False
 
     def apply(self, document: "Document") -> Self:

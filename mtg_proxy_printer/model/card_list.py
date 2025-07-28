@@ -17,7 +17,7 @@ from collections import Counter
 import dataclasses
 import enum
 import itertools
-from typing import Any, Union
+from typing import Any
 
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt, Signal, QItemSelection
 from PySide6.QtGui import QIcon
@@ -312,7 +312,7 @@ class CardListModel(QAbstractTableModel):
         return total_count
 
     def headerData(
-            self, section: Union[int, CardListColumns],
+            self, section: int | CardListColumns,
             orientation: Qt.Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
         if orientation == Qt.Orientation.Horizontal:
             if role == ItemDataRole.DisplayRole:

@@ -17,7 +17,7 @@ from functools import cache
 import http.client
 import socket
 import time
-from typing import Optional, Callable
+from typing import Callable
 import urllib.error
 import urllib.request
 
@@ -54,7 +54,6 @@ class MeteredSeekableHTTPFile(QObject):
     without adding the “Accept-Ranges” header field with value “bytes”, seeking will be disabled.
     In this case, linear reading with progress reports can still be performed.
     """
-
 
     io_begin = Signal(int, str)  # Emitted in __enter__, carries the total file size in bytes. -1, if unknown
     io_finished = Signal()  # Emitted in __exit__, when the file is closed
@@ -199,7 +198,7 @@ class MeteredSeekableHTTPFile(QObject):
         self.read_bytes += block_length
         self.total_bytes_processed.emit(self.read_bytes)
 
-    def _urlopen(self, first_byte: int = 0, /, *, outer_retries: int = 0) -> Optional[http.client.HTTPResponse]:
+    def _urlopen(self, first_byte: int = 0, /, *, outer_retries: int = 0) -> http.client.HTTPResponse | None:
         """
         Opens the stored URL, returning the Response object, which can be used as a context manager.
 

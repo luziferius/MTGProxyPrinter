@@ -14,8 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import pathlib
-from typing import Optional, Union
+from pathlib import Path
 from functools import partial
 
 
@@ -102,7 +101,7 @@ class MainWindow(QMainWindow):
         self._setup_undo_redo_actions(document)
         self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
-        self.current_dialog: Optional[QDialog] = None
+        self.current_dialog: QDialog | None = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def update_language_model(self):
@@ -430,7 +429,7 @@ class MainWindow(QMainWindow):
         dialog.finished.connect(self.on_dialog_finished)
         show_wizard_or_dialog(dialog)
 
-    def on_document_loading_failed(self, failed_path: pathlib.Path, reason: str):
+    def on_document_loading_failed(self, failed_path: Path, reason: str):
         function_text = self.ui.action_import_deck_list.text()
         QMessageBox.critical(
             self, self.tr("Document loading failed"),
@@ -467,9 +466,9 @@ class MainWindow(QMainWindow):
         if QMessageBox.question(
                 self, self.tr("Application update available. Visit website?"),
                 self.tr("An application update is available: Version {newer_version}\n"
-                "You are currently using version {current_version}.\n\n"
-                "Open the {program_name} website in your web browser "
-                "to download the new version?").format(
+                        "You are currently using version {current_version}.\n\n"
+                        "Open the {program_name} website in your web browser "
+                        "to download the new version?").format(
                     newer_version=newer_version, current_version=mtg_proxy_printer.meta_data.__version__,
                     program_name=mtg_proxy_printer.meta_data.PROGRAMNAME,
                 ),
@@ -548,7 +547,7 @@ class MainWindow(QMainWindow):
             dialog.show_from_drop_event(event)
 
     @staticmethod
-    def _to_save_file_path(event: Union[QDragEnterEvent, QDropEvent]) -> Optional[pathlib.Path]:
+    def _to_save_file_path(event: QDragEnterEvent | QDropEvent) -> Path | None:
         """
         Returns a Path instance to a file, if the drag&drop event contains a reference to exactly 1 document save file,
         None otherwise.
@@ -558,7 +557,7 @@ class MainWindow(QMainWindow):
         # So ignore drag&drop containing multiple files
         if mime_data.hasUrls() and len(dropped_urls := mime_data.urls()) == 1:
             url = dropped_urls[0].toLocalFile()
-            path = pathlib.Path(url)
+            path = Path(url)
             acceptable = path.is_file() and path.suffix.casefold() == f".{DEFAULT_SAVE_SUFFIX}"
             if acceptable:
                 return path

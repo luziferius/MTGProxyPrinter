@@ -14,10 +14,10 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import pathlib
-import typing
+from pathlib import Path
+from typing import TYPE_CHECKING
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
@@ -39,9 +39,9 @@ class ActionNewDocument(DocumentAction):
     COMPARISON_ATTRIBUTES = ["old_save_path", "remove_pages_action", "reset_settings_action"]
 
     def __init__(self):
-        self.old_save_path: typing.Optional[pathlib.Path] = None
-        self.remove_pages_action: typing.Optional[ActionRemovePage] = None
-        self.reset_settings_action: typing.Optional[ActionEditDocumentSettings] = None
+        self.old_save_path: Path | None = None
+        self.remove_pages_action: ActionRemovePage | None = None
+        self.reset_settings_action: ActionEditDocumentSettings | None = None
         # The page layout settings have to be saved here to not break continuity in corner cases.
         # Potential issue mitigated by keeping the settings as of creation time:
         # User creates a new document, fills a page, then un-does all actions including this action,

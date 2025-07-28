@@ -18,7 +18,7 @@ import datetime
 import itertools
 from pathlib import Path
 import textwrap
-import typing
+from typing import Generator
 import unittest.mock
 from unittest.mock import MagicMock
 
@@ -426,8 +426,9 @@ def test_get_cards_from_data_always_prefers_card_over_token(
         )
     )
 
+
 def generate_test_cases_for_test_get_card_with_scryfall_id() -> \
-        typing.Generator[tuple[CardIdentificationData, typing.Optional[Card]], None, None]:
+        Generator[tuple[CardIdentificationData, Card | None], None, None]:
     # Regular card
     case = TestCaseData("regular_english_card")
     yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), case.as_card()
@@ -461,7 +462,7 @@ def generate_test_cases_for_test_get_card_with_scryfall_id() -> \
 
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_card_with_scryfall_id())
 def test_get_card_with_scryfall_id(
-        card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: typing.Optional[Card]):
+        card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card | None):
     assert_that(
         card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front),
         is_(any_of(
@@ -566,7 +567,7 @@ def test__translate_card(card_db_with_cards: CardDatabase, card_data: CardIdenti
 
 
 def generate_test_cases_for_test_get_opposing_face() -> \
-        typing.Generator[tuple[CardIdentificationData, typing.Optional[Card]], None, None]:
+        Generator[tuple[CardIdentificationData, Card | None], None, None]:
     # Single-faced cards
     for case in (TestCaseData("regular_english_card"), TestCaseData("oversized_card")):
         # The back side of a regular card does not exist, Expect None
@@ -586,7 +587,7 @@ def generate_test_cases_for_test_get_opposing_face() -> \
 
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_opposing_face())
 def test_get_opposing_face(
-        card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: typing.Optional[Card]):
+        card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card | None):
     result = card_db_with_cards.get_opposing_face(card_data)
     if expected is None:
         assert_that(result, is_(none()))

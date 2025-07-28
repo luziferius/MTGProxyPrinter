@@ -13,9 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-
-from typing import Iterable, Optional, BinaryIO, Union
+from typing import Iterable, BinaryIO
 from io import BufferedIOBase
 
 from PySide6.QtCore import QObject, Signal
@@ -29,7 +27,7 @@ __all__ = [
     "MeteredFile",
 ]
 
-WrappedIoType = Union[BufferedIOBase, BinaryIO]
+WrappedIoType = BufferedIOBase | BinaryIO
 
 
 @delegate(

@@ -17,7 +17,6 @@ from functools import lru_cache, cache
 from pathlib import Path
 import platform
 import re
-from typing import Union
 
 from PySide6.QtCore import QFile, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
 from PySide6.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit, QDialog
@@ -62,7 +61,7 @@ else:
 
 
 @lru_cache(maxsize=256)
-def get_card_image_tooltip(image: Union[bytes, Path], card_name: OptStr = None, scaling_factor: int = 3) -> str:
+def get_card_image_tooltip(image: bytes | Path, card_name: OptStr = None, scaling_factor: int = 3) -> str:
     """
     Returns a tooltip string showing a scaled down image for the given path.
     :param image: Filesystem path to the image file or raw image content as bytes
@@ -83,7 +82,8 @@ def get_card_image_tooltip(image: Union[bytes, Path], card_name: OptStr = None, 
     card_name = f'<p style="text-align:center">{card_name}</p><br>' if card_name else ""
     return f'{card_name}<img src="data:image/png;base64,{image}">'
 
-def show_wizard_or_dialog(wizard: Union[QDialog]):
+
+def show_wizard_or_dialog(wizard: QDialog | QWizard):
     """
     Shows a wizard or dialog.
     Uses the "wizards-open-maximized" setting to determine, if it should be shown as a small floating window or
@@ -93,6 +93,7 @@ def show_wizard_or_dialog(wizard: Union[QDialog]):
         wizard.showMaximized()
     else:
         wizard.show()
+
 
 def highlight_widget(widget: QWidget) -> None:
     """Sets a visual highlight on the given widget to make it stand out"""

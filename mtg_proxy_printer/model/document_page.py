@@ -17,7 +17,7 @@
 import dataclasses
 import enum
 from functools import partial
-from typing import Iterable, Union
+from typing import Iterable
 
 from mtg_proxy_printer.model.card import AnyCardType
 from mtg_proxy_printer.units_and_sizes import PageType

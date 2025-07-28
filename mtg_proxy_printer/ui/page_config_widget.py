@@ -17,11 +17,10 @@
 import functools
 from functools import partial
 import math
-from typing import Union, Any
+from typing import Any
 
 import pint
 from PySide6.QtCore import Slot, Qt, Signal
-from PySide6.QtPrintSupport import QPrinter
 from PySide6.QtGui import QPageSize, QPageLayout, QColor
 from PySide6.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QComboBox, QColorDialog
 
@@ -50,8 +49,10 @@ point = unit_registry.point
 def is_pint_distance(value: Any) -> bool:
     return isinstance(value, pint.Quantity) and value.dimensionality == DISTANCE_UNIT
 
+
 def is_pint_angle(value: Any) -> bool:
     return isinstance(value, pint.Quantity) and value.units == degree
+
 
 def is_pint_point(value: Any) -> bool:
     return isinstance(value, pint.Quantity) and value.units == point
@@ -264,8 +265,8 @@ class PageConfigWidget(QGroupBox):
         layout = self.page_layout
         # TODO: Maybe reverse the iteration direction and use the _get_*_settings_widgets() helpers?
         for key in layout.__annotations__.keys():
-            value: Union[pint.Quantity, bool, str, QColor] = getattr(other, key)
-            widget: QWidget = getattr(ui, key)
+            value: pint.Quantity | bool | str | QColor = getattr(other, key)
+            widget: QDoubleSpinBox | QLineEdit | QComboBox | QCheckBox = getattr(ui, key)
             with (BlockedSignals(widget)):  # Don’t call the validation methods in each iteration
                 if is_pint_point(value):  # Points are a kind of distance, so catch that first
                     value = value.to(point).magnitude
@@ -383,7 +384,7 @@ class PageConfigWidget(QGroupBox):
         return self.ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
 
     @functools.singledispatchmethod
-    def highlight_differing_settings(self, to_compare: Union[ConfigParser, PageLayoutSettings]):
+    def highlight_differing_settings(self, to_compare: ConfigParser | PageLayoutSettings):
         pass
 
     @highlight_differing_settings.register

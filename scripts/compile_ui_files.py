@@ -27,20 +27,22 @@ It has two usage modes:
 
 import argparse
 import ast
+
 import itertools
 import textwrap
 from pathlib import Path
 import shutil
 import subprocess
-from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Any, Dict, Set
+from typing import NamedTuple, TypeVar, Iterable, Type, Any
 
 SOURCE_ROOT = Path(__file__).parent.parent  # Checkout root directory
 MAIN_PACKAGE = SOURCE_ROOT / "mtg_proxy_printer"
 UI_SOURCE_PATH = MAIN_PACKAGE / "resources/ui"  # UI files live here
 TARGET_PATH = MAIN_PACKAGE / "ui/generated"  # Package containing generated modules/type hinting stubs
 T = TypeVar("T")
-ClassRegistry = Dict[str, ast.ImportFrom]
-UsedClasses = Set[str]
+ClassRegistry = dict[str, ast.ImportFrom]
+UsedClasses = set[str]
+Statements = list[ast.stmt]
 
 
 class Assignment(NamedTuple):
@@ -49,6 +51,9 @@ class Assignment(NamedTuple):
 
     def __str__(self):
         return f"{self.attribute}: {self.type}"
+
+
+Assignments = list[Assignment]
 
 
 class Namespace(NamedTuple):
@@ -73,7 +78,7 @@ def parse_args() -> Namespace:
     return args
 
 
-def type_filter(any_: Iterable[Any], types: Union[Type[T], Tuple[Type[T], ...]]) -> Iterable[T]:
+def type_filter(any_: Iterable[Any], types: Type[T] | tuple[Type[T], ...]) -> Iterable[T]:
     return filter(lambda x: isinstance(x, types), any_)
 
 
@@ -195,12 +200,12 @@ def generate_class_stub(class_root: ast.ClassDef, found_class_uses: UsedClasses)
 
 
 def generate_class_header(class_root: ast.ClassDef) -> str:
-    bases: List[ast.Name] = class_root.bases
+    bases: list[ast.Name] = class_root.bases
     base_classes = ", ".join(base.id for base in bases)
     return f"class {class_root.name}({base_classes}):"
 
 
-def get_assignments(function_body: List[ast.stmt]) -> List[Assignment]:
+def get_assignments(function_body: Statements) -> Assignments:
     return [
         Assignment(
             assignment.targets[0].attr,

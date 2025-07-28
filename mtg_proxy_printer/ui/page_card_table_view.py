@@ -17,7 +17,7 @@ import functools
 import math
 import operator
 from pathlib import Path
-from typing import Union, Optional
+
 
 from PySide6.QtCore import QPoint, Qt, Signal, Slot, QPersistentModelIndex
 from PySide6.QtGui import QIcon, QAction
@@ -120,7 +120,7 @@ class PageCardTableView(QTableView):
 
         parent.addMenu(self.tr("Generate DFC check card")).addActions(actions)
 
-    def _create_add_copies_actions(self, card: Union[AnyCardType, CardList], add_4th: bool = False):
+    def _create_add_copies_actions(self, card: AnyCardType | CardList, add_4th: bool = False):
         """
         Returns a list of QActions to add 1, 2, 3, optionally 4, and a user-defined number of copies of the given card.
         """
@@ -138,7 +138,7 @@ class PageCardTableView(QTableView):
         return actions
 
     def _create_add_copies_action(self, label: str, count: int | None,
-                                  card: Union[AnyCardType, CardList]):
+                                  card: AnyCardType | CardList):
         action = QAction(QIcon.fromTheme("list-add"), label, self)
         action.triggered.connect(functools.partial(self._add_copies, card, count))
         return action
@@ -149,7 +149,7 @@ class PageCardTableView(QTableView):
         for card in related_cards:
             parent.addMenu(card.name).addActions(self._create_add_copies_actions(card, True))
 
-    def _add_copies(self, card: Union[AnyCardType, CardList], count: int | None):
+    def _add_copies(self, card: AnyCardType | CardList, count: int | None):
         nl = '\n'
         card_name = card.name if isinstance(card, AnyCardType) else nl + nl.join(item.name for item in card)
         if count is None:

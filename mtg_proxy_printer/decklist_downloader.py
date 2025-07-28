@@ -26,7 +26,7 @@ import urllib.parse
 from io import StringIO
 import platform
 import re
-from typing import Type, Counter, Iterable, Optional, Any, Union
+from typing import Type, Counter, Iterable, Any, Union
 
 import ijson
 from PySide6.QtGui import QValidator

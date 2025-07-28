@@ -22,7 +22,7 @@ import functools
 from pathlib import Path
 import sqlite3
 import threading
-from typing import NamedTuple, TypeVar, Optional, Literal, Sequence, Any, Union, LiteralString
+from typing import NamedTuple, TypeVar, Literal, Sequence, Any, LiteralString
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QObject, Signal, Slot
@@ -34,7 +34,7 @@ from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import OptStr, CardSizes, CardSize, UUID
+from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize, UUID
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -47,7 +47,7 @@ SCHEMA_NAME = "carddb"
 # once per month or so.
 MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
 T = TypeVar("T", Card, CheckCard, CustomCard)
-ParameterList = list[Union[str, bool]]
+ParameterList = list[str | bool]
 write_semaphore = threading.BoundedSemaphore()
 
 __all__ = [
@@ -62,13 +62,13 @@ __all__ = [
 
 @dataclasses.dataclass
 class CardIdentificationData:
-    language: OptStr = None
-    name: OptStr = None
-    set_code: OptStr = None
-    collector_number: OptStr = None
-    scryfall_id: OptStr = None
+    language: str | None = None
+    name: str | None = None
+    set_code: str | None = None
+    collector_number: str | None = None
+    scryfall_id: str | None = None
     is_front: bool | None = None
-    oracle_id: OptStr = None
+    oracle_id: str | None = None
 
 
 class ImageDatabaseCards(NamedTuple):
@@ -106,7 +106,7 @@ class CardDatabase(QObject):
     card_data_updated = Signal()
     custom_cards: dict[UUID, CustomCard] = {}
 
-    def __init__(self, db_path: Union[Literal[":memory:"], Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
+    def __init__(self, db_path: Literal[":memory:"] | Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
                  check_same_thread: bool = True, register_exit_hooks: bool = True):
         """
         :param db_path: Path to the database file. May be “:memory:” to create an in-memory database for testing
@@ -180,7 +180,7 @@ class CardDatabase(QObject):
     def has_data(self) -> bool:
         return bool(self._read_optional_scalar_from_db("SELECT EXISTS(SELECT * FROM Card) -- has_data()\n"))
 
-    def get_last_card_data_update_timestamp(self) -> Optional[datetime.datetime]:
+    def get_last_card_data_update_timestamp(self) -> datetime.datetime | None:
         """Returns the last card data update timestamp, or None, if no card data was ever imported"""
         query: LiteralString = "SELECT MAX(update_timestamp) FROM LastDatabaseUpdate -- get_last_card_data_update_timestamp\n"
         result: str = self._read_optional_scalar_from_db(query)
@@ -602,8 +602,8 @@ class CardDatabase(QObject):
         ''')
         return bool(self._read_optional_scalar_from_db(query, (scryfall_id,)))
 
-    def translate_card_name(self, card_data: Union[CardIdentificationData, Card], target_language: str,
-                            include_hidden_names: bool = False) -> OptStr:
+    def translate_card_name(self, card_data: CardIdentificationData | Card, target_language: str,
+                            include_hidden_names: bool = False) -> str | None:
         """
         Translates a card into the target_language. Uses the language in the card data as the source language, if given.
         If not, card names across all languages are searched.

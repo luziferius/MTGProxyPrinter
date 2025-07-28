@@ -27,7 +27,7 @@ import pathlib
 import re
 import subprocess
 import sys
-from typing import Callable, Dict, NamedTuple
+from typing import Callable, NamedTuple
 from xml.etree import ElementTree
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.resolve()))
@@ -121,7 +121,7 @@ def download_new_translations(args: Namespace):
     subprocess.call([
         "crowdin", "download"
     ])
-    translation_progress: Dict[str, int] = {}
+    translation_progress: dict[str, int] = {}
     for file in TRANSLATIONS_DIR.glob("*.ts"):  # type: pathlib.Path
         # Use get() to keep the mtgproxyprinter_sources.ts file by mapping it to the "System locale" value (empty str)
         if (locale := LOCALES.get(file.stem.split("_")[1], "")) not in VALID_LANGUAGES:

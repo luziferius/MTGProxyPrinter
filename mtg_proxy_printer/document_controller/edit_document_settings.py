@@ -55,7 +55,7 @@ class ActionEditDocumentSettings(DocumentAction):
         if new_settings.compute_page_card_capacity(PageType.OVERSIZED) < 1:
             raise ValueError("New document settings must allow at least one card per page")
         self.new_settings = copy.copy(new_settings)
-        self.old_settings: typing.Optional[PageLayoutSettings] = None
+        self.old_settings: PageLayoutSettings | None = None
         self.reflow_actions: ActionList = []
 
     def apply(self, document: "Document") -> Self:

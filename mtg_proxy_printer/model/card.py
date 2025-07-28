@@ -17,7 +17,7 @@ import dataclasses
 import hashlib
 import enum
 import functools
-from typing import Optional, Union
+from typing import Union
 
 from PySide6.QtCore import QRect, QPoint, QSize, Qt, QPointF
 from PySide6.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform
@@ -76,7 +76,7 @@ class Card:
     size: CardSize = dataclasses.field(compare=False)
     face_number: int = dataclasses.field(compare=True)
     is_dfc: bool = dataclasses.field(compare=True)
-    image_file: Optional[QPixmap] = dataclasses.field(default=None, compare=False)
+    image_file: QPixmap | None = dataclasses.field(default=None, compare=False)
 
     def set_image_file(self, image: QPixmap):
         self.image_file = image
@@ -254,7 +254,7 @@ class CheckCard:
         return self.front.is_custom_card
 
     @property
-    def image_file(self) -> Optional[QPixmap]:
+    def image_file(self) -> QPixmap | None:
         if self.front.image_file is None or self.back.image_file is None:
             return None
         card_size = self.front.image_file.size()
@@ -298,4 +298,4 @@ class CheckCard:
 
 AnyCardType = Union[Card, CheckCard, CustomCard]
 CardList = list[AnyCardType]
-OptionalCard = Optional[AnyCardType]
+OptionalCard = AnyCardType | None

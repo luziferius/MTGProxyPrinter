@@ -21,7 +21,7 @@ import functools
 import re
 import sqlite3
 import typing
-from typing import Type, NamedTuple, TypedDict, Union, NotRequired
+from typing import Type, NamedTuple, TypedDict, NotRequired
 
 from pint import UnitRegistry, Quantity, Context, Unit
 from PySide6.QtCore import QSize, QObject
@@ -321,7 +321,7 @@ def _read_enum(container: Type, enum_class: Type[T], accumulator: dict[str, T] =
     return accumulator
 
 
-def is_acceptable_page_size(page_size: Union[PageSizeId, QPageSize]) -> bool:
+def is_acceptable_page_size(page_size: PageSizeId | QPageSize) -> bool:
     """
     To be acceptable, the paper must support at least one oversized card and margins
     in both portrait and landscape orientation.

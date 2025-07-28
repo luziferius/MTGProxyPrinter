@@ -20,7 +20,7 @@ import itertools
 import pathlib
 import sqlite3
 import textwrap
-from typing import Counter, Iterable, NamedTuple, Optional, TYPE_CHECKING
+from typing import Counter, Iterable, NamedTuple, TYPE_CHECKING
 
 from pint import Quantity
 from PySide6.QtGui import QPageLayout, QPageSize, QColor
@@ -79,8 +79,8 @@ class DatabaseLoadResult(NamedTuple):
 class CardRow(NamedTuple):
     is_front: bool
     card_type: CardType
-    scryfall_id: Optional[UUID]
-    custom_card_id: Optional[UUID]
+    scryfall_id: UUID | None
+    custom_card_id: UUID | None
 
 
 sqlite3.register_adapter(CardType, lambda item: item.value)
@@ -365,13 +365,13 @@ class Worker(LoaderSignals):
             (scryfall_id, custom_card_id), has_item(none()),
             "Scryfall ID and custom card ID must not be both present")
 
-    def _load_official_card_from_card_db(self, data: CardRow) -> Optional[DatabaseLoadResult]:
+    def _load_official_card_from_card_db(self, data: CardRow) -> DatabaseLoadResult | None:
         if data.card_type == CardType.CHECK_CARD:
             return self._load_check_card(data)
         else:
             return self._load_official_card(data)
 
-    def _load_check_card(self, data: CardRow) -> Optional[DatabaseLoadResult]:
+    def _load_check_card(self, data: CardRow) -> DatabaseLoadResult | None:
         """
         Loads a check card. Retuns None if the given scryfall id does not belong to a DFC.
         If the front is unavailable, try to find a replacement.
@@ -400,7 +400,7 @@ class Worker(LoaderSignals):
         self.image_loader.get_image_synchronous(card)
         return DatabaseLoadResult(card, migrated)
 
-    def _load_official_card(self, data: CardRow) -> Optional[DatabaseLoadResult]:
+    def _load_official_card(self, data: CardRow) -> DatabaseLoadResult | None:
         migrated = False
         scryfall_id = data.scryfall_id
         is_front = data.is_front

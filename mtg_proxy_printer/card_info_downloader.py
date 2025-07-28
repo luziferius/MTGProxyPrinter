@@ -737,7 +737,7 @@ class DatabaseImportWorker(DownloaderBase):
         face_ids: IntTuples = []
         for face in _get_card_faces(card):
             face_name_id = self._insert_face_name(face.printed_face_name, language_id)
-            card_face_id: typing.Optional[tuple[int]] = db.execute(
+            card_face_id: tuple[int] | None = db.execute(
                 "SELECT card_face_id FROM CardFace WHERE face_name_id = ? AND printing_id = ? AND is_front = ?\n",
                 (face_name_id, printing_id, face.is_front)).fetchone()
             if card_face_id is None:

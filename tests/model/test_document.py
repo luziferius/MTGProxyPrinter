@@ -436,7 +436,7 @@ def test_has_missing_images(document_light: Document, result: bool, size: CardSi
     ([create_card("Regular", REGULAR), create_card("Oversized", OVERSIZED), None]*2, 4),
 ])
 def test_compute_pages_saved_by_compacting(
-        document_light: Document, pages_content: list[typing.Optional[Card]], expected: int):
+        document_light: Document, pages_content: list[Card | None], expected: int):
     if len(pages_content) > 1:
         document_light.apply(ActionNewPage(count=len(pages_content)-1))
     for page, card in zip(document_light.pages, pages_content):

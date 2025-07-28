@@ -23,7 +23,7 @@ import shutil
 import socket
 import string
 import threading
-from typing import Optional, Iterable, TYPE_CHECKING, Union, Callable
+from typing import Iterable, TYPE_CHECKING, Callable
 import urllib.error
 
 from PySide6.QtCore import QObject, Signal, Slot, QModelIndex, Qt, QThreadPool
@@ -57,10 +57,10 @@ __all__ = [
 
 PathSizeList = list[tuple[pathlib.Path, int]]
 ImageKeySet = set[ImageKey]
-BatchActions = Union[ActionImportDeckList]
+BatchActions = ActionImportDeckList
 SingleActions = ActionAddCard | ActionReplaceCard
 IndexList = list[QModelIndex]
-OptionalPixmap = Optional[QPixmap]
+OptionalPixmap = QPixmap | None
 download_semaphore = threading.BoundedSemaphore()
 
 
@@ -190,7 +190,7 @@ class ImageDbRunnable(Runnable):
     def __init__(self, parent: ImageDatabase):
         super().__init__()
         self.parent = parent
-        self.downloader: Optional[ImageDownloader] = None
+        self.downloader: ImageDownloader | None = None
 
     def cancel(self):
         if self.downloader is None:
@@ -277,8 +277,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.last_error_message = ""
         # Reference to the currently opened file. Used here to be able to force close it in case the user wants to quit
         # or cancel the download process.
-        self.currently_opened_file: Optional[io.BytesIO] = None
-        self.currently_opened_file_monitor: Optional[mtg_proxy_printer.http_file.MeteredSeekableHTTPFile] = None
+        self.currently_opened_file: io.BytesIO | None = None
+        self.currently_opened_file_monitor: mtg_proxy_printer.http_file.MeteredSeekableHTTPFile | None = None
         logger.info(f"Created {self.__class__.__name__} instance.")
         
     def connect_image_db_signals(self, image_db: ImageDatabase):
