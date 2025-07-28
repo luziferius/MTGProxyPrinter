@@ -17,6 +17,7 @@
 import sqlite3
 import textwrap
 
+from pint import Quantity
 from PyQt5.QtCore import QSizeF
 from PyQt5.QtGui import QPageSize, QPageLayout
 
@@ -324,7 +325,7 @@ def _migrate_paper_size_settings(db: sqlite3.Connection):
     ) AS height, (
       SELECT EXISTS(SELECT key FROM DocumentSettings WHERE key = 'paper_size')
     )
-    """)).fetchone()  # type: QuantityT, QuantityT, bool
+    """)).fetchone()  # type: Quantity, Quantity, bool
     if not paper_size_present_exists and stored_width is not None and stored_height is not None:
         size = QSizeF(stored_width.to("mm").magnitude, stored_height.to("mm").magnitude)
         orientation = Orientation.Portrait if stored_height >= stored_width else Orientation.Landscape

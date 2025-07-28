@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import List, Tuple, Union, Literal
 from unittest.mock import patch, MagicMock
 
+from pint import Quantity
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest import assert_that, is_, empty, contains_inanyorder, has_properties, equal_to, any_of, instance_of, \
     close_to, all_of, greater_than_or_equal_to, less_than_or_equal_to
@@ -40,7 +41,7 @@ from mtg_proxy_printer.document_controller.save_document import ActionSaveDocume
 from mtg_proxy_printer.model.document_loader import CardType
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
-from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict, QuantityT, CardSize
+from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict, CardSize
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import read_resource_text, open_database
@@ -58,7 +59,7 @@ def _should_skip_network_tests() -> bool:
 
 
 SHOULD_SKIP_NETWORK_TESTS = _should_skip_network_tests()
-close_to_: typing.Callable[[Real], Matcher] = functools.partial(close_to, delta=0.01)
+close_to_: typing.Callable[[Real], Matcher[Real]] = functools.partial(close_to, delta=0.005)
 
 
 def setup_logging_for_testing():
@@ -254,10 +255,7 @@ class matches_type_annotation(BaseMatcher):
         description.append_text(f"dataclass instance containing correct types")
 
 
-close_to_: typing.Callable[[numbers.Real], Matcher[numbers.Real]] = functools.partial(close_to, delta=0.005)
-
-
-def quantity_close_to(value: QuantityT):
+def quantity_close_to(value: Quantity):
     return has_properties(units=equal_to(value.units), magnitude=close_to(value.magnitude, 0.001))
 
 
@@ -265,7 +263,7 @@ def number_between(lower: float, upper: float):
     return all_of(greater_than_or_equal_to(lower), less_than_or_equal_to(upper))
 
 
-def quantity_between(lower: QuantityT, upper: QuantityT):
+def quantity_between(lower: Quantity, upper: Quantity):
     assert_that(lower.units, equal_to(upper.units), "Setup failed. Bounds have different units!")
     return has_properties(
         units=equal_to(lower.units),

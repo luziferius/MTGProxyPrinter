@@ -22,7 +22,7 @@ import typing
 import tokenize
 from collections import defaultdict
 
-import pint
+from pint import DimensionalityError, Quantity, Unit
 from PyQt5.QtCore import QStandardPaths, QLocale
 from PyQt5.QtGui import QPageSize, QPageLayout, QColor
 from PyQt5.QtPrintSupport import QPrinterInfo
@@ -31,9 +31,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import \
-    CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT, PageSizeManager, is_acceptable_page_size, \
-    Unit
-
+    CardSizes, ConfigParser, SectionProxy, unit_registry, T, PageSizeManager, is_acceptable_page_size
 StandardLocation = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
 Territory = QLocale.Country  # TODO: Adjust for PySide6
@@ -97,8 +95,8 @@ class QuantityLimits(typing.NamedTuple):
     - target_unit is the fallback unit, if the dimensionality is compatible, but the unit is not acceptable:
       "1N*1s²/10kg" is a length (100mm), but not of an acceptable unit, so it will be converted to the target unit
     """
-    minimum: QuantityT
-    maximum: QuantityT
+    minimum: Quantity
+    maximum: Quantity
     acceptable_units: typing.Set[Unit]
     target_unit: Unit
 
@@ -265,7 +263,7 @@ def round_to_nearest_multiple(value: T, multiple: T) -> T:
     return round(value/multiple)*multiple
 
 
-def clamp_to_supported_range(value: QuantityT, limits: QuantityLimits) -> QuantityT:
+def clamp_to_supported_range(value: Quantity, limits: QuantityLimits) -> Quantity:
     """Clamps numerical document settings to the supported value range"""
     return min(max(value, limits.minimum),  limits.maximum)
 
@@ -533,7 +531,7 @@ def _validate_quantity(section: SectionProxy, defaults: SectionProxy, key: str, 
             section[key] = str(clamped)
     # Unit-less values raise AttributeError, non-length values, like grams or seconds, raise DimensionalityError
     # Invalid expressions raise TokenError
-    except (ValueError, pint.DimensionalityError, AttributeError, tokenize.TokenError):
+    except (ValueError, DimensionalityError, AttributeError, tokenize.TokenError):
         _restore_default(section, defaults, key)
 
 

@@ -30,7 +30,7 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
-from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, QuantityT
+from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
 if typing.TYPE_CHECKING:
@@ -67,7 +67,7 @@ LocateOption = QStandardPaths.LocateOption
 StandardButton = QMessageBox.StandardButton
 logger = get_logger(__name__)
 del get_logger
-mm: QuantityT = unit_registry.mm
+mm: Quantity = unit_registry.mm
 
 
 class PageMetadata(typing.NamedTuple):

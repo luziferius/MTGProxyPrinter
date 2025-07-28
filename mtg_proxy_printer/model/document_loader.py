@@ -22,7 +22,7 @@ import sqlite3
 import textwrap
 from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, Tuple, TYPE_CHECKING
 
-import pint
+from pint import Quantity
 from PyQt5.QtGui import QPageLayout, QPageSize, QColor
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
@@ -37,7 +37,7 @@ from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import  PageType, CardSize, CardSizes, unit_registry, \
-    PageSizeManager, QuantityT, T, UUID, OptStr
+    T, UUID, OptStr
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.save_file_migrations import migrate_database
@@ -484,7 +484,7 @@ class Worker(LoaderSignals):
         settings = PageLayoutSettings.create_from_settings()
         logger.debug("Reading document settings …")
         keys =  ", ".join(
-            f"'{key}'" for key, value in settings.__annotations__.items() if value is not QuantityT)
+            f"'{key}'" for key, value in settings.__annotations__.items() if value is not Quantity)
         document_settings_query = textwrap.dedent(f"""\
             SELECT "key", value
                 FROM DocumentSettings
@@ -492,7 +492,7 @@ class Worker(LoaderSignals):
             """)
         settings.update(db.execute(document_settings_query))
         keys = ", ".join(
-            f"'{key}'" for key, value in settings.__annotations__.items() if value is QuantityT)
+            f"'{key}'" for key, value in settings.__annotations__.items() if value is Quantity)
         document_dimensions_query = textwrap.dedent(f"""\
             SELECT "key", value
                 FROM DocumentDimensions
@@ -500,10 +500,10 @@ class Worker(LoaderSignals):
             """)
         settings.update(db.execute(document_dimensions_query))
         is_distance = all_of(
-            instance_of(pint.Quantity),
+            instance_of(Quantity),
             has_property("dimensionality", equal_to(unit_registry.mm.dimensionality)))
         is_angle = all_of(
-            instance_of(pint.Quantity),
+            instance_of(Quantity),
             has_property("dimensionality", equal_to(unit_registry.degree.dimensionality)))
         is_bool_str = is_in(("True", "False"))
         is_color = any_of(
@@ -540,7 +540,7 @@ class Worker(LoaderSignals):
             value = getattr(settings, key)
             if annotated_type is bool:
                 value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
-            elif annotated_type is QuantityT:
+            elif annotated_type is Quantity:
                 # Ensure all floats are within the allowed bounds.
                 limit = mtg_proxy_printer.settings.DOCUMENT_SETTINGS_QUANTITY_LIMITS[key.replace("_", "-")]
                 value = mtg_proxy_printer.settings.clamp_to_supported_range(value, limit)

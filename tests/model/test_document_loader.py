@@ -20,8 +20,6 @@ import sqlite3
 import unittest.mock
 import textwrap
 
-
-import pint
 from PyQt5.QtGui import QColorConstants
 from pytestqt.qtbot import QtBot
 import pytest
@@ -29,7 +27,7 @@ from hamcrest import *
 
 import mtg_proxy_printer.model.document_loader
 from tests.helpers import quantity_close_to
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, CardSizes, QuantityT
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes
 from mtg_proxy_printer.model.card import CheckCard
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document import Document
@@ -404,7 +402,7 @@ def test_load_settings_from_legacy_save_file_is_successful(
     assert_that(
         document.page_layout,
         has_properties({
-            item: instance_of(pint.Quantity if value is QuantityT else value)
+            item: instance_of(value)
             for item, value in annotations.items()
         })
     )

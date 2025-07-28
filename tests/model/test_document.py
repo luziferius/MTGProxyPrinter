@@ -17,6 +17,7 @@ import copy
 import typing
 import unittest.mock
 
+from pint import Unit
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from hamcrest import *
@@ -25,7 +26,7 @@ from hamcrest import contains_exactly
 import pytest
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, CardSizes, CardSize
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes, CardSize
 from mtg_proxy_printer.model.card import MTGSet, Card
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
@@ -41,7 +42,7 @@ from tests.document_controller.helpers import append_new_card_in_page
 from ..document_controller.helpers import insert_card_in_page, create_card
 
 ItemDataRole = Qt.ItemDataRole
-mm: UnitT = unit_registry.mm
+mm: Unit = unit_registry.mm
 REGULAR = CardSizes.REGULAR
 OVERSIZED = CardSizes.OVERSIZED
 

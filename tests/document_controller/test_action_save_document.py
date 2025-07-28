@@ -19,13 +19,14 @@ from pathlib import Path
 import textwrap
 
 from hamcrest import *
+from pint import Unit
 from PyQt5.QtCore import QModelIndex, Qt
 import pytest
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
-from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT
+from mtg_proxy_printer.units_and_sizes import unit_registry
 from mtg_proxy_printer.model.card import CheckCard
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import CardType
@@ -37,7 +38,7 @@ from tests.model.test_document import document_custom_layout
 from tests.helpers import quantity_close_to
 
 ItemDataRole = Qt.ItemDataRole
-mm: UnitT = unit_registry.mm
+mm: Unit = unit_registry.mm
 
 
 def validate_qt_model_signal_parameter(

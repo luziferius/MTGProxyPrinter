@@ -15,15 +15,13 @@
 
 import itertools
 import unittest.mock
-from multiprocessing.context import assert_spawning
 
-import pint
+from pint import Unit, Quantity
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.model.card import CustomCard
-from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, QuantityT, UnitT, unit_registry, StrDict
+from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, unit_registry, StrDict
 from mtg_proxy_printer.ui.page_scene import RenderMode
 
 from PyQt5.QtGui import QPageLayout, QPageSize
@@ -35,7 +33,7 @@ from tests.hasgetter import has_getters
 from tests.helpers import quantity_close_to, close_to_
 
 PageLayoutSettings = mtg_proxy_printer.model.document_loader.PageLayoutSettings
-mm: UnitT = unit_registry.mm
+mm: Unit = unit_registry.mm
 
 
 @pytest.mark.parametrize("page_type, expected", [
@@ -81,7 +79,7 @@ def test_page_layout_compute_page_card_capacity_default_value(page_layout: PageL
     (1000*mm, 1, PageType.OVERSIZED),
 ])
 def test_page_layout_compute_page_row_count(
-        page_layout: PageLayoutSettings, page_type: PageType, row_spacing: QuantityT, expected: int):
+        page_layout: PageLayoutSettings, page_type: PageType, row_spacing: Quantity, expected: int):
     assert_that(page_layout.page_height, quantity_close_to(297*mm), "Setup failed: Environment altered")
     assert_that(page_layout.margin_top, quantity_close_to(5*mm), "Setup failed: Environment altered")
     assert_that(page_layout.margin_bottom, quantity_close_to(5*mm), "Setup failed: Environment altered")
@@ -119,7 +117,7 @@ def test_page_layout_compute_compute_page_row_count_default_value(page_layout: P
     (1000*mm, 1, PageType.OVERSIZED),
 ])
 def test_page_layout_compute_page_column_count(
-        page_layout: PageLayoutSettings, page_type: PageType, column_spacing: QuantityT, expected: int):
+        page_layout: PageLayoutSettings, page_type: PageType, column_spacing: Quantity, expected: int):
     page_layout.column_spacing = column_spacing
     assert_that(page_layout.compute_page_column_count(page_type), is_(equal_to(expected)))
 
@@ -219,7 +217,7 @@ def test_create_from_settings(values: StrDict):
 def test_to_page_layout(
         page_layout: PageLayoutSettings,
         render_mode: RenderMode, margins: QMarginsF,
-        height: QuantityT, width: QuantityT, landscape_workaround: bool, expected_orientation: QPageLayout.Orientation
+        height: Quantity, width: Quantity, landscape_workaround: bool, expected_orientation: QPageLayout.Orientation
 ):
     page_layout.custom_page_height = height
     page_layout.custom_page_width = width
@@ -264,5 +262,5 @@ def test_to_save_file_data_returns_only_acceptable_types(page_layout: PageLayout
     )
     assert_that(
         [value for key, value in dimensions],
-        only_contains(instance_of(pint.Quantity)),
+        only_contains(instance_of(Quantity)),
     )

@@ -31,7 +31,7 @@ from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, distance_to_rounded_px, CardSizes, CardSize, \
-    QuantityT
+    Quantity
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -73,11 +73,11 @@ class BleedOrientation(enum.Enum):
 
 
 class CutMarkerParameters(typing.NamedTuple):
-    total_space: QuantityT
-    card_size: QuantityT
+    total_space: Quantity
+    card_size: Quantity
     item_count: int
-    margin: QuantityT
-    image_spacing: QuantityT
+    margin: Quantity
+    image_spacing: Quantity
 
 
 class CardBleedItem(QGraphicsPixmapItem):
@@ -528,8 +528,8 @@ class PageScene(QGraphicsScene):
         vertical_margins = (page_layout.margin_top + page_layout.margin_bottom) if without_margins else ZERO_WIDTH
         horizontal_margins = (page_layout.margin_left + page_layout.margin_right) if without_margins else ZERO_WIDTH
 
-        height: QuantityT = page_layout.page_height - vertical_margins
-        width: QuantityT = page_layout.page_width - horizontal_margins
+        height: Quantity = page_layout.page_height - vertical_margins
+        width: Quantity = page_layout.page_width - horizontal_margins
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
