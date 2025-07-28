@@ -52,7 +52,7 @@ class ActionAddCard(DocumentAction):
         self.count = count
         self.added_new_pages: int = 0
         self.first_added_page: typing.Optional[int] = None
-        self.added_cards_to_existing_pages: typing.List[typing.Tuple[int, int]] = []
+        self.added_cards_to_existing_pages: typing.List[tuple[int, int]] = []
 
     def apply(self, document: "Document") -> Self:
         """

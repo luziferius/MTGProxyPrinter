@@ -16,7 +16,7 @@
 
 import dataclasses
 import sqlite3
-from typing import NamedTuple, List, Tuple, Union
+from typing import NamedTuple, List
 import unittest.mock
 
 from hamcrest import *
@@ -137,7 +137,7 @@ class TestCaseData:
         card = self.json_dict
         return DatabaseSetData(card["set"], card["set_name"], card["scryfall_set_uri"], card["released_at"])
 
-    def db_card(self) -> List[Tuple[str]]:
+    def db_card(self) -> List[tuple[str]]:
         return [(self.oracle_id,)]
 
     def db_set(self):
@@ -146,7 +146,7 @@ class TestCaseData:
     def db_print_language(self):
         return [(self.language,)]
 
-    def db_face_name(self) -> List[Tuple[str]]:
+    def db_face_name(self) -> List[tuple[str]]:
         # De-duplicate face names, in case both sides of a double-faced card have the same name. This is true for
         # art series cards, certain double-faced tokens (for example the C16 Saproling token) and similar.
         return list(set((face.name,) for face in self.face_data))
@@ -578,7 +578,7 @@ def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expec
 ])
 def test_related_printings(
         qtbot, card_db: CardDatabase,
-        cards: List[str], expected_pairs: List[Tuple[int, int]]):
+        cards: List[str], expected_pairs: List[tuple[int, int]]):
     db = card_db.db
 
     # Cards always relate to exact printings, but which one is chosen is rather arbitrary. E.g. The Underworld Cookbook

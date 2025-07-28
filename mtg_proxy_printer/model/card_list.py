@@ -17,7 +17,7 @@ from collections import Counter
 import dataclasses
 import enum
 import itertools
-from typing import List, Any, Union, Tuple
+from typing import List, Any, Union
 
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSignal as Signal, QItemSelection
 from PyQt5.QtGui import QIcon
@@ -279,7 +279,7 @@ class CardListModel(QAbstractTableModel):
         return result
 
     @staticmethod
-    def _merge_ranges(ranges: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    def _merge_ranges(ranges: List[tuple[int, int]]) -> List[tuple[int, int]]:
         result = []
         if len(ranges) < 2:
             return ranges

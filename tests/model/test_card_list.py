@@ -151,7 +151,7 @@ def test_replace_regular_with_oversized_card_increments_oversized_count(qtbot: Q
     ([(0, 1), (2, 3)], [(0, 3)]),
     ([(0, 1), (3, 4)], [(0, 1), (3, 4)]),
 ])
-def test__merge_ranges(ranges: typing.List[typing.Tuple[int, int]], merged: typing.List[typing.Tuple[int, int]]):
+def test__merge_ranges(ranges: typing.List[tuple[int, int]], merged: typing.List[tuple[int, int]]):
     assert_that(
         CardListModel._merge_ranges(ranges),
         contains_exactly(*merged),

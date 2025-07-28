@@ -28,7 +28,7 @@ from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfis
     CubeCobraDownloader, ManaboxDownloader
 
 
-UrlTestData = typing.Tuple[typing.Type[DecklistDownloader], str]
+UrlTestData = tuple[typing.Type[DecklistDownloader], str]
 
 
 def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Generator[UrlTestData, None, None]:
@@ -271,7 +271,7 @@ def test_IsIdentifyingDeckUrlValidator_validate_returns_Intermediate_or_Invalid_
 
 
 def generate_test_cases_for_test_deck_list_download() \
-        -> typing.Generator[typing.Tuple[typing.Type[DecklistDownloader], str, str], None, None]:
+        -> typing.Generator[tuple[typing.Type[DecklistDownloader], str, str], None, None]:
     """
     Yields tuples with Parser class, deck list url and a snippet of the deck list content.
     It does not include the full deck list, because reported printings or price information may change over time,

@@ -15,7 +15,7 @@
 
 
 import pathlib
-from typing import Optional, List, Union, Tuple
+from typing import Optional, List, Union
 from functools import partial
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl, Qt, QSize
@@ -128,7 +128,7 @@ class MainWindow(QMainWindow):
             action.triggered.connect(partial(QDesktopServices.openUrl, url))
 
     def _setup_platform_dependent_default_shortcuts(self):
-        actions_with_shortcuts: List[Tuple[QAction, StandardKey]] = [
+        actions_with_shortcuts: List[tuple[QAction, StandardKey]] = [
             (self.ui.action_new_document, StandardKey.New),
             (self.ui.action_load_document, StandardKey.Open),
             (self.ui.action_save_document, StandardKey.Save),

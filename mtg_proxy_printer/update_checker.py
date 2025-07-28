@@ -83,7 +83,7 @@ class CardDataUpdateCheckWorker(ApiStreamWorker):
         else:
             logger.debug("No new card data found.")
 
-    def _is_newer_card_data_available(self) -> typing.Tuple[int, int]:
+    def _is_newer_card_data_available(self) -> tuple[int, int]:
         total_cards_in_last_update = self.get_total_cards_in_last_update()
         total_cards_available = self.get_available_card_count()
         logger.debug(f"Total cards during last update: {total_cards_in_last_update}")

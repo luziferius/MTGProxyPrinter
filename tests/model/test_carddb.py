@@ -431,7 +431,7 @@ def test_get_cards_from_data_always_prefers_card_over_token(
     )
 
 def generate_test_cases_for_test_get_card_with_scryfall_id() -> \
-        typing.Generator[typing.Tuple[CardIdentificationData, typing.Optional[Card]], None, None]:
+        typing.Generator[tuple[CardIdentificationData, typing.Optional[Card]], None, None]:
     # Regular card
     case = TestCaseData("regular_english_card")
     yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), case.as_card()
@@ -570,7 +570,7 @@ def test__translate_card(card_db_with_cards: CardDatabase, card_data: CardIdenti
 
 
 def generate_test_cases_for_test_get_opposing_face() -> \
-        typing.Generator[typing.Tuple[CardIdentificationData, typing.Optional[Card]], None, None]:
+        typing.Generator[tuple[CardIdentificationData, typing.Optional[Card]], None, None]:
     # Single-faced cards
     for case in (TestCaseData("regular_english_card"), TestCaseData("oversized_card")):
         # The back side of a regular card does not exist, Expect None

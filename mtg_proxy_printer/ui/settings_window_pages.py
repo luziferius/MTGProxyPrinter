@@ -165,7 +165,7 @@ class DebugSettingsPage(Page):
 
     def _get_debug_settings_checkbox_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+        widgets_with_settings: typing.List[tuple[QCheckBox, str]] = [
             (ui.enable_cutelog_integration, "cutelog-integration"),
             (ui.enable_write_log_file, "write-log-file")
         ]
@@ -260,7 +260,7 @@ class DecklistImportSettingsPage(Page):
 
     def _get_checkbox_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+        widgets_with_settings: typing.List[tuple[QCheckBox, str]] = [
             (ui.print_guessing_enable, "enable-print-guessing-by-default"),
             (ui.print_guessing_prefer_already_downloaded, "prefer-already-downloaded-images"),
             (ui.automatic_deck_list_translation_enable, "always-translate-deck-lists"),
@@ -272,7 +272,7 @@ class DecklistImportSettingsPage(Page):
 
     def _get_save_path_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
+        widgets_with_settings: typing.List[tuple[QLineEdit, str]] = [
             (ui.deck_list_search_path, "deck-list-search-path"),
         ]
         return widgets_with_settings
@@ -355,7 +355,7 @@ class GeneralSettingsPage(Page):
 
     def _get_boolean_check_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str, str]] = [
+        widgets_with_settings: typing.List[tuple[QCheckBox, str, str]] = [
             (ui.check_application_updates_enabled, "update-checks", "check-for-application-updates"),
             (ui.check_card_data_updates_enabled, "update-checks", "check-for-card-data-updates"),
             (ui.automatically_add_opposing_faces, "cards", "automatically-add-opposing-faces"),
@@ -426,7 +426,7 @@ class GeneralSettingsPage(Page):
 
     def _get_save_path_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
+        widgets_with_settings: typing.List[tuple[QLineEdit, str]] = [
             (ui.document_save_path, "document-save-path"),
         ]
         return widgets_with_settings
@@ -513,7 +513,7 @@ class PrinterSettingsPage(Page):
 
     def _get_printer_settings_boolean_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+        widgets_with_settings: typing.List[tuple[QCheckBox, str]] = [
             (ui.printer_use_borderless_printing, "borderless-printing"),
             (ui.landscape_workaround, "landscape-compatibility-workaround"),
         ]
@@ -521,7 +521,7 @@ class PrinterSettingsPage(Page):
 
     def _get_printer_settings_length_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QDoubleSpinBox, str]] = [
+        widgets_with_settings: typing.List[tuple[QDoubleSpinBox, str]] = [
             (ui.horizontal_offset, "horizontal-offset"),
         ]
         return widgets_with_settings

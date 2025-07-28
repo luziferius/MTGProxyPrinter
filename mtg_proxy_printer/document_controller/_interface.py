@@ -18,7 +18,7 @@ from abc import abstractmethod
 from functools import partial
 import itertools
 import operator
-from typing import Self, TypeVar, TYPE_CHECKING, Iterable, List, Tuple
+from typing import Self, TypeVar, TYPE_CHECKING, Iterable, List
 
 from PyQt5.QtCore import QCoreApplication
 
@@ -38,7 +38,7 @@ __all__ = [
 T = TypeVar("T")
 
 
-def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> List[Tuple[T, ...]]:
+def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> List[tuple[T, ...]]:
     """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
     iterable = iter(iterable)
     return list(iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ()))

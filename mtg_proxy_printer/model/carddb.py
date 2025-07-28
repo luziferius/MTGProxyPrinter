@@ -22,7 +22,7 @@ import functools
 from pathlib import Path
 import sqlite3
 import threading
-from typing import NamedTuple, TypeVar, Set, Optional, Dict, Literal, List, Sequence, Any, Union, Tuple, LiteralString
+from typing import NamedTuple, TypeVar, Set, Optional, Dict, Literal, List, Sequence, Any, Union, LiteralString
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot
@@ -72,8 +72,8 @@ class CardIdentificationData:
 
 
 class ImageDatabaseCards(NamedTuple):
-    visible: List[Tuple[Card, CacheContent]] = []
-    hidden: List[Tuple[Card, CacheContent]] = []
+    visible: List[tuple[Card, CacheContent]] = []
+    hidden: List[tuple[Card, CacheContent]] = []
     unknown: List[CacheContent] = []
 
 
@@ -755,7 +755,7 @@ class CardDatabase(QObject):
         """)
         return bool(self._read_optional_scalar_from_db(query, parameters))
 
-    def cards_not_used_since(self, keys: List[Tuple[str, bool]], date: datetime.date) -> List[int]:
+    def cards_not_used_since(self, keys: List[tuple[str, bool]], date: datetime.date) -> List[int]:
         """
         Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
         into the input list that correspond to cards that were not used since the given date.
@@ -773,7 +773,7 @@ class CardDatabase(QObject):
                 cards_not_used_since.append(index)
         return cards_not_used_since
 
-    def cards_used_less_often_then(self, keys: List[Tuple[str, bool]], count: int) -> List[int]:
+    def cards_used_less_often_then(self, keys: List[tuple[str, bool]], count: int) -> List[int]:
         """
         Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
         into the input list that correspond to cards that are used less often than the given count.

@@ -18,7 +18,6 @@ from pathlib import Path
 import shutil
 import sys
 import typing
-from typing import Tuple
 
 from PyQt5.QtCore import QFile, pyqtSignal as Signal, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
 from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
@@ -505,7 +504,7 @@ class ExportCardImagesDialog(QDialog):
 
     @staticmethod
     def _format_file_paths(
-            card_db: CardDatabase, image_db_path: Path, target_dir: Path, key: ImageKey) -> Tuple[Path, Path, AnyCardType]:
+            card_db: CardDatabase, image_db_path: Path, target_dir: Path, key: ImageKey) -> tuple[Path, Path, AnyCardType]:
         card = card_db.get_card_with_scryfall_id(key.scryfall_id, key.is_front)
         source_path = image_db_path / key.format_relative_path()
         target_file_name = ExportCardImagesDialog._format_card_file_name(card, source_path.suffix)

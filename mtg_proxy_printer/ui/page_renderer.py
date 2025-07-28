@@ -74,7 +74,7 @@ class PageRenderer(QGraphicsView):
         self._update_background_brush()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _setup_zoom_action(self, key_sequence: StandardKey, zoom_direction: ZoomDirection) -> typing.Tuple[QAction, str]:
+    def _setup_zoom_action(self, key_sequence: StandardKey, zoom_direction: ZoomDirection) -> tuple[QAction, str]:
         action = QAction(self)
         shortcuts = QKeySequence.keyBindings(key_sequence)
         action.setShortcuts(shortcuts)

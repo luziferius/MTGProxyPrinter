@@ -31,7 +31,7 @@ import typing
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import List, Dict, Union, Tuple, Any, Generator, Callable, Iterable, LiteralString
+from typing import List, Dict, Union, Any, Generator, Callable, Iterable, LiteralString
 
 from PyQt5.QtCore import QCoreApplication, Qt
 
@@ -57,7 +57,7 @@ __all__ = [
 # Original dedent is annotated as str -> str, so overwrite that with LiteralString -> LiteralString,
 # allowing the type checker to detect SQL injections
 dedent: Callable[[LiteralString], LiteralString]
-Statement = Union[LiteralString, Tuple[LiteralString, List[Tuple[Any, ...]]]]
+Statement = Union[LiteralString, tuple[LiteralString, List[tuple[Any, ...]]]]
 
 
 @dataclasses.dataclass
@@ -93,7 +93,7 @@ class Migrate_21_to_22(MigrationScript):
         # Import locally to break a cyclic dependency
         import mtg_proxy_printer.card_info_downloader
         aw = mtg_proxy_printer.card_info_downloader.ApiStreamWorker()
-        updates: Iterable[Tuple[int, datetime.datetime]] = db.execute(
+        updates: Iterable[tuple[int, datetime.datetime]] = db.execute(
             "SELECT update_id, update_timestamp FROM LastDatabaseUpdate"+suffix)
         data = []
         for id_, timestamp in updates:

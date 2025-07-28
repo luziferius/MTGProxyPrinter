@@ -23,7 +23,7 @@ import shutil
 import socket
 import string
 import threading
-from typing import Set, Optional, Iterable, TYPE_CHECKING, Dict, List, Tuple, Union, Callable
+from typing import Set, Optional, Iterable, TYPE_CHECKING, Dict, List, Union, Callable
 import urllib.error
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QModelIndex, Qt, QThreadPool
@@ -55,7 +55,7 @@ __all__ = [
     "ImageDownloader",
 ]
 
-PathSizeList = List[Tuple[pathlib.Path, int]]
+PathSizeList = List[tuple[pathlib.Path, int]]
 ImageKeySet = Set[ImageKey]
 BatchActions = Union[ActionImportDeckList]
 SingleActions = ActionAddCard | ActionReplaceCard
@@ -457,7 +457,7 @@ def read_disk_cache_content(db_path: pathlib.Path) -> List[CacheContent]:
     :returns: List with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
     """
     result: List[CacheContent] = []
-    data: Iterable[Tuple[pathlib.Path, bool, bool]] = (
+    data: Iterable[tuple[pathlib.Path, bool, bool]] = (
         (db_path/CacheContent.format_level_1_directory_name(is_front, is_high_resolution),
          is_front, is_high_resolution)
         for is_front, is_high_resolution in itertools.product([True, False], repeat=2)

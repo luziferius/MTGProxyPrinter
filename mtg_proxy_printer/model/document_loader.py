@@ -20,7 +20,7 @@ import itertools
 import pathlib
 import sqlite3
 import textwrap
-from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, Tuple, TYPE_CHECKING
+from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, TYPE_CHECKING
 
 from pint import Quantity
 from PyQt5.QtGui import QPageLayout, QPageSize, QColor
@@ -87,7 +87,7 @@ sqlite3.register_adapter(CardType, lambda item: item.value)
 CustomCards = Dict[str, Card]
 
 
-def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[Tuple[T, ...]]:
+def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[tuple[T, ...]]:
     """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
     iterable = iter(iterable)
     return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())
@@ -317,7 +317,7 @@ class Worker(LoaderSignals):
                 FROM Card
                 WHERE page = ?
                 ORDER BY page ASC, slot ASC""")
-        db_data: Iterable[Tuple[int, bool, str, OptStr, OptStr]] = save_db.execute(query, (page,))
+        db_data: Iterable[tuple[int, bool, str, OptStr, OptStr]] = save_db.execute(query, (page,))
         valid_card_types = {v.value for v in CardType}
         is_positive_int = all_of(instance_of(int), greater_than_or_equal_to(1))
         result: CardList = []

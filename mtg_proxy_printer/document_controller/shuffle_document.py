@@ -29,7 +29,7 @@ __all__ = [
     "ActionShuffleDocument",
 ]
 
-IndexedCards = typing.List[typing.Tuple[int, Card]]
+IndexedCards = typing.List[tuple[int, Card]]
 ModelIndexList = typing.List[QModelIndex]
 ItemDataRole = Qt.ItemDataRole
 

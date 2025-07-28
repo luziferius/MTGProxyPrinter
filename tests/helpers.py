@@ -17,14 +17,11 @@
 import dataclasses
 import functools
 import json
-import numbers
 import os
 import sqlite3
-import typing
-from typing import Dict, List, Any, Callable, Union
 from numbers import Real
 from pathlib import Path
-from typing import List, Tuple, Union, Literal
+from typing import Literal, Dict, List, Any, Callable, Union
 from unittest.mock import patch, MagicMock
 
 from pint import Quantity
@@ -142,8 +139,8 @@ def fill_card_database_with_json_card(
 
 def create_save_database_with(
         path_or_connection: Union[Path, Literal[":memory:"], sqlite3.Connection],
-        pages: List[Tuple[int, CardSize]],
-        cards: List[Tuple[int, int, bool, str, CardType]],
+        pages: List[tuple[int, CardSize]],
+        cards: List[tuple[int, int, bool, str, CardType]],
         settings: PageLayoutSettings) -> sqlite3.Connection:
     save = path_or_connection if isinstance(path_or_connection, sqlite3.Connection) \
         else open_database(path_or_connection, "document-v7")

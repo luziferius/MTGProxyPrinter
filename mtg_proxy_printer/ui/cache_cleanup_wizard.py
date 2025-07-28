@@ -407,7 +407,7 @@ class CardFilterPage(QWizardPage):
     def validatePage(self) -> bool:
         logger.info(f"{self.__class__.__name__}: User clicks on Next, storing the selected indices")
         role = ItemDataRole.EditRole
-        selected_images: typing.List[typing.Tuple[str, bool, bool, int]] = [
+        selected_images: typing.List[tuple[str, bool, bool, int]] = [
             (index.siblingAtColumn(UnknownCardColumns.ScryfallId).data(role),
              index.siblingAtColumn(UnknownCardColumns.IsFront).data(role),
              index.siblingAtColumn(UnknownCardColumns.HasHighResolution).data(role),

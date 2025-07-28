@@ -36,7 +36,7 @@ __all__ = [
     "PageLayoutSettings",
 ]
 
-def _is_quantity_setting(pair: typing.Tuple[str, typing.Any]):
+def _is_quantity_setting(pair: tuple[str, typing.Any]):
     return isinstance(pair[1], Quantity)
 
 
@@ -160,7 +160,7 @@ class PageLayoutSettings:
         return settings, dimensions
 
     @staticmethod
-    def _setting_to_str(key: str, value: typing.Any) -> typing.Tuple[str, str]:
+    def _setting_to_str(key: str, value: typing.Any) -> tuple[str, str]:
         if isinstance(value, str):
             pass
         elif isinstance(value, QColor):
@@ -187,7 +187,7 @@ class PageLayoutSettings:
             or self.compute_page_card_capacity(PageType.OVERSIZED) \
             > other.compute_page_card_capacity(PageType.OVERSIZED)
 
-    def update(self, other: typing.Iterable[typing.Tuple[str, typing.Any]]):
+    def update(self, other: typing.Iterable[tuple[str, typing.Any]]):
         known_keys = set(self.__annotations__.keys())
         for key, value in other:
             if key in known_keys:

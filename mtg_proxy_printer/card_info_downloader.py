@@ -63,7 +63,7 @@ BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data/all-cards"
 socket.setdefaulttimeout(5)
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
-IntTuples = typing.List[typing.Tuple[int]]
+IntTuples = typing.List[tuple[int]]
 CardStream = typing.Generator[CardDataType, None, None]
 CardOrFace = CardDataType | FaceDataType
 
@@ -155,7 +155,7 @@ class CardInfoDownloader(DownloadProgressSignalContainer):
 
 class CardInfoWorkerBase(DownloaderBase):
 
-    def get_scryfall_bulk_card_data_url(self) -> typing.Tuple[str, int]:
+    def get_scryfall_bulk_card_data_url(self) -> tuple[str, int]:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
         data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
@@ -330,7 +330,7 @@ class ApiStreamRunner(Runnable):
         #  from modular blocks.
         super().__init__()
         self.queue: collections.deque[
-            typing.Optional[typing.Tuple[CardDataType, ...]]] = collections.deque(maxlen=self._queue_depth)
+            typing.Optional[tuple[CardDataType, ...]]] = collections.deque(maxlen=self._queue_depth)
 
     def run(self):
         stream = ApiStreamWorker()
@@ -706,7 +706,7 @@ class DatabaseImportWorker(DownloaderBase):
             )
         return printing_id
 
-    def _is_printing_present(self, new_data: PrintingData) -> typing.Tuple[typing.Optional[int], bool]:
+    def _is_printing_present(self, new_data: PrintingData) -> tuple[typing.Optional[int], bool]:
         """
         Returns tuple printing_id, needs_update for the given printing data.
         The printing_id returns the id for the given printing, if in database, or None, if not present.
@@ -738,7 +738,7 @@ class DatabaseImportWorker(DownloaderBase):
         face_ids: IntTuples = []
         for face in _get_card_faces(card):
             face_name_id = self._insert_face_name(face.printed_face_name, language_id)
-            card_face_id: typing.Optional[typing.Tuple[int]] = db.execute(
+            card_face_id: typing.Optional[tuple[int]] = db.execute(
                 "SELECT card_face_id FROM CardFace WHERE face_name_id = ? AND printing_id = ? AND is_front = ?\n",
                 (face_name_id, printing_id, face.is_front)).fetchone()
             if card_face_id is None:
@@ -768,7 +768,7 @@ class DatabaseImportWorker(DownloaderBase):
             (printing_id, printing_filter_ids[filter_name])
             for filter_name, filter_applies in filter_data.items() if filter_applies
         )
-        stored_printing_filters: typing.Set[typing.Tuple[int, int]] = set(db.execute(
+        stored_printing_filters: typing.Set[tuple[int, int]] = set(db.execute(
             "SELECT printing_id, filter_id FROM PrintingDisplayFilter WHERE printing_id = ?",
             (printing_id,)
         ))

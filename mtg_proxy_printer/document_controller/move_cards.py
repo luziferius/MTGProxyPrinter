@@ -117,8 +117,8 @@ class ActionMoveCards(DocumentAction):
         return self
 
     @staticmethod
-    def _to_list_of_ranges(sequence: typing.Sequence[int]) -> typing.List[typing.Tuple[int, int]]:
-        ranges: typing.List[typing.Tuple[int, int]] = []
+    def _to_list_of_ranges(sequence: typing.Sequence[int]) -> typing.List[tuple[int, int]]:
+        ranges: typing.List[tuple[int, int]] = []
         sequence = itertools.chain(sequence, (sentinel := object(),))
         lower = upper = next(sequence)
         for item in sequence:

@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 del get_logger
 
 LineParserResult = typing.Counter[Card]
-CsvLine = typing.Tuple[str, typing.Dict[str, str]]
+CsvLine = tuple[str, typing.Dict[str, str]]
 
 __all__ = [
     "ScryfallCSVParser",

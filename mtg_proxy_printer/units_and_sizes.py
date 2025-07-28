@@ -31,7 +31,7 @@ from pint import UnitRegistry, Quantity, Context, Unit
 import mtg_proxy_printer.natsort
 
 
-def _setup_units() -> typing.Tuple[UnitRegistry, Quantity]:
+def _setup_units() -> tuple[UnitRegistry, Quantity]:
     registry = UnitRegistry(cache_folder=":auto:")
     resolution = registry.parse_expression("300dots/inch")
     print_context = Context("print")

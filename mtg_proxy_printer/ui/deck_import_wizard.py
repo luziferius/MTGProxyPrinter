@@ -67,7 +67,7 @@ class IsDecklistParserRegularExpressionValidator(QValidator):
     has_named_groups_re = re.compile(
         rf"\(\?P<({'|'.join(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES)})>.+?\)")
 
-    def validate(self, input_string: str, pos: int) -> typing.Tuple[State, str, int]:
+    def validate(self, input_string: str, pos: int) -> tuple[State, str, int]:
         try:
             re.compile(input_string)
         except re.error:

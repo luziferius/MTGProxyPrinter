@@ -83,9 +83,9 @@ class NaturallySortedSortFilterProxyModel(QSortFilterProxyModel):
         ]
 
 
-def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[typing.Tuple[int, int]]:
+def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[tuple[int, int]]:
     sequence = sorted(sequence)
-    ranges: typing.List[typing.Tuple[int, int]] = []
+    ranges: typing.List[tuple[int, int]] = []
     sequence = itertools.chain(sequence, (sentinel := object(),))
     lower = upper = next(sequence)
     for item in sequence:

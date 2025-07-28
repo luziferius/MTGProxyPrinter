@@ -26,7 +26,7 @@ import urllib.parse
 from io import StringIO
 import platform
 import re
-from typing import Type, Counter, Iterable, Optional, Dict, List, Any, Tuple
+from typing import Type, Counter, Iterable, Optional, Dict, List, Any, Union
 
 import ijson
 from PyQt5.QtGui import QValidator
@@ -42,7 +42,7 @@ del get_logger
 
 Counter = collections.Counter if int(platform.python_version_tuple()[1]) >= 9 else Counter
 
-JSONType = dict[str, str | int | list | "JSONType" | float | bool]
+JSONType = dict[str, Union[str, int, list, "JSONType", float, bool]]
 JSONKeyValueType = Iterable[tuple[str, JSONType]]
 HTMLAttributeType = list[tuple[str, Optional[str]]]
 State = QValidator.State
@@ -55,7 +55,7 @@ class IsIdentifyingDeckUrlValidator(QValidator):
     If this validator passes, at least one downloader class is able to fetch a deck list from the given input string.
     """
 
-    def validate(self, input_string: str, pos: int = 0) -> Tuple[QValidator.State, str, int]:
+    def validate(self, input_string: str, pos: int = 0) -> tuple[QValidator.State, str, int]:
         logger.debug(f"Validating input: {input_string}")
         for downloader_class in AVAILABLE_DOWNLOADERS.values():
             if downloader_class.DECKLIST_PATH_RE.match(input_string) is not None:
@@ -253,7 +253,7 @@ class MoxfieldDownloader(DecklistDownloader):
         return buffer.getvalue()
 
     @staticmethod
-    def _read_board(data: bytes, board: str) -> List[Tuple[str, str, str, str, str, str]]:
+    def _read_board(data: bytes, board: str) -> List[tuple[str, str, str, str, str, str]]:
         result = []
         for entry in next(ijson.items(data, board)).values():
             card = entry["card"]
@@ -396,7 +396,7 @@ class TCGPlayerDownloader(DecklistDownloader):
         items: JSONKeyValueType = ijson.kvitems(data, "result.deck.subDecks")
         result = Counter()
         for _, counts in items:  # Ignore the board type "maindeck"/"sideboard"
-            for card in counts:  # type: typing.Dict[str, int]
+            for card in counts:  # type: Dict[str, int]
                 # card IDs are supplied as integers, but used elsewhere as strings. So convert them to strings
                 result[str(card["cardID"])] += card["quantity"]
         return result

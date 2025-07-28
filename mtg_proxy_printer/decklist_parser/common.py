@@ -44,7 +44,7 @@ except NameError:
         return func
 
 CardCounter = typing.Counter[AnyCardType]
-ParsedDeck = typing.Tuple[CardCounter, typing.List[str]]
+ParsedDeck = tuple[CardCounter, typing.List[str]]
 
 
 class ParserBase(QObject):
