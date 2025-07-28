@@ -17,11 +17,10 @@
 # Import and implicitly load the settings first, before importing any modules that pull in GUI classes.
 import mtg_proxy_printer.settings
 
-import os
-import platform
 import sys
 
 from PySide6.QtCore import QTimer
+import truststore
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.argument_parser import parse_args
@@ -36,30 +35,12 @@ _app = None
 logger = mtg_proxy_printer.logger.get_logger(__name__)
 
 
-def handle_ssl_certificates():
-    """
-    Ensures that HTTPS connections can be established.
-    On Python >= 3.10, use truststore to use the system native certificate store.
-    On Python < 3.10, use certifi to set the CA certificates
-    """
-    if "SSL_CERT_FILE" in os.environ:
-        logger.info("SSL certificate location set in the environment. Using that for HTTPS connections")
-    elif not mtg_proxy_printer.natsort.str_less_than(platform.python_version(), "3.10"):
-        logger.info("Use system-native SSL trust store via the truststore library for HTTPS connections")
-        import truststore
-        truststore.inject_into_ssl()
-    else:
-        import certifi
-        logger.info("Use certifi library as SSL trust store for HTTPS connections")
-        os.environ["SSL_CERT_FILE"] = certifi.where()
-
-
 def main():
     global _app
     arguments = parse_args()
     mtg_proxy_printer.app_dirs.migrate_from_old_appdirs()
     mtg_proxy_printer.logger.configure_root_logger()
-    handle_ssl_certificates()
+    truststore.inject_into_ssl()
     _app = Application(arguments, sys.argv)
     if arguments.test_exit_on_launch:
         logger.info("Skipping startup tasks, because immediate application exit was requested.")

@@ -14,7 +14,6 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import sys
 from unittest.mock import patch, DEFAULT
 
 import pytest
@@ -24,37 +23,21 @@ from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.__main__
 
 
-@pytest.mark.skipif(sys.version_info < (3, 10), reason="requires Python 3.10 or higher")
-@patch.dict("os.environ", clear=True)
-def test_handle_ssl_certificates_injects_truststore_if_not_set_via_environment():
-    with patch("truststore.inject_into_ssl") as inject_into_ssl:
-        mtg_proxy_printer.__main__.handle_ssl_certificates()
-    inject_into_ssl.assert_called_once()
-
-
-@pytest.mark.skipif(sys.version_info < (3, 10), reason="requires Python 3.10 or higher")
-@patch.dict("os.environ", SSL_CERT_FILE="/tmp/invalid.crt")
-def test_handle_ssl_certificates_honors_certificates_set_via_environment():
-    with patch("truststore.inject_into_ssl") as inject_into_ssl:
-        mtg_proxy_printer.__main__.handle_ssl_certificates()
-    inject_into_ssl.assert_not_called()
-
-
 @pytest.fixture
 def main_mocks():
     with patch("mtg_proxy_printer.__main__.mtg_proxy_printer.logger.configure_root_logger") as configure_root_logger, \
             patch.multiple(
             "mtg_proxy_printer.__main__",
-            _app=DEFAULT, Application=DEFAULT, handle_ssl_certificates=DEFAULT,
+            _app=DEFAULT, Application=DEFAULT, truststore=DEFAULT,
             parse_args=DEFAULT, QTimer=DEFAULT, logger=DEFAULT) as mocks:
         mocks["configure_root_logger"] = configure_root_logger
         yield mocks
     mocks.clear()
 
 
-def test_main_calls_handle_ssl_certificates(main_mocks):
+def test_main_calls_inject_into_ssl(main_mocks):
     mtg_proxy_printer.__main__.main()
-    main_mocks["handle_ssl_certificates"].assert_called_once()
+    main_mocks["truststore"].inject_into_ssl.assert_called_once()
 
 
 def test_main_parses_command_line_arguments(main_mocks):
