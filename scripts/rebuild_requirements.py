@@ -27,6 +27,9 @@ async def run(prog: str, *args: list[Argument]):
         stderr=asyncio.subprocess.PIPE,
     )
     await proc.wait()
+    for channel in (proc.stderr, proc.stdout):
+        if content := (await channel.read()).decode("utf-8"):
+            print(content)
 
 
 async def main():
