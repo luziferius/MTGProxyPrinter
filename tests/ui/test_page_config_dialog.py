@@ -16,7 +16,7 @@
 
 import pytest
 
-from PyQt5.QtWidgets import QDialogButtonBox
+from PySide6.QtWidgets import QDialogButtonBox
 from mtg_proxy_printer.ui.dialogs import DocumentSettingsDialog
 StandardButton = QDialogButtonBox.StandardButton
 

@@ -15,19 +15,17 @@
 
 import itertools
 import unittest.mock
-from multiprocessing.context import assert_spawning
 
-import pint
+from pint import Unit, Quantity
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.model.card import CustomCard
 from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, Quantity, Unit, unit_registry, StrDict
 from mtg_proxy_printer.ui.page_scene import RenderMode
 
-from PyQt5.QtGui import QPageLayout, QPageSize
-from PyQt5.QtCore import QMarginsF
+from PySide6.QtGui import QPageLayout, QPageSize
+from PySide6.QtCore import QMarginsF
 import pytest
 from hamcrest import *
 
@@ -264,5 +262,5 @@ def test_to_save_file_data_returns_only_acceptable_types(page_layout: PageLayout
     )
     assert_that(
         [value for key, value in dimensions],
-        only_contains(instance_of(pint.Quantity)),
+        only_contains(instance_of(Quantity)),
     )

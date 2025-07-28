@@ -4,7 +4,6 @@ import asyncio
 import asyncio.subprocess
 import itertools
 from pathlib import Path
-from typing import Union, List
 
 repo_root = Path(__file__).parent.parent
 source = repo_root / "pyproject.toml"
@@ -17,10 +16,10 @@ python_command_args = [
     ["python", "-m", "piptools", "compile", "--strip-extras", "--extra", "dev", "-o", req_dev, source],
     ["python", "-m", "piptools", "compile", "--strip-extras", "--extra", "package", "-o", req_pack, source],
 ]
-Argument = Union[str, Path]
+Argument = str | Path
 
 
-async def run(prog: str, *args: List[Argument]):
+async def run(prog: str, *args: list[Argument]):
     proc = await asyncio.create_subprocess_exec(
         prog, *args,
         stdin=asyncio.subprocess.DEVNULL,
@@ -28,6 +27,9 @@ async def run(prog: str, *args: List[Argument]):
         stderr=asyncio.subprocess.PIPE,
     )
     await proc.wait()
+    for channel in (proc.stderr, proc.stdout):
+        if content := (await channel.read()).decode("utf-8"):
+            print(content)
 
 
 async def main():

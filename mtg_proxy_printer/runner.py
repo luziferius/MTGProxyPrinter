@@ -14,10 +14,9 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import typing
 from typing import List
 
-from PyQt5.QtCore import QRunnable, QObject, pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6.QtCore import QRunnable, QObject, Signal, Slot
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -40,7 +39,7 @@ __all__ = [
   - finishing a task with ability to re-start
   - and removing a finished task completely.
 - AsyncTasks can have nested sub-tasks. These are synchronous within the task, but can report individual progress.
-  - A sequence of card image downloads can be triggered by a document load or deck list import
+  - Example: A sequence of card image downloads can be triggered by a document load or deck list import
 - Cancelable async tasks have can_cancel() return True
   - For these, a cancel button is shown next to the progress bar
   - Triggering the cancel button is connected to the cancel() slot. How that cancels the operation is up to the task
@@ -59,7 +58,8 @@ __all__ = [
   - If True, lock the main window UI when such a task starts, and unlock when it finishes
   - To be completely safe, use a Semaphore or similar to count the number of active UI locks,
     and unlock when the lock count is zero.
-  - Locking can use the normal progress signals. When `is_locking` is True, simply connect the begin_progress and finish_progress signals to the lock/unlock methods. The task dispatch method can handle those connections
+  - Locking can use the normal progress signals. When `is_locking` is True, simply connect the begin_progress and 
+    finish_progress signals to the lock/unlock methods. The task dispatch method can handle those connections
 
 
 """
@@ -108,7 +108,7 @@ class AsyncTask(QObject):
 
 
 class Runnable(QRunnable):
-    INSTANCES: typing.Dict[int, "Runnable"] = {}
+    INSTANCES: dict[int, "Runnable"] = {}
 
     def __init__(self):
         super().__init__()

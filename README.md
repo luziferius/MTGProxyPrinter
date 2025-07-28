@@ -116,7 +116,7 @@ These external libraries are used in the code. They can be installed from PyPI.
 - `platformdirs`
 - `ijson`
 - `pint`
-- `PyQt5`
+- `PySide6`
 - `delegateto`
 - `PyHamcrest`
 - `cx_Freeze` (Stand-alone bundles only. Used by the installer for Windows®-based platforms.)

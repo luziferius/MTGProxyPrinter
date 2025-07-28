@@ -13,23 +13,19 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
 """Contains some constants, type definitions and the unit parsing support code"""
+
 import configparser
 import enum
 import functools
 import re
 import sqlite3
 import typing
-from typing import Type, Dict, List, Optional, Set, NamedTuple, TypedDict, Union
+from typing import Type, NamedTuple, TypedDict, NotRequired
 
-try:
-    from typing import NotRequired
-except ImportError:  # Compatibility with Python < 3.11
-    from typing_extensions import NotRequired
-
-from PyQt5.QtCore import QSize, QObject
-from PyQt5.QtGui import QPageSize, QPageLayout, QColor
+from pint import UnitRegistry, Quantity, Context, Unit
+from PySide6.QtCore import QSize, QObject
+from PySide6.QtGui import QPageSize, QPageLayout, QColor
 
 try:
     from pint import Quantity, Unit
@@ -54,10 +50,10 @@ class ToLength(pint.facets.context.objects.Transformation):
         return value/RESOLUTION
 
 
-def _setup_units() -> typing.Tuple[pint.UnitRegistry, Quantity]:
-    registry = pint.UnitRegistry(cache_folder=":auto:")
+def _setup_units() -> tuple[UnitRegistry, Quantity]:
+    registry = UnitRegistry(cache_folder=":auto:")
     resolution = registry.parse_expression("300dots/inch")
-    print_context = pint.Context("print")
+    print_context = Context("print")
     print_context.add_transformation("[length]", "[printing_unit]", ToDots())
     print_context.add_transformation("[printing_unit]", "[length]", ToLength())
     registry.add_context(print_context)
@@ -84,11 +80,11 @@ DEFAULT_SAVE_SUFFIX = "mtgproxies"
 
 # typing shortcuts
 ShouldBeUUID = WEB_URI = API_URI = str
-Colors = StringList = List[str]
-StringSet = Set[str]
-OptStr = Optional[str]
-IntList = List[int]
-StrDict = Dict[str, str]
+Colors = list[str]
+StringSet = set[str]
+OptStr = str | None
+IntList = list[int]
+StrDict = dict[str, str]
 T = typing.TypeVar("T")
 PageSizeId = QPageSize.PageSizeId
 mm: Unit = unit_registry.mm
@@ -185,7 +181,7 @@ class ImageUriType(TypedDict):
 
 class FaceDataType(TypedDict):
     artist: NotRequired[str]
-    artist_ids: NotRequired[List[ShouldBeUUID]]
+    artist_ids: NotRequired[list[ShouldBeUUID]]
     cmc: NotRequired[float]
     color_indicator: NotRequired[Colors]
     colors: NotRequired[Colors]
@@ -248,8 +244,8 @@ class CardDataType(_CardPreviewFields):
     uri: API_URI
 
     # Gameplay fields
-    all_parts: NotRequired[List[RelatedCardType]]
-    card_faces: NotRequired[List[FaceDataType]]
+    all_parts: NotRequired[list[RelatedCardType]]
+    card_faces: NotRequired[list[FaceDataType]]
     cmc: float
     color_identity: Colors
     color_indicator: NotRequired[Colors]
@@ -257,7 +253,7 @@ class CardDataType(_CardPreviewFields):
     defense: NotRequired[str]
     edhrec_rank: NotRequired[int]
     hand_modifier: NotRequired[str]
-    keywords: NotRequired[StringList]
+    keywords: NotRequired[list[str]]
     legalities: StrDict
     life_modifier: NotRequired[str]
     loyalty: NotRequired[str]
@@ -273,7 +269,7 @@ class CardDataType(_CardPreviewFields):
 
     # Print fields
     artist: NotRequired[str]
-    artist_ids: NotRequired[List[ShouldBeUUID]]
+    artist_ids: NotRequired[list[ShouldBeUUID]]
     attraction_lights: NotRequired[IntList]
     booster: bool
     border_color: str
@@ -281,27 +277,27 @@ class CardDataType(_CardPreviewFields):
     collector_number: str
     content_warning: NotRequired[bool]
     digital: bool
-    finishes: StringList
+    finishes: list[str]
     flavor_name: NotRequired[str]
     flavor_text: NotRequired[str]
-    frame_effects: NotRequired[StringList]
+    frame_effects: NotRequired[list[str]]
     frame: str
     full_art: bool
-    games: StringList
+    games: list[str]
     highres_image: bool
     illustration_id: NotRequired[ShouldBeUUID]
     image_status: str
     image_uris: NotRequired[ImageUriType]
     oversized: bool
-    prices: Dict[str, float]
+    prices: dict[str, float]
     printed_name: NotRequired[str]
     printed_text: NotRequired[str]
     printed_type_line: NotRequired[str]
     promo: bool
-    promo_types: NotRequired[StringList]
-    purchase_uris: NotRequired[Dict[str, ShouldBeUUID]]
+    promo_types: NotRequired[list[str]]
+    purchase_uris: NotRequired[dict[str, ShouldBeUUID]]
     rarity: str
-    related_uris: Dict[str, WEB_URI]
+    related_uris: dict[str, WEB_URI]
     released_at: str
     reprint: bool
     scryfall_set_uri: WEB_URI
@@ -335,7 +331,7 @@ class BulkDataType(TypedDict):
     content_encoding: str
 
 
-def _read_enum(container: Type, enum_class: Type[T], accumulator: Dict[str, T] = None) -> Dict[str, T]:
+def _read_enum(container: Type, enum_class: Type[T], accumulator: dict[str, T] = None) -> dict[str, T]:
     if accumulator is None:
         accumulator = {}
     for item in mtg_proxy_printer.natsort.natural_sorted(dir(container)):
@@ -345,7 +341,7 @@ def _read_enum(container: Type, enum_class: Type[T], accumulator: Dict[str, T] =
     return accumulator
 
 
-def is_acceptable_page_size(page_size: Union[PageSizeId, QPageSize]) -> bool:
+def is_acceptable_page_size(page_size: PageSizeId | QPageSize) -> bool:
     """
     To be acceptable, the paper must support at least one oversized card and margins
     in both portrait and landscape orientation.
@@ -360,18 +356,14 @@ def is_acceptable_page_size(page_size: Union[PageSizeId, QPageSize]) -> bool:
         and size.height() >= card_height <= size.width()
 
 
-def read_page_size_enum() -> Dict[str, PageSizeId]:
-    result = _read_enum(QPageSize, PageSizeId, {"Custom": PageSizeId.Custom})
-    del result["LastPageSize"]
-
-    for item, value in list(result.items()):
-        if not is_acceptable_page_size(value):
-            del result[item]
+def read_page_size_enum() -> dict[str, PageSizeId]:
+    result = {"Custom": PageSizeId.Custom}
+    result.update({item.name: item for item in PageSizeId if is_acceptable_page_size(item)})
     return result
 
 
 class PageSizeManager(QObject):
     PageSize = read_page_size_enum()
     PageSizeReverse = {value: key for key, value in read_page_size_enum().items()}
-    PageOrientation = _read_enum(QPageLayout, QPageLayout.Orientation)
-    PageOrientationReverse = {value: key for key, value in _read_enum(QPageLayout, QPageLayout.Orientation).items()}
+    PageOrientation = {item.name: item for item in QPageLayout.Orientation}
+    PageOrientationReverse = {item: item.name for item in QPageLayout.Orientation}

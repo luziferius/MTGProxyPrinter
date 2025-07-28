@@ -14,16 +14,11 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from random import Random
-try:
-    from random import randbytes
-except ImportError:
-    # Compatibility with Py 3.8
-    from secrets import token_bytes as randbytes
+from random import Random, randbytes
 
 import typing
 
-from PyQt5.QtCore import Qt, QModelIndex
+from PySide6.QtCore import Qt, QModelIndex
 
 from ._interface import DocumentAction, IllegalStateError, Self
 from ..model.card import Card
@@ -34,8 +29,8 @@ __all__ = [
     "ActionShuffleDocument",
 ]
 
-IndexedCards = typing.List[typing.Tuple[int, Card]]
-ModelIndexList = typing.List[QModelIndex]
+IndexedCards = list[tuple[int, Card]]
+ModelIndexList = list[QModelIndex]
 ItemDataRole = Qt.ItemDataRole
 
 
@@ -49,7 +44,7 @@ class ActionShuffleDocument(DocumentAction):
         # The seed is created at instantiation time and ensures that two runs of apply() return a deterministic
         # order. This ensures that redoing the same action always returns the same result
         self.random_seed = randbytes(64)
-        self.shuffle_order: typing.Dict[PageType, typing.List[int]] = {}
+        self.shuffle_order: dict[PageType, list[int]] = {}
 
     def apply(self, document: Document) -> Self:
         if self.shuffle_order:

@@ -17,15 +17,14 @@
 import dataclasses
 import functools
 import json
-import numbers
 import os
 import sqlite3
-import typing
 from numbers import Real
 from pathlib import Path
-from typing import List, Tuple, Union, Literal
+from typing import Literal, Any, Callable
 from unittest.mock import patch, MagicMock
 
+from pint import Quantity
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest import assert_that, is_, empty, contains_inanyorder, has_properties, equal_to, any_of, instance_of, \
     close_to, all_of, greater_than_or_equal_to, less_than_or_equal_to
@@ -58,7 +57,7 @@ def _should_skip_network_tests() -> bool:
 
 
 SHOULD_SKIP_NETWORK_TESTS = _should_skip_network_tests()
-close_to_: typing.Callable[[Real], Matcher] = functools.partial(close_to, delta=0.01)
+close_to_: Callable[[Real], Matcher[Real]] = functools.partial(close_to, delta=0.005)
 
 
 def setup_logging_for_testing():
@@ -113,7 +112,7 @@ def load_json(name: str) -> CardDataType:
 
 
 def load_multiple_json_cards(
-        json_files_or_names: typing.List[typing.Union[str, CardDataType]]):
+        json_files_or_names: list[str | CardDataType]):
     return [
         load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
         for json_file_or_name in json_files_or_names
@@ -123,8 +122,8 @@ def load_multiple_json_cards(
 def fill_card_database_with_json_cards(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-        json_files_or_names: typing.List[typing.Union[str, CardDataType]],
-        filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+        json_files_or_names: list[str | CardDataType],
+        filter_settings: dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     data = load_multiple_json_cards(json_files_or_names)
     populate_database(qtbot, card_db, data, filter_settings)
     return card_db
@@ -133,15 +132,15 @@ def fill_card_database_with_json_cards(
 def fill_card_database_with_json_card(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-        json_file_or_name: typing.Union[str, CardDataType],
-        filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+        json_file_or_name: str | CardDataType,
+        filter_settings: dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], filter_settings)
 
 
 def create_save_database_with(
-        path_or_connection: Union[Path, Literal[":memory:"], sqlite3.Connection],
-        pages: List[Tuple[int, CardSize]],
-        cards: List[Tuple[int, int, bool, str, CardType]],
+        path_or_connection: Path | Literal[":memory:"] | sqlite3.Connection,
+        pages: list[tuple[int, CardSize]],
+        cards: list[tuple[int, int, bool, str, CardType]],
         settings: PageLayoutSettings) -> sqlite3.Connection:
     save = path_or_connection if isinstance(path_or_connection, sqlite3.Connection) \
         else open_database(path_or_connection, "document-v7")
@@ -245,16 +244,13 @@ class matches_type_annotation(BaseMatcher):
             }).matches(item)
 
     @staticmethod
-    def _get_matcher(value: typing.Any):
+    def _get_matcher(value: Any):
         if hasattr(value, "__args__"):  # Unpack typing.Optional[Something], typing.Union[TypeList]
             return any_of(*(instance_of(type_union_member) for type_union_member in value.__args__))
         return instance_of(value)
 
     def describe_to(self, description: Description) -> None:
         description.append_text(f"dataclass instance containing correct types")
-
-
-close_to_: typing.Callable[[numbers.Real], Matcher[numbers.Real]] = functools.partial(close_to, delta=0.005)
 
 
 def quantity_close_to(value: Quantity):

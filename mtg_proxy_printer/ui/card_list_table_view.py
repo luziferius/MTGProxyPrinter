@@ -15,8 +15,8 @@
 
 import math
 
-from PyQt5.QtCore import Qt, pyqtSignal as Signal, pyqtSlot as Slot
-from PyQt5.QtWidgets import QTableView, QWidget
+from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtWidgets import QTableView, QWidget
 
 from mtg_proxy_printer.model.card_list import CardListColumns, CardListModel
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel

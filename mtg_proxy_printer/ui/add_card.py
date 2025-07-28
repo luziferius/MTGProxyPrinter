@@ -14,11 +14,11 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Union, Type, Optional
+from typing import Type
 
-from PyQt5.QtCore import QStringListModel, pyqtSlot as Slot, pyqtSignal as Signal, Qt, QItemSelectionModel, QItemSelection
-from PyQt5.QtWidgets import QWidget, QDialogButtonBox
-from PyQt5.QtGui import QIcon
+from PySide6.QtCore import QStringListModel, Slot, Signal, Qt, QItemSelectionModel, QItemSelection
+from PySide6.QtWidgets import QWidget, QDialogButtonBox
+from PySide6.QtGui import QIcon
 
 import mtg_proxy_printer.model.card
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -47,7 +47,7 @@ __all__ = [
     "HorizontalAddCardWidget",
 ]
 
-UiTypes = Union[Type[Ui_VerticalAddCardWidget], Type[Ui_HorizontalAddCardWidget]]
+UiTypes = Type[Ui_VerticalAddCardWidget] | Type[Ui_HorizontalAddCardWidget]
 StandardButton = QDialogButtonBox.StandardButton
 ItemDataRole = Qt.ItemDataRole
 SelectionFlag = QItemSelectionModel.SelectionFlag
@@ -260,7 +260,7 @@ class AddCardWidget(QWidget):
         return self.ui.language_combo_box.currentText()
 
     @property
-    def current_card_name(self) -> Optional[str]:
+    def current_card_name(self) -> str | None:
         selected = self.ui.card_name_list.selectedIndexes()
         if selected:
             return selected[0].data(ItemDataRole.DisplayRole)
@@ -268,7 +268,7 @@ class AddCardWidget(QWidget):
             return None
 
     @property
-    def current_set_name(self) -> Optional[str]:
+    def current_set_name(self) -> str | None:
         selected = self.ui.set_name_list.selectedIndexes()
         if selected:
             return selected[0].data(ItemDataRole.EditRole).code
@@ -276,7 +276,7 @@ class AddCardWidget(QWidget):
             return None
 
     @property
-    def current_collector_number(self) -> Optional[str]:
+    def current_collector_number(self) -> str | None:
         selected = self.ui.collector_number_list.selectedIndexes()
         if selected:
             return selected[0].data(ItemDataRole.DisplayRole)

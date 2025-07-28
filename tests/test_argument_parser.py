@@ -16,7 +16,7 @@
 
 import itertools
 import sys
-from typing import Tuple, List, Iterable
+from typing import Iterable
 
 import pytest
 from hamcrest import *
@@ -24,7 +24,7 @@ from hamcrest import *
 import mtg_proxy_printer.argument_parser
 
 
-def powerset(*items: List[str]) -> Iterable[Tuple[List[str], ...]]:
+def powerset(*items: list[str]) -> Iterable[tuple[list[str], ...]]:
     length = len(items)
     return itertools.chain.from_iterable(
         itertools.combinations(items, subset)
@@ -44,7 +44,7 @@ def generate_command_lines():
 
 
 @pytest.mark.parametrize("argv", generate_command_lines())
-def test_argument_parser_namespace_only_contains_known_keys(argv: List[str]):
+def test_argument_parser_namespace_only_contains_known_keys(argv: list[str]):
 
     args = mtg_proxy_printer.argument_parser.parse_args(argv)
     annotations = mtg_proxy_printer.argument_parser.Namespace.__annotations__
@@ -55,7 +55,7 @@ def test_argument_parser_namespace_only_contains_known_keys(argv: List[str]):
 
 @pytest.mark.skipif(sys.version_info < (3, 9), reason="requires Python 3.9 or higher")
 @pytest.mark.parametrize("argv", generate_command_lines())
-def test_argument_parser_namespace_matches_annotated_namespace(argv: List[str]):
+def test_argument_parser_namespace_matches_annotated_namespace(argv: list[str]):
     args = mtg_proxy_printer.argument_parser.parse_args(argv)
     annotations = mtg_proxy_printer.argument_parser.Namespace.__annotations__
     # This isn't optimal for non-optional

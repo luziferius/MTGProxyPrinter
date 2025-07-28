@@ -19,10 +19,10 @@ import functools
 import itertools
 import typing
 
-from PyQt5.QtCore import Qt, QSizeF, QPointF, QRectF, pyqtSignal as Signal, QObject, pyqtSlot as Slot, \
+from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, Signal, QObject, Slot, \
     QPersistentModelIndex, QModelIndex, QRect, QPoint, QSize
-from PyQt5.QtGui import QPen, QColorConstants, QColor, QPalette, QFontMetrics, QPixmap, QTransform, QPolygonF
-from PyQt5.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
+from PySide6.QtGui import QPen, QColorConstants, QColor, QPalette, QFontMetrics, QPixmap, QTransform, QPolygonF
+from PySide6.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene, QGraphicsPolygonItem
 
 from mtg_proxy_printer.model.card import CardCorner, AnyCardType
@@ -36,7 +36,7 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-PixelCache = typing.DefaultDict[PageType, typing.List[float]]
+PixelCache = typing.DefaultDict[PageType, list[float]]
 ItemDataRole = Qt.ItemDataRole
 ColorGroup = QPalette.ColorGroup
 ColorRole = QPalette.ColorRole
@@ -230,7 +230,7 @@ class CardItem(QGraphicsItemGroup):
         self._update_watermark(item, page_layout)
         return item
 
-    def create_corners(self, card: AnyCardType, draw_corners: bool) -> typing.List[QGraphicsRectItem]:
+    def create_corners(self, card: AnyCardType, draw_corners: bool) -> list[QGraphicsRectItem]:
         image = card.image_file
         card_height, card_width = image.height(), image.width()
         card_width = image.width()
@@ -253,6 +253,7 @@ class CardItem(QGraphicsItemGroup):
         rect.setZValue(RenderLayers.CORNERS.value)
         return rect
 
+    @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
         for corner in self.corners:
             corner.setOpacity(new_page_layout.draw_sharp_corners)
@@ -384,22 +385,22 @@ class PageScene(QGraphicsScene):
             else distance_to_rounded_px(settings["printer"].get_quantity("horizontal-offset"))
 
     @property
-    def card_items(self) -> typing.List[CardItem]:
+    def card_items(self) -> list[CardItem]:
         return list(filter(is_card_item, self.items(SortOrder.AscendingOrder)))
 
     @property
-    def cut_lines(self) -> typing.List[QGraphicsLineItem]:
+    def cut_lines(self) -> list[QGraphicsLineItem]:
         return list(filter(is_cut_line_item, self.items(SortOrder.AscendingOrder)))
 
     @property
-    def text_items(self) -> typing.List[QGraphicsSimpleTextItem]:
+    def text_items(self) -> list[QGraphicsSimpleTextItem]:
         return list(filter(is_text_item, self.items(SortOrder.AscendingOrder)))
 
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
         """Draws the canvas, when the currently selected page changes."""
         logger.debug(f"Current page changed to page {selected_page.row()}")
-        page_types: typing.Set[PageType] = {
+        page_types: set[PageType] = {
             self.selected_page.data(ItemDataRole.UserRole),
             selected_page.data(ItemDataRole.UserRole)
         }
@@ -495,8 +496,8 @@ class PageScene(QGraphicsScene):
             itertools.repeat(width)
         )
         words = collections.deque(title.split(" "))
-        lines: typing.List[str] = []
-        current_line_words: typing.List[str] = []
+        lines: list[str] = []
+        current_line_words: list[str] = []
         current_line_available_space = next(available_widths_px)
         current_line_used_space = 0
         logger.debug(f"Formatting line {len(lines)+1}, {current_line_available_space=}")
@@ -580,7 +581,7 @@ class PageScene(QGraphicsScene):
                 self.remove_cut_markers()
                 self.draw_cut_markers()
 
-    def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[ItemDataRole]):
+    def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: list[ItemDataRole]):
         if (top_left.parent().row() == self.selected_page.row()
                 and ItemDataRole.DisplayRole in roles
                 # Multiple columns changed means card replaced.
@@ -604,8 +605,9 @@ class PageScene(QGraphicsScene):
             next_item = self.card_items[first] if needs_reorder else None
             page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
             logger.debug(f"Added {inserted_cards} cards to the currently shown page, drawing them.")
+            model = parent.model()
             for new in range(first, last+1):
-                self.draw_card(parent.child(new, PageColumns.Image), page_type, next_item)
+                self.draw_card(model.index(new, PageColumns.Image, parent), page_type, next_item)
             if needs_reorder:
                 logger.debug("Cards added in the middle of the page, re-order existing cards.")
                 self.update_card_positions()

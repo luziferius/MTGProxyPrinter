@@ -13,10 +13,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Union, Type
+from typing import Type
 
-from PyQt5.QtCore import  pyqtSlot as Slot, QItemSelectionModel, QModelIndex
-from PyQt5.QtWidgets import QWidget
+from PySide6.QtCore import Slot, QItemSelectionModel, QModelIndex
+from PySide6.QtWidgets import QWidget
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
@@ -43,7 +43,7 @@ __all__ = [
     "CentralWidget",
 ]
 
-UiType = Union[Type[Ui_GroupedCentralWidget], Type[Ui_ColumnarCentralWidget], Type[Ui_TabbedCentralWidget]]
+UiType = Type[Ui_GroupedCentralWidget] | Type[Ui_ColumnarCentralWidget] | Type[Ui_TabbedCentralWidget]
 
 
 class CentralWidget(QWidget):

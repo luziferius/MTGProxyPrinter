@@ -23,7 +23,7 @@ import sqlite3
 import unittest.mock
 from pathlib import Path
 
-from PyQt5.QtGui import QColorConstants, QPixmap
+from PySide6.QtGui import QColorConstants, QPixmap
 import pytest
 from hamcrest import assert_that
 
@@ -60,7 +60,7 @@ def empty_save_database(request) -> sqlite3.Connection:
 
 
 @pytest.fixture
-def image_db(tmp_path: Path):
+def image_db(qtbot, tmp_path: Path):
     image_db = ImageDatabase(tmp_path)
     regular = image_db.get_blank(CardSizes.REGULAR)
     large = image_db.get_blank(CardSizes.OVERSIZED)
@@ -77,7 +77,6 @@ def image_db(tmp_path: Path):
         image_db.images_on_disk.add(key)
 
     yield image_db
-    image_db.__dict__.clear()
 
 
 @pytest.fixture
@@ -86,7 +85,6 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
         "regular_english_card", "oversized_card", "english_double_faced_card"])
     document = Document(card_db, image_db)
     yield document
-    document.__dict__.clear()
 
 @pytest.fixture
 def mock_imagedb():
@@ -107,7 +105,6 @@ def document_light(qtbot, mock_imagedb) -> Document:
         "carddb", check_same_thread=False)
     document = Document(mock_card_db, mock_imagedb)
     yield document
-    document.__dict__.clear()
 
 
 @pytest.fixture

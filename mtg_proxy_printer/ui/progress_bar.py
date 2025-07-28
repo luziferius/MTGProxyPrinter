@@ -16,8 +16,8 @@
 from functools import partial
 from typing import Callable
 
-from PyQt5.QtCore import pyqtSlot as Slot, Qt
-from PyQt5.QtWidgets import QWidget,QHBoxLayout
+from PySide6.QtCore import Slot, Qt
+from PySide6.QtWidgets import QWidget,QHBoxLayout
 
 from mtg_proxy_printer.runner import AsyncTask
 
@@ -77,7 +77,7 @@ class ProgressBarManager(QWidget):
     """Displays progress bars of currently running async tasks in the status bar."""
     layout: Callable[[], QHBoxLayout]
 
-    def __init__(self, parent: QWidget = None, flags=Qt.WindowType()):
+    def __init__(self, parent: QWidget = None, flags=Qt.WindowType.Widget):
         super().__init__(parent, flags)
         self.setLayout(self._setup_layout())
 

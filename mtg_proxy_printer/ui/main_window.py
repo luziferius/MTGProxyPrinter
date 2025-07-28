@@ -14,13 +14,14 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import pathlib
-import typing
+from pathlib import Path
 from functools import partial
 
-from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl, Qt, QSize
-from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices, QDragEnterEvent, QDropEvent, QPixmap
-from PyQt5.QtWidgets import QApplication, QMessageBox, QAction, QWidget, QMainWindow, QDialog
+
+from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl, Qt
+from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, QDragEnterEvent, QDropEvent
+from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, QDialog
+from PySide6.QtPrintSupport import QPrintDialog
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import ApiImportTask
@@ -60,7 +61,7 @@ __all__ = [
 TransformationMode = Qt.TransformationMode
 StandardButton = QMessageBox.StandardButton
 StandardKey = QKeySequence.StandardKey
-UiElements = typing.List[typing.Union[QWidget, QAction]]
+UiElements = list[QWidget | QAction]
 
 
 class MainWindow(QMainWindow):
@@ -100,7 +101,7 @@ class MainWindow(QMainWindow):
         self._setup_undo_redo_actions(document)
         self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
-        self.current_dialog: typing.Optional[QDialog] = None
+        self.current_dialog: QDialog | None = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def update_language_model(self):
@@ -128,7 +129,7 @@ class MainWindow(QMainWindow):
             action.triggered.connect(partial(QDesktopServices.openUrl, url))
 
     def _setup_platform_dependent_default_shortcuts(self):
-        actions_with_shortcuts: typing.List[typing.Tuple[QAction, StandardKey]] = [
+        actions_with_shortcuts: list[tuple[QAction, StandardKey]] = [
             (self.ui.action_new_document, StandardKey.New),
             (self.ui.action_load_document, StandardKey.Open),
             (self.ui.action_save_document, StandardKey.Save),
@@ -143,7 +144,6 @@ class MainWindow(QMainWindow):
             action.setShortcut(shortcut)
 
     def _setup_central_widget(self):
-        self.setCentralWidget(self.ui.central_widget)
         self.ui.central_widget.set_data(self.document, self.card_database, self.image_db)
 
     def _setup_loading_state_connections(self):
@@ -275,7 +275,8 @@ class MainWindow(QMainWindow):
             return
         self.current_dialog = dialog = PrintDialog(self.document, self)
         dialog.finished.connect(self.on_dialog_finished)
-        self.missing_images_manager.obtain_missing_images(dialog.open)
+        # Use the QDialog base class open() method, because QPrintDialog.open() performs additional, unwanted actions.
+        self.missing_images_manager.obtain_missing_images(super(QPrintDialog, dialog).open)
 
     @Slot()
     def on_action_print_preview_triggered(self):
@@ -368,7 +369,7 @@ class MainWindow(QMainWindow):
                     "Without the data, you can only print custom cards by drag&dropping "
                     "the image files onto the main window."),
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes) == StandardButton.Yes:
-            self.ui.action_download_card_data.trigger()
+            self.card_data_downloader.import_from_api()
 
     @Slot()
     def on_action_save_document_triggered(self):
@@ -407,7 +408,7 @@ class MainWindow(QMainWindow):
         dialog.finished.connect(self.on_dialog_finished)
         show_wizard_or_dialog(dialog)
 
-    def on_document_loading_failed(self, failed_path: pathlib.Path, reason: str):
+    def on_document_loading_failed(self, failed_path: Path, reason: str):
         function_text = self.ui.action_import_deck_list.text()
         QMessageBox.critical(
             self, self.tr("Document loading failed"),
@@ -444,9 +445,9 @@ class MainWindow(QMainWindow):
         if QMessageBox.question(
                 self, self.tr("Application update available. Visit website?"),
                 self.tr("An application update is available: Version {newer_version}\n"
-                "You are currently using version {current_version}.\n\n"
-                "Open the {program_name} website in your web browser "
-                "to download the new version?").format(
+                        "You are currently using version {current_version}.\n\n"
+                        "Open the {program_name} website in your web browser "
+                        "to download the new version?").format(
                     newer_version=newer_version, current_version=mtg_proxy_printer.meta_data.__version__,
                     program_name=mtg_proxy_printer.meta_data.PROGRAMNAME,
                 ),
@@ -464,7 +465,7 @@ class MainWindow(QMainWindow):
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes
         ) == StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
-            self.ui.action_download_card_data.trigger()
+            self.card_data_downloader.import_from_api()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.ui.action_download_card_data.setEnabled(True)
@@ -525,7 +526,7 @@ class MainWindow(QMainWindow):
             dialog.show_from_drop_event(event)
 
     @staticmethod
-    def _to_save_file_path(event: typing.Union[QDragEnterEvent, QDropEvent]) -> typing.Optional[pathlib.Path]:
+    def _to_save_file_path(event: QDragEnterEvent | QDropEvent) -> Path | None:
         """
         Returns a Path instance to a file, if the drag&drop event contains a reference to exactly 1 document save file,
         None otherwise.
@@ -535,23 +536,8 @@ class MainWindow(QMainWindow):
         # So ignore drag&drop containing multiple files
         if mime_data.hasUrls() and len(dropped_urls := mime_data.urls()) == 1:
             url = dropped_urls[0].toLocalFile()
-            path = pathlib.Path(url)
+            path = Path(url)
             acceptable = path.is_file() and path.suffix.casefold() == f".{DEFAULT_SAVE_SUFFIX}"
             if acceptable:
                 return path
         return None
-
-    @staticmethod
-    def _to_pixmaps(event: typing.Union[QDragEnterEvent, QDropEvent]) -> typing.List[QPixmap]:
-        result: typing.List[QPixmap] = []
-        mime_data = event.mimeData()
-        regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
-        width, height = regular.width.magnitude, regular.height.magnitude
-        for url in mime_data.urls():
-            pixmap = QPixmap(url.toLocalFile())
-            if not pixmap.isNull():
-                if pixmap.width() != width or pixmap.height() != height:
-                    new_size = QSize(width, height)
-                    pixmap = pixmap.scaled(new_size, transformMode=TransformationMode.SmoothTransformation)
-                result.append(pixmap)
-        return result

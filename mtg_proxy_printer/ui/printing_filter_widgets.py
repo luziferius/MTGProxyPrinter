@@ -17,11 +17,10 @@
 
 import abc
 from functools import partial
-from typing import List, Tuple
 
-from PyQt5.QtCore import QUrl
-from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtWidgets import QGroupBox, QWidget, QCheckBox, QPushButton
+from PySide6.QtCore import QUrl
+from PySide6.QtGui import QDesktopServices
+from PySide6.QtWidgets import QGroupBox, QWidget, QCheckBox, QPushButton
 
 from mtg_proxy_printer.units_and_sizes import ConfigParser, SectionProxy
 from mtg_proxy_printer.ui.common import highlight_widget
@@ -54,7 +53,7 @@ class AbstractPrintingFilter(QGroupBox):
         QDesktopServices.openUrl(query_url)
 
     @abc.abstractmethod
-    def _get_widgets_with_keys(self) -> List[Tuple[QCheckBox, str]]:
+    def _get_widgets_with_keys(self) -> list[tuple[QCheckBox, str]]:
         pass
 
     @abc.abstractmethod
@@ -84,9 +83,9 @@ class GeneralPrintingFilter(AbstractPrintingFilter):
         ui.view_reversible_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:reversible"))
         ui.view_art_series_cards.clicked.connect(partial(self.view_query_on_scryfall, "layout:art-series"))
 
-    def _get_widgets_with_keys(self) -> List[Tuple[QCheckBox, str]]:
+    def _get_widgets_with_keys(self) -> list[tuple[QCheckBox, str]]:
         ui = self.ui
-        widgets_with_settings: List[Tuple[QCheckBox, str]] = [
+        widgets_with_settings: list[tuple[QCheckBox, str]] = [
             (ui.hide_cards_depicting_racism, "hide-cards-depicting-racism"),
             (ui.hide_cards_without_images, "hide-cards-without-images"),
             (ui.hide_oversized_cards, "hide-oversized-cards"),
@@ -127,9 +126,9 @@ class FormatPrintingFilter(AbstractPrintingFilter):
                 partial(self.view_query_on_scryfall, f"banned:{format_name}")
             )
 
-    def _get_widgets_with_keys(self) -> List[Tuple[QCheckBox, str]]:
+    def _get_widgets_with_keys(self) -> list[tuple[QCheckBox, str]]:
         ui = self.ui
-        widgets_with_settings: List[Tuple[QCheckBox, str]] = [
+        widgets_with_settings: list[tuple[QCheckBox, str]] = [
             (ui.hide_banned_in_brawl, "hide-banned-in-brawl"),
             (ui.hide_banned_in_commander, "hide-banned-in-commander"),
             (ui.hide_banned_in_historic, "hide-banned-in-historic"),

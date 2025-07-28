@@ -19,7 +19,8 @@ from pathlib import Path
 import textwrap
 
 from hamcrest import *
-from PyQt5.QtCore import QModelIndex, Qt
+from pint import Unit
+from PySide6.QtCore import QModelIndex, Qt
 import pytest
 from pytestqt.qtbot import QtBot
 

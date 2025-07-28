@@ -17,7 +17,7 @@
 import functools
 import typing
 
-from PyQt5.QtCore import QModelIndex, Qt
+from PySide6.QtCore import QModelIndex, Qt
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import CardContainer, PageColumns

@@ -30,7 +30,7 @@ import mtg_proxy_printer.natsort
     ("+1", 1),
     ("1.0", "1.0"),
 ])
-def test_try_convert_int(input_: Union[str, int], expected: Union[str, int]):
+def test_try_convert_int(input_: str | int, expected: str | int):
     assert_that(
         mtg_proxy_printer.natsort.try_convert_int(input_),
         is_(equal_to(expected))

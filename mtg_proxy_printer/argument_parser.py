@@ -16,8 +16,7 @@
 
 import argparse
 import dataclasses
-import pathlib
-import typing
+from pathlib import Path
 
 from . import meta_data
 
@@ -30,15 +29,15 @@ __all__ = [
 @dataclasses.dataclass()
 class Namespace:
     """Namespace used to mock parsed arguments for type-hinting purposes"""
-    file: typing.Optional[pathlib.Path] = None
-    card_data: typing.Optional[pathlib.Path] = None
+    file: Path | None = None
+    card_data: Path | None = None
     test_exit_on_launch: bool = False
 
 
 def generate_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(meta_data.PROGRAMNAME)
     parser.add_argument(
-        "file", action="store", nargs="?", type=pathlib.Path,
+        "file", action="store", nargs="?", type=Path,
         help="Document to open at program start"
     )
     parser.add_argument(
@@ -51,7 +50,7 @@ def generate_argument_parser() -> argparse.ArgumentParser:
         help=f"Used for testing purposes. Causes {meta_data.PROGRAMNAME} to exit immediately after start."
     )
     parser.add_argument(
-        "--card-data", type=pathlib.Path,
+        "--card-data", type=Path,
         help="Populate the internal card database using the 'All cards' bulk data export from the Scryfall API. "
              "Path to a plain-text JSON or GZIP compressed JSON file. See https://scryfall.com/docs/api/bulk-data for "
              "more details about the supported file format and download links."
@@ -59,6 +58,6 @@ def generate_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def parse_args(args: typing.List[str] = None) -> Namespace:
+def parse_args(args: list[str] = None) -> Namespace:
     parser = generate_argument_parser()
     return parser.parse_args(args)

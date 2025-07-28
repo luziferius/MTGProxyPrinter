@@ -34,7 +34,7 @@ from .helpers import append_new_card_in_page, create_card, card_container_with
 T = typing.TypeVar("T")
 
 
-def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.Iterable[typing.Tuple[T, ...]]:
+def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.Iterable[tuple[T, ...]]:
     """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
     iterable = iter(iterable)
     return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())

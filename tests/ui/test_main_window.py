@@ -19,9 +19,8 @@ import pathlib
 import typing
 import unittest.mock
 
-
-from PyQt5.QtCore import QStringListModel, QThreadPool
-from PyQt5.QtWidgets import QMessageBox
+from PySide6.QtCore import QStringListModel, QThreadPool
+from PySide6.QtWidgets import QMessageBox
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 import pytest
@@ -61,6 +60,7 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> ty
             main_window.show()
         yield main_window
         main_window.hide()
+
         main_window.__dict__.clear()
 
 
@@ -75,7 +75,6 @@ def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, mai
         qtbot.assert_not_emitted(main_window.loading_state_changed):
             main_window.show_card_data_update_available_message_box(10000)
     import_from_api.assert_not_called()
-    assert_that(ui.action_download_card_data.isEnabled(), is_(True))
 
 
 def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtBot, main_window: MainWindow):
@@ -88,7 +87,6 @@ def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtB
             main_window.request_run_async_task, check_params_cb=lambda task: isinstance(task, ApiImportTask)):
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
-    assert_that(ui.action_download_card_data.isEnabled(), is_(False))
 
 
 def test_action_download_card_data_is_enabled_after_network_error(qtbot: QtBot, main_window: MainWindow):

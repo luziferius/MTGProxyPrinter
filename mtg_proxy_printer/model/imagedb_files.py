@@ -21,7 +21,7 @@ while decouple them from introducing a hard dependency on the actual ImageDataba
 import dataclasses
 import pathlib
 
-from PyQt5.QtCore import Qt
+from PySide6.QtCore import Qt
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.logger import get_logger

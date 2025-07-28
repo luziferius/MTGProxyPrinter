@@ -13,18 +13,15 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-try:
-    from functools import cache
-except ImportError:
-    from functools import lru_cache as cache
+from functools import cache
 import http.client
 import socket
 import time
-from typing import List, Optional, Dict, Callable
+from typing import Callable
 import urllib.error
 import urllib.request
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal
+from PySide6.QtCore import QObject, Signal
 import delegateto
 
 from mtg_proxy_printer.meta_data import USER_AGENT
@@ -58,13 +55,12 @@ class MeteredSeekableHTTPFile(QObject):
     In this case, linear reading with progress reports can still be performed.
     """
 
-
     io_begin = Signal(int, str)  # Emitted in __enter__, carries the total file size in bytes. -1, if unknown
     io_finished = Signal()  # Emitted in __exit__, when the file is closed
     total_bytes_processed = Signal(int)  # Emitted after each read chunk, carries the total number of bytes read
     getcode: Callable[[], int]
 
-    def __init__(self, url: str, headers: Dict[str, str] = None, parent: QObject = None, *,
+    def __init__(self, url: str, headers: dict[str, str] = None, parent: QObject = None, *,
                  ui_hint: str = "", retry_limit: int = 10):
         """
         :param url: The URL to fetch
@@ -74,7 +70,6 @@ class MeteredSeekableHTTPFile(QObject):
         :param retry_limit: The downloader will re-establish the connection this many times before failing
         """
         super().__init__(parent)
-        #MeteredSeekableHTTPFile.INSTANCES[id(self)] = self
         self.retry_limit = retry_limit
         self.ui_hint = ui_hint
         self.url = url
@@ -82,7 +77,7 @@ class MeteredSeekableHTTPFile(QObject):
         self.headers["User-Agent"] = USER_AGENT
         self.closed = False
         # _urlopen() internally accesses file, so this assignment has to stay here
-        self.file: Optional[http.client.HTTPResponse] = None
+        self.file: http.client.HTTPResponse | None = None
         self.file = self._urlopen()
         self.content_length = self._read_content_length(self.file)
         self._pos = 0
@@ -96,7 +91,7 @@ class MeteredSeekableHTTPFile(QObject):
         else:
             return -1
 
-    def content_encoding(self) -> Optional[str]:
+    def content_encoding(self) -> str | None:
         if self.file:
             return self.file.info().get("Content-Encoding")
         return None
@@ -187,12 +182,12 @@ class MeteredSeekableHTTPFile(QObject):
         self._store_and_report_read_progress(block_length)
         return block_length
 
-    def readline(self, __size: Optional[int] = None) -> bytes:
+    def readline(self, __size: int | None = None) -> bytes:
         line = self.file.readline(__size)
         self._store_and_report_read_progress(len(line))
         return line
 
-    def readlines(self, __hint: int = None) -> List[bytes]:
+    def readlines(self, __hint: int = None) -> list[bytes]:
         lines = self.file.readlines(__hint)
         total_bytes = sum(map(len, lines))
         self._store_and_report_read_progress(total_bytes)
@@ -203,7 +198,7 @@ class MeteredSeekableHTTPFile(QObject):
         self.read_bytes += block_length
         self.total_bytes_processed.emit(self.read_bytes)
 
-    def _urlopen(self, first_byte: int = 0, /, *, outer_retries: int = 0) -> Optional[http.client.HTTPResponse]:
+    def _urlopen(self, first_byte: int = 0, /, *, outer_retries: int = 0) -> http.client.HTTPResponse | None:
         """
         Opens the stored URL, returning the Response object, which can be used as a context manager.
 

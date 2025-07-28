@@ -30,7 +30,7 @@ import urllib.parse
 import urllib.request
 
 import ijson
-from PyQt5.QtCore import pyqtSignal as Signal, QObject, Qt
+from PySide6.QtCore import Signal, QObject, Qt
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock, \
@@ -65,9 +65,9 @@ BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data/all-cards"
 socket.setdefaulttimeout(5)
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
-IntTuples = typing.List[typing.Tuple[int]]
+IntTuples = list[tuple[int]]
 CardStream = typing.Generator[CardDataType, None, None]
-CardOrFace = typing.Union[CardDataType, FaceDataType]
+CardOrFace = CardDataType | FaceDataType
 
 
 class CardFaceData(typing.NamedTuple):
@@ -111,7 +111,7 @@ class SetWackinessScore(int, enum.Enum):
 
 class CardInfoWorkerBase(DownloaderBase):
 
-    def get_scryfall_bulk_card_data_url(self) -> typing.Tuple[str, int]:
+    def get_scryfall_bulk_card_data_url(self) -> tuple[str, int]:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
         data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
@@ -193,7 +193,7 @@ class FileImportTask(AsyncTask):
         super().__init__()
         self.file_to_import = file_to_import
         self.card_db_path = card_db_path
-        self.worker = None
+        self.worker: DatabaseImportWorker| None = None
 
     def run(self):
         card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
@@ -249,8 +249,7 @@ class ApiStreamRunner(Runnable):
         #  Then rename this class to StreamRunner or similar. The top-level API can then put together the logic
         #  from modular blocks.
         super().__init__()
-        self.queue: collections.deque[
-            typing.Optional[typing.Tuple[CardDataType, ...]]] = collections.deque(maxlen=self._queue_depth)
+        self.queue: collections.deque[tuple[CardDataType, ...] | None] = collections.deque(maxlen=self._queue_depth)
 
     def run(self):
         stream = ApiStreamWorker()
@@ -321,7 +320,7 @@ class DatabaseImportWorker(DownloaderBase):
         self.card_data_updated.connect(model.card_data_updated, QueuedConnection)
         self._db = db
         self.should_run = True
-        self.set_code_cache: typing.Dict[str, int] = {}
+        self.set_code_cache: dict[str, int] = {}
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @property
@@ -413,7 +412,7 @@ class DatabaseImportWorker(DownloaderBase):
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
-        related_printings: typing.List[RelatedPrintingData] = []
+        related_printings: list[RelatedPrintingData] = []
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
@@ -464,7 +463,7 @@ class DatabaseImportWorker(DownloaderBase):
         return index
 
     @functools.lru_cache(maxsize=1)
-    def _read_printing_filters_from_db(self) -> typing.Dict[str, int]:
+    def _read_printing_filters_from_db(self) -> dict[str, int]:
         return dict(self.db.execute("SELECT filter_name, filter_id FROM DisplayFilters"))
 
     def _parse_single_printing(self, card: CardDataType):
@@ -513,7 +512,7 @@ class DatabaseImportWorker(DownloaderBase):
             )
         """))
 
-    def _insert_related_printings(self, related_printings: typing.List[RelatedPrintingData]):
+    def _insert_related_printings(self, related_printings: list[RelatedPrintingData]):
         db = self.db
         logger.debug(f"Inserting related printings data. {len(related_printings)} entries")
         db.execute("DELETE FROM RelatedPrintings")
@@ -624,7 +623,7 @@ class DatabaseImportWorker(DownloaderBase):
             )
         return printing_id
 
-    def _is_printing_present(self, new_data: PrintingData) -> typing.Tuple[typing.Optional[int], bool]:
+    def _is_printing_present(self, new_data: PrintingData) -> tuple[int | None, bool]:
         """
         Returns tuple printing_id, needs_update for the given printing data.
         The printing_id returns the id for the given printing, if in database, or None, if not present.
@@ -656,7 +655,7 @@ class DatabaseImportWorker(DownloaderBase):
         face_ids: IntTuples = []
         for face in _get_card_faces(card):
             face_name_id = self._insert_face_name(face.printed_face_name, language_id)
-            card_face_id: typing.Optional[typing.Tuple[int]] = db.execute(
+            card_face_id: tuple[int] | None = db.execute(
                 "SELECT card_face_id FROM CardFace WHERE face_name_id = ? AND printing_id = ? AND is_front = ?\n",
                 (face_name_id, printing_id, face.is_front)).fetchone()
             if card_face_id is None:
@@ -679,14 +678,14 @@ class DatabaseImportWorker(DownloaderBase):
         return face_ids
 
     def _update_card_filters(
-            self, printing_id: int, filter_data: typing.Dict[str, bool]):
+            self, printing_id: int, filter_data: dict[str, bool]):
         printing_filter_ids = self._read_printing_filters_from_db()
         db = self.db
         active_printing_filters = set(
             (printing_id, printing_filter_ids[filter_name])
             for filter_name, filter_applies in filter_data.items() if filter_applies
         )
-        stored_printing_filters: typing.Set[typing.Tuple[int, int]] = set(db.execute(
+        stored_printing_filters: set[tuple[int, int]] = set(db.execute(
             "SELECT printing_id, filter_id FROM PrintingDisplayFilter WHERE printing_id = ?",
             (printing_id,)
         ))
@@ -717,7 +716,7 @@ def _get_related_cards(card: CardDataType):
             yield RelatedPrintingData(card_id, related_id)
 
 
-def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
+def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
     legalities = card["legalities"]
     return {
         # Racism filter

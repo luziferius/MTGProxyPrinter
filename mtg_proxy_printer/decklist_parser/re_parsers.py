@@ -18,7 +18,7 @@ from collections import Counter
 import re
 import typing
 
-from PyQt5.QtCore import QObject, QCoreApplication
+from PySide6.QtCore import QObject, QCoreApplication
 
 from mtg_proxy_printer.decklist_parser.common import ParsedDeck, ParserBase
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
@@ -28,7 +28,7 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-MatchType = typing.Dict[str, str]
+MatchType = dict[str, str]
 
 __all__ = [
     "GenericRegularExpressionDeckParser",
@@ -68,7 +68,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
     PREFIXES_TO_SKIP = frozenset()
 
     def __init__(
-            self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: typing.Union[re.Pattern, str],
+            self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: re.Pattern | str,
             parent: QObject = None):
         super().__init__(card_db, image_db, parent)
         self.parser = regular_expression \
@@ -134,7 +134,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
             matched_card.set_code = matched_card.set_code.lower()
         return matched_card
 
-    def _match_language(self, match_dict: MatchType, name: typing.Optional[str]) -> str:
+    def _match_language(self, match_dict: MatchType, name: str | None) -> str:
         """
         If the used RE does not provide a language, try to guess the language based on the card name.
         If neither language nor card name are given, default to English printings.
@@ -152,7 +152,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
         return language
 
     @staticmethod
-    def _match_name(match_dict: MatchType) -> typing.Optional[str]:
+    def _match_name(match_dict: MatchType) -> str | None:
         name = match_dict.get("name")
         if name and "//" in name:
             # Many sources combine both names of split- or flip-cards as "Front // Back". If so, simply remove the
@@ -174,11 +174,12 @@ class GenericRegularExpressionDeckParser(ParserBase):
 class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+    def supported_file_types() -> dict[str, list[str]]:
         return {
             QCoreApplication.translate(
                 "MagicWorkstationDeckDataFormatParser", "Magic Workstation Deck Data Format"): ["mwDeck"],
         }
+
     PREFIXES_TO_SKIP = frozenset({"//"})
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
@@ -194,7 +195,7 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     """
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+    def supported_file_types() -> dict[str, list[str]]:
         return {
             # Magic Arena typically uses the clipboard. Some sites offer downloads with the .txt ending.
             # XMage also lists the .mtga suffix, so add that too.
@@ -229,7 +230,7 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
     """
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+    def supported_file_types() -> dict[str, list[str]]:
         return {
             # Tappedout and Scryfall exports them with .dek suffix, Moxfield uses .txt
             QCoreApplication.translate("MTGOnlineParser", "Magic Online (MTGO) deck file"): ["dek", "txt"],
@@ -252,7 +253,7 @@ class XMageParser(GenericRegularExpressionDeckParser):
     """
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+    def supported_file_types() -> dict[str, list[str]]:
         return {
             QCoreApplication.translate("XMageParser", "XMage Deck file"): ["dck"],
         }

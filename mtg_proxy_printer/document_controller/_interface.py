@@ -18,19 +18,13 @@ from abc import abstractmethod
 from functools import partial
 import itertools
 import operator
-import typing
+from typing import Self, TypeVar, TYPE_CHECKING, Iterable
 
-from PyQt5.QtCore import QCoreApplication
+from PySide6.QtCore import QCoreApplication
 
-from mtg_proxy_printer.units_and_sizes import StringList
-
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 
-try:
-    from typing import Self
-except ImportError:  # Compatibility with Python < 3.11
-    from typing_extensions import Self
 
 __all__ = [
     "DocumentAction",
@@ -39,10 +33,10 @@ __all__ = [
     "ActionList",
     "split_iterable",
 ]
-T = typing.TypeVar("T")
+T = TypeVar("T")
 
 
-def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.List[typing.Tuple[T, ...]]:
+def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> list[tuple[T, ...]]:
     """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
     iterable = iter(iterable)
     return list(iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ()))
@@ -55,7 +49,7 @@ class IllegalStateError(RuntimeError):
 class DocumentAction:
     """Base class for modifying Document instances via the Command pattern."""
 
-    COMPARISON_ATTRIBUTES: StringList = []  # Defines which attributes have to be compared in __eq__()
+    COMPARISON_ATTRIBUTES: list[str] = []  # Defines which attributes have to be compared in __eq__()
     translate = QCoreApplication.translate
 
     @abstractmethod
@@ -106,4 +100,4 @@ class DocumentAction:
             "DocumentAction", "{first}-{last}", "Inclusive, formatted number range, from first to last")
 
 
-ActionList = typing.List[DocumentAction]
+ActionList = list[DocumentAction]

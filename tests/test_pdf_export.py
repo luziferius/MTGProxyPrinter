@@ -16,7 +16,7 @@
 
 from pathlib import Path
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal
+from PySide6.QtCore import QObject, Signal
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 

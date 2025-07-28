@@ -17,9 +17,9 @@
 import enum
 from unittest.mock import MagicMock
 
-from PyQt5.QtCore import pyqtSlot as Slot, QPersistentModelIndex
-from PyQt5.QtGui import QColorConstants, QPainter, QPixmap
-from PyQt5.QtWidgets import QWidget
+from PySide6.QtCore import Slot, QPersistentModelIndex
+from PySide6.QtGui import QColorConstants, QPainter, QPixmap
+from PySide6.QtWidgets import QWidget
 
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards

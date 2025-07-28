@@ -19,19 +19,12 @@ import itertools
 import pathlib
 import sqlite3
 import textwrap
-from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, Tuple, TYPE_CHECKING
+from typing import Counter, Iterable, NamedTuple, TYPE_CHECKING
 
-import pint
-from PyQt5.QtGui import QPageLayout, QPageSize, QColor
-from PyQt5.QtCore import pyqtSignal as Signal
+from PySide6.QtGui import QPageLayout, QPageSize, QColor
+from PySide6.QtCore import Signal
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
-    has_properties, is_, any_of, none, has_item, has_property, equal_to
-
-try:
-    from hamcrest import contains_exactly
-except ImportError:
-    # Compatibility with PyHamcrest < 1.10
-    from hamcrest import contains as contains_exactly
+    has_properties, is_, any_of, none, has_item, has_property, equal_to, contains_exactly
 
 import mtg_proxy_printer.units_and_sizes
 import mtg_proxy_printer.settings
@@ -84,15 +77,15 @@ class DatabaseLoadResult(NamedTuple):
 class CardRow(NamedTuple):
     is_front: bool
     card_type: CardType
-    scryfall_id: Optional[UUID]
-    custom_card_id: Optional[UUID]
+    scryfall_id: UUID | None
+    custom_card_id: UUID | None
 
 
 sqlite3.register_adapter(CardType, lambda item: item.value)
-CustomCards = Dict[str, CustomCard]
+CustomCards = dict[str, CustomCard]
 
 
-def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[Tuple[T, ...]]:
+def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[tuple[T, ...]]:
     """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
     iterable = iter(iterable)
     return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())
@@ -224,13 +217,13 @@ class DocumentLoader(AsyncTask):
         return db
 
 
-    def _load_cards(self, save_db: sqlite3.Connection) -> List[CardList]:
+    def _load_cards(self, save_db: sqlite3.Connection) -> list[CardList]:
         custom_cards: CustomCards = {}
         assert_that(
             save_db.execute("SELECT min(page) FROM Page").fetchone(),
             contains_exactly(all_of(instance_of(int), greater_than_or_equal_to(1))
         ))
-        pages: List[CardList] = []
+        pages: list[CardList] = []
         allowed_sizes = {CardSizes.REGULAR.to_save_data(), CardSizes.OVERSIZED.to_save_data()}
         for page, expected_size in save_db.execute(
                 "SELECT page, image_size FROM Page ORDER BY page ASC").fetchall():  # type: int, str
@@ -246,7 +239,7 @@ class DocumentLoader(AsyncTask):
                 FROM Card
                 WHERE page = ?
                 ORDER BY page ASC, slot ASC""")
-        db_data: Iterable[Tuple[int, bool, str, OptStr, OptStr]] = save_db.execute(query, (page,))
+        db_data: Iterable[tuple[int, bool, str, OptStr, OptStr]] = save_db.execute(query, (page,))
         valid_card_types = {v.value for v in CardType}
         is_positive_int = all_of(instance_of(int), greater_than_or_equal_to(1))
         result: CardList = []
@@ -294,13 +287,13 @@ class DocumentLoader(AsyncTask):
             (scryfall_id, custom_card_id), has_item(none()),
             "Scryfall ID and custom card ID must not be both present")
 
-    def _load_official_card_from_save(self, data: CardRow) -> Optional[DatabaseLoadResult]:
+    def _load_official_card_from_save(self, data: CardRow) -> DatabaseLoadResult | None:
         if data.card_type == CardType.CHECK_CARD:
             return self._load_check_card(data)
         else:
             return self._load_official_card(data)
 
-    def _load_check_card(self, data: CardRow) -> Optional[DatabaseLoadResult]:
+    def _load_check_card(self, data: CardRow) -> DatabaseLoadResult | None:
         """
         Loads a check card. Returns None if the given scryfall id does not belong to a DFC.
         If the front is unavailable, try to find a replacement.
@@ -329,7 +322,7 @@ class DocumentLoader(AsyncTask):
         self.image_loader.get_image_synchronous(card)
         return DatabaseLoadResult(card, migrated)
 
-    def _load_official_card(self, data: CardRow) -> Optional[DatabaseLoadResult]:
+    def _load_official_card(self, data: CardRow) -> DatabaseLoadResult | None:
         migrated = False
         scryfall_id = data.scryfall_id
         is_front = data.is_front
@@ -371,7 +364,7 @@ class DocumentLoader(AsyncTask):
         return self.card_db.get_custom_card(
             name, set_code, set_name, collector_number, card_size, card_row.is_front, image_bytes)
 
-    def _fix_mixed_pages(self, pages: List[CardList], page_settings: PageLayoutSettings):
+    def _fix_mixed_pages(self, pages: list[CardList], page_settings: PageLayoutSettings):
         """
         Documents saved with older versions (or specifically crafted save files) can contain images with mixed
         sizes on the same page.
@@ -432,10 +425,10 @@ class DocumentLoader(AsyncTask):
             """)
         settings.update(db.execute(document_dimensions_query))
         is_distance = all_of(
-            instance_of(pint.Quantity),
+            instance_of(Quantity),
             has_property("dimensionality", equal_to(unit_registry.mm.dimensionality)))
         is_angle = all_of(
-            instance_of(pint.Quantity),
+            instance_of(Quantity),
             has_property("dimensionality", equal_to(unit_registry.degree.dimensionality)))
         is_bool_str = is_in(("True", "False"))
         is_color = any_of(

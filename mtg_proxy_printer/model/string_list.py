@@ -16,7 +16,7 @@
 
 import typing
 
-from PyQt5.QtCore import QAbstractListModel, Qt, QObject, QModelIndex
+from PySide6.QtCore import QAbstractListModel, Qt, QObject, QModelIndex
 
 from mtg_proxy_printer.model.card import MTGSet
 
@@ -35,10 +35,10 @@ class PrettySetListModel(QAbstractListModel):
         self.header = {
             0: self.tr("Set", "MTG set name"),
         }
-        self.set_data: typing.List[MTGSet] = []
+        self.set_data: list[MTGSet] = []
 
     def headerData(self, section: int, orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) \
-            -> typing.Optional[str]:
+            -> str | None:
         if role == ItemDataRole.DisplayRole and orientation == Orientation.Horizontal:
             # Returns None for unknown columns
             return self.header.get(section)
@@ -50,12 +50,12 @@ class PrettySetListModel(QAbstractListModel):
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.set_data)
 
-    def set_set_data(self, data: typing.List[MTGSet]) -> None:
+    def set_set_data(self, data: list[MTGSet]) -> None:
         self.beginResetModel()
         self.set_data[:] = data
         self.endResetModel()
 
-    def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Optional[str]:
+    def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> str | None:
         if index.isValid():
             return self.set_data[index.row()].data(role)
         return None

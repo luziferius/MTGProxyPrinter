@@ -30,14 +30,9 @@ import time
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import List, Dict, Union, Tuple, Any, Generator, Callable, Iterable, TYPE_CHECKING
+from typing import Any, Generator, Callable, Iterable, LiteralString, TYPE_CHECKING
 
-from PyQt5.QtCore import QCoreApplication, Qt
-
-try:
-    from typing import LiteralString
-except ImportError:
-    from typing_extensions import LiteralString
+from PySide6.QtCore import QCoreApplication, Qt
 
 from mtg_proxy_printer.runner import AsyncTask
 import mtg_proxy_printer.sqlite_helpers
@@ -59,14 +54,14 @@ __all__ = [
 # Original dedent is annotated as str -> str, so overwrite that with LiteralString -> LiteralString,
 # allowing the type checker to detect SQL injections
 dedent: Callable[[LiteralString], LiteralString]
-Statement = Union[LiteralString, Tuple[LiteralString, List[Tuple[Any, ...]]]]
+Statement = LiteralString | tuple[LiteralString, list[tuple[Any, ...]]]
 
 
 @dataclasses.dataclass
 class MigrationScript:
-    script: List[Statement] = None
+    script: list[Statement] = None
 
-    def get_script(self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask) -> List[Statement]:
+    def get_script(self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask) -> list[Statement]:
         """Returns the script to run. Can be overridden by subclasses to allow dynamic behavior"""
         if self.script is None:
             raise RuntimeError("BUG: Migration script is None. Either not provided or this function wasn't overridden")
@@ -84,7 +79,7 @@ class MigrationScript:
 class Migrate_21_to_22(MigrationScript):
 
     def get_script(
-            self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask) -> List[Statement]:
+            self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask) -> list[Statement]:
         return list(self._migrate_21_to_22(db, suffix, progress_meter))
 
     @staticmethod
@@ -95,7 +90,7 @@ class Migrate_21_to_22(MigrationScript):
         # Import locally to break a cyclic dependency
         import mtg_proxy_printer.card_info_downloader
         aw = mtg_proxy_printer.card_info_downloader.ApiStreamWorker()
-        updates: Iterable[Tuple[int, datetime.datetime]] = db.execute(
+        updates: Iterable[tuple[int, datetime.datetime]] = db.execute(
             "SELECT update_id, update_timestamp FROM LastDatabaseUpdate"+suffix)
         data = []
         for id_, timestamp in updates:
@@ -137,7 +132,7 @@ class Migrate_21_to_22(MigrationScript):
         return 4 + api_call_count  # 4 SQL statements in the script
 
 
-MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
+MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
     9: MigrationScript([
         # Schema version 9 did not store if a card was a front or back face.
         # This information can only be obtained by re-populating
@@ -724,7 +719,7 @@ class DatabaseMigrationTask(AsyncTask):
     Scripts combining multiple version upgrades in one SQL script are not supported.
     """
 
-    def __init__(self, card_db: CardDatabase, migration_scripts: Dict[int, MigrationScript] = None):
+    def __init__(self, card_db: CardDatabase, migration_scripts: dict[int, MigrationScript] = None):
         super().__init__()
         self.script_update_signals = AsyncTask()
         self.inner_tasks.append(self.script_update_signals)

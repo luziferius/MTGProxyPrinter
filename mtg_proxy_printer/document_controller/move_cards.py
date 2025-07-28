@@ -18,7 +18,7 @@ import functools
 import itertools
 import typing
 
-from PyQt5.QtCore import QModelIndex
+from PySide6.QtCore import QModelIndex
 
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
@@ -117,8 +117,8 @@ class ActionMoveCards(DocumentAction):
         return self
 
     @staticmethod
-    def _to_list_of_ranges(sequence: typing.Sequence[int]) -> typing.List[typing.Tuple[int, int]]:
-        ranges: typing.List[typing.Tuple[int, int]] = []
+    def _to_list_of_ranges(sequence: typing.Sequence[int]) -> list[tuple[int, int]]:
+        ranges: list[tuple[int, int]] = []
         sequence = itertools.chain(sequence, (sentinel := object(),))
         lower = upper = next(sequence)
         for item in sequence:

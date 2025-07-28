@@ -16,7 +16,7 @@
 
 import gzip
 
-from PyQt5.QtCore import pyqtSignal as Signal
+from PySide6.QtCore import Signal
 
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.logger import get_logger

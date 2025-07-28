@@ -14,7 +14,6 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import unittest.mock
-from typing import List
 
 import pytest
 from hamcrest import *
@@ -87,7 +86,7 @@ def test_apply_removes_two_1_card_ranges(qtbot: QtBot, document_light: Document)
 
 
 @pytest.mark.parametrize("row_selection", [[0, 1], [1, 0]])
-def test_apply_removes_one_2_card_range(qtbot: QtBot, document_light: Document, row_selection: List[int]):
+def test_apply_removes_one_2_card_range(qtbot: QtBot, document_light: Document, row_selection: list[int]):
     page = document_light.pages[0]
     removed_1 = append_new_card_in_page(page, "Removed 1")
     removed_2 = append_new_card_in_page(page, "Removed 2")

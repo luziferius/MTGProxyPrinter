@@ -16,8 +16,8 @@
 
 from unittest.mock import patch
 
-import pint
-from PyQt5.QtWidgets import QDoubleSpinBox, QCheckBox, QLineEdit
+from pint import Quantity, Unit
+from PySide6.QtWidgets import QDoubleSpinBox, QCheckBox, QLineEdit
 
 from hamcrest import *
 import pytest
@@ -78,7 +78,7 @@ def test_set_numerical_spin_boxes(
     widget.load_from_page_layout(default_settings)
     ui = widget.ui
     assert_that(ui, has_property(attribute_name, instance_of(QDoubleSpinBox)))
-    assert_that(widget.page_layout, has_property(attribute_name, instance_of(pint.Quantity)))
+    assert_that(widget.page_layout, has_property(attribute_name, instance_of(Quantity)))
     spinbox_widget: QDoubleSpinBox = getattr(ui, attribute_name)
     with qtbot.waitSignals([spinbox_widget.valueChanged, widget.page_layout_changed], timeout=100):
         previous = spinbox_widget.value()

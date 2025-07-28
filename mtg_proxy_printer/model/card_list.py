@@ -17,10 +17,10 @@ from collections import Counter
 import dataclasses
 import enum
 import itertools
-import typing
+from typing import Any
 
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSignal as Signal, QItemSelection
-from PyQt5.QtGui import QIcon
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt, Signal, QItemSelection
+from PySide6.QtGui import QIcon
 
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCustomCard
@@ -62,7 +62,7 @@ class CardListColumns(enum.IntEnum):
         return CardListToPageColumnMapping[self]
 
 
-CardList = typing.List[CardListModelRow]
+CardList = list[CardListModelRow]
 CardListToPageColumnMapping = {
     CardListColumns.CardName: PageColumns.CardName,
     CardListColumns.Set: PageColumns.Set,
@@ -104,7 +104,7 @@ class CardListModel(QAbstractTableModel):
     def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.header)
 
-    def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
+    def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> Any:
         row, column = index.row(), index.column()
         card = self.rows[row].card
         if role == ItemDataRole.UserRole:
@@ -136,13 +136,13 @@ class CardListModel(QAbstractTableModel):
             return self._oversized_icon
         return None
 
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+    def flags(self, index: QModelIndex) -> ItemFlag:
         flags = super().flags(index)
         if index.column() in self.EDITABLE_COLUMNS or self.rows[index.row()].card.is_custom_card:
             flags |= ItemFlag.ItemIsEditable
         return flags
 
-    def setData(self, index: QModelIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
+    def setData(self, index: QModelIndex, value: Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
         row, column = index.row(), index.column()
         container = self.rows[row]
         card = container.card
@@ -154,7 +154,7 @@ class CardListModel(QAbstractTableModel):
             return self._set_data_for_custom_card(index, value)
         return False
 
-    def _set_data_for_official_card(self, index: QModelIndex, value: typing.Any) -> bool:
+    def _set_data_for_official_card(self, index: QModelIndex, value: Any) -> bool:
         row, column = index.row(), index.column()
         container = self.rows[row]
         card = container.card
@@ -172,7 +172,7 @@ class CardListModel(QAbstractTableModel):
                 return False
         return self._request_replacement_card(index, card_data)
 
-    def _set_data_for_custom_card(self, index: QModelIndex, value: typing.Any) -> bool:
+    def _set_data_for_custom_card(self, index: QModelIndex, value: Any) -> bool:
         row, column = index.row(), CardListColumns(index.column())
         container = self.rows[row]
         card = container.card
@@ -210,7 +210,7 @@ class CardListModel(QAbstractTableModel):
         return value != old_value
 
     def _request_replacement_card(
-            self, index: QModelIndex, card_data: typing.Union[CardIdentificationData, AnyCardType]):
+            self, index: QModelIndex, card_data: CardIdentificationData | AnyCardType):
         row, column = index.row(), index.column()
         if isinstance(card_data, CardIdentificationData):
             logger.debug(f"Requesting replacement for {card_data}")
@@ -279,7 +279,7 @@ class CardListModel(QAbstractTableModel):
         return result
 
     @staticmethod
-    def _merge_ranges(ranges: typing.List[typing.Tuple[int, int]]) -> typing.List[typing.Tuple[int, int]]:
+    def _merge_ranges(ranges: list[tuple[int, int]]) -> list[tuple[int, int]]:
         result = []
         if len(ranges) < 2:
             return ranges
@@ -312,7 +312,7 @@ class CardListModel(QAbstractTableModel):
         return total_count
 
     def headerData(
-            self, section: typing.Union[int, CardListColumns],
+            self, section: int | CardListColumns,
             orientation: Qt.Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
         if orientation == Qt.Orientation.Horizontal:
             if role == ItemDataRole.DisplayRole:
@@ -331,7 +331,7 @@ class CardListModel(QAbstractTableModel):
             self.oversized_card_count = 0
             self.oversized_card_count_changed.emit(self.oversized_card_count)
 
-    def as_cards(self, row_order: typing.List[int] = None) -> CardCounter:
+    def as_cards(self, row_order: list[int] = None) -> CardCounter:
         """
         Returns the internal card data. If a custom row order is given, return the cards in that order.
         The row_order is used when the user sorted the table by any column. The imported cards then inherit the order

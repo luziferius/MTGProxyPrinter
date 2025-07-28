@@ -24,9 +24,9 @@ import sys
 from tempfile import mkdtemp
 import typing
 
-from PyQt5.QtCore import pyqtSlot as Slot, Qt, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtGui import QIcon
+from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo
+from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QIcon
 
 from mtg_proxy_printer.argument_parser import Namespace
 from mtg_proxy_printer import meta_data
@@ -58,17 +58,18 @@ __all__ = [
 
 class Application(QApplication):
 
-    def __init__(self, args: Namespace, argv: typing.List[str] = None):
+    def __init__(self, args: Namespace, argv: list[str] = None):
         if argv is None:
             argv = sys.argv
         logger.info(f"Starting MTGProxyPrinter version {meta_data.__version__}")
-        if not os.getenv("QT_QPA_PLUGIN") and "-platform" not in argv and platform.system() == "Windows":
-            logger.info("Running on Windows without explicit platform override. Enabling dark mode rendering.")
-            # The explicit set platform and parameters overwrite the environment, so set these options iff neither
-            # present as parameters nor environment variables.
-            argv.append("-platform")
-            argv.append("windows:darkmode=1")
         super().__init__(argv)
+        # Note: The sub-expression '"-style" not in argv' breaks, if "-style" is passed as a value for another
+        # argument or as a positional argument.
+        # (For example, if the user wants to load a document with file name "-style" via command line argument.)
+        if platform.system() == "Windows" and "-style" not in argv and not os.getenv("QT_STYLE_OVERRIDE"):
+            logger.info("Running on Windows without explicit style set. Use 'fusion', which supports dark mode.")
+            # Set a dark-mode compatible style, if on Windows and the user does not override the style.
+            self.setStyle("fusion")
         # Used by the with_database_write_lock decorator to not start un-frozen,
         # waiting tasks when the application is about to exit
         self.should_run = True
@@ -230,7 +231,7 @@ class Application(QApplication):
             else str(pathlib.Path(mtg_proxy_printer.__file__).parent / "resources")
         path += "/translations"
         logger.debug(f"Locale search path is '{path}'")
-        self._load_translator(locale, "qtbase", QLibraryInfo.location(QLibraryInfo.LibraryLocation.TranslationsPath))
+        self._load_translator(locale, "qtbase", QLibraryInfo.location(QLibraryInfo.LibraryPath.TranslationsPath))
         self._load_translator(locale, "mtgproxyprinter", path)
 
     def _load_translator(self, locale: QLocale, component: str, path: str):
@@ -266,8 +267,6 @@ class Application(QApplication):
             QIcon.setThemeName("breeze")
         else:
             logger.debug(f"Using system-provided icon theme '{fallback_icon_theme}'")
-
-        self.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
 
     @Slot()
     def quit(self):
