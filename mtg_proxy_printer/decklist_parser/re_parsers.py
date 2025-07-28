@@ -68,7 +68,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
     PREFIXES_TO_SKIP = frozenset()
 
     def __init__(
-            self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: typing.Union[re.Pattern, str],
+            self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: re.Pattern | str,
             parent: QObject = None):
         super().__init__(card_db, image_db, parent)
         self.parser = regular_expression \

@@ -14,6 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import typing
+from typing import Union
 from itertools import combinations
 from typing import Union
 
@@ -50,7 +51,7 @@ def get_document_from_index(index: QModelIndex) -> Document:
     Returns the Document instance associated with the given index.
     Resolves any chain of layered sort/filter models, to grant access to non-Qt-API Document methods.
     """
-    model: typing.Union[Document, QSortFilterProxyModel, None] = index.model()
+    model: Union[Document, QSortFilterProxyModel, None] = index.model()
     if model is None:
         raise RuntimeError("Invalid index without attached model passed")
     while hasattr(model, "sourceModel"):
@@ -197,12 +198,12 @@ class CollectorNumberEditorDelegate(FastComboBoxDelegate):
     """
     def createEditor(
             self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex
-    ) -> typing.Union[QLineEdit, QComboBox]:
+    ) -> Union[QLineEdit, QComboBox]:
         card: AnyCardType = index.data(ItemDataRole.UserRole)
         # Use a locked-down choice-based editor for official cards, and a free-form editor for custom cards
         return QLineEdit(parent) if card.is_custom_card else super().createEditor(parent, option, index)
 
-    def setEditorData(self, editor: typing.Union[QLineEdit, QComboBox], index: QModelIndex) -> None:
+    def setEditorData(self, editor: Union[QLineEdit, QComboBox], index: QModelIndex) -> None:
         model = get_document_from_index(index)
         card: Card = index.data(ItemDataRole.UserRole)
         if card.is_custom_card:
@@ -215,7 +216,7 @@ class CollectorNumberEditorDelegate(FastComboBoxDelegate):
                 editor.setCurrentIndex(matching_collector_numbers.index(index.data(ItemDataRole.EditRole)))
 
     def setModelData(
-            self, editor: typing.Union[QLineEdit, QComboBox], model: QAbstractItemModel, index: QModelIndex) -> None:
+            self, editor: Union[QLineEdit, QComboBox], model: QAbstractItemModel, index: QModelIndex) -> None:
         card: Card = index.data(ItemDataRole.UserRole)
         new_value = editor.text() if card.is_custom_card else editor.currentData(ItemDataRole.UserRole)
         previous_value = card.collector_number

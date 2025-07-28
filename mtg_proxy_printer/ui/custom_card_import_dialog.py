@@ -40,7 +40,7 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 TransformationMode = Qt.TransformationMode
-EventTypes = typing.Union[QDragEnterEvent, QDropEvent]
+EventTypes = QDragEnterEvent | QDropEvent
 
 
 class CustomCardImportDialog(QDialog):

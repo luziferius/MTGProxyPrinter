@@ -26,7 +26,7 @@ import urllib.parse
 from io import StringIO
 import platform
 import re
-import typing
+from typing import Type, Counter, Iterable, Optional, Dict, List, Any, Tuple
 
 import ijson
 from PyQt5.QtGui import QValidator
@@ -40,11 +40,11 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-Counter = collections.Counter if int(platform.python_version_tuple()[1]) >= 9 else typing.Counter
+Counter = collections.Counter if int(platform.python_version_tuple()[1]) >= 9 else Counter
 
-JSONType = typing.Dict[str, typing.Union[str, int, list, "JSONType", float, bool]]
-JSONKeyValueType = typing.Iterable[typing.Tuple[str, JSONType]]
-HTMLAttributeType = typing.List[typing.Tuple[str, typing.Optional[str]]]
+JSONType = dict[str, str | int | list | "JSONType" | float | bool]
+JSONKeyValueType = Iterable[tuple[str, JSONType]]
+HTMLAttributeType = list[tuple[str, Optional[str]]]
 State = QValidator.State
 
 
@@ -55,7 +55,7 @@ class IsIdentifyingDeckUrlValidator(QValidator):
     If this validator passes, at least one downloader class is able to fetch a deck list from the given input string.
     """
 
-    def validate(self, input_string: str, pos: int = 0) -> typing.Tuple[QValidator.State, str, int]:
+    def validate(self, input_string: str, pos: int = 0) -> Tuple[QValidator.State, str, int]:
         logger.debug(f"Validating input: {input_string}")
         for downloader_class in AVAILABLE_DOWNLOADERS.values():
             if downloader_class.DECKLIST_PATH_RE.match(input_string) is not None:
@@ -66,7 +66,7 @@ class IsIdentifyingDeckUrlValidator(QValidator):
 
 class DecklistDownloader(DownloaderBase):
     DECKLIST_PATH_RE = re.compile(r"")
-    PARSER_CLASS: typing.Type[ParserBase] = None
+    PARSER_CLASS: Type[ParserBase] = None
     APPLICABLE_WEBSITES: str = ""
 
     def download(self, decklist_url: str) -> str:
@@ -126,7 +126,7 @@ class ScryfallDownloader(DecklistDownloader):
 class MTGAZoneHTMLParser(html.parser.HTMLParser):
     def __init__(self, *, convert_charrefs: bool = True):
         super().__init__(convert_charrefs=convert_charrefs)
-        self.deck: typing.List[str] = []
+        self.deck: List[str] = []
 
     def handle_starttag(self, tag: str, attrs: HTMLAttributeType) -> None:
         attrs = dict(attrs)
@@ -253,7 +253,7 @@ class MoxfieldDownloader(DecklistDownloader):
         return buffer.getvalue()
 
     @staticmethod
-    def _read_board(data: bytes, board: str) -> typing.List[typing.Tuple[str, str, str, str, str, str]]:
+    def _read_board(data: bytes, board: str) -> List[Tuple[str, str, str, str, str, str]]:
         result = []
         for entry in next(ijson.items(data, board)).values():
             card = entry["card"]
@@ -428,7 +428,7 @@ class ManaboxDownloader(DecklistDownloader):
         return f"https://cloud.manabox.app/decks/{deck_id}"
 
     def post_process(self, data: bytes) -> str:
-        cards: typing.Iterable[typing.Dict[str, typing.Any]] = ijson.items(data, "cards.item")
+        cards: Iterable[Dict[str, Any]] = ijson.items(data, "cards.item")
         buffer = io.StringIO()
         writer = csv.writer(buffer, self.PARSER_CLASS.Dialect)
         writer.writerow(("scryfall_id", "count", "lang", "name", "set_code", "collector_number"))
@@ -439,7 +439,7 @@ class ManaboxDownloader(DecklistDownloader):
         return buffer.getvalue()
 
 
-AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
+AVAILABLE_DOWNLOADERS: Dict[str, Type[DecklistDownloader]] = {
     downloader.__name__: downloader for downloader in [
         ArchidektDownloader,
         CubeCobraDownloader,

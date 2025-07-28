@@ -59,8 +59,8 @@ class DocumentColumns(enum.IntEnum):
 
 
 INVALID_INDEX = QModelIndex()
-ActionStack = typing.Deque[DocumentAction]
-AnyIndex = typing.Union[QModelIndex, QPersistentModelIndex]
+ActionStack = collections.deque[DocumentAction]
+AnyIndex = QModelIndex | QPersistentModelIndex
 ItemDataRole = Qt.ItemDataRole
 Orientation = Qt.Orientation
 ItemFlag = Qt.ItemFlag
@@ -166,7 +166,7 @@ class Document(QAbstractItemModel):
         self.current_page_changed.emit(QPersistentModelIndex(new_page))
 
     def headerData(
-            self, section: typing.Union[int, PageColumns],
+            self, section: int | PageColumns,
             orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
         if orientation == Orientation.Horizontal:
             if role == ItemDataRole.DisplayRole:
@@ -198,7 +198,7 @@ class Document(QAbstractItemModel):
             return len(DocumentColumns)  # columnCount of an invalid index.
 
     def parent(self, child: AnyIndex) -> QModelIndex:
-        data: typing.Union[Page, CardContainer] = self._to_index(child).internalPointer()
+        data: Page | CardContainer = self._to_index(child).internalPointer()
         if isinstance(data, CardContainer):
             page = data.parent
             page_index = self.find_page_list_index(page)

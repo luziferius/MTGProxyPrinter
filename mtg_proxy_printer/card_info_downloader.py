@@ -65,7 +65,7 @@ QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 IntTuples = typing.List[typing.Tuple[int]]
 CardStream = typing.Generator[CardDataType, None, None]
-CardOrFace = typing.Union[CardDataType, FaceDataType]
+CardOrFace = CardDataType | FaceDataType
 
 
 class CardFaceData(typing.NamedTuple):

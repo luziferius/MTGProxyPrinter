@@ -23,13 +23,13 @@ import shutil
 import socket
 import string
 import threading
-import typing
+from typing import Set, Optional, Iterable, TYPE_CHECKING, Dict, List, Tuple, Union, Callable
 import urllib.error
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QModelIndex, Qt, QThreadPool
 from PyQt5.QtGui import QPixmap, QColorConstants
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 
 from mtg_proxy_printer.model.carddb import with_database_write_lock
@@ -55,12 +55,12 @@ __all__ = [
     "ImageDownloader",
 ]
 
-PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
-ImageKeySet = typing.Set[ImageKey]
-BatchActions = typing.Union[ActionImportDeckList]
-SingleActions = typing.Union[ActionAddCard, ActionReplaceCard]
-IndexList = typing.List[QModelIndex]
-OptionalPixmap = typing.Optional[QPixmap]
+PathSizeList = List[Tuple[pathlib.Path, int]]
+ImageKeySet = Set[ImageKey]
+BatchActions = Union[ActionImportDeckList]
+SingleActions = ActionAddCard | ActionReplaceCard
+IndexList = List[QModelIndex]
+OptionalPixmap = Optional[QPixmap]
 download_semaphore = threading.BoundedSemaphore()
 
 
@@ -109,15 +109,15 @@ class ImageDatabase(QObject):
 
     def __init__(self, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
         super().__init__(parent)
-        self.read_disk_cache_content: typing.Callable[[], typing.List[CacheContent]] = functools.partial(
+        self.read_disk_cache_content: Callable[[], List[CacheContent]] = functools.partial(
             read_disk_cache_content, db_path)
         self.db_path = db_path
         _migrate_database(db_path)
         # Caches loaded images in a map from scryfall_id to image. If a file is already loaded, use the loaded instance
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.
-        self.loaded_images: typing.Dict[ImageKey, QPixmap] = {}
-        self.images_on_disk: typing.Set[ImageKey] = set()
+        self.loaded_images: Dict[ImageKey, QPixmap] = {}
+        self.images_on_disk: Set[ImageKey] = set()
         QThreadPool.globalInstance().start(InitOnDiskDataRunner(self.images_on_disk, db_path))
         self.download_worker = ImageDownloader(self)
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -129,7 +129,7 @@ class ImageDatabase(QObject):
         pixmap.fill(QColorConstants.Transparent)
         return pixmap
 
-    def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
+    def filter_already_downloaded(self, possible_matches: List[Card]) -> List[Card]:
         """
         Takes a list of cards and returns a new list containing all cards from the source list that have
         already downloaded images. The order of cards is preserved.
@@ -139,7 +139,7 @@ class ImageDatabase(QObject):
             if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk
         ]
 
-    def delete_disk_cache_entries(self, images: typing.Iterable[ImageKey]) -> PathSizeList:
+    def delete_disk_cache_entries(self, images: Iterable[ImageKey]) -> PathSizeList:
         """
         Remove the given images from the hard disk cache.
 
@@ -190,7 +190,7 @@ class ImageDbRunnable(Runnable):
     def __init__(self, parent: ImageDatabase):
         super().__init__()
         self.parent = parent
-        self.downloader: typing.Optional[ImageDownloader] = None
+        self.downloader: Optional[ImageDownloader] = None
 
     def cancel(self):
         if self.downloader is None:
@@ -277,8 +277,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.last_error_message = ""
         # Reference to the currently opened file. Used here to be able to force close it in case the user wants to quit
         # or cancel the download process.
-        self.currently_opened_file: typing.Optional[io.BytesIO] = None
-        self.currently_opened_file_monitor: typing.Optional[mtg_proxy_printer.http_file.MeteredSeekableHTTPFile] = None
+        self.currently_opened_file: Optional[io.BytesIO] = None
+        self.currently_opened_file_monitor: Optional[mtg_proxy_printer.http_file.MeteredSeekableHTTPFile] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
         
     def connect_image_db_signals(self, image_db: ImageDatabase):
@@ -317,7 +317,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.update_batch_processing_state(False)
         logger.info(f"Obtained images for {total_cards} cards.")
 
-    def obtain_missing_images(self, card_indices: typing.List[QModelIndex]):
+    def obtain_missing_images(self, card_indices: List[QModelIndex]):
         if not card_indices:
             self.missing_images_obtained.emit()
             return
@@ -450,14 +450,14 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         return pixmap
 
 
-def read_disk_cache_content(db_path: pathlib.Path) -> typing.List[CacheContent]:
+def read_disk_cache_content(db_path: pathlib.Path) -> List[CacheContent]:
     """
     Returns all entries currently in the given hard disk image cache.
 
     :returns: List with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
     """
-    result: typing.List[CacheContent] = []
-    data: typing.Iterable[typing.Tuple[pathlib.Path, bool, bool]] = (
+    result: List[CacheContent] = []
+    data: Iterable[Tuple[pathlib.Path, bool, bool]] = (
         (db_path/CacheContent.format_level_1_directory_name(is_front, is_high_resolution),
          is_front, is_high_resolution)
         for is_front, is_high_resolution in itertools.product([True, False], repeat=2)

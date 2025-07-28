@@ -17,7 +17,7 @@ import dataclasses
 import hashlib
 import enum
 import functools
-import typing
+from typing import Optional, Union
 
 from PyQt5.QtCore import QRect, QPoint, QSize, Qt, QPointF
 from PyQt5.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform
@@ -75,7 +75,7 @@ class Card:
     size: CardSize = dataclasses.field(compare=False)
     face_number: int = dataclasses.field(compare=True)
     is_dfc: bool = dataclasses.field(compare=True)
-    image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
+    image_file: Optional[QPixmap] = dataclasses.field(default=None, compare=False)
 
     def set_image_file(self, image: QPixmap):
         self.image_file = image
@@ -253,7 +253,7 @@ class CheckCard:
         return self.front.is_custom_card
 
     @property
-    def image_file(self) -> typing.Optional[QPixmap]:
+    def image_file(self) -> Optional[QPixmap]:
         if self.front.image_file is None or self.back.image_file is None:
             return None
         card_size = self.front.image_file.size()
@@ -295,6 +295,6 @@ class CheckCard:
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
 
 
-AnyCardType = typing.Union[Card, CheckCard, CustomCard]
-CardList = typing.List[AnyCardType]
-OptionalCard = typing.Optional[AnyCardType]
+AnyCardType = Card | CheckCard | CustomCard
+CardList = list[AnyCardType]
+OptionalCard = Optional[AnyCardType]

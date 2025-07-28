@@ -15,7 +15,7 @@
 
 
 import pathlib
-import typing
+from typing import Optional, List, Union, Tuple
 from functools import partial
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl, Qt, QSize
@@ -59,7 +59,7 @@ __all__ = [
 TransformationMode = Qt.TransformationMode
 StandardButton = QMessageBox.StandardButton
 StandardKey = QKeySequence.StandardKey
-UiElements = typing.List[typing.Union[QWidget, QAction]]
+UiElements = List[QWidget | QAction]
 
 
 class MainWindow(QMainWindow):
@@ -100,7 +100,7 @@ class MainWindow(QMainWindow):
         self._setup_undo_redo_actions(document)
         self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
-        self.current_dialog: typing.Optional[QDialog] = None
+        self.current_dialog: Optional[QDialog] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def update_language_model(self):
@@ -128,7 +128,7 @@ class MainWindow(QMainWindow):
             action.triggered.connect(partial(QDesktopServices.openUrl, url))
 
     def _setup_platform_dependent_default_shortcuts(self):
-        actions_with_shortcuts: typing.List[typing.Tuple[QAction, StandardKey]] = [
+        actions_with_shortcuts: List[Tuple[QAction, StandardKey]] = [
             (self.ui.action_new_document, StandardKey.New),
             (self.ui.action_load_document, StandardKey.Open),
             (self.ui.action_save_document, StandardKey.Save),
@@ -546,7 +546,7 @@ class MainWindow(QMainWindow):
             dialog.show_from_drop_event(event)
 
     @staticmethod
-    def _to_save_file_path(event: typing.Union[QDragEnterEvent, QDropEvent]) -> typing.Optional[pathlib.Path]:
+    def _to_save_file_path(event: Union[QDragEnterEvent, QDropEvent]) -> Optional[pathlib.Path]:
         """
         Returns a Path instance to a file, if the drag&drop event contains a reference to exactly 1 document save file,
         None otherwise.
@@ -563,8 +563,8 @@ class MainWindow(QMainWindow):
         return None
 
     @staticmethod
-    def _to_pixmaps(event: typing.Union[QDragEnterEvent, QDropEvent]) -> typing.List[QPixmap]:
-        result: typing.List[QPixmap] = []
+    def _to_pixmaps(event: Union[QDragEnterEvent, QDropEvent]) -> List[QPixmap]:
+        result: List[QPixmap] = []
         mime_data = event.mimeData()
         regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
         width, height = regular.width.magnitude, regular.height.magnitude

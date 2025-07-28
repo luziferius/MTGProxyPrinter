@@ -16,7 +16,7 @@
 
 import dataclasses
 import sqlite3
-import typing
+from typing import NamedTuple, List, Tuple, Union
 import unittest.mock
 
 from hamcrest import *
@@ -32,7 +32,7 @@ from .helpers import assert_model_is_empty, fill_card_database_with_json_card, l
     fill_card_database_with_json_cards, CardDataType
 
 
-class DatabasePrintingData(typing.NamedTuple):
+class DatabasePrintingData(NamedTuple):
     """Rows stored in the Printing relation"""
     collector_number: str
     scryfall_id: UUID
@@ -40,14 +40,14 @@ class DatabasePrintingData(typing.NamedTuple):
     highres_image: bool
 
 
-class DatabaseCardFaceData(typing.NamedTuple):
+class DatabaseCardFaceData(NamedTuple):
     """Rows stored in the CardFace relation"""
     image_uri: str
     is_front: bool
     face_number: int
 
 
-class DatabaseSetData(typing.NamedTuple):
+class DatabaseSetData(NamedTuple):
     """Row data stored in the Set relation"""
     set_code: str
     set_name: str
@@ -55,7 +55,7 @@ class DatabaseSetData(typing.NamedTuple):
     release_date: str
 
 
-class DatabaseVisiblePrintingsData(typing.NamedTuple):
+class DatabaseVisiblePrintingsData(NamedTuple):
     """Row retrieved via VisiblePrintings view"""
     name: str
     set_code: str
@@ -121,7 +121,7 @@ class TestCaseData:
         return self.json_dict["oversized"]
 
     @property
-    def face_data(self) -> typing.List[FaceData]:
+    def face_data(self) -> List[FaceData]:
         card = self.json_dict
         if faces := card.get("card_faces"):
             result = []
@@ -137,7 +137,7 @@ class TestCaseData:
         card = self.json_dict
         return DatabaseSetData(card["set"], card["set_name"], card["scryfall_set_uri"], card["released_at"])
 
-    def db_card(self) -> typing.List[typing.Tuple[str]]:
+    def db_card(self) -> List[Tuple[str]]:
         return [(self.oracle_id,)]
 
     def db_set(self):
@@ -146,19 +146,19 @@ class TestCaseData:
     def db_print_language(self):
         return [(self.language,)]
 
-    def db_face_name(self) -> typing.List[typing.Tuple[str]]:
+    def db_face_name(self) -> List[Tuple[str]]:
         # De-duplicate face names, in case both sides of a double-faced card have the same name. This is true for
         # art series cards, certain double-faced tokens (for example the C16 Saproling token) and similar.
         return list(set((face.name,) for face in self.face_data))
 
-    def db_card_face(self) -> typing.List[DatabaseCardFaceData]:
+    def db_card_face(self) -> List[DatabaseCardFaceData]:
         return [
             DatabaseCardFaceData(
                 face.image_uri, face.is_front, face_number)
             for face_number, face in enumerate(self.face_data)
         ]
 
-    def db_all_printings(self) -> typing.List[DatabaseVisiblePrintingsData]:
+    def db_all_printings(self) -> List[DatabaseVisiblePrintingsData]:
         return [
             DatabaseVisiblePrintingsData(
                 face.name, self.set.set_code, self.language, self.collector_number, self.scryfall_id,
@@ -166,7 +166,7 @@ class TestCaseData:
             for face in self.face_data
         ]
 
-    def db_printing(self) -> typing.List[DatabasePrintingData]:
+    def db_printing(self) -> List[DatabasePrintingData]:
         return [
             DatabasePrintingData(self.collector_number, self.scryfall_id, self.is_oversized, self.highres_image)
         ]
@@ -482,7 +482,7 @@ def test_re_import_after_unban_makes_card_visible(qtbot, card_db: CardDatabase, 
     assert_hidden_import(card_db, test_case_data)
 
 
-DataPath = typing.List[typing.Union[str, int]]
+DataPath = List[str | int]
 
 
 @pytest.mark.parametrize("test_case, dict_path, value", [
@@ -578,7 +578,7 @@ def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expec
 ])
 def test_related_printings(
         qtbot, card_db: CardDatabase,
-        cards: typing.List[str], expected_pairs: typing.List[typing.Tuple[int, int]]):
+        cards: List[str], expected_pairs: List[Tuple[int, int]]):
     db = card_db.db
 
     # Cards always relate to exact printings, but which one is chosen is rather arbitrary. E.g. The Underworld Cookbook
@@ -597,7 +597,7 @@ def test_related_printings(
     ["Dungeon_of_the_Mad_Mage", "Zombie_Ogre", "Bar_the_Gate"],
     ["The_Ring", "Samwise_the_Stouthearted", "Elrond_Lord_of_Rivendell"],
 ])
-def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, cards: typing.List[str]):
+def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, cards: List[str]):
     db = card_db.db
     fill_card_database_with_json_cards(qtbot, card_db, cards)
     assert_that(
