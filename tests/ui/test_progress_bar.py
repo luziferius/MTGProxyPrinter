@@ -14,8 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from hamcrest import *
-import pytesSide6.QtWidgets
-from import QWidgePyt
+import pytest
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.runner import AsyncTask
