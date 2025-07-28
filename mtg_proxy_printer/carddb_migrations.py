@@ -31,14 +31,9 @@ import typing
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import List, Dict, Union, Tuple, Any, Generator, Callable, Iterable
+from typing import List, Dict, Union, Tuple, Any, Generator, Callable, Iterable, LiteralString
 
 from PyQt5.QtCore import QCoreApplication, Qt
-
-try:
-    from typing import LiteralString
-except ImportError:
-    from typing_extensions import LiteralString
 
 from mtg_proxy_printer.progress_meter import ProgressMeter
 from mtg_proxy_printer.runner import Runnable, ProgressSignalContainer

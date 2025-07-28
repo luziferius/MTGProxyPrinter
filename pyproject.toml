@@ -10,12 +10,12 @@ authors = [
     {name = "Thomas Hess", email = "thomas.hess@udo.edu"},
 ]
 keywords = ["MTG", "Magic The Gathering", "Printing", "Proxies"]
-license = {text = "GNU GPLv3+, see LICENSE.md or https://www.gnu.org/licenses/gpl-3.0.html for details"}
+#license = {text = "GNU GPLv3+, see LICENSE.md or https://www.gnu.org/licenses/gpl-3.0.html for details"}
 # PEP 639 license specification below. Should be activated at some point,
 # as the current license raises DeprecationWarning
 # Still incompatible with pip-tools 7, so not
-# license = "GPL-3.0-or-later"
-# license-files = ["LICENSE.md", "doc/ThirdPartyLicenses.md"]
+license = "GPL-3.0-or-later"
+#license-files = ["LICENSE.md", "doc/ThirdPartyLicenses.md"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
@@ -38,7 +38,7 @@ classifiers = [
 dependencies = [
     "platformdirs >= 2.6.0",
     "PyQt5",
-    "ijson >= 3.2.0; python_version >= '3.11'",
+    "ijson >= 3.2.0",
     "ijson >= 3.2.1; python_version >= '3.12'",
     "Pint >= 0.22",
     "delegateto == 1.5",
@@ -106,7 +106,7 @@ version = {attr= "mtg_proxy_printer.meta_data.__version__"}
 
 [build-system]
 requires = [
-    "setuptools >= 61",
+    "setuptools >= 77",
     "wheel >= 0.45",
     "PyQt5",
     "build",

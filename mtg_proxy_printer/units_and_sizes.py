@@ -21,38 +21,20 @@ import functools
 import re
 import sqlite3
 import typing
-from typing import Type, Dict, List, Optional, Set, NamedTuple, TypedDict, Union
-
-try:
-    from typing import NotRequired
-except ImportError:  # Compatibility with Python < 3.11
-    from typing_extensions import NotRequired
+from typing import Type, Dict, List, Optional, Set, NamedTuple, TypedDict, Union, NotRequired
 
 from PyQt5.QtCore import QSize, QObject
 from PyQt5.QtGui import QPageSize, QPageLayout, QColor
 
-try:
-    from pint.facets.plain.registry import QuantityT, UnitT
-except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
-    QuantityT = UnitT = typing.Any
-
-try:
-    from pint.registry import Unit, Quantity
-except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
-    Quantity = Unit = typing.Any
-
-import pint
-
-if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+from pint import UnitRegistry, Quantity, Context, Unit
 
 import mtg_proxy_printer.natsort
 
 
-def _setup_units() -> typing.Tuple[pint.UnitRegistry, QuantityT]:
-    registry = pint.UnitRegistry(cache_folder=":auto:")
+def _setup_units() -> typing.Tuple[UnitRegistry, Quantity]:
+    registry = UnitRegistry(cache_folder=":auto:")
     resolution = registry.parse_expression("300dots/inch")
-    print_context = pint.Context("print")
+    print_context = Context("print")
     print_context.add_transformation("[length]", "[printing_unit]", lambda _, x: x*RESOLUTION)
     print_context.add_transformation("[printing_unit]", "[length]", lambda _, x: x/RESOLUTION)
     registry.add_context(print_context)
@@ -60,17 +42,17 @@ def _setup_units() -> typing.Tuple[pint.UnitRegistry, QuantityT]:
 
 
 @functools.lru_cache(None)
-def distance_to_rounded_px(value: QuantityT) -> int:
+def distance_to_rounded_px(value: Quantity) -> int:
     return round(value.to("pixel", "print").magnitude)
 
 
 @functools.lru_cache(None)
-def distance_to_px(value: QuantityT) -> float:
+def distance_to_px(value: Quantity) -> float:
     return value.to("pixel", "print").magnitude
 
 
 @functools.lru_cache(None)
-def distance_to_mm(value: QuantityT) -> float:
+def distance_to_mm(value: Quantity) -> float:
     return value.to("mm", "print").magnitude
 
 
@@ -86,11 +68,11 @@ IntList = List[int]
 StrDict = Dict[str, str]
 T = typing.TypeVar("T")
 PageSizeId = QPageSize.PageSizeId
-mm: UnitT = unit_registry.mm
+mm: Unit = unit_registry.mm
 
 
 class SectionProxy(configparser.SectionProxy):
-    def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars=None) -> QuantityT:
+    def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars=None) -> Quantity:
         raw_value = self.get(option, fallback, raw=raw, vars=vars)
         return unit_registry.parse_expression(raw_value)
 
@@ -103,7 +85,7 @@ class ConfigParser(configparser.ConfigParser):
 
     __getitem__: typing.Callable[[str], SectionProxy]  # Type hint that [] returns a SectionProxy having get_quantity()
 
-    def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> QuantityT:
+    def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> Quantity:
         raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
         return unit_registry.parse_expression(raw_value)
 
@@ -127,8 +109,8 @@ class UUID(str):
 
 
 class CardSize(NamedTuple):
-    width: QuantityT
-    height: QuantityT
+    width: Quantity
+    height: Quantity
 
     def as_qsize_px(self):
         return QSize(round(self.width.magnitude), round(self.height.magnitude))

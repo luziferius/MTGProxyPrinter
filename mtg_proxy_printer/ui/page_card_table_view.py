@@ -27,7 +27,7 @@ from mtg_proxy_printer.app_dirs import data_directories
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType, AnyCardTypeForTypeCheck
+from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.ui.item_delegates import CollectorNumberEditorDelegate, SetEditorDelegate, LanguageEditorDelegate
@@ -151,7 +151,7 @@ class PageCardTableView(QTableView):
 
     def _add_copies(self, card: Union[AnyCardType, CardList], count: Optional[int]):
         nl = '\n'
-        card_name = card.name if isinstance(card, AnyCardTypeForTypeCheck) else nl + nl.join(item.name for item in card)
+        card_name = card.name if isinstance(card, AnyCardType) else nl + nl.join(item.name for item in card)
         if count is None:
             count, success = QInputDialog.getInt(
                 self, self.tr("Add copies"), self.tr(
@@ -162,7 +162,7 @@ class PageCardTableView(QTableView):
                 logger.info("User cancelled adding card copies")
                 return
         logger.info(f"Add {count} × {card_name.replace(nl, ',')} via the context menu action")
-        if isinstance(card, AnyCardTypeForTypeCheck):
+        if isinstance(card, AnyCardType):
             self._request_action_add_card(card, count)
         else:
             for item in card:

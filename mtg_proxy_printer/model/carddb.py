@@ -22,11 +22,7 @@ import functools
 from pathlib import Path
 import sqlite3
 import threading
-try:
-    from typing import LiteralString
-except ImportError:
-    from typing_extensions import LiteralString
-from typing import NamedTuple, TypeVar, Set, Optional, Dict, Literal, List, Sequence, Any, Union, Tuple
+from typing import NamedTuple, TypeVar, Set, Optional, Dict, Literal, List, Sequence, Any, Union, Tuple, LiteralString
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot

@@ -22,10 +22,7 @@ import sqlite3
 import sys
 import textwrap
 import typing
-try:
-    from typing import LiteralString
-except ImportError:
-    from typing_extensions import LiteralString
+from typing import LiteralString
 
 from hamcrest import assert_that, contains_exactly
 
@@ -64,11 +61,7 @@ if sqlite3.sqlite_version_info < MIN_SUPPORTED_SQLITE_VERSION:
 
 def read_resource_text(package: str, resource: str, encoding: str = "utf-8") -> str:
     """Reads the given package data resource and returns it as a string"""
-    if sys.version_info >= (3, 9):
-        # New and preferred way for Python 3.9+
-        return importlib.resources.files(package).joinpath(resource).read_text(encoding)
-    # Backwards compatibility with Python 3.8
-    return importlib.resources.read_text(package, resource, encoding)
+    return importlib.resources.files(package).joinpath(resource).read_text(encoding)
 
 
 def create_in_memory_database(schema_name: str, check_same_thread: bool = True) -> sqlite3.Connection:

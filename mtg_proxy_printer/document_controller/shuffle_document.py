@@ -14,12 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from random import Random
-try:
-    from random import randbytes
-except ImportError:
-    # Compatibility with Py 3.8
-    from secrets import token_bytes as randbytes
+from random import Random, randbytes
 
 import typing
 

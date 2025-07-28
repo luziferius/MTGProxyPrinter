@@ -13,10 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-try:
-    from functools import cache
-except ImportError:
-    from functools import lru_cache as cache
+from functools import cache
 import http.client
 import socket
 import time

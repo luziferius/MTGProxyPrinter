@@ -298,5 +298,3 @@ class CheckCard:
 AnyCardType = typing.Union[Card, CheckCard, CustomCard]
 CardList = typing.List[AnyCardType]
 OptionalCard = typing.Optional[AnyCardType]
-# Py3.8 compatibility hack, because isinstance(a, AnyCardType) fails on 3.8
-AnyCardTypeForTypeCheck = typing.get_args(AnyCardType)

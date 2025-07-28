@@ -13,12 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-try:
-    from functools import lru_cache, cache
-except ImportError:
-    from functools import lru_cache
-    cache = lru_cache
-
+from functools import lru_cache, cache
 from pathlib import Path
 import platform
 import re
