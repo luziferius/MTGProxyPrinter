@@ -71,7 +71,6 @@ class MeteredSeekableHTTPFile(QObject):
         :param retry_limit: The downloader will re-establish the connection this many times before failing
         """
         super().__init__(parent)
-        #MeteredSeekableHTTPFile.INSTANCES[id(self)] = self
         self.retry_limit = retry_limit
         self.ui_hint = ui_hint
         self.url = url
@@ -79,7 +78,7 @@ class MeteredSeekableHTTPFile(QObject):
         self.headers["User-Agent"] = USER_AGENT
         self.closed = False
         # _urlopen() internally accesses file, so this assignment has to stay here
-        self.file: Optional[http.client.HTTPResponse] = None
+        self.file: http.client.HTTPResponse | None = None
         self.file = self._urlopen()
         self.content_length = self._read_content_length(self.file)
         self._pos = 0
@@ -93,7 +92,7 @@ class MeteredSeekableHTTPFile(QObject):
         else:
             return -1
 
-    def content_encoding(self) -> Optional[str]:
+    def content_encoding(self) -> str | None:
         if self.file:
             return self.file.info().get("Content-Encoding")
         return None
@@ -184,7 +183,7 @@ class MeteredSeekableHTTPFile(QObject):
         self._store_and_report_read_progress(block_length)
         return block_length
 
-    def readline(self, __size: Optional[int] = None) -> bytes:
+    def readline(self, __size: int | None = None) -> bytes:
         line = self.file.readline(__size)
         self._store_and_report_read_progress(len(line))
         return line

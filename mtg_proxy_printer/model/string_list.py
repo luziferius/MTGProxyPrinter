@@ -38,7 +38,7 @@ class PrettySetListModel(QAbstractListModel):
         self.set_data: list[MTGSet] = []
 
     def headerData(self, section: int, orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) \
-            -> typing.Optional[str]:
+            -> str | None:
         if role == ItemDataRole.DisplayRole and orientation == Orientation.Horizontal:
             # Returns None for unknown columns
             return self.header.get(section)
@@ -55,7 +55,7 @@ class PrettySetListModel(QAbstractListModel):
         self.set_data[:] = data
         self.endResetModel()
 
-    def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Optional[str]:
+    def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> str | None:
         if index.isValid():
             return self.set_data[index.row()].data(role)
         return None

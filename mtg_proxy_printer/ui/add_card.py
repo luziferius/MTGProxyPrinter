@@ -260,7 +260,7 @@ class AddCardWidget(QWidget):
         return self.ui.language_combo_box.currentText()
 
     @property
-    def current_card_name(self) -> Optional[str]:
+    def current_card_name(self) -> str | None:
         selected = self.ui.card_name_list.selectedIndexes()
         if selected:
             return selected[0].data(ItemDataRole.DisplayRole)
@@ -268,7 +268,7 @@ class AddCardWidget(QWidget):
             return None
 
     @property
-    def current_set_name(self) -> Optional[str]:
+    def current_set_name(self) -> str | None:
         selected = self.ui.set_name_list.selectedIndexes()
         if selected:
             return selected[0].data(ItemDataRole.EditRole).code
@@ -276,7 +276,7 @@ class AddCardWidget(QWidget):
             return None
 
     @property
-    def current_collector_number(self) -> Optional[str]:
+    def current_collector_number(self) -> str | None:
         selected = self.ui.collector_number_list.selectedIndexes()
         if selected:
             return selected[0].data(ItemDataRole.DisplayRole)

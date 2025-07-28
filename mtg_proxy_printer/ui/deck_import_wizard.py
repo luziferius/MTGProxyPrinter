@@ -102,7 +102,7 @@ class LoadListPage(QWizardPage):
         self.ui = ui = Ui_LoadListPage()
         ui.setupUi(self)
         self.deck_list_url_validator = IsIdentifyingDeckUrlValidator(self)
-        self._deck_list_downloader: typing.Optional[str] = None
+        self._deck_list_downloader: str | None = None
         ui.scryfall_search.textChanged.connect(
             lambda text: ui.scryfall_search_view_button.setEnabled(bool(text))
         )
@@ -251,7 +251,7 @@ class LoadListPage(QWizardPage):
             f"https://api.scryfall.com/cards/search?q={query}",
             "Invalid Scryfall query entered, no result obtained")
 
-    def _load_from_file(self, selected_file: typing.Optional[str]):
+    def _load_from_file(self, selected_file: str | None):
         if selected_file and (file_path := pathlib.Path(selected_file)).is_file() and \
                 self._ask_about_large_file(file_path):
             try:

@@ -38,8 +38,6 @@ from ..helpers import assert_model_is_empty, fill_card_database_with_json_card, 
     fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation, update_database_printing_filters
 from ..test_card_info_downloader import TestCaseData
 
-OptString = typing.Optional[str]
-
 
 def test_has_data_on_empty_database_returns_false(card_db: CardDatabase):
     assert_model_is_empty(card_db)
@@ -85,7 +83,7 @@ def test_get_all_languages_with_data(qtbot, card_db: CardDatabase):
     ("es", None, ["Bosque"]),  # noqa  # A Spanish Forest
     ("Nonexisting language", None, []),
 ])
-def test_get_card_names(qtbot, card_db: CardDatabase, language: str, prefix: OptString, expected_names: list[str]):
+def test_get_card_names(qtbot, card_db: CardDatabase, language: str, prefix: str | None, expected_names: list[str]):
     fill_card_database_with_json_cards(
         qtbot, card_db,
         [
@@ -116,7 +114,7 @@ def test_get_card_names(qtbot, card_db: CardDatabase, language: str, prefix: Opt
     ("Mentor Corrosivo", "pt"),
     ("Mentor corrosivo", "es"),
 ])
-def test_guess_language_from_name(qtbot, card_db: CardDatabase, name: str, expected: OptString):
+def test_guess_language_from_name(qtbot, card_db: CardDatabase, name: str, expected: str | None):
     fill_card_database_with_json_cards(
         qtbot, card_db,
         [
@@ -265,7 +263,7 @@ def generate_test_cases_for_test_translate_card_name():
     
 @pytest.mark.parametrize("card_data, target_language, expected", generate_test_cases_for_test_translate_card_name())
 def test_translate_card_name(
-        card_db_with_cards: CardDatabase, card_data: CardIdentificationData, target_language: str, expected: OptString):
+        card_db_with_cards: CardDatabase, card_data: CardIdentificationData, target_language: str, expected: str | None):
     assert_that(
         card_db_with_cards.translate_card_name(card_data, target_language),
         is_(equal_to(expected))
@@ -492,7 +490,7 @@ def test_get_card_with_scryfall_id(
     ([("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 1), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 2)], 1, CardIdentificationData(name="Forest")),
 ])
 def test_get_cards_from_data_order_by_print_count_enabled(
-        qtbot, card_db: CardDatabase, language: OptString, card_count_data, expected_index: int, identification_data: CardIdentificationData):
+        qtbot, card_db: CardDatabase, language: str | None, card_count_data, expected_index: int, identification_data: CardIdentificationData):
     fill_card_database_with_json_cards(qtbot, card_db, ["english_basic_Forest", "english_basic_Forest_2"])
     card_db.db.executemany(
         "INSERT INTO LastImageUseTimestamps (scryfall_id, is_front, usage_count) VALUES (?, 1, ?)",

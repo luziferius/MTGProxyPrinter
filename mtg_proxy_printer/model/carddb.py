@@ -67,7 +67,7 @@ class CardIdentificationData:
     set_code: OptStr = None
     collector_number: OptStr = None
     scryfall_id: OptStr = None
-    is_front: Optional[bool] = None
+    is_front: bool | None = None
     oracle_id: OptStr = None
 
 
@@ -568,7 +568,7 @@ class CardDatabase(QObject):
         """
         return self.get_card_with_scryfall_id(card.scryfall_id, not card.is_front)
 
-    def guess_language_from_name(self, name: str) -> Optional[str]:
+    def guess_language_from_name(self, name: str) -> str | None:
         """Guesses the card language from the card name. Returns None, if no result was found."""
         query = cached_dedent('''\
         SELECT "language" -- guess_language_from_name()

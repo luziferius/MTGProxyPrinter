@@ -137,7 +137,7 @@ class PageCardTableView(QTableView):
             None, card))
         return actions
 
-    def _create_add_copies_action(self, label: str, count: Optional[int],
+    def _create_add_copies_action(self, label: str, count: int | None,
                                   card: Union[AnyCardType, CardList]):
         action = QAction(QIcon.fromTheme("list-add"), label, self)
         action.triggered.connect(functools.partial(self._add_copies, card, count))
@@ -149,7 +149,7 @@ class PageCardTableView(QTableView):
         for card in related_cards:
             parent.addMenu(card.name).addActions(self._create_add_copies_actions(card, True))
 
-    def _add_copies(self, card: Union[AnyCardType, CardList], count: Optional[int]):
+    def _add_copies(self, card: Union[AnyCardType, CardList], count: int | None):
         nl = '\n'
         card_name = card.name if isinstance(card, AnyCardType) else nl + nl.join(item.name for item in card)
         if count is None:

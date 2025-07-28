@@ -134,7 +134,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
             matched_card.set_code = matched_card.set_code.lower()
         return matched_card
 
-    def _match_language(self, match_dict: MatchType, name: typing.Optional[str]) -> str:
+    def _match_language(self, match_dict: MatchType, name: str | None) -> str:
         """
         If the used RE does not provide a language, try to guess the language based on the card name.
         If neither language nor card name are given, default to English printings.
@@ -152,7 +152,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
         return language
 
     @staticmethod
-    def _match_name(match_dict: MatchType) -> typing.Optional[str]:
+    def _match_name(match_dict: MatchType) -> str | None:
         name = match_dict.get("name")
         if name and "//" in name:
             # Many sources combine both names of split- or flip-cards as "Front // Back". If so, simply remove the

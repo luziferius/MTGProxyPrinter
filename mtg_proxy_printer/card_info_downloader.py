@@ -232,7 +232,7 @@ class FileDownloadRunner(Runnable):
         self.parent = parent
         self.signals = DownloadProgressSignalContainer()
         self.download_path = download_path
-        self.worker: typing.Optional[FileDownloadWorker] = None
+        self.worker: FileDownloadWorker | None = None
 
     @with_database_write_lock()  # While it technically does not access the card db, it still shares the progress meter
     def run(self):
@@ -329,8 +329,7 @@ class ApiStreamRunner(Runnable):
         #  Then rename this class to StreamRunner or similar. The top-level API can then put together the logic
         #  from modular blocks.
         super().__init__()
-        self.queue: collections.deque[
-            typing.Optional[tuple[CardDataType, ...]]] = collections.deque(maxlen=self._queue_depth)
+        self.queue: collections.deque[tuple[CardDataType, ...] | None] = collections.deque(maxlen=self._queue_depth)
 
     def run(self):
         stream = ApiStreamWorker()
@@ -706,7 +705,7 @@ class DatabaseImportWorker(DownloaderBase):
             )
         return printing_id
 
-    def _is_printing_present(self, new_data: PrintingData) -> tuple[typing.Optional[int], bool]:
+    def _is_printing_present(self, new_data: PrintingData) -> tuple[int | None, bool]:
         """
         Returns tuple printing_id, needs_update for the given printing data.
         The printing_id returns the id for the given printing, if in database, or None, if not present.

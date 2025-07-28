@@ -54,7 +54,7 @@ except ModuleNotFoundError:
     Ui_ExportSettingsPage = load_ui_from_file("settings_window/export_settings_page")
 
 CheckState = Qt.CheckState
-bool_to_check_state: dict[typing.Optional[bool], CheckState] = {
+bool_to_check_state: dict[bool | None, CheckState] = {
     True: CheckState.Checked,
     False: CheckState.Unchecked,
     None: CheckState.PartiallyChecked,

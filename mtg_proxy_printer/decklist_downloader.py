@@ -44,7 +44,7 @@ Counter = collections.Counter if int(platform.python_version_tuple()[1]) >= 9 el
 
 JSONType = dict[str, Union[str, int, list, "JSONType", float, bool]]
 JSONKeyValueType = Iterable[tuple[str, JSONType]]
-HTMLAttributeType = list[tuple[str, Optional[str]]]
+HTMLAttributeType = list[tuple[str, str | None]]
 State = QValidator.State
 
 

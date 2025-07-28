@@ -236,7 +236,7 @@ class TappedOutCSVParser(BaseCSVParser):
         return cards
 
     @staticmethod
-    def _read_set_code(line: dict[str, str]) -> typing.Optional[str]:
+    def _read_set_code(line: dict[str, str]) -> str | None:
         set_code = line.get("Printing")
         if set_code:
             # TappedOut uses upper case set codes, so convert to lower case

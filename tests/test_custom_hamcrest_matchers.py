@@ -31,7 +31,7 @@ from .helpers import is_dataclass_equal_to, matches_type_annotation
 class Dataclass:
     attr1: str
     attr2: str | int
-    attr3: Optional[str]
+    attr3: str | None
 
 
 @dataclasses.dataclass

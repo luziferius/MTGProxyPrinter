@@ -38,7 +38,6 @@ from mtg_proxy_printer.document_controller.import_deck_list import ActionImportD
 
 from tests.helpers import fill_card_database_with_json_cards
 
-OptString = typing.Optional[str]
 Key = Qt.Key
 MouseButton = Qt.MouseButton
 WizardButton = QWizard.WizardButton

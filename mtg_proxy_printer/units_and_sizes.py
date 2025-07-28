@@ -63,7 +63,7 @@ DEFAULT_SAVE_SUFFIX = "mtgproxies"
 ShouldBeUUID = WEB_URI = API_URI = str
 Colors = list[str]
 StringSet = set[str]
-OptStr = Optional[str]
+OptStr = str | None
 IntList = list[int]
 StrDict = dict[str, str]
 T = typing.TypeVar("T")
