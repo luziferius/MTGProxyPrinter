@@ -3,7 +3,7 @@ python -m venv venv
 call venv\Scripts\activate.bat
 
 python -m pip install --upgrade pip setuptools
-python -m pip install wheel "pip-tools >= 7"
+python -m pip install wheel "pip-tools >= 7.4"
 
 echo Creating requirements.txt from pyproject.toml. This takes a while.
 python scripts\rebuild_requirements.py
