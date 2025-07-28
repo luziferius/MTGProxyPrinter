@@ -14,7 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import QStringListModel
+from PySide6.QtCore import QStringListModel
 
 from hamcrest import *
 from pytestqt.qtbot import QtBot

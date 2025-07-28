@@ -21,7 +21,7 @@ Tests the KnownCardImageModel used internally by the CacheCleanupWizard.
 import pathlib
 import typing
 
-from PyQt5.QtCore import Qt
+from PySide6.QtCore import Qt
 import pytest
 from hamcrest import *
 
@@ -53,7 +53,6 @@ def environment(tmp_path: pathlib.Path, qtbot, card_db: CardDatabase):
     image_db.get_blank().save(str(front_image), "PNG")
     image_db.get_blank().save(str(back_image), "PNG")
     yield Environment(card_db, image_db, front_image, back_image)
-    image_db.__dict__.clear()
 
 
 @pytest.mark.parametrize("is_hidden", [True, False])

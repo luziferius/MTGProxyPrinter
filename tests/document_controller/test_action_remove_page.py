@@ -17,7 +17,7 @@
 from functools import partial
 
 from hamcrest import *
-from PyQt5.QtCore import QModelIndex
+from PySide6.QtCore import QModelIndex
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.model.document_page import Page

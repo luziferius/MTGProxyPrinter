@@ -17,15 +17,17 @@ import copy
 import typing
 import unittest.mock
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
+from pint import Unit
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
+
 from hamcrest import *
 
 from hamcrest import contains_exactly
 import pytest
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, CardSizes, CardSize
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes, CardSize
 from mtg_proxy_printer.model.card import MTGSet, Card
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
@@ -41,7 +43,7 @@ from tests.document_controller.helpers import append_new_card_in_page
 from ..document_controller.helpers import insert_card_in_page, create_card
 
 ItemDataRole = Qt.ItemDataRole
-mm: UnitT = unit_registry.mm
+mm: Unit = unit_registry.mm
 REGULAR = CardSizes.REGULAR
 OVERSIZED = CardSizes.OVERSIZED
 
@@ -328,7 +330,7 @@ def test_rowCount_with_valid_index_returns_card_count_on_page_given_by_index(doc
     (PageType.REGULAR, 0, [0]),
     (PageType.OVERSIZED, 2, [0, 1]),
 ])
-def test_get_card_indices_of_type(document_light, page_type: PageType, parent_row: int, child_rows: typing.List[int]):
+def test_get_card_indices_of_type(document_light, page_type: PageType, parent_row: int, child_rows: list[int]):
     ActionNewPage(count=2).apply(document_light)
     append_new_card_in_page(document_light.pages[0], "Normal", REGULAR)
     append_new_card_in_page(document_light.pages[2], "Oversized", OVERSIZED)
@@ -352,8 +354,7 @@ def document_custom_layout(document: Document) -> Document:
         paper_size="Custom", paper_orientation="Portrait",
     )
     document.apply(ActionEditDocumentSettings(custom_layout))
-    yield document
-    document.__dict__.clear()
+    return document
 
 
 def test_document_reset_clears_modified_page_layout(qtbot: QtBot, page_layout: PageLayoutSettings, document_custom_layout: Document):
@@ -435,7 +436,7 @@ def test_has_missing_images(document_light: Document, result: bool, size: CardSi
     ([create_card("Regular", REGULAR), create_card("Oversized", OVERSIZED), None]*2, 4),
 ])
 def test_compute_pages_saved_by_compacting(
-        document_light: Document, pages_content: typing.List[typing.Optional[Card]], expected: int):
+        document_light: Document, pages_content: list[Card | None], expected: int):
     if len(pages_content) > 1:
         document_light.apply(ActionNewPage(count=len(pages_content)-1))
     for page, card in zip(document_light.pages, pages_content):

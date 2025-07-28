@@ -22,14 +22,10 @@ import functools
 from pathlib import Path
 import sqlite3
 import threading
-try:
-    from typing import LiteralString
-except ImportError:
-    from typing_extensions import LiteralString
-from typing import NamedTuple, TypeVar, Set, Optional, Dict, Literal, List, Sequence, Any, Union, Tuple
+from typing import NamedTuple, TypeVar, Literal, Sequence, Any, LiteralString
 
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot
+from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QObject, Signal, Slot
 
 from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, OptionalCard, CardList, CustomCard
 from mtg_proxy_printer.model.imagedb_files import CacheContent
@@ -38,7 +34,7 @@ from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import StringList, OptStr, CardSizes, CardSize, UUID
+from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize, UUID
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -51,7 +47,7 @@ SCHEMA_NAME = "carddb"
 # once per month or so.
 MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
 T = TypeVar("T", Card, CheckCard, CustomCard)
-ParameterList = List[Union[str, bool]]
+ParameterList = list[str | bool]
 write_semaphore = threading.BoundedSemaphore()
 
 __all__ = [
@@ -66,19 +62,19 @@ __all__ = [
 
 @dataclasses.dataclass
 class CardIdentificationData:
-    language: OptStr = None
-    name: OptStr = None
-    set_code: OptStr = None
-    collector_number: OptStr = None
-    scryfall_id: OptStr = None
-    is_front: Optional[bool] = None
-    oracle_id: OptStr = None
+    language: str | None = None
+    name: str | None = None
+    set_code: str | None = None
+    collector_number: str | None = None
+    scryfall_id: str | None = None
+    is_front: bool | None = None
+    oracle_id: str | None = None
 
 
 class ImageDatabaseCards(NamedTuple):
-    visible: List[Tuple[Card, CacheContent]] = []
-    hidden: List[Tuple[Card, CacheContent]] = []
-    unknown: List[CacheContent] = []
+    visible: list[tuple[Card, CacheContent]] = []
+    hidden: list[tuple[Card, CacheContent]] = []
+    unknown: list[CacheContent] = []
 
 
 def with_database_write_lock(semaphore: threading.BoundedSemaphore = write_semaphore):
@@ -108,9 +104,9 @@ class CardDatabase(QObject):
     Provides methods for data access.
     """
     card_data_updated = Signal()
-    custom_cards: Dict[UUID, CustomCard] = {}
+    custom_cards: dict[UUID, CustomCard] = {}
 
-    def __init__(self, db_path: Union[Literal[":memory:"], Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
+    def __init__(self, db_path: Literal[":memory:"] | Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
                  check_same_thread: bool = True, register_exit_hooks: bool = True):
         """
         :param db_path: Path to the database file. May be “:memory:” to create an in-memory database for testing
@@ -184,7 +180,7 @@ class CardDatabase(QObject):
     def has_data(self) -> bool:
         return bool(self._read_optional_scalar_from_db("SELECT EXISTS(SELECT * FROM Card) -- has_data()\n"))
 
-    def get_last_card_data_update_timestamp(self) -> Optional[datetime.datetime]:
+    def get_last_card_data_update_timestamp(self) -> datetime.datetime | None:
         """Returns the last card data update timestamp, or None, if no card data was ever imported"""
         query: LiteralString = "SELECT MAX(update_timestamp) FROM LastDatabaseUpdate -- get_last_card_data_update_timestamp\n"
         result: str = self._read_optional_scalar_from_db(query)
@@ -199,13 +195,13 @@ class CardDatabase(QObject):
         last_timestamp = self.get_last_card_data_update_timestamp()
         return (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.datetime.today() if last_timestamp else True
 
-    def get_all_languages(self) -> StringList:
+    def get_all_languages(self) -> list[str]:
         """Returns the list of all known and visible languages, sorted ascendingly."""
         logger.debug("Reading all known languages")
         query: LiteralString = "SELECT language FROM PrintLanguage ORDER BY language ASC -- get_all_languages()\n"
         return self._read_scalar_list_from_db(query)
 
-    def get_card_names(self, language: str, card_name_filter: str = None) -> StringList:
+    def get_card_names(self, language: str, card_name_filter: str = None) -> list[str]:
         """Returns a sorted list with all card names in the given language that match the given filter."""
         logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
         query: LiteralString = cached_dedent('''\
@@ -227,7 +223,7 @@ class CardDatabase(QObject):
         return self._read_scalar_list_from_db(query, parameters)
 
     def get_basic_land_oracle_ids(
-            self, include_wastes: bool = False, include_snow_basics: bool = False) -> Set[str]:
+            self, include_wastes: bool = False, include_snow_basics: bool = False) -> set[str]:
         """Returns the oracle ids of all Basic lands."""
         names = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']
         # Ordering matters: This order also supports Snow-Covered Wastes
@@ -414,7 +410,7 @@ class CardDatabase(QObject):
                 cards.append(related_cards[0])
         return cards
 
-    def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> StringList:
+    def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> list[str]:
         """
         Finds all collector numbers matching the given filter. The result contains multiple elements, if the card
         had multiple variants with distinct collector numbers in the given set.
@@ -444,7 +440,7 @@ class CardDatabase(QObject):
 
     def find_sets_matching(
             self, card_name: str, language: str, set_name_filter: str = None,
-            *, is_front: bool = None) -> List[MTGSet]:
+            *, is_front: bool = None) -> list[MTGSet]:
         """
         Finds all matching sets that the given card was printed in.
 
@@ -453,7 +449,7 @@ class CardDatabase(QObject):
         :param set_name_filter: If provided, only return sets with set code or full name beginning with this.
           Used as a LIKE pattern, supporting SQLite wildcards.
         :param is_front: Match by front/back. Only relevant when switching printings of SLD reversible cards.
-        :return: List of matching sets, as tuples (set_abbreviation, full_english_set_name)
+        :return: list of matching sets, as tuples (set_abbreviation, full_english_set_name)
         """
         query = cached_dedent('''\
         SELECT DISTINCT set_code, set_name  -- find_sets_matching()
@@ -496,7 +492,7 @@ class CardDatabase(QObject):
                 bool(highres_image), size, face_number, bool(is_dfc),
             )
 
-    def get_all_cards_from_image_cache(self, cache_content: List[CacheContent]) -> ImageDatabaseCards:
+    def get_all_cards_from_image_cache(self, cache_content: list[CacheContent]) -> ImageDatabaseCards:
         """
         Partitions the content of the ImageDatabase disk cache into three lists:
         - All visible card printings
@@ -572,7 +568,7 @@ class CardDatabase(QObject):
         """
         return self.get_card_with_scryfall_id(card.scryfall_id, not card.is_front)
 
-    def guess_language_from_name(self, name: str) -> Optional[str]:
+    def guess_language_from_name(self, name: str) -> str | None:
         """Guesses the card language from the card name. Returns None, if no result was found."""
         query = cached_dedent('''\
         SELECT "language" -- guess_language_from_name()
@@ -606,8 +602,8 @@ class CardDatabase(QObject):
         ''')
         return bool(self._read_optional_scalar_from_db(query, (scryfall_id,)))
 
-    def translate_card_name(self, card_data: Union[CardIdentificationData, Card], target_language: str,
-                            include_hidden_names: bool = False) -> OptStr:
+    def translate_card_name(self, card_data: CardIdentificationData | Card, target_language: str,
+                            include_hidden_names: bool = False) -> str | None:
         """
         Translates a card into the target_language. Uses the language in the card data as the source language, if given.
         If not, card names across all languages are searched.
@@ -658,7 +654,7 @@ class CardDatabase(QObject):
             card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language]
         return self._read_optional_scalar_from_db(query, parameters)
 
-    def get_available_languages_for_card(self, card: Card) -> StringList:
+    def get_available_languages_for_card(self, card: Card) -> list[str]:
         """
         Returns the sorted list of languages the given card is available in.
         This is used as the data source for the ComboBoxItemDelegate model
@@ -682,7 +678,7 @@ class CardDatabase(QObject):
         parameters: ParameterList = [card.language, card.oracle_id]
         return self._read_scalar_list_from_db(query, parameters)
 
-    def get_available_sets_for_card(self, card: Card) -> List[MTGSet]:
+    def get_available_sets_for_card(self, card: Card) -> list[MTGSet]:
         """
         Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
         """
@@ -712,7 +708,7 @@ class CardDatabase(QObject):
             result.append(card.set)
         return result
 
-    def get_available_collector_numbers_for_card_in_set(self, card: Card) -> StringList:
+    def get_available_collector_numbers_for_card_in_set(self, card: Card) -> list[str]:
         query = cached_dedent("""\
         SELECT DISTINCT collector_number FROM ( -- get_available_collector_numbers_for_card_in_set()
           SELECT ? AS collector_number
@@ -745,7 +741,7 @@ class CardDatabase(QObject):
             return None
 
     def _read_scalar_list_from_db(
-            self, query: LiteralString, parameters: Sequence[Any] = ()) -> List[Any]:
+            self, query: LiteralString, parameters: Sequence[Any] = ()) -> list[Any]:
         """Runs the query with the given parameters, returning a list of singular items"""
         return [item for item, in self.db.execute(query, parameters)]
 
@@ -759,7 +755,7 @@ class CardDatabase(QObject):
         """)
         return bool(self._read_optional_scalar_from_db(query, parameters))
 
-    def cards_not_used_since(self, keys: List[Tuple[str, bool]], date: datetime.date) -> List[int]:
+    def cards_not_used_since(self, keys: list[tuple[str, bool]], date: datetime.date) -> list[int]:
         """
         Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
         into the input list that correspond to cards that were not used since the given date.
@@ -777,7 +773,7 @@ class CardDatabase(QObject):
                 cards_not_used_since.append(index)
         return cards_not_used_since
 
-    def cards_used_less_often_then(self, keys: List[Tuple[str, bool]], count: int) -> List[int]:
+    def cards_used_less_often_then(self, keys: list[tuple[str, bool]], count: int) -> list[int]:
         """
         Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
         into the input list that correspond to cards that are used less often than the given count.

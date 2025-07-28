@@ -13,12 +13,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-
-from typing import Iterable, List, Optional, BinaryIO, Union
+from typing import Iterable, BinaryIO
 from io import BufferedIOBase
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal
+from PySide6.QtCore import QObject, Signal
 from delegateto import delegate
 
 from mtg_proxy_printer.logger import get_logger
@@ -29,7 +27,7 @@ __all__ = [
     "MeteredFile",
 ]
 
-WrappedIoType = Union[BufferedIOBase, BinaryIO]
+WrappedIoType = BufferedIOBase | BinaryIO
 
 
 @delegate(
@@ -58,7 +56,7 @@ class MeteredFile(QObject):
         self.io_begin.emit(self.expected_size_bytes)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> Optional[bool]:
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool | None:
         result = None
         try:
             result = self.file.__exit__(exc_type, exc_val, exc_tb)
@@ -75,7 +73,7 @@ class MeteredFile(QObject):
         self._total_bytes_processed = __offset
         self.total_bytes_processed.emit(self._total_bytes_processed)
 
-    def read(self, __size: Optional[int] = None) -> bytes:
+    def read(self, __size: int | None = None) -> bytes:
         buffer = self.file.read(__size)
         self._processed(len(buffer))
         return buffer
@@ -95,12 +93,12 @@ class MeteredFile(QObject):
         self._processed(bytes_read)
         return bytes_read
 
-    def readline(self, __size: Optional[int] = None) -> bytes:
+    def readline(self, __size: int | None = None) -> bytes:
         line = self.file.readline(__size)
         self._processed(len(line))
         return line
 
-    def readlines(self, __hint: int = None) -> List[bytes]:
+    def readlines(self, __hint: int = None) -> list[bytes]:
         lines = self.file.readlines(__hint)
         total_bytes = sum(map(len, lines))
         self._processed(total_bytes)

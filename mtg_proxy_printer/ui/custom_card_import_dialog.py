@@ -17,9 +17,9 @@ from collections import Counter
 from pathlib import Path
 import typing
 
-from PyQt5.QtCore import Qt, pyqtSignal as Signal, pyqtSlot as Slot
-from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QPixmap
-from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QPushButton
+from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QPixmap
+from PySide6.QtWidgets import QDialog, QWidget, QFileDialog, QPushButton
 
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
@@ -40,14 +40,14 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 TransformationMode = Qt.TransformationMode
-EventTypes = typing.Union[QDragEnterEvent, QDropEvent]
+EventTypes = QDragEnterEvent | QDropEvent
 
 
 class CustomCardImportDialog(QDialog):
 
     request_action = Signal(DocumentAction)
 
-    def __init__(self, document: Document, parent: QWidget = None, flags=Qt.WindowFlags()):
+    def __init__(self, document: Document, parent: QWidget = None, flags=Qt.WindowType.Window):
         super().__init__(parent, flags)
         self.ui = ui = Ui_CustomCardImportDialog()
         ui.setupUi(self)
@@ -122,7 +122,7 @@ class CustomCardImportDialog(QDialog):
         self.model.add_cards(cards)
         self.show()
 
-    def create_cards(self, paths: typing.List[Path]) -> typing.Counter[CustomCard]:
+    def create_cards(self, paths: list[Path]) -> typing.Counter[CustomCard]:
         result: typing.Counter[CustomCard] = Counter()
         regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
         card_db = self.model.card_db

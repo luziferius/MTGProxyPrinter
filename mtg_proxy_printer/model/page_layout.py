@@ -17,22 +17,15 @@ import dataclasses
 import itertools
 import math
 import typing
-from typing import Generator, Tuple
 
-import pint
-from PyQt5.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
-from PyQt5.QtCore import QMarginsF, QSizeF
-
-try:
-    from hamcrest import contains_exactly
-except ImportError:
-    # Compatibility with PyHamcrest < 1.10
-    from hamcrest import contains as contains_exactly
+from pint import Quantity
+from PySide6.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
+from PySide6.QtCore import QMarginsF, QSizeF
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, QuantityT, \
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, \
     distance_to_mm
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.page_scene import RenderMode
@@ -43,37 +36,37 @@ __all__ = [
     "PageLayoutSettings",
 ]
 
-def _is_quantity_setting(pair: typing.Tuple[str, typing.Any]):
-    return isinstance(pair[1], pint.Quantity)
+def _is_quantity_setting(pair: tuple[str, typing.Any]):
+    return isinstance(pair[1], Quantity)
 
 
 @dataclasses.dataclass
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
-    card_bleed: QuantityT = 0 * unit_registry.mm
+    card_bleed: Quantity = 0 * unit_registry.mm
     document_name: str = ""
     draw_cut_markers: bool = False
     draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
-    row_spacing: QuantityT = 0 * unit_registry.mm
-    column_spacing: QuantityT = 0 * unit_registry.mm
-    margin_bottom: QuantityT = 0 * unit_registry.mm
-    margin_left: QuantityT = 0 * unit_registry.mm
-    margin_right: QuantityT = 0 * unit_registry.mm
-    margin_top: QuantityT = 0 * unit_registry.mm
-    custom_page_height: QuantityT = 0 * unit_registry.mm
-    custom_page_width: QuantityT = 0 * unit_registry.mm
+    row_spacing: Quantity = 0 * unit_registry.mm
+    column_spacing: Quantity = 0 * unit_registry.mm
+    margin_bottom: Quantity = 0 * unit_registry.mm
+    margin_left: Quantity = 0 * unit_registry.mm
+    margin_right: Quantity = 0 * unit_registry.mm
+    margin_top: Quantity = 0 * unit_registry.mm
+    custom_page_height: Quantity = 0 * unit_registry.mm
+    custom_page_width: Quantity = 0 * unit_registry.mm
     paper_orientation: str = "Portrait"
     paper_size: str = "Custom"
-    watermark_angle: QuantityT = 0 * unit_registry.degree
+    watermark_angle: Quantity = 0 * unit_registry.degree
     watermark_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Transparent)
-    watermark_font_size: QuantityT = 0 * unit_registry.point
-    watermark_pos_x: QuantityT = 0 * unit_registry.mm
-    watermark_pos_y: QuantityT = 0 * unit_registry.mm
+    watermark_font_size: Quantity = 0 * unit_registry.point
+    watermark_pos_x: Quantity = 0 * unit_registry.mm
+    watermark_pos_y: Quantity = 0 * unit_registry.mm
     watermark_text: str = ""
 
     @property
-    def page_height(self) -> QuantityT:
+    def page_height(self) -> Quantity:
         if self.paper_size == "Custom":
             return self.custom_page_height
         page_size = mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size]
@@ -82,12 +75,12 @@ class PageLayoutSettings:
         return value*unit_registry.mm
 
     @page_height.setter
-    def page_height(self, value: QuantityT):
-        assert isinstance(value, pint.Quantity)
+    def page_height(self, value: Quantity):
+        assert isinstance(value, Quantity)
         self.custom_page_height = value
 
     @property
-    def page_width(self) -> QuantityT:
+    def page_width(self) -> Quantity:
         if self.paper_size == "Custom":
             return self.custom_page_width
         page_size = mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size]
@@ -96,8 +89,8 @@ class PageLayoutSettings:
         return value*unit_registry.mm
 
     @page_width.setter
-    def page_width(self, value: QuantityT):
-        assert isinstance(value, pint.Quantity)
+    def page_width(self, value: Quantity):
+        assert isinstance(value, Quantity)
         self.custom_page_width = value
 
     @classmethod
@@ -167,7 +160,7 @@ class PageLayoutSettings:
         return settings, dimensions
 
     @staticmethod
-    def _setting_to_str(key: str, value: typing.Any) -> typing.Tuple[str, str]:
+    def _setting_to_str(key: str, value: typing.Any) -> tuple[str, str]:
         if isinstance(value, str):
             pass
         elif isinstance(value, QColor):
@@ -194,7 +187,7 @@ class PageLayoutSettings:
             or self.compute_page_card_capacity(PageType.OVERSIZED) \
             > other.compute_page_card_capacity(PageType.OVERSIZED)
 
-    def update(self, other: typing.Iterable[typing.Tuple[str, typing.Any]]):
+    def update(self, other: typing.Iterable[tuple[str, typing.Any]]):
         known_keys = set(self.__annotations__.keys())
         for key, value in other:
             if key in known_keys:

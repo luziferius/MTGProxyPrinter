@@ -19,7 +19,7 @@ import collections
 import csv
 import typing
 
-from PyQt5.QtCore import QObject, QCoreApplication
+from PySide6.QtCore import QObject, QCoreApplication
 
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from ..model.card import Card
@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 del get_logger
 
 LineParserResult = typing.Counter[Card]
-CsvLine = typing.Tuple[str, typing.Dict[str, str]]
+CsvLine = tuple[str, dict[str, str]]
 
 __all__ = [
     "ScryfallCSVParser",
@@ -42,7 +42,7 @@ __all__ = [
 class BaseCSVParser(ParserBase):
 
     DIALECT_NAME = ""
-    USED_COLUMNS: typing.Set[str] = {
+    USED_COLUMNS: set[str] = {
 
     }
 
@@ -74,11 +74,11 @@ class BaseCSVParser(ParserBase):
         return reader,  zip(lines[1:], reader)
 
     @abc.abstractmethod
-    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
+    def parse_cards_from_line(self, line: dict[str, str], guess_printing: bool, language_override: str = None) \
             -> LineParserResult:
         pass
 
-    def should_skip_entry(self, line: typing.Dict[str, str]) -> bool:
+    def should_skip_entry(self, line: dict[str, str]) -> bool:
         return False
 
 
@@ -113,12 +113,12 @@ class ScryfallCSVParser(BaseCSVParser):
     }
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+    def supported_file_types() -> dict[str, list[str]]:
         return  {
             QCoreApplication.translate("ScryfallCSVParser", "Scryfall CSV export"): ["csv"],
         }
 
-    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
+    def parse_cards_from_line(self, line: dict[str, str], guess_printing: bool, language_override: str = None) \
             -> LineParserResult:
         cards = collections.Counter()
         scryfall_id = line["scryfall_id"]
@@ -154,7 +154,7 @@ class ScryfallCSVParser(BaseCSVParser):
                 logger.info("Not enough data available to select a printing for the given line. Skipping.")
         return cards
 
-    def _handle_removed_printing(self, scryfall_id: str, language: str, guess_printing: bool) -> typing.Optional[Card]:
+    def _handle_removed_printing(self, scryfall_id: str, language: str, guess_printing: bool) -> Card | None:
         if self.card_db.is_removed_printing(scryfall_id):
             choices = self.card_db.get_replacement_card_for_unknown_printing(
                 CardIdentificationData(language, scryfall_id=scryfall_id, is_front=True),
@@ -192,7 +192,7 @@ class TappedOutCSVParser(BaseCSVParser):
     }
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+    def supported_file_types() -> dict[str, list[str]]:
         return {
             QCoreApplication.translate("TappedOutCSVParser", "Tappedout CSV export"): ["csv"]
         }
@@ -206,7 +206,7 @@ class TappedOutCSVParser(BaseCSVParser):
         if include_acquire_board:
             self.allowed_boards.add("acquire")
 
-    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
+    def parse_cards_from_line(self, line: dict[str, str], guess_printing: bool, language_override: str = None) \
             -> LineParserResult:
         cards = collections.Counter()
         target_language = language_override or self._read_language(line)
@@ -236,14 +236,14 @@ class TappedOutCSVParser(BaseCSVParser):
         return cards
 
     @staticmethod
-    def _read_set_code(line: typing.Dict[str, str]) -> typing.Optional[str]:
+    def _read_set_code(line: dict[str, str]) -> str | None:
         set_code = line.get("Printing")
         if set_code:
             # TappedOut uses upper case set codes, so convert to lower case
             set_code = set_code.lower()
         return set_code
 
-    def _read_language(self, line: typing.Dict[str, str]):
+    def _read_language(self, line: dict[str, str]):
         try:
             language = line["Language"]
         except KeyError:
@@ -256,7 +256,7 @@ class TappedOutCSVParser(BaseCSVParser):
             language = "en"
         return language
 
-    def should_skip_entry(self, line: typing.Dict[str, str]) -> bool:
+    def should_skip_entry(self, line: dict[str, str]) -> bool:
         board = line["Board"]
         return board not in self.allowed_boards
 

@@ -20,19 +20,13 @@ import itertools
 import pathlib
 import sqlite3
 import textwrap
-from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, Tuple, TYPE_CHECKING
+from typing import Counter, Iterable, NamedTuple, TYPE_CHECKING
 
-import pint
-from PyQt5.QtGui import QPageLayout, QPageSize, QColor
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, Qt
+from pint import Quantity
+from PySide6.QtGui import QPageLayout, QPageSize, QColor
+from PySide6.QtCore import QObject, Signal, QThreadPool, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
-    has_properties, is_, any_of, none, has_item, has_property, equal_to
-
-try:
-    from hamcrest import contains_exactly
-except ImportError:
-    # Compatibility with PyHamcrest < 1.10
-    from hamcrest import contains as contains_exactly
+    has_properties, is_, any_of, none, has_item, has_property, equal_to, contains_exactly
 
 import mtg_proxy_printer.units_and_sizes
 import mtg_proxy_printer.settings
@@ -43,7 +37,7 @@ from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import  PageType, CardSize, CardSizes, unit_registry, \
-    PageSizeManager, QuantityT, T, UUID, OptStr
+    T, UUID, OptStr
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.save_file_migrations import migrate_database
@@ -85,15 +79,15 @@ class DatabaseLoadResult(NamedTuple):
 class CardRow(NamedTuple):
     is_front: bool
     card_type: CardType
-    scryfall_id: Optional[UUID]
-    custom_card_id: Optional[UUID]
+    scryfall_id: UUID | None
+    custom_card_id: UUID | None
 
 
 sqlite3.register_adapter(CardType, lambda item: item.value)
-CustomCards = Dict[str, Card]
+CustomCards = dict[str, Card]
 
 
-def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[Tuple[T, ...]]:
+def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[tuple[T, ...]]:
     """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
     iterable = iter(iterable)
     return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())
@@ -301,13 +295,13 @@ class Worker(LoaderSignals):
         return db
 
 
-    def _load_cards(self, save_db: sqlite3.Connection) -> List[CardList]:
+    def _load_cards(self, save_db: sqlite3.Connection) -> list[CardList]:
         custom_cards: CustomCards = {}
         assert_that(
             save_db.execute("SELECT min(page) FROM Page").fetchone(),
             contains_exactly(all_of(instance_of(int), greater_than_or_equal_to(1))
         ))
-        pages: List[CardList] = []
+        pages: list[CardList] = []
         allowed_sizes = {CardSizes.REGULAR.to_save_data(), CardSizes.OVERSIZED.to_save_data()}
         for page, expected_size in save_db.execute(
                 "SELECT page, image_size FROM Page ORDER BY page ASC").fetchall():  # type: int, str
@@ -323,7 +317,7 @@ class Worker(LoaderSignals):
                 FROM Card
                 WHERE page = ?
                 ORDER BY page ASC, slot ASC""")
-        db_data: Iterable[Tuple[int, bool, str, OptStr, OptStr]] = save_db.execute(query, (page,))
+        db_data: Iterable[tuple[int, bool, str, OptStr, OptStr]] = save_db.execute(query, (page,))
         valid_card_types = {v.value for v in CardType}
         is_positive_int = all_of(instance_of(int), greater_than_or_equal_to(1))
         result: CardList = []
@@ -371,13 +365,13 @@ class Worker(LoaderSignals):
             (scryfall_id, custom_card_id), has_item(none()),
             "Scryfall ID and custom card ID must not be both present")
 
-    def _load_official_card_from_card_db(self, data: CardRow) -> Optional[DatabaseLoadResult]:
+    def _load_official_card_from_card_db(self, data: CardRow) -> DatabaseLoadResult | None:
         if data.card_type == CardType.CHECK_CARD:
             return self._load_check_card(data)
         else:
             return self._load_official_card(data)
 
-    def _load_check_card(self, data: CardRow) -> Optional[DatabaseLoadResult]:
+    def _load_check_card(self, data: CardRow) -> DatabaseLoadResult | None:
         """
         Loads a check card. Retuns None if the given scryfall id does not belong to a DFC.
         If the front is unavailable, try to find a replacement.
@@ -406,7 +400,7 @@ class Worker(LoaderSignals):
         self.image_loader.get_image_synchronous(card)
         return DatabaseLoadResult(card, migrated)
 
-    def _load_official_card(self, data: CardRow) -> Optional[DatabaseLoadResult]:
+    def _load_official_card(self, data: CardRow) -> DatabaseLoadResult | None:
         migrated = False
         scryfall_id = data.scryfall_id
         is_front = data.is_front
@@ -445,7 +439,7 @@ class Worker(LoaderSignals):
         return self.card_db.get_custom_card(
             name, set_code, set_name, collector_number, card_size, card_row.is_front, image_bytes)
 
-    def _fix_mixed_pages(self, pages: List[CardList], page_settings: PageLayoutSettings):
+    def _fix_mixed_pages(self, pages: list[CardList], page_settings: PageLayoutSettings):
         """
         Documents saved with older versions (or specifically crafted save files) can contain images with mixed
         sizes on the same page.
@@ -490,7 +484,7 @@ class Worker(LoaderSignals):
         settings = PageLayoutSettings.create_from_settings()
         logger.debug("Reading document settings …")
         keys =  ", ".join(
-            f"'{key}'" for key, value in settings.__annotations__.items() if value is not QuantityT)
+            f"'{key}'" for key, value in settings.__annotations__.items() if value is not Quantity)
         document_settings_query = textwrap.dedent(f"""\
             SELECT "key", value
                 FROM DocumentSettings
@@ -498,7 +492,7 @@ class Worker(LoaderSignals):
             """)
         settings.update(db.execute(document_settings_query))
         keys = ", ".join(
-            f"'{key}'" for key, value in settings.__annotations__.items() if value is QuantityT)
+            f"'{key}'" for key, value in settings.__annotations__.items() if value is Quantity)
         document_dimensions_query = textwrap.dedent(f"""\
             SELECT "key", value
                 FROM DocumentDimensions
@@ -506,10 +500,10 @@ class Worker(LoaderSignals):
             """)
         settings.update(db.execute(document_dimensions_query))
         is_distance = all_of(
-            instance_of(pint.Quantity),
+            instance_of(Quantity),
             has_property("dimensionality", equal_to(unit_registry.mm.dimensionality)))
         is_angle = all_of(
-            instance_of(pint.Quantity),
+            instance_of(Quantity),
             has_property("dimensionality", equal_to(unit_registry.degree.dimensionality)))
         is_bool_str = is_in(("True", "False"))
         is_color = any_of(
@@ -546,7 +540,7 @@ class Worker(LoaderSignals):
             value = getattr(settings, key)
             if annotated_type is bool:
                 value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
-            elif annotated_type is QuantityT:
+            elif annotated_type is Quantity:
                 # Ensure all floats are within the allowed bounds.
                 limit = mtg_proxy_printer.settings.DOCUMENT_SETTINGS_QUANTITY_LIMITS[key.replace("_", "-")]
                 value = mtg_proxy_printer.settings.clamp_to_supported_range(value, limit)

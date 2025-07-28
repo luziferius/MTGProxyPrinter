@@ -18,11 +18,11 @@ import collections
 import enum
 import itertools
 import math
-import pathlib
+from pathlib import Path
 import sys
-import typing
+from typing import Counter, Iterable, Any, Generator
 
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, \
+from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
     QPersistentModelIndex
 
 from mtg_proxy_printer.model.imagedb_files import ImageKey
@@ -47,7 +47,7 @@ del get_logger
 if sys.version_info[:2] >= (3, 9):
     Counter = collections.Counter
 else:
-    Counter = typing.Counter
+    Counter = Counter
 
 __all__ = [
     "Document",
@@ -59,8 +59,8 @@ class DocumentColumns(enum.IntEnum):
 
 
 INVALID_INDEX = QModelIndex()
-ActionStack = typing.Deque[DocumentAction]
-AnyIndex = typing.Union[QModelIndex, QPersistentModelIndex]
+ActionStack = collections.deque[DocumentAction]
+AnyIndex = QModelIndex | QPersistentModelIndex
 ItemDataRole = Qt.ItemDataRole
 Orientation = Qt.Orientation
 ItemFlag = Qt.ItemFlag
@@ -99,15 +99,15 @@ class Document(QAbstractItemModel):
 
         self.undo_stack: ActionStack = collections.deque()
         self.redo_stack: ActionStack = collections.deque()
-        self.save_file_path: typing.Optional[pathlib.Path] = None
+        self.save_file_path: Path | None = None
         self.card_db = card_db
         self.image_db = image_db
         self.loader = DocumentLoader(self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.loader.load_requested.connect(self.apply)
-        self.pages: typing.List[Page] = [first_page := Page()]
+        self.pages: list[Page] = [first_page := Page()]
         # Mapping from page id() to list index in the page list
-        self.page_index_cache: typing.Dict[int, int] = {id(first_page): 0}
+        self.page_index_cache: dict[int, int] = {id(first_page): 0}
         self.currently_edited_page = first_page
         self.page_layout = PageLayoutSettings.create_from_settings()
         logger.debug(f"Loaded document settings from configuration file: {self.page_layout}")
@@ -166,7 +166,7 @@ class Document(QAbstractItemModel):
         self.current_page_changed.emit(QPersistentModelIndex(new_page))
 
     def headerData(
-            self, section: typing.Union[int, PageColumns],
+            self, section: int | PageColumns,
             orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
         if orientation == Orientation.Horizontal:
             if role == ItemDataRole.DisplayRole:
@@ -198,7 +198,7 @@ class Document(QAbstractItemModel):
             return len(DocumentColumns)  # columnCount of an invalid index.
 
     def parent(self, child: AnyIndex) -> QModelIndex:
-        data: typing.Union[Page, CardContainer] = self._to_index(child).internalPointer()
+        data: Page | CardContainer = self._to_index(child).internalPointer()
         if isinstance(data, CardContainer):
             page = data.parent
             page_index = self.find_page_list_index(page)
@@ -214,7 +214,7 @@ class Document(QAbstractItemModel):
             page = self.pages[row]
             return self.createIndex(row, column, page)
 
-    def data(self, index: AnyIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
+    def data(self, index: AnyIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> Any:
         index = self._to_index(index)
         if not index.isValid():
             return None
@@ -223,7 +223,7 @@ class Document(QAbstractItemModel):
         else:  # Page
             return self._data_page(index, role)
 
-    def flags(self, index: AnyIndex) -> Qt.ItemFlags:
+    def flags(self, index: AnyIndex) -> Qt.ItemFlag:
         index = self._to_index(index)
         data = index.internalPointer()
         flags = super().flags(index)
@@ -231,7 +231,7 @@ class Document(QAbstractItemModel):
             flags |= ItemFlag.ItemIsEditable
         return flags
 
-    def setData(self, index: AnyIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
+    def setData(self, index: AnyIndex, value: Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
         index = self._to_index(index)
         data: CardContainer = index.internalPointer()
         if not isinstance(data, CardContainer) or role != ItemDataRole.EditRole:
@@ -261,7 +261,7 @@ class Document(QAbstractItemModel):
         return False
 
     @staticmethod
-    def _to_index(other: QPersistentModelIndex) -> QModelIndex:
+    def _to_index(other: QPersistentModelIndex | QModelIndex) -> QModelIndex:
         return QModelIndex(other) if isinstance(other, QPersistentModelIndex) else other
 
     def _request_replacement_card(self, index: QModelIndex, card_data: CardIdentificationData):
@@ -275,7 +275,7 @@ class Document(QAbstractItemModel):
             return True
         return False
 
-    def _data_page(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
+    def _data_page(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> Any:
         """Returns the requested data for an index pointing to a page of Cards."""
         row = index.row()
         if row >= self.rowCount():
@@ -292,7 +292,7 @@ class Document(QAbstractItemModel):
             return item.page_type()
         return None
 
-    def _data_card(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
+    def _data_card(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> Any:
         """Returns the requested data for an index pointing to a single Card."""
         parent = index.parent()
         column = index.column()
@@ -333,7 +333,7 @@ class Document(QAbstractItemModel):
         column_index = index.siblingAtColumn(PageColumns.Image)
         self.dataChanged.emit(column_index, column_index, [ItemDataRole.DisplayRole])
 
-    def save_as(self, path: pathlib.Path):
+    def save_as(self, path: Path):
         """Save the document at the given path, overwriting any previously stored save path."""
         self.save_file_path = path
         ActionSaveDocument(path).apply(self)  # Note: Not using the action stack. Saving cannot be undone
@@ -403,7 +403,7 @@ class Document(QAbstractItemModel):
     def missing_image_count(self) -> int:
         return sum(1 for _ in self.get_missing_image_cards())
 
-    def get_missing_image_cards(self) -> typing.Generator[QModelIndex, None, None]:
+    def get_missing_image_cards(self) -> Generator[QModelIndex, None, None]:
         """Returns an iterable with indices to all cards that have missing images"""
         blanks = {self.image_db.get_blank(CardSizes.REGULAR), self.image_db.get_blank(CardSizes.OVERSIZED)}
         for page_number, page in enumerate(self.pages):
@@ -414,7 +414,7 @@ class Document(QAbstractItemModel):
                 if card.image_file in blanks and card.image_uri:
                     yield self.index(card_number, 0, page_index)
 
-    def _get_page_content_as_image_keys(self, page: Page) -> typing.Iterable[ImageKey]:
+    def _get_page_content_as_image_keys(self, page: Page) -> Iterable[ImageKey]:
         image_db = self.image_db
         return (
             ImageKey(card.scryfall_id, card.is_front, card.highres_image)
@@ -422,12 +422,12 @@ class Document(QAbstractItemModel):
             if not (card := container.card).is_custom_card
                and card.image_file is not image_db.get_blank(card.size))
 
-    def get_all_image_keys_in_document(self) -> typing.Set[ImageKey]:
+    def get_all_image_keys_in_document(self) -> set[ImageKey]:
         return set(itertools.chain.from_iterable(
             map(self._get_page_content_as_image_keys, self.pages)
         ))
 
-    def get_all_custom_cards(self) -> typing.Set[CustomCard]:
+    def get_all_custom_cards(self) -> set[CustomCard]:
         result = set()
         for page in self.pages:
             for container in page:

@@ -16,7 +16,7 @@
 from itertools import chain
 from numbers import Real
 from pathlib import Path
-from typing import Iterable, List, Union
+from typing import Iterable, Union
 from unittest.mock import patch
 
 import pint
@@ -154,12 +154,13 @@ def test__validate_documents_section_rounds_spacing_value_to_acceptable_value(
 @pytest.mark.parametrize("offset", [0, -1/101, 1/101])
 @pytest.mark.parametrize("settings_key", ["custom-page-height", "custom-page-width",])
 def test__validate_documents_section_rounds_paper_size_value_to_acceptable_value(
-        default_settings: ConfigParser, expected: Union[float, int], offset: float, settings_key: str):
+        default_settings: ConfigParser, expected: float | int, offset: float, settings_key: str):
     documents_section = default_settings["documents"]
     documents_section[settings_key] = to_mm_str(expected + offset)
     mtg_proxy_printer.settings.validate_settings(default_settings)
     value = documents_section.get_quantity(settings_key).to("mm").magnitude
     assert_that(value, is_(close_to(expected, 0.01)))
+
 
 def test__validate_documents_section_document_name(default_settings: ConfigParser):
     key, value = "default-document-name", "Test"
@@ -177,7 +178,7 @@ def test__validate_documents_section_document_name(default_settings: ConfigParse
     ("leb 2xM leb LEB", ["2xm", "leb"]),
     ("   LEB\n\n\t2xM ", ["2xm", "leb"]),
 ])
-def test_parse_card_set_filters(default_settings: ConfigParser, set_filter: str, parsed_set_codes: List[str]):
+def test_parse_card_set_filters(default_settings: ConfigParser, set_filter: str, parsed_set_codes: list[str]):
     default_settings["card-filter"]["hidden-sets"] = set_filter
     assert_that(
         mtg_proxy_printer.settings.parse_card_set_filters(default_settings),

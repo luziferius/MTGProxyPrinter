@@ -17,17 +17,17 @@ import functools
 import math
 import operator
 from pathlib import Path
-from typing import Union, Optional
 
-from PyQt5.QtCore import QPoint, Qt, pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QTableView, QWidget, QMenu, QAction, QInputDialog, QFileDialog
+
+from PySide6.QtCore import QPoint, Qt, Signal, Slot, QPersistentModelIndex
+from PySide6.QtGui import QIcon, QAction
+from PySide6.QtWidgets import QTableView, QWidget, QMenu, QInputDialog, QFileDialog
 
 from mtg_proxy_printer.app_dirs import data_directories
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType, AnyCardTypeForTypeCheck
+from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.ui.item_delegates import CollectorNumberEditorDelegate, SetEditorDelegate, LanguageEditorDelegate
@@ -120,7 +120,7 @@ class PageCardTableView(QTableView):
 
         parent.addMenu(self.tr("Generate DFC check card")).addActions(actions)
 
-    def _create_add_copies_actions(self, card: Union[AnyCardType, CardList], add_4th: bool = False):
+    def _create_add_copies_actions(self, card: AnyCardType | CardList, add_4th: bool = False):
         """
         Returns a list of QActions to add 1, 2, 3, optionally 4, and a user-defined number of copies of the given card.
         """
@@ -137,8 +137,8 @@ class PageCardTableView(QTableView):
             None, card))
         return actions
 
-    def _create_add_copies_action(self, label: str, count: Optional[int],
-                                  card: Union[AnyCardType, CardList]):
+    def _create_add_copies_action(self, label: str, count: int | None,
+                                  card: AnyCardType | CardList):
         action = QAction(QIcon.fromTheme("list-add"), label, self)
         action.triggered.connect(functools.partial(self._add_copies, card, count))
         return action
@@ -149,9 +149,9 @@ class PageCardTableView(QTableView):
         for card in related_cards:
             parent.addMenu(card.name).addActions(self._create_add_copies_actions(card, True))
 
-    def _add_copies(self, card: Union[AnyCardType, CardList], count: Optional[int]):
+    def _add_copies(self, card: AnyCardType | CardList, count: int | None):
         nl = '\n'
-        card_name = card.name if isinstance(card, AnyCardTypeForTypeCheck) else nl + nl.join(item.name for item in card)
+        card_name = card.name if isinstance(card, AnyCardType) else nl + nl.join(item.name for item in card)
         if count is None:
             count, success = QInputDialog.getInt(
                 self, self.tr("Add copies"), self.tr(
@@ -162,7 +162,7 @@ class PageCardTableView(QTableView):
                 logger.info("User cancelled adding card copies")
                 return
         logger.info(f"Add {count} × {card_name.replace(nl, ',')} via the context menu action")
-        if isinstance(card, AnyCardTypeForTypeCheck):
+        if isinstance(card, AnyCardType):
             self._request_action_add_card(card, count)
         else:
             for item in card:

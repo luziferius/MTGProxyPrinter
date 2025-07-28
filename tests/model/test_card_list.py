@@ -20,7 +20,7 @@ import typing
 from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
-from PyQt5.QtCore import QItemSelectionModel, Qt
+from PySide6.QtCore import QItemSelectionModel, Qt
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.model.card import CustomCard, MTGSet
@@ -151,7 +151,7 @@ def test_replace_regular_with_oversized_card_increments_oversized_count(qtbot: Q
     ([(0, 1), (2, 3)], [(0, 3)]),
     ([(0, 1), (3, 4)], [(0, 1), (3, 4)]),
 ])
-def test__merge_ranges(ranges: typing.List[typing.Tuple[int, int]], merged: typing.List[typing.Tuple[int, int]]):
+def test__merge_ranges(ranges: list[tuple[int, int]], merged: list[tuple[int, int]]):
     assert_that(
         CardListModel._merge_ranges(ranges),
         contains_exactly(*merged),
@@ -220,7 +220,7 @@ def test_remove_multi_selection(qtbot: QtBot, document: Document):
 def test_has_basic_lands(
         qtbot: QtBot, document: Document,
         include_wastes: bool, include_snow_basics: bool,
-        present_cards: typing.List[str], expected: bool):
+        present_cards: list[str], expected: bool):
     model = _populate_card_db_and_create_model(qtbot, document)
     model.add_cards(Counter(
         {document.card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_cards}
@@ -255,7 +255,7 @@ def test_has_basic_lands(
 def test_remove_all_basic_lands(
         qtbot: QtBot, document: Document,
         remove_wastes: bool, remove_snow_basics: bool,
-        present_cards: typing.List[str], expected_remaining: typing.List[str]):
+        present_cards: list[str], expected_remaining: list[str]):
     model = _populate_card_db_and_create_model(qtbot, document)
     model.add_cards(Counter(
         {document.card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_cards}

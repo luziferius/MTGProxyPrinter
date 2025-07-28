@@ -17,9 +17,9 @@
 import dataclasses
 import enum
 from functools import partial
-import typing
+from typing import Iterable
 
-from mtg_proxy_printer.model.card import AnyCardType, AnyCardTypeForTypeCheck
+from mtg_proxy_printer.model.card import AnyCardType
 from mtg_proxy_printer.units_and_sizes import PageType
 
 
@@ -38,9 +38,9 @@ class CardContainer:
     card: AnyCardType
 
 
-class Page(typing.List[CardContainer]):
+class Page(list[CardContainer]):
 
-    def __init__(self, __iterable: typing.Iterable[AnyCardType] = None):
+    def __init__(self, __iterable: Iterable[AnyCardType] = None):
         __iterable = __iterable or []
         __iterable = map(partial(CardContainer, self), __iterable)
         super().__init__(__iterable)
@@ -61,12 +61,12 @@ class Page(typing.List[CardContainer]):
             return PageType.OVERSIZED
         return PageType.MIXED
 
-    def accepts_card(self, card: typing.Union[AnyCardType, PageType]) -> bool:
-        other_type = card.requested_page_type() if isinstance(card, AnyCardTypeForTypeCheck) else card
+    def accepts_card(self, card: AnyCardType| PageType) -> bool:
+        other_type = card.requested_page_type() if isinstance(card, AnyCardType) else card
         own_page_type = self.page_type()
         return other_type == own_page_type or own_page_type is PageType.UNDETERMINED
 
-    def insert(self, __index: int, __object: typing.Union[AnyCardType, CardContainer]) -> CardContainer:
+    def insert(self, __index: int, __object: AnyCardType | CardContainer) -> CardContainer:
         if isinstance(__object, CardContainer):
             container = __object
             container.parent = self

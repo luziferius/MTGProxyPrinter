@@ -17,10 +17,10 @@ import dataclasses
 import hashlib
 import enum
 import functools
-import typing
+from typing import Union
 
-from PyQt5.QtCore import QRect, QPoint, QSize, Qt, QPointF
-from PyQt5.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform
+from PySide6.QtCore import QRect, QPoint, QSize, Qt, QPointF
+from PySide6.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform
 
 from mtg_proxy_printer.units_and_sizes import CardSize, PageType, CardSizes, UUID
 
@@ -28,6 +28,7 @@ ItemDataRole = Qt.ItemDataRole
 RenderHint = QPainter.RenderHint
 SmoothTransformation = Qt.TransformationMode.SmoothTransformation
 IgnoreAspectRatio = Qt.AspectRatioMode.IgnoreAspectRatio
+
 
 @dataclasses.dataclass(frozen=True)
 class MTGSet:
@@ -75,7 +76,7 @@ class Card:
     size: CardSize = dataclasses.field(compare=False)
     face_number: int = dataclasses.field(compare=True)
     is_dfc: bool = dataclasses.field(compare=True)
-    image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
+    image_file: QPixmap | None = dataclasses.field(default=None, compare=False)
 
     def set_image_file(self, image: QPixmap):
         self.image_file = image
@@ -253,7 +254,7 @@ class CheckCard:
         return self.front.is_custom_card
 
     @property
-    def image_file(self) -> typing.Optional[QPixmap]:
+    def image_file(self) -> QPixmap | None:
         if self.front.image_file is None or self.back.image_file is None:
             return None
         card_size = self.front.image_file.size()
@@ -265,7 +266,7 @@ class CheckCard:
         combined_image = QPixmap(card_size)
         combined_image.fill(QColorConstants.Transparent)
         painter = QPainter(combined_image)
-        painter.setRenderHints(RenderHint.SmoothPixmapTransform | RenderHint.HighQualityAntialiasing)
+        painter.setRenderHints(RenderHint.SmoothPixmapTransform)
         transformation = QTransform()
         transformation.rotate(90)
         transformation.scale(horizontal_scaling_factor, vertical_scaling_factor)
@@ -295,8 +296,6 @@ class CheckCard:
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
 
 
-AnyCardType = typing.Union[Card, CheckCard, CustomCard]
-CardList = typing.List[AnyCardType]
-OptionalCard = typing.Optional[AnyCardType]
-# Py3.8 compatibility hack, because isinstance(a, AnyCardType) fails on 3.8
-AnyCardTypeForTypeCheck = typing.get_args(AnyCardType)
+AnyCardType = Union[Card, CheckCard, CustomCard]
+CardList = list[AnyCardType]
+OptionalCard = AnyCardType | None

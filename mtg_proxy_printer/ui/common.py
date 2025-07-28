@@ -13,22 +13,15 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-try:
-    from functools import lru_cache, cache
-except ImportError:
-    from functools import lru_cache
-    cache = lru_cache
-
+from functools import lru_cache, cache
 from pathlib import Path
 import platform
 import re
-from typing import Union, Dict
 
-from PyQt5.QtCore import QFile, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
-from PyQt5.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit, QDialog
-from PyQt5.QtGui import QIcon, QPixmap, QColor, QColorConstants
-# noinspection PyUnresolvedReferences
-from PyQt5 import uic
+from PySide6.QtCore import QFile, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
+from PySide6.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit, QDialog
+from PySide6.QtGui import QIcon, QPixmap, QColor, QColorConstants
+from PySide6.QtUiTools import loadUiType
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.units_and_sizes import OptStr
@@ -68,7 +61,7 @@ else:
 
 
 @lru_cache(maxsize=256)
-def get_card_image_tooltip(image: Union[bytes, Path], card_name: OptStr = None, scaling_factor: int = 3) -> str:
+def get_card_image_tooltip(image: bytes | Path, card_name: OptStr = None, scaling_factor: int = 3) -> str:
     """
     Returns a tooltip string showing a scaled down image for the given path.
     :param image: Filesystem path to the image file or raw image content as bytes
@@ -89,7 +82,8 @@ def get_card_image_tooltip(image: Union[bytes, Path], card_name: OptStr = None, 
     card_name = f'<p style="text-align:center">{card_name}</p><br>' if card_name else ""
     return f'{card_name}<img src="data:image/png;base64,{image}">'
 
-def show_wizard_or_dialog(wizard: Union[QDialog]):
+
+def show_wizard_or_dialog(wizard: QDialog | QWizard):
     """
     Shows a wizard or dialog.
     Uses the "wizards-open-maximized" setting to determine, if it should be shown as a small floating window or
@@ -99,6 +93,7 @@ def show_wizard_or_dialog(wizard: Union[QDialog]):
         wizard.showMaximized()
     else:
         wizard.show()
+
 
 def highlight_widget(widget: QWidget) -> None:
     """Sets a visual highlight on the given widget to make it stand out"""
@@ -127,8 +122,7 @@ class BlockedSignals:
 
 def load_ui_from_file(name: str):
     """
-    Returns the Ui class type from uic.loadUiType(), loading the ui file with the given name.
-
+    Returns the Ui class type as returned by PySide6.QtUiTools.loadUiType(), loading the ui file with the given name.
     :param name: Path to the UI file
     :return: class implementing the requested Ui
     :raises FileNotFoundError: If the given ui file does not exist
@@ -138,7 +132,10 @@ def load_ui_from_file(name: str):
         error_message = f"UI file not found: {file_path}"
         logger.error(error_message)
         raise FileNotFoundError(error_message)
-    base_type, _ = uic.loadUiType(file_path, from_imports=True)
+    try:
+        base_type, _ = loadUiType(file_path)
+    except TypeError as e:
+        raise RuntimeError(f"Ui compilation failed for path {file_path}") from e
     return base_type
 
 def load_icon(name: str) -> QIcon:
@@ -201,7 +198,7 @@ def get_widget_background_color(widget: QWidget) -> QColor:
 
 class WizardBase(QWizard):
     """Base class for wizards based on QWizard"""
-    BUTTON_ICONS: Dict[QWizard.WizardButton, str] = {}
+    BUTTON_ICONS: dict[QWizard.WizardButton, str] = {}
 
     def __init__(self, window_size: QSize, parent: QWidget, flags):
         super().__init__(parent, flags)

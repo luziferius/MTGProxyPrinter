@@ -13,13 +13,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import typing
-from itertools import combinations
-from typing import Union
-
-from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel, QObject, QEvent
-from PyQt5.QtGui import QKeyEvent, QFocusEvent
-from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox, QLineEdit, \
+from PySide6.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel, QEvent
+from PySide6.QtGui import QKeyEvent, QFocusEvent
+from PySide6.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox, QLineEdit, \
     QApplication
 
 from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType
@@ -50,7 +46,7 @@ def get_document_from_index(index: QModelIndex) -> Document:
     Returns the Document instance associated with the given index.
     Resolves any chain of layered sort/filter models, to grant access to non-Qt-API Document methods.
     """
-    model: typing.Union[Document, QSortFilterProxyModel, None] = index.model()
+    model: Document | QSortFilterProxyModel | None = index.model()
     if model is None:
         raise RuntimeError("Invalid index without attached model passed")
     while hasattr(model, "sourceModel"):
@@ -116,7 +112,7 @@ class SetEditorDelegate(FastComboBoxDelegate):
     """
     class CustomCardSetEditor(QWidget):
         """A widget holding two line edits, allowing the user to freely edit the set name & code of custom cards."""
-        def __init__(self, parent: QWidget = None, flags=Qt.WindowFlags()):
+        def __init__(self, parent: QWidget = None, flags=Qt.WindowType.Widget):
             super().__init__(parent, flags)
             self.ui = ui = Ui_SetEditor()
             ui.setupUi(self)
@@ -133,7 +129,7 @@ class SetEditorDelegate(FastComboBoxDelegate):
         # Use a locked-down choice-based editor for official cards, and a free-form editor for custom cards
         return self.CustomCardSetEditor(parent) if card.is_custom_card else super().createEditor(parent, option, index)
 
-    def setEditorData(self, editor: Union[QComboBox, CustomCardSetEditor], index: QModelIndex):
+    def setEditorData(self, editor: QComboBox | CustomCardSetEditor, index: QModelIndex):
         card: AnyCardType = index.data(ItemDataRole.UserRole)
         if card.is_custom_card:
             current_data: MTGSet = index.data(ItemDataRole.EditRole)
@@ -148,13 +144,13 @@ class SetEditorDelegate(FastComboBoxDelegate):
                     editor.setCurrentIndex(position)
 
     def setModelData(
-            self, editor: Union[QComboBox, CustomCardSetEditor], model: QAbstractItemModel, index: QModelIndex) -> None:
+            self, editor: QComboBox | CustomCardSetEditor, model: QAbstractItemModel, index: QModelIndex) -> None:
         card: AnyCardType = index.data(ItemDataRole.UserRole)
         data = editor.to_mtg_set() if card.is_custom_card else editor.currentData(ItemDataRole.UserRole)
         model.setData(index, data, ItemDataRole.EditRole)
 
     @staticmethod
-    def _is_official_card(editor: Union[QComboBox, CustomCardSetEditor]):
+    def _is_official_card(editor: QComboBox | CustomCardSetEditor):
         return isinstance(editor, QComboBox)
 
 
@@ -196,13 +192,12 @@ class CollectorNumberEditorDelegate(FastComboBoxDelegate):
     and uses a locked-down choice-based combo box for official cards
     """
     def createEditor(
-            self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex
-    ) -> typing.Union[QLineEdit, QComboBox]:
+            self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QLineEdit | QComboBox:
         card: AnyCardType = index.data(ItemDataRole.UserRole)
         # Use a locked-down choice-based editor for official cards, and a free-form editor for custom cards
         return QLineEdit(parent) if card.is_custom_card else super().createEditor(parent, option, index)
 
-    def setEditorData(self, editor: typing.Union[QLineEdit, QComboBox], index: QModelIndex) -> None:
+    def setEditorData(self, editor: QLineEdit | QComboBox, index: QModelIndex) -> None:
         model = get_document_from_index(index)
         card: Card = index.data(ItemDataRole.UserRole)
         if card.is_custom_card:
@@ -215,7 +210,7 @@ class CollectorNumberEditorDelegate(FastComboBoxDelegate):
                 editor.setCurrentIndex(matching_collector_numbers.index(index.data(ItemDataRole.EditRole)))
 
     def setModelData(
-            self, editor: typing.Union[QLineEdit, QComboBox], model: QAbstractItemModel, index: QModelIndex) -> None:
+            self, editor: QLineEdit | QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:
         card: Card = index.data(ItemDataRole.UserRole)
         new_value = editor.text() if card.is_custom_card else editor.currentData(ItemDataRole.UserRole)
         previous_value = card.collector_number

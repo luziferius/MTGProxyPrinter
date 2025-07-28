@@ -16,8 +16,8 @@
 
 from unittest.mock import patch
 
-import pint
-from PyQt5.QtWidgets import QDoubleSpinBox, QCheckBox, QLineEdit
+from pint import Quantity, Unit
+from PySide6.QtWidgets import QDoubleSpinBox, QCheckBox, QLineEdit
 
 from hamcrest import *
 import pytest
@@ -26,11 +26,11 @@ from pytestqt.qtbot import QtBot
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
-from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT, QuantityT
+from mtg_proxy_printer.units_and_sizes import unit_registry
 
 from tests.hasgetter import has_getter
 from tests.helpers import quantity_close_to, quantity_between, number_between, close_to_
-mm: UnitT = unit_registry.mm
+mm: Unit = unit_registry.mm
 
 
 @pytest.fixture()
@@ -78,7 +78,7 @@ def test_set_numerical_spin_boxes(
     widget.load_from_page_layout(default_settings)
     ui = widget.ui
     assert_that(ui, has_property(attribute_name, instance_of(QDoubleSpinBox)))
-    assert_that(widget.page_layout, has_property(attribute_name, instance_of(pint.Quantity)))
+    assert_that(widget.page_layout, has_property(attribute_name, instance_of(Quantity)))
     spinbox_widget: QDoubleSpinBox = getattr(ui, attribute_name)
     with qtbot.waitSignals([spinbox_widget.valueChanged, widget.page_layout_changed], timeout=100):
         previous = spinbox_widget.value()
@@ -165,7 +165,7 @@ ZeroMarginsSettings = {
 ])
 def test_load_numerical_document_settings_from_config(
         widget: PageConfigWidget, settings_name: str, attribute_name: str,
-        min_value: QuantityT, max_value: QuantityT, value: QuantityT):
+        min_value: Quantity, max_value: Quantity, value: Quantity):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
@@ -220,7 +220,7 @@ def test_load_boolean_checkboxes_from_config(
 def test_save_numerical_document_settings_to_config(
         qtbot: QtBot,
         widget: PageConfigWidget, settings_name: str, attribute_name: str,
-        min_value: QuantityT, max_value: QuantityT, value: QuantityT):
+        min_value: Quantity, max_value: Quantity, value: Quantity):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
@@ -277,7 +277,7 @@ def test_save_boolean_document_settings_to_config(
 ])
 def test_load_numerical_values_from_page_layout(
         widget: PageConfigWidget, default_settings: PageLayoutSettings,
-        attribute_name: str, min_value: QuantityT, max_value: QuantityT, value: QuantityT):
+        attribute_name: str, min_value: Quantity, max_value: Quantity, value: Quantity):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.

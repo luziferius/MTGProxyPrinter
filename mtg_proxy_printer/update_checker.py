@@ -23,7 +23,7 @@ import urllib.parse
 import urllib.error
 
 import ijson
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool
+from PySide6.QtCore import QObject, Signal, QThreadPool
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
@@ -34,7 +34,7 @@ from mtg_proxy_printer.natsort import natural_sorted, str_less_than
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import StringList, OptStr
+from mtg_proxy_printer.units_and_sizes import OptStr
 
 logger = get_logger(__name__)
 del get_logger
@@ -44,7 +44,7 @@ __all__ = [
 ]
 
 VERSION_TAG_MATCHER = re.compile(r"v(?P<version>\d+\.\d+\.\d+)")
-KNOWN_APPLICATION_MIRRORS: StringList = [
+KNOWN_APPLICATION_MIRRORS: list[str] = [
     "http://chiselapp.com/user/luziferius/repository/MTGProxyPrinter",
     # Don’t use the master repository for now, as it may not be able to handle load spikes
     # "http://1337net.duckdns.org:8080/MTGProxyPrinter",
@@ -83,7 +83,7 @@ class CardDataUpdateCheckWorker(ApiStreamWorker):
         else:
             logger.debug("No new card data found.")
 
-    def _is_newer_card_data_available(self) -> typing.Tuple[int, int]:
+    def _is_newer_card_data_available(self) -> tuple[int, int]:
         total_cards_in_last_update = self.get_total_cards_in_last_update()
         total_cards_available = self.get_available_card_count()
         logger.debug(f"Total cards during last update: {total_cards_in_last_update}")
@@ -145,15 +145,15 @@ class ApplicationUpdateCheckWorker(CardInfoWorkerBase):
         return None
 
     @staticmethod
-    def _get_application_mirrors() -> StringList:
+    def _get_application_mirrors() -> list[str]:
         mirrors = KNOWN_APPLICATION_MIRRORS.copy()
         random.shuffle(mirrors)
         return mirrors
 
-    def _read_available_application_versions(self) -> StringList:
+    def _read_available_application_versions(self) -> list[str]:
         """
         Reads the available versions from any known mirror
-        :returns: List of all released versions, sorted descending.
+        :returns: list of all released versions, sorted descending.
         """
         tags = []
         for mirror in self._get_application_mirrors():

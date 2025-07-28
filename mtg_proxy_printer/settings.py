@@ -22,18 +22,16 @@ import typing
 import tokenize
 from collections import defaultdict
 
-import pint
-from PyQt5.QtCore import QStandardPaths, QLocale
-from PyQt5.QtGui import QPageSize, QPageLayout, QColor
-from PyQt5.QtPrintSupport import QPrinterInfo
+from pint import DimensionalityError, Quantity, Unit
+from PySide6.QtCore import QStandardPaths, QLocale
+from PySide6.QtGui import QPageSize, QPageLayout, QColor
+from PySide6.QtPrintSupport import QPrinterInfo
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import \
-    CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT, PageSizeManager, is_acceptable_page_size, \
-    Unit
-
+    CardSizes, ConfigParser, SectionProxy, unit_registry, T, PageSizeManager, is_acceptable_page_size
 StandardLocation = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
 Territory = QLocale.Country  # TODO: Adjust for PySide6
@@ -76,7 +74,7 @@ LOCATION_PAPER_SIZE_TABLE = defaultdict(lambda: PageSizeId.A4, {
 
 
 def get_default_paper_size() -> str:
-    system_country = QLocale.system().country()
+    system_country = QLocale.system().territory()
     default = PageSizeManager.PageSizeReverse[LOCATION_PAPER_SIZE_TABLE[system_country]]
     printer_info = QPrinterInfo.defaultPrinter()
     if printer_info.isNull():
@@ -97,9 +95,9 @@ class QuantityLimits(typing.NamedTuple):
     - target_unit is the fallback unit, if the dimensionality is compatible, but the unit is not acceptable:
       "1N*1s²/10kg" is a length (100mm), but not of an acceptable unit, so it will be converted to the target unit
     """
-    minimum: QuantityT
-    maximum: QuantityT
-    acceptable_units: typing.Set[Unit]
+    minimum: Quantity
+    maximum: Quantity
+    acceptable_units: set[Unit]
     target_unit: Unit
 
 
@@ -265,7 +263,7 @@ def round_to_nearest_multiple(value: T, multiple: T) -> T:
     return round(value/multiple)*multiple
 
 
-def clamp_to_supported_range(value: QuantityT, limits: QuantityLimits) -> QuantityT:
+def clamp_to_supported_range(value: Quantity, limits: QuantityLimits) -> Quantity:
     """Clamps numerical document settings to the supported value range"""
     return min(max(value, limits.minimum),  limits.maximum)
 
@@ -277,7 +275,7 @@ def get_boolean_card_filter_keys():
     return keys
 
 
-def parse_card_set_filters(input_settings: ConfigParser = settings) -> typing.Set[str]:
+def parse_card_set_filters(input_settings: ConfigParser = settings) -> set[str]:
     """Parses the hidden sets filter setting into a set of lower-case MTG set codes."""
     raw = input_settings["card-filter"]["hidden-sets"]
     raw = raw.lower()
@@ -533,18 +531,18 @@ def _validate_quantity(section: SectionProxy, defaults: SectionProxy, key: str, 
             section[key] = str(clamped)
     # Unit-less values raise AttributeError, non-length values, like grams or seconds, raise DimensionalityError
     # Invalid expressions raise TokenError
-    except (ValueError, pint.DimensionalityError, AttributeError, tokenize.TokenError):
+    except (ValueError, DimensionalityError, AttributeError, tokenize.TokenError):
         _restore_default(section, defaults, key)
 
 
-def _validate_string_is_in_set(section: SectionProxy, defaults: SectionProxy, valid_options: typing.Set[str], key: str):
+def _validate_string_is_in_set(section: SectionProxy, defaults: SectionProxy, valid_options: set[str], key: str):
     """Checks if the value of the option is one of the allowed values, as determined by the given set of strings."""
     if section[key] not in valid_options:
         _restore_default(section, defaults, key)
 
 
 def _validate_color(section: SectionProxy, defaults: SectionProxy, key: str):
-    if not QColor.isValidColor(section.get(key)):
+    if not QColor.isValidColorName(section.get(key)):
         _restore_default(section, defaults, key)
 
 

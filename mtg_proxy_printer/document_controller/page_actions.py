@@ -15,12 +15,12 @@
 
 
 import functools
-import typing
+from typing import Iterable, TYPE_CHECKING
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import Page
-from ..model.card import AnyCardType
+from mtg_proxy_printer.model.card import AnyCardType
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
 
@@ -30,7 +30,7 @@ __all__ = [
     "ActionNewPage",
     "ActionRemovePage",
 ]
-ContentType = typing.List[typing.Iterable[AnyCardType]]
+ContentType = list[Iterable[AnyCardType]]
 
 
 class ActionNewPage(DocumentAction):
@@ -41,7 +41,7 @@ class ActionNewPage(DocumentAction):
     Positions are clamped into the range [0, page_count].
 
     Page count defaults to 1.
-    If content is given, it must be a List[List[AnyCardType]], with length equal to count.
+    If content is given, it must be a list[list[AnyCardType]], with length equal to count.
     Individual lists in content may be empty. If content is given, the cards in content are placed on the
     created pages in the order given.
     """
@@ -104,8 +104,8 @@ class ActionRemovePage(DocumentAction):
     def __init__(self, position: int = None, count: int = 1):
         self.position = position
         self.count = count
-        self.removed_pages: typing.List[Page] = []
-        self.currently_edited_page: typing.Optional[Page] = None  # Set, if the currently edited page is removed
+        self.removed_pages: list[Page] = []
+        self.currently_edited_page: Page | None = None  # Set, if the currently edited page is removed
         self.removed_all_pages: bool = False
 
     def apply(self, document: "Document") -> Self:

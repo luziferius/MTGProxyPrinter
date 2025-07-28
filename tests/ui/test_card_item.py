@@ -16,9 +16,9 @@
 
 from hamcrest import *
 import pytest
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QColorConstants, QPixmap, QImage, QPainter, QColor
-from PyQt5.QtWidgets import QGraphicsItem, QGraphicsScene
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QColorConstants, QPixmap, QImage, QPainter, QColor
+from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene
 
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.units_and_sizes import CardSizes

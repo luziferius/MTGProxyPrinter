@@ -20,9 +20,9 @@ import pathlib
 import typing
 from abc import abstractmethod
 
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
-from PyQt5.QtGui import QDesktopServices, QStandardItem, QIcon, QColor
-from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox, \
+from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
+from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon, QColor
+from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox, \
     QColorDialog
 
 import mtg_proxy_printer.app_dirs
@@ -30,7 +30,7 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
-from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, QuantityT
+from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
 if typing.TYPE_CHECKING:
@@ -54,12 +54,12 @@ except ModuleNotFoundError:
     Ui_ExportSettingsPage = load_ui_from_file("settings_window/export_settings_page")
 
 CheckState = Qt.CheckState
-bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
+bool_to_check_state: dict[bool | None, CheckState] = {
     True: CheckState.Checked,
     False: CheckState.Unchecked,
     None: CheckState.PartiallyChecked,
 }
-check_state_to_bool_str: typing.Dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
+check_state_to_bool_str: dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 ItemDataRole = Qt.ItemDataRole
 StandardLocation = QStandardPaths.StandardLocation
@@ -67,14 +67,13 @@ LocateOption = QStandardPaths.LocateOption
 StandardButton = QMessageBox.StandardButton
 logger = get_logger(__name__)
 del get_logger
-mm: QuantityT = unit_registry.mm
+mm: Quantity = unit_registry.mm
 
 
 class PageMetadata(typing.NamedTuple):
     text: str
     icon_name: OptStr
     tooltip: OptStr = None
-
 
 class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
@@ -117,7 +116,7 @@ class Page(QWidget):
 
     def clear_highlight(self):
         """Clears all GUI widget highlights."""
-        for item in self.findChildren((QWidget,), options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
+        for item in self.findChildren(QWidget, options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
             item.setGraphicsEffect(None)
 
 
@@ -165,7 +164,7 @@ class DebugSettingsPage(Page):
 
     def _get_debug_settings_checkbox_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+        widgets_with_settings: list[tuple[QCheckBox, str]] = [
             (ui.enable_cutelog_integration, "cutelog-integration"),
             (ui.enable_write_log_file, "write-log-file")
         ]
@@ -260,7 +259,7 @@ class DecklistImportSettingsPage(Page):
 
     def _get_checkbox_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+        widgets_with_settings: list[tuple[QCheckBox, str]] = [
             (ui.print_guessing_enable, "enable-print-guessing-by-default"),
             (ui.print_guessing_prefer_already_downloaded, "prefer-already-downloaded-images"),
             (ui.automatic_deck_list_translation_enable, "always-translate-deck-lists"),
@@ -272,7 +271,7 @@ class DecklistImportSettingsPage(Page):
 
     def _get_save_path_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
+        widgets_with_settings: list[tuple[QLineEdit, str]] = [
             (ui.deck_list_search_path, "deck-list-search-path"),
         ]
         return widgets_with_settings
@@ -302,7 +301,7 @@ class GeneralSettingsPage(Page):
         ui.add_card_widget_style_combo_box.addItem(self.tr("Horizontal layout"), "horizontal")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Columnar layout"), "columnar")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Tabbed layout"), "tabbed")
-        progress: typing.Dict[str, int] = json.loads(load_file("translations/progress.json", self))
+        progress: dict[str, int] = json.loads(load_file("translations/progress.json", self))
         for display_text, language_code in [
             (self.tr("System default"), ""),
             (self.tr("English (US) [{progress}%]"), "en_US"),
@@ -355,7 +354,7 @@ class GeneralSettingsPage(Page):
 
     def _get_boolean_check_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str, str]] = [
+        widgets_with_settings: list[tuple[QCheckBox, str, str]] = [
             (ui.check_application_updates_enabled, "update-checks", "check-for-application-updates"),
             (ui.check_card_data_updates_enabled, "update-checks", "check-for-card-data-updates"),
             (ui.automatically_add_opposing_faces, "cards", "automatically-add-opposing-faces"),
@@ -426,7 +425,7 @@ class GeneralSettingsPage(Page):
 
     def _get_save_path_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
+        widgets_with_settings: list[tuple[QLineEdit, str]] = [
             (ui.document_save_path, "document-save-path"),
         ]
         return widgets_with_settings
@@ -506,14 +505,14 @@ class PrinterSettingsPage(Page):
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(self.tr("Printer settings"), "document-print", self.tr("Configure the printer"))
 
-    def __init__(self, parent=None, flags=Qt.WindowFlags()):
+    def __init__(self, parent=None, flags=Qt.WindowType.Widget):
         super().__init__(parent, flags)
         self.ui = ui = Ui_PrinterSettingsPage()
         ui.setupUi(self)
 
     def _get_printer_settings_boolean_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+        widgets_with_settings: list[tuple[QCheckBox, str]] = [
             (ui.printer_use_borderless_printing, "borderless-printing"),
             (ui.landscape_workaround, "landscape-compatibility-workaround"),
         ]
@@ -521,7 +520,7 @@ class PrinterSettingsPage(Page):
 
     def _get_printer_settings_length_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QDoubleSpinBox, str]] = [
+        widgets_with_settings: list[tuple[QDoubleSpinBox, str]] = [
             (ui.horizontal_offset, "horizontal-offset"),
         ]
         return widgets_with_settings
@@ -557,7 +556,7 @@ class ExportSettingsPage(Page):
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(self.tr("Export settings"), "viewpdf", self.tr("Configure the PDF/PNG export"))
 
-    def __init__(self, parent=None, flags=Qt.WindowFlags()):
+    def __init__(self, parent=None, flags=Qt.WindowType.Widget):
         super().__init__(parent, flags)
         self.ui = ui = Ui_ExportSettingsPage()
         ui.setupUi(self)

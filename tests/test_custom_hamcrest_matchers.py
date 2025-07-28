@@ -19,7 +19,7 @@ This is a test module for the set of custom PyHamcrest matchers in tests/helpers
 """
 
 import dataclasses
-import typing
+from typing import Optional
 
 import pytest
 from hamcrest import *
@@ -30,14 +30,14 @@ from .helpers import is_dataclass_equal_to, matches_type_annotation
 @dataclasses.dataclass
 class Dataclass:
     attr1: str
-    attr2: typing.Union[str, int]
-    attr3: typing.Optional[str]
+    attr2: str | int
+    attr3: str | None
 
 
 @dataclasses.dataclass
 class Dataclass2:
     attr1: str
-    attr2: typing.Union[str, int]
+    attr2: str | int
 
 
 @pytest.mark.parametrize("instance", [

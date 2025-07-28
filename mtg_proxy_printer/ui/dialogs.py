@@ -18,12 +18,11 @@ from pathlib import Path
 import shutil
 import sys
 import typing
-from typing import Tuple
 
-from PyQt5.QtCore import QFile, pyqtSignal as Signal, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
-from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
-from PyQt5.QtGui import QIcon
-from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
+from PySide6.QtCore import QFile, Signal, Slot, QThreadPool, QObject, QEvent, Qt
+from PySide6.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
+from PySide6.QtGui import QIcon
+from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.carddb import CardDatabase
@@ -307,7 +306,7 @@ class AboutDialog(QDialog):
         file = QFile(file_path, self)
         file.open(QFile.OpenModeFlag.ReadOnly)
         try:
-            content = file.readAll().data().decode("utf-8")
+            content = file.readAll().toStdString()
         finally:
             file.close()
         text_browser.setMarkdown(content)
@@ -427,7 +426,7 @@ class DocumentSettingsDialog(QDialog):
 
     def clear_highlight(self):
         """Clears all GUI widget highlights."""
-        for item in self.findChildren((QWidget,), options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
+        for item in self.findChildren(QWidget, options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
             item.setGraphicsEffect(None)
 
 
@@ -505,7 +504,7 @@ class ExportCardImagesDialog(QDialog):
 
     @staticmethod
     def _format_file_paths(
-            card_db: CardDatabase, image_db_path: Path, target_dir: Path, key: ImageKey) -> Tuple[Path, Path, AnyCardType]:
+            card_db: CardDatabase, image_db_path: Path, target_dir: Path, key: ImageKey) -> tuple[Path, Path, AnyCardType]:
         card = card_db.get_card_with_scryfall_id(key.scryfall_id, key.is_front)
         source_path = image_db_path / key.format_relative_path()
         target_file_name = ExportCardImagesDialog._format_card_file_name(card, source_path.suffix)

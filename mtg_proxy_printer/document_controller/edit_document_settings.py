@@ -40,7 +40,7 @@ __all__ = [
 
 class PagePartition(typing.NamedTuple):
     page_type: PageType
-    pages: typing.List["Page"]
+    pages: list["Page"]
 
     def size(self):
         return len(self.pages)
@@ -55,7 +55,7 @@ class ActionEditDocumentSettings(DocumentAction):
         if new_settings.compute_page_card_capacity(PageType.OVERSIZED) < 1:
             raise ValueError("New document settings must allow at least one card per page")
         self.new_settings = copy.copy(new_settings)
-        self.old_settings: typing.Optional[PageLayoutSettings] = None
+        self.old_settings: PageLayoutSettings | None = None
         self.reflow_actions: ActionList = []
 
     def apply(self, document: "Document") -> Self:
@@ -73,14 +73,14 @@ class ActionEditDocumentSettings(DocumentAction):
 
     def _reflow_document(self, document: "Document"):
         page_partitions = self._partition_pages_by_accepting_card_size(document)
-        for partition in page_partitions:  # type: int, PageType, typing.List[Page]
+        for partition in page_partitions:  # type: int, PageType, list[Page]
             self._reflow_partition(document, partition)
 
     @staticmethod
-    def _partition_pages_by_accepting_card_size(document: "Document") -> typing.List[PagePartition]:
+    def _partition_pages_by_accepting_card_size(document: "Document") -> list[PagePartition]:
         """
         Partitions the document pages into consecutive lists of pages.
-        Each partition only contains pages with exactly one page type (REGULAR or OVERSIZED) plus empty pages.
+        Each partition only contains pages with exactly one page-type (REGULAR or OVERSIZED) plus empty pages.
         Leading empty pages are ignored.
         """
         pages = document.pages
@@ -89,7 +89,7 @@ class ActionEditDocumentSettings(DocumentAction):
             return []
 
         current_page_type = pages[first_populated_page].page_type()
-        result: typing.List[PagePartition] = [PagePartition(current_page_type, [])]
+        result: list[PagePartition] = [PagePartition(current_page_type, [])]
 
         for page_index, page in enumerate(pages[first_populated_page:], start=first_populated_page):
             if page.accepts_card(current_page_type):

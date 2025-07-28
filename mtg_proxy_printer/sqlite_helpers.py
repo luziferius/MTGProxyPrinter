@@ -16,16 +16,12 @@
 import datetime
 import functools
 import importlib.resources
-import pathlib
+from pathlib import Path, PosixPath, WindowsPath
 import re
 import sqlite3
-import sys
 import textwrap
 import typing
-try:
-    from typing import LiteralString
-except ImportError:
-    from typing_extensions import LiteralString
+from typing import LiteralString
 
 from hamcrest import assert_that, contains_exactly
 
@@ -45,8 +41,8 @@ __all__ = [
 
 MIN_SUPPORTED_SQLITE_VERSION = (3, 35, 0)
 SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>\d+)\s*;", re.ASCII)
-sqlite3.register_adapter(pathlib.PosixPath, str)
-sqlite3.register_adapter(pathlib.WindowsPath, str)
+sqlite3.register_adapter(PosixPath, str)
+sqlite3.register_adapter(WindowsPath, str)
 sqlite3.register_adapter(type(1*unit_registry.mm), str)
 sqlite3.register_converter("TEXT_QUANTITY", lambda b: unit_registry.parse_expression(b.decode("utf-8")))
 sqlite3.register_converter("BOOLEAN_INTEGER", lambda b: bool(int(b)))
@@ -64,11 +60,7 @@ if sqlite3.sqlite_version_info < MIN_SUPPORTED_SQLITE_VERSION:
 
 def read_resource_text(package: str, resource: str, encoding: str = "utf-8") -> str:
     """Reads the given package data resource and returns it as a string"""
-    if sys.version_info >= (3, 9):
-        # New and preferred way for Python 3.9+
-        return importlib.resources.files(package).joinpath(resource).read_text(encoding)
-    # Backwards compatibility with Python 3.8
-    return importlib.resources.read_text(package, resource, encoding)
+    return importlib.resources.files(package).joinpath(resource).read_text(encoding)
 
 
 def create_in_memory_database(schema_name: str, check_same_thread: bool = True) -> sqlite3.Connection:
@@ -83,10 +75,10 @@ def create_in_memory_database(schema_name: str, check_same_thread: bool = True) 
 
 
 def open_database(
-        db_path: typing.Union[str, pathlib.Path], schema_name: str,
+        db_path: str | Path, schema_name: str,
         check_same_thread: bool = True) -> sqlite3.Connection:
     if isinstance(db_path, str) and db_path != ":memory:":
-        db_path = pathlib.Path(db_path)
+        db_path = Path(db_path)
     if not isinstance(db_path, str) and not (parent_dir := db_path.parent).exists():
         logger.info(f"Parent directory '{parent_dir}' does not exist, creating it…")
         parent_dir.mkdir(parents=True)

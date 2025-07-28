@@ -14,7 +14,6 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import List
 from unittest.mock import MagicMock
 
 from hamcrest import *
@@ -54,7 +53,7 @@ def test_init_with_non_positive_count_raises_exception(count: int):
     (2, [[], [], []]),
 ])
 def test_init_with_content_length_unequal_count_raises_exception(
-        document_light: Document, count: int, content: List[CardList]):
+        document_light: Document, count: int, content: list[CardList]):
     assert_that(calling(ActionNewPage).with_args(count=count, content=content), raises(ValueError))
 
 
@@ -73,7 +72,7 @@ def test_init_initializes_length_content_to_count_if_not_given(count: int):
     [[create_card("P1")], [], [create_card("P3-1", OVERSIZED), create_card("P3-2")]],
     [[create_card("P1", OVERSIZED)], [], [create_card("P3-1"), create_card("P3-2", OVERSIZED)]],
 ])
-def test_init_with_content_rejects_creating_mixed_size_pages(content: List[CardList]):
+def test_init_with_content_rejects_creating_mixed_size_pages(content: list[CardList]):
     assert_that(calling(ActionNewPage).with_args(count=len(content), content=content), raises(ValueError))
 
 
@@ -158,7 +157,7 @@ def test_apply_with_position_inserts_count_new_pages_at_the_given_position(
     [[create_card("P1", OVERSIZED)], [], [create_card("P3-1"), create_card("P3-2")]],
     [[create_card("P1")], [], [create_card("P3-1", OVERSIZED), create_card("P3-2", OVERSIZED)]],
 ])
-def test_apply_with_content_populates_created_pages(qtbot: QtBot, document_light: Document, content: List[CardList]):
+def test_apply_with_content_populates_created_pages(qtbot: QtBot, document_light: Document, content: list[CardList]):
     action = ActionNewPage(count=len(content), content=content)
     with qtbot.wait_signal(document_light.rowsAboutToBeInserted), qtbot.wait_signal(document_light.rowsInserted):
         assert_that(action.apply(document_light), is_(same_instance(action)))

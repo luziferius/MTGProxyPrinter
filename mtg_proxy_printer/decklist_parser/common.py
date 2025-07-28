@@ -17,7 +17,7 @@
 from abc import abstractmethod
 import typing
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal
+from PySide6.QtCore import QObject, Signal
 
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card import Card, AnyCardType
@@ -44,13 +44,13 @@ except NameError:
         return func
 
 CardCounter = typing.Counter[AnyCardType]
-ParsedDeck = typing.Tuple[CardCounter, typing.List[str]]
+ParsedDeck = tuple[CardCounter, list[str]]
 
 
 class ParserBase(QObject):
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+    def supported_file_types() -> dict[str, list[str]]:
         return {}
 
     incompatible_file_format = Signal()
@@ -121,7 +121,7 @@ class ParserBase(QObject):
         return False
 
     @profile
-    def guess_printing(self, card_data: CardIdentificationData) -> typing.Optional[Card]:
+    def guess_printing(self, card_data: CardIdentificationData) -> Card | None:
         logger.info(f"Guessing card printing for {card_data}")
         if card_data.name:
             card_data.name = card_data.name.strip()
@@ -166,7 +166,7 @@ class ParserBase(QObject):
             return self._determine_best_match(possible_matches)
         return None
 
-    def _determine_best_match(self, possible_matches: typing.List[Card]) -> Card:
+    def _determine_best_match(self, possible_matches: list[Card]) -> Card:
         if self.print_guessing_prefer_already_downloaded and \
                 (already_downloaded := self.image_db.filter_already_downloaded(possible_matches)):
             logger.debug(

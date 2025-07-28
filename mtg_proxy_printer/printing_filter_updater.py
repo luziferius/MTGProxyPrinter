@@ -17,7 +17,7 @@
 import sqlite3
 import typing
 
-from PyQt5.QtCore import Qt, QCoreApplication
+from PySide6.QtCore import QObject, Signal, Qt, QCoreApplication
 
 import mtg_proxy_printer.settings
 if typing.TYPE_CHECKING:
@@ -27,7 +27,7 @@ from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
 from mtg_proxy_printer.runner import Runnable, ProgressSignalContainer
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import StringList, SectionProxy
+from mtg_proxy_printer.units_and_sizes import SectionProxy
 logger = get_logger(__name__)
 del get_logger
 
@@ -176,7 +176,7 @@ class PrintingFilterUpdater(Runnable):
         return self.get_currently_enabled_set_code_filters() != self.get_configured_set_code_filters()
 
     def _filters_in_db_differ_from_settings(self, section: SectionProxy) -> bool:
-        filters_in_db: typing.Dict[str, bool] = {
+        filters_in_db: dict[str, bool] = {
             key: bool(value) for key, value
             in self.db.execute(cached_dedent("""\
             SELECT filter_name, filter_active --_filters_in_db_differ_from_settings()
@@ -185,7 +185,7 @@ class PrintingFilterUpdater(Runnable):
             """), ()).fetchall()
         }
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
-        filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in boolean_keys}
+        filters_in_settings: dict[str, bool] = {key: section.getboolean(key) for key in boolean_keys}
         return filters_in_settings != filters_in_db
 
     def _remove_old_printing_filters(self, section) -> bool:
@@ -260,13 +260,13 @@ class PrintingFilterUpdater(Runnable):
         self.db.execute("DROP TABLE RemovedSetFilters -- store_current_printing_filters()\n")
         self.db.execute("DROP TABLE AddedSetFilters -- store_current_printing_filters()\n")
 
-    def get_configured_set_code_filters(self) -> typing.Set[str]:
+    def get_configured_set_code_filters(self) -> set[str]:
         # The intersection removes all words that are not known set codes
         return mtg_proxy_printer.settings.parse_card_set_filters().intersection(
             self.get_all_set_codes()
         )
 
-    def get_all_set_codes(self) -> StringList:
+    def get_all_set_codes(self) -> list[str]:
         """Returns all known set codes."""
         logger.debug("Reading all known set codes")
         result = [
@@ -348,7 +348,7 @@ class PrintingFilterUpdater(Runnable):
         progress_signal()
         logger.debug("Finished maintenance tasks.")
 
-    def get_currently_enabled_set_code_filters(self) -> typing.Set[str]:
+    def get_currently_enabled_set_code_filters(self) -> set[str]:
         values = self.db.execute(
             "SELECT set_code FROM CurrentlyEnabledSetCodeFilters -- get_currently_enabled_set_code_filters()\n")
         result = {value for (value,) in values}
