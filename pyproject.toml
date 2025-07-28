@@ -55,7 +55,7 @@ dev = [
     "pytest >= 6.0",
     "pytest-cov",
     "pytest-timeout",
-    "pytest-qt >= 2.0",
+    "pytest-qt >= 4.5",
     "tox >= 4.0",
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
