@@ -17,7 +17,7 @@ from collections import Counter
 import dataclasses
 import enum
 import itertools
-from typing import List, Any, Union
+from typing import Any, Union
 
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSignal as Signal, QItemSelection
 from PyQt5.QtGui import QIcon
@@ -62,7 +62,7 @@ class CardListColumns(enum.IntEnum):
         return CardListToPageColumnMapping[self]
 
 
-CardList = List[CardListModelRow]
+CardList = list[CardListModelRow]
 CardListToPageColumnMapping = {
     CardListColumns.CardName: PageColumns.CardName,
     CardListColumns.Set: PageColumns.Set,
@@ -279,7 +279,7 @@ class CardListModel(QAbstractTableModel):
         return result
 
     @staticmethod
-    def _merge_ranges(ranges: List[tuple[int, int]]) -> List[tuple[int, int]]:
+    def _merge_ranges(ranges: list[tuple[int, int]]) -> list[tuple[int, int]]:
         result = []
         if len(ranges) < 2:
             return ranges
@@ -331,7 +331,7 @@ class CardListModel(QAbstractTableModel):
             self.oversized_card_count = 0
             self.oversized_card_count_changed.emit(self.oversized_card_count)
 
-    def as_cards(self, row_order: List[int] = None) -> CardCounter:
+    def as_cards(self, row_order: list[int] = None) -> CardCounter:
         """
         Returns the internal card data. If a custom row order is given, return the cards in that order.
         The row_order is used when the user sorted the table by any column. The imported cards then inherit the order

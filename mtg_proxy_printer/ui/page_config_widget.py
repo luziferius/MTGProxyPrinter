@@ -17,7 +17,7 @@
 import functools
 from functools import partial
 import math
-from typing import List, Union, Any
+from typing import Union, Any
 
 import pint
 from PyQt5.QtCore import pyqtSlot as Slot, Qt, pyqtSignal as Signal
@@ -337,9 +337,9 @@ class PageConfigWidget(QGroupBox):
         documents_section["paper-orientation"] = PageSizeManager.PageOrientationReverse[self._current_page_orientation()]
         logger.debug("Saving done.")
 
-    def _get_numerical_settings_widgets(self) -> List[tuple[QDoubleSpinBox, str, Unit]]:
+    def _get_numerical_settings_widgets(self) -> list[tuple[QDoubleSpinBox, str, Unit]]:
         ui = self.ui
-        widgets_with_settings: List[tuple[QDoubleSpinBox, str, Unit]] = [
+        widgets_with_settings: list[tuple[QDoubleSpinBox, str, Unit]] = [
             (ui.card_bleed, "card-bleed", mm),
             (ui.custom_page_height, "custom-page-height", mm),
             (ui.custom_page_width, "custom-page-width", mm),
@@ -358,7 +358,7 @@ class PageConfigWidget(QGroupBox):
 
     def _get_boolean_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: List[tuple[QCheckBox, str]] = [
+        widgets_with_settings: list[tuple[QCheckBox, str]] = [
             (ui.draw_cut_markers, "print-cut-marker"),
             (ui.draw_sharp_corners, "print-sharp-corners"),
             (ui.draw_page_numbers, "print-page-numbers"),
@@ -367,7 +367,7 @@ class PageConfigWidget(QGroupBox):
 
     def _get_string_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: List[tuple[QLineEdit, str]] = [
+        widgets_with_settings: list[tuple[QLineEdit, str]] = [
             (ui.document_name, "default-document-name"),
             (ui.watermark_text, "watermark-text"),
         ]

@@ -21,7 +21,7 @@ import os
 import sqlite3
 from numbers import Real
 from pathlib import Path
-from typing import Literal, Dict, List, Any, Callable, Union
+from typing import Literal, Dict, Any, Callable, Union
 from unittest.mock import patch, MagicMock
 
 from pint import Quantity
@@ -112,7 +112,7 @@ def load_json(name: str) -> CardDataType:
 
 
 def load_multiple_json_cards(
-        json_files_or_names: List[Union[str, CardDataType]]):
+        json_files_or_names: list[Union[str, CardDataType]]):
     return [
         load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
         for json_file_or_name in json_files_or_names
@@ -122,7 +122,7 @@ def load_multiple_json_cards(
 def fill_card_database_with_json_cards(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-        json_files_or_names: List[Union[str, CardDataType]],
+        json_files_or_names: list[Union[str, CardDataType]],
         filter_settings: Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     data = load_multiple_json_cards(json_files_or_names)
     populate_database(qtbot, card_db, data, filter_settings)
@@ -139,8 +139,8 @@ def fill_card_database_with_json_card(
 
 def create_save_database_with(
         path_or_connection: Union[Path, Literal[":memory:"], sqlite3.Connection],
-        pages: List[tuple[int, CardSize]],
-        cards: List[tuple[int, int, bool, str, CardType]],
+        pages: list[tuple[int, CardSize]],
+        cards: list[tuple[int, int, bool, str, CardType]],
         settings: PageLayoutSettings) -> sqlite3.Connection:
     save = path_or_connection if isinstance(path_or_connection, sqlite3.Connection) \
         else open_database(path_or_connection, "document-v7")

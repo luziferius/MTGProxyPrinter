@@ -44,13 +44,13 @@ except NameError:
         return func
 
 CardCounter = typing.Counter[AnyCardType]
-ParsedDeck = tuple[CardCounter, typing.List[str]]
+ParsedDeck = tuple[CardCounter, list[str]]
 
 
 class ParserBase(QObject):
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+    def supported_file_types() -> typing.Dict[str, list[str]]:
         return {}
 
     incompatible_file_format = Signal()
@@ -166,7 +166,7 @@ class ParserBase(QObject):
             return self._determine_best_match(possible_matches)
         return None
 
-    def _determine_best_match(self, possible_matches: typing.List[Card]) -> Card:
+    def _determine_best_match(self, possible_matches: list[Card]) -> Card:
         if self.print_guessing_prefer_already_downloaded and \
                 (already_downloaded := self.image_db.filter_already_downloaded(possible_matches)):
             logger.debug(

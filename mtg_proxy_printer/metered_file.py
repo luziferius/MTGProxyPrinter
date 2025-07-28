@@ -15,7 +15,7 @@
 
 
 
-from typing import Iterable, List, Optional, BinaryIO, Union
+from typing import Iterable, Optional, BinaryIO, Union
 from io import BufferedIOBase
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal
@@ -100,7 +100,7 @@ class MeteredFile(QObject):
         self._processed(len(line))
         return line
 
-    def readlines(self, __hint: int = None) -> List[bytes]:
+    def readlines(self, __hint: int = None) -> list[bytes]:
         lines = self.file.readlines(__hint)
         total_bytes = sum(map(len, lines))
         self._processed(total_bytes)

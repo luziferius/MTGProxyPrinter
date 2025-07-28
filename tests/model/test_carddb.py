@@ -38,7 +38,6 @@ from ..helpers import assert_model_is_empty, fill_card_database_with_json_card, 
     fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation, update_database_printing_filters
 from ..test_card_info_downloader import TestCaseData
 
-StringList = typing.List[str]
 OptString = typing.Optional[str]
 
 
@@ -86,7 +85,7 @@ def test_get_all_languages_with_data(qtbot, card_db: CardDatabase):
     ("es", None, ["Bosque"]),  # noqa  # A Spanish Forest
     ("Nonexisting language", None, []),
 ])
-def test_get_card_names(qtbot, card_db: CardDatabase, language: str, prefix: OptString, expected_names: StringList):
+def test_get_card_names(qtbot, card_db: CardDatabase, language: str, prefix: OptString, expected_names: list[str]):
     fill_card_database_with_json_cards(
         qtbot, card_db,
         [
@@ -281,7 +280,7 @@ def test_translate_card_name(
     (3, [0, 1, 2]),
     (100, [0, 1, 2]),
 ])
-def test_cards_used_less_often_then(qtbot, card_db: CardDatabase, usage_count: int, expected: typing.List[int]):
+def test_cards_used_less_often_then(qtbot, card_db: CardDatabase, usage_count: int, expected: list[int]):
     # Setup
     fill_card_database_with_json_cards(
         qtbot, card_db,
@@ -701,7 +700,7 @@ def test_is_removed_printing(
 ])
 def test_get_basic_land_oracle_ids(
         qtbot, card_db: CardDatabase,
-        include_wastes: bool, include_snow_basics: bool, expected_oracle_ids: StringList):
+        include_wastes: bool, include_snow_basics: bool, expected_oracle_ids: list[str]):
     fill_card_database_with_json_cards(
         qtbot, card_db, ["english_basic_Forest", "english_basic_Wastes", "english_basic_Snow_Forest"])
     assert_that(
@@ -733,7 +732,7 @@ def test_get_basic_land_oracle_ids(
     ("0cbf06f5-d1c7-474c-8f09-72f5ad0c8120", ["Undercity"]),  # Explore the Underdark
 
 ])
-def test_find_related_printings(qtbot, card_db: CardDatabase, source_id: str, expected_cards_names: StringList):
+def test_find_related_printings(qtbot, card_db: CardDatabase, source_id: str, expected_cards_names: list[str]):
     fill_card_database_with_json_cards(
         qtbot, card_db, [
             "The_Underworld_Cookbook",
@@ -818,7 +817,7 @@ def test_is_dfc(qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, 
     (CardIdentificationData(scryfall_id="97b84e7d-258f-46dc-baef-4b1eb6f28d4d", is_front=True), True, ["de", "en"]),
 ])
 def test_get_available_languages_for_card(
-        qtbot, card_db, card_data: CardIdentificationData, filter_enabled: bool, expected: StringList):
+        qtbot, card_db, card_data: CardIdentificationData, filter_enabled: bool, expected: list[str]):
     fill_card_database_with_json_cards(qtbot, card_db, [
         "english_basic_Forest", "german_basic_Forest", "spanish_basic_Forest",
         "german_Coercion_with_faulty_translation", "german_Duress", "english_Duress",
@@ -903,7 +902,7 @@ def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(q
 ])
 def test_get_available_sets_for_card(
         qtbot, card_db,
-        jsons: StringList, scryfall_id: UUID, filter_enabled: bool, expected: typing.List[MTGSet]):
+        jsons: list[str], scryfall_id: UUID, filter_enabled: bool, expected: list[MTGSet]):
     fill_card_database_with_json_cards(qtbot, card_db, jsons)
     card = card_db.get_card_with_scryfall_id(scryfall_id, True)
     if filter_enabled:
@@ -943,7 +942,7 @@ def test_get_available_sets_for_card(
 ])
 def test_get_available_collector_numbers_for_card_in_set(
         qtbot, card_db,
-        jsons: StringList, scryfall_id: UUID, filter_enabled: bool, expected: StringList):
+        jsons: list[str], scryfall_id: UUID, filter_enabled: bool, expected: list[str]):
     fill_card_database_with_json_cards(qtbot, card_db, jsons)
     card = card_db.get_card_with_scryfall_id(scryfall_id, True)
     assert_that(card, is_(not_none()), "Setup failed. Card not found")

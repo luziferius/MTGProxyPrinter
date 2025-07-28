@@ -16,7 +16,7 @@
 
 import dataclasses
 import sqlite3
-from typing import NamedTuple, List
+from typing import NamedTuple
 import unittest.mock
 
 from hamcrest import *
@@ -121,7 +121,7 @@ class TestCaseData:
         return self.json_dict["oversized"]
 
     @property
-    def face_data(self) -> List[FaceData]:
+    def face_data(self) -> list[FaceData]:
         card = self.json_dict
         if faces := card.get("card_faces"):
             result = []
@@ -137,7 +137,7 @@ class TestCaseData:
         card = self.json_dict
         return DatabaseSetData(card["set"], card["set_name"], card["scryfall_set_uri"], card["released_at"])
 
-    def db_card(self) -> List[tuple[str]]:
+    def db_card(self) -> list[tuple[str]]:
         return [(self.oracle_id,)]
 
     def db_set(self):
@@ -146,19 +146,19 @@ class TestCaseData:
     def db_print_language(self):
         return [(self.language,)]
 
-    def db_face_name(self) -> List[tuple[str]]:
+    def db_face_name(self) -> list[tuple[str]]:
         # De-duplicate face names, in case both sides of a double-faced card have the same name. This is true for
         # art series cards, certain double-faced tokens (for example the C16 Saproling token) and similar.
         return list(set((face.name,) for face in self.face_data))
 
-    def db_card_face(self) -> List[DatabaseCardFaceData]:
+    def db_card_face(self) -> list[DatabaseCardFaceData]:
         return [
             DatabaseCardFaceData(
                 face.image_uri, face.is_front, face_number)
             for face_number, face in enumerate(self.face_data)
         ]
 
-    def db_all_printings(self) -> List[DatabaseVisiblePrintingsData]:
+    def db_all_printings(self) -> list[DatabaseVisiblePrintingsData]:
         return [
             DatabaseVisiblePrintingsData(
                 face.name, self.set.set_code, self.language, self.collector_number, self.scryfall_id,
@@ -166,7 +166,7 @@ class TestCaseData:
             for face in self.face_data
         ]
 
-    def db_printing(self) -> List[DatabasePrintingData]:
+    def db_printing(self) -> list[DatabasePrintingData]:
         return [
             DatabasePrintingData(self.collector_number, self.scryfall_id, self.is_oversized, self.highres_image)
         ]
@@ -482,7 +482,7 @@ def test_re_import_after_unban_makes_card_visible(qtbot, card_db: CardDatabase, 
     assert_hidden_import(card_db, test_case_data)
 
 
-DataPath = List[str | int]
+DataPath = list[str | int]
 
 
 @pytest.mark.parametrize("test_case, dict_path, value", [
@@ -578,7 +578,7 @@ def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expec
 ])
 def test_related_printings(
         qtbot, card_db: CardDatabase,
-        cards: List[str], expected_pairs: List[tuple[int, int]]):
+        cards: list[str], expected_pairs: list[tuple[int, int]]):
     db = card_db.db
 
     # Cards always relate to exact printings, but which one is chosen is rather arbitrary. E.g. The Underworld Cookbook
@@ -597,7 +597,7 @@ def test_related_printings(
     ["Dungeon_of_the_Mad_Mage", "Zombie_Ogre", "Bar_the_Gate"],
     ["The_Ring", "Samwise_the_Stouthearted", "Elrond_Lord_of_Rivendell"],
 ])
-def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, cards: List[str]):
+def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, cards: list[str]):
     db = card_db.db
     fill_card_database_with_json_cards(qtbot, card_db, cards)
     assert_that(

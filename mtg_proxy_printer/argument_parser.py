@@ -59,6 +59,6 @@ def generate_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def parse_args(args: typing.List[str] = None) -> Namespace:
+def parse_args(args: list[str] = None) -> Namespace:
     parser = generate_argument_parser()
     return parser.parse_args(args)

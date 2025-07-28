@@ -35,7 +35,7 @@ class PrettySetListModel(QAbstractListModel):
         self.header = {
             0: self.tr("Set", "MTG set name"),
         }
-        self.set_data: typing.List[MTGSet] = []
+        self.set_data: list[MTGSet] = []
 
     def headerData(self, section: int, orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) \
             -> typing.Optional[str]:
@@ -50,7 +50,7 @@ class PrettySetListModel(QAbstractListModel):
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.set_data)
 
-    def set_set_data(self, data: typing.List[MTGSet]) -> None:
+    def set_set_data(self, data: list[MTGSet]) -> None:
         self.beginResetModel()
         self.set_data[:] = data
         self.endResetModel()

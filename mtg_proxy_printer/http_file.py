@@ -17,7 +17,7 @@ from functools import cache
 import http.client
 import socket
 import time
-from typing import List, Optional, Dict, Callable
+from typing import Optional, Dict, Callable
 import urllib.error
 import urllib.request
 
@@ -189,7 +189,7 @@ class MeteredSeekableHTTPFile(QObject):
         self._store_and_report_read_progress(len(line))
         return line
 
-    def readlines(self, __hint: int = None) -> List[bytes]:
+    def readlines(self, __hint: int = None) -> list[bytes]:
         lines = self.file.readlines(__hint)
         total_bytes = sum(map(len, lines))
         self._store_and_report_read_progress(total_bytes)

@@ -30,7 +30,7 @@ __all__ = [
     "ActionNewPage",
     "ActionRemovePage",
 ]
-ContentType = typing.List[typing.Iterable[AnyCardType]]
+ContentType = list[typing.Iterable[AnyCardType]]
 
 
 class ActionNewPage(DocumentAction):
@@ -41,7 +41,7 @@ class ActionNewPage(DocumentAction):
     Positions are clamped into the range [0, page_count].
 
     Page count defaults to 1.
-    If content is given, it must be a List[List[AnyCardType]], with length equal to count.
+    If content is given, it must be a list[list[AnyCardType]], with length equal to count.
     Individual lists in content may be empty. If content is given, the cards in content are placed on the
     created pages in the order given.
     """
@@ -104,7 +104,7 @@ class ActionRemovePage(DocumentAction):
     def __init__(self, position: int = None, count: int = 1):
         self.position = position
         self.count = count
-        self.removed_pages: typing.List[Page] = []
+        self.removed_pages: list[Page] = []
         self.currently_edited_page: typing.Optional[Page] = None  # Set, if the currently edited page is removed
         self.removed_all_pages: bool = False
 

@@ -16,7 +16,7 @@
 from itertools import chain
 from numbers import Real
 from pathlib import Path
-from typing import Iterable, List, Union
+from typing import Iterable, Union
 from unittest.mock import patch
 
 import pint
@@ -177,7 +177,7 @@ def test__validate_documents_section_document_name(default_settings: ConfigParse
     ("leb 2xM leb LEB", ["2xm", "leb"]),
     ("   LEB\n\n\t2xM ", ["2xm", "leb"]),
 ])
-def test_parse_card_set_filters(default_settings: ConfigParser, set_filter: str, parsed_set_codes: List[str]):
+def test_parse_card_set_filters(default_settings: ConfigParser, set_filter: str, parsed_set_codes: list[str]):
     default_settings["card-filter"]["hidden-sets"] = set_filter
     assert_that(
         mtg_proxy_printer.settings.parse_card_set_filters(default_settings),

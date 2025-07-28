@@ -22,7 +22,7 @@ import functools
 from pathlib import Path
 import sqlite3
 import threading
-from typing import NamedTuple, TypeVar, Set, Optional, Dict, Literal, List, Sequence, Any, Union, LiteralString
+from typing import NamedTuple, TypeVar, Set, Optional, Dict, Literal, Sequence, Any, Union, LiteralString
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot
@@ -34,7 +34,7 @@ from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import StringList, OptStr, CardSizes, CardSize, UUID
+from mtg_proxy_printer.units_and_sizes import OptStr, CardSizes, CardSize, UUID
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -47,7 +47,7 @@ SCHEMA_NAME = "carddb"
 # once per month or so.
 MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
 T = TypeVar("T", Card, CheckCard, CustomCard)
-ParameterList = List[Union[str, bool]]
+ParameterList = list[Union[str, bool]]
 write_semaphore = threading.BoundedSemaphore()
 
 __all__ = [
@@ -72,9 +72,9 @@ class CardIdentificationData:
 
 
 class ImageDatabaseCards(NamedTuple):
-    visible: List[tuple[Card, CacheContent]] = []
-    hidden: List[tuple[Card, CacheContent]] = []
-    unknown: List[CacheContent] = []
+    visible: list[tuple[Card, CacheContent]] = []
+    hidden: list[tuple[Card, CacheContent]] = []
+    unknown: list[CacheContent] = []
 
 
 def with_database_write_lock(semaphore: threading.BoundedSemaphore = write_semaphore):
@@ -195,13 +195,13 @@ class CardDatabase(QObject):
         last_timestamp = self.get_last_card_data_update_timestamp()
         return (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.datetime.today() if last_timestamp else True
 
-    def get_all_languages(self) -> StringList:
+    def get_all_languages(self) -> list[str]:
         """Returns the list of all known and visible languages, sorted ascendingly."""
         logger.debug("Reading all known languages")
         query: LiteralString = "SELECT language FROM PrintLanguage ORDER BY language ASC -- get_all_languages()\n"
         return self._read_scalar_list_from_db(query)
 
-    def get_card_names(self, language: str, card_name_filter: str = None) -> StringList:
+    def get_card_names(self, language: str, card_name_filter: str = None) -> list[str]:
         """Returns a sorted list with all card names in the given language that match the given filter."""
         logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
         query: LiteralString = cached_dedent('''\
@@ -410,7 +410,7 @@ class CardDatabase(QObject):
                 cards.append(related_cards[0])
         return cards
 
-    def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> StringList:
+    def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> list[str]:
         """
         Finds all collector numbers matching the given filter. The result contains multiple elements, if the card
         had multiple variants with distinct collector numbers in the given set.
@@ -440,7 +440,7 @@ class CardDatabase(QObject):
 
     def find_sets_matching(
             self, card_name: str, language: str, set_name_filter: str = None,
-            *, is_front: bool = None) -> List[MTGSet]:
+            *, is_front: bool = None) -> list[MTGSet]:
         """
         Finds all matching sets that the given card was printed in.
 
@@ -449,7 +449,7 @@ class CardDatabase(QObject):
         :param set_name_filter: If provided, only return sets with set code or full name beginning with this.
           Used as a LIKE pattern, supporting SQLite wildcards.
         :param is_front: Match by front/back. Only relevant when switching printings of SLD reversible cards.
-        :return: List of matching sets, as tuples (set_abbreviation, full_english_set_name)
+        :return: list of matching sets, as tuples (set_abbreviation, full_english_set_name)
         """
         query = cached_dedent('''\
         SELECT DISTINCT set_code, set_name  -- find_sets_matching()
@@ -492,7 +492,7 @@ class CardDatabase(QObject):
                 bool(highres_image), size, face_number, bool(is_dfc),
             )
 
-    def get_all_cards_from_image_cache(self, cache_content: List[CacheContent]) -> ImageDatabaseCards:
+    def get_all_cards_from_image_cache(self, cache_content: list[CacheContent]) -> ImageDatabaseCards:
         """
         Partitions the content of the ImageDatabase disk cache into three lists:
         - All visible card printings
@@ -654,7 +654,7 @@ class CardDatabase(QObject):
             card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language]
         return self._read_optional_scalar_from_db(query, parameters)
 
-    def get_available_languages_for_card(self, card: Card) -> StringList:
+    def get_available_languages_for_card(self, card: Card) -> list[str]:
         """
         Returns the sorted list of languages the given card is available in.
         This is used as the data source for the ComboBoxItemDelegate model
@@ -678,7 +678,7 @@ class CardDatabase(QObject):
         parameters: ParameterList = [card.language, card.oracle_id]
         return self._read_scalar_list_from_db(query, parameters)
 
-    def get_available_sets_for_card(self, card: Card) -> List[MTGSet]:
+    def get_available_sets_for_card(self, card: Card) -> list[MTGSet]:
         """
         Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
         """
@@ -708,7 +708,7 @@ class CardDatabase(QObject):
             result.append(card.set)
         return result
 
-    def get_available_collector_numbers_for_card_in_set(self, card: Card) -> StringList:
+    def get_available_collector_numbers_for_card_in_set(self, card: Card) -> list[str]:
         query = cached_dedent("""\
         SELECT DISTINCT collector_number FROM ( -- get_available_collector_numbers_for_card_in_set()
           SELECT ? AS collector_number
@@ -741,7 +741,7 @@ class CardDatabase(QObject):
             return None
 
     def _read_scalar_list_from_db(
-            self, query: LiteralString, parameters: Sequence[Any] = ()) -> List[Any]:
+            self, query: LiteralString, parameters: Sequence[Any] = ()) -> list[Any]:
         """Runs the query with the given parameters, returning a list of singular items"""
         return [item for item, in self.db.execute(query, parameters)]
 
@@ -755,7 +755,7 @@ class CardDatabase(QObject):
         """)
         return bool(self._read_optional_scalar_from_db(query, parameters))
 
-    def cards_not_used_since(self, keys: List[tuple[str, bool]], date: datetime.date) -> List[int]:
+    def cards_not_used_since(self, keys: list[tuple[str, bool]], date: datetime.date) -> list[int]:
         """
         Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
         into the input list that correspond to cards that were not used since the given date.
@@ -773,7 +773,7 @@ class CardDatabase(QObject):
                 cards_not_used_since.append(index)
         return cards_not_used_since
 
-    def cards_used_less_often_then(self, keys: List[tuple[str, bool]], count: int) -> List[int]:
+    def cards_used_less_often_then(self, keys: list[tuple[str, bool]], count: int) -> list[int]:
         """
         Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
         into the input list that correspond to cards that are used less often than the given count.

@@ -21,7 +21,7 @@ import functools
 import re
 import sqlite3
 import typing
-from typing import Type, Dict, List, Optional, Set, NamedTuple, TypedDict, Union, NotRequired
+from typing import Type, Dict, Optional, Set, NamedTuple, TypedDict, Union, NotRequired
 
 from PyQt5.QtCore import QSize, QObject
 from PyQt5.QtGui import QPageSize, QPageLayout, QColor
@@ -61,10 +61,10 @@ DEFAULT_SAVE_SUFFIX = "mtgproxies"
 
 # typing shortcuts
 ShouldBeUUID = WEB_URI = API_URI = str
-Colors = StringList = List[str]
+Colors = list[str]
 StringSet = Set[str]
 OptStr = Optional[str]
-IntList = List[int]
+IntList = list[int]
 StrDict = Dict[str, str]
 T = typing.TypeVar("T")
 PageSizeId = QPageSize.PageSizeId
@@ -162,7 +162,7 @@ class ImageUriType(TypedDict):
 
 class FaceDataType(TypedDict):
     artist: NotRequired[str]
-    artist_ids: NotRequired[List[ShouldBeUUID]]
+    artist_ids: NotRequired[list[ShouldBeUUID]]
     cmc: NotRequired[float]
     color_indicator: NotRequired[Colors]
     colors: NotRequired[Colors]
@@ -225,8 +225,8 @@ class CardDataType(_CardPreviewFields):
     uri: API_URI
 
     # Gameplay fields
-    all_parts: NotRequired[List[RelatedCardType]]
-    card_faces: NotRequired[List[FaceDataType]]
+    all_parts: NotRequired[list[RelatedCardType]]
+    card_faces: NotRequired[list[FaceDataType]]
     cmc: float
     color_identity: Colors
     color_indicator: NotRequired[Colors]
@@ -234,7 +234,7 @@ class CardDataType(_CardPreviewFields):
     defense: NotRequired[str]
     edhrec_rank: NotRequired[int]
     hand_modifier: NotRequired[str]
-    keywords: NotRequired[StringList]
+    keywords: NotRequired[list[str]]
     legalities: StrDict
     life_modifier: NotRequired[str]
     loyalty: NotRequired[str]
@@ -250,7 +250,7 @@ class CardDataType(_CardPreviewFields):
 
     # Print fields
     artist: NotRequired[str]
-    artist_ids: NotRequired[List[ShouldBeUUID]]
+    artist_ids: NotRequired[list[ShouldBeUUID]]
     attraction_lights: NotRequired[IntList]
     booster: bool
     border_color: str
@@ -258,13 +258,13 @@ class CardDataType(_CardPreviewFields):
     collector_number: str
     content_warning: NotRequired[bool]
     digital: bool
-    finishes: StringList
+    finishes: list[str]
     flavor_name: NotRequired[str]
     flavor_text: NotRequired[str]
-    frame_effects: NotRequired[StringList]
+    frame_effects: NotRequired[list[str]]
     frame: str
     full_art: bool
-    games: StringList
+    games: list[str]
     highres_image: bool
     illustration_id: NotRequired[ShouldBeUUID]
     image_status: str
@@ -275,7 +275,7 @@ class CardDataType(_CardPreviewFields):
     printed_text: NotRequired[str]
     printed_type_line: NotRequired[str]
     promo: bool
-    promo_types: NotRequired[StringList]
+    promo_types: NotRequired[list[str]]
     purchase_uris: NotRequired[Dict[str, ShouldBeUUID]]
     rarity: str
     related_uris: Dict[str, WEB_URI]

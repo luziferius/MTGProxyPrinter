@@ -23,7 +23,7 @@ import shutil
 import socket
 import string
 import threading
-from typing import Set, Optional, Iterable, TYPE_CHECKING, Dict, List, Union, Callable
+from typing import Set, Optional, Iterable, TYPE_CHECKING, Dict, Union, Callable
 import urllib.error
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QModelIndex, Qt, QThreadPool
@@ -55,11 +55,11 @@ __all__ = [
     "ImageDownloader",
 ]
 
-PathSizeList = List[tuple[pathlib.Path, int]]
+PathSizeList = list[tuple[pathlib.Path, int]]
 ImageKeySet = Set[ImageKey]
 BatchActions = Union[ActionImportDeckList]
 SingleActions = ActionAddCard | ActionReplaceCard
-IndexList = List[QModelIndex]
+IndexList = list[QModelIndex]
 OptionalPixmap = Optional[QPixmap]
 download_semaphore = threading.BoundedSemaphore()
 
@@ -109,7 +109,7 @@ class ImageDatabase(QObject):
 
     def __init__(self, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
         super().__init__(parent)
-        self.read_disk_cache_content: Callable[[], List[CacheContent]] = functools.partial(
+        self.read_disk_cache_content: Callable[[], list[CacheContent]] = functools.partial(
             read_disk_cache_content, db_path)
         self.db_path = db_path
         _migrate_database(db_path)
@@ -129,7 +129,7 @@ class ImageDatabase(QObject):
         pixmap.fill(QColorConstants.Transparent)
         return pixmap
 
-    def filter_already_downloaded(self, possible_matches: List[Card]) -> List[Card]:
+    def filter_already_downloaded(self, possible_matches: list[Card]) -> list[Card]:
         """
         Takes a list of cards and returns a new list containing all cards from the source list that have
         already downloaded images. The order of cards is preserved.
@@ -143,7 +143,7 @@ class ImageDatabase(QObject):
         """
         Remove the given images from the hard disk cache.
 
-        :returns: List with removed paths.
+        :returns: list with removed paths.
         """
         removed: PathSizeList = []
         for image in images:
@@ -317,7 +317,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.update_batch_processing_state(False)
         logger.info(f"Obtained images for {total_cards} cards.")
 
-    def obtain_missing_images(self, card_indices: List[QModelIndex]):
+    def obtain_missing_images(self, card_indices: list[QModelIndex]):
         if not card_indices:
             self.missing_images_obtained.emit()
             return
@@ -450,13 +450,13 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         return pixmap
 
 
-def read_disk_cache_content(db_path: pathlib.Path) -> List[CacheContent]:
+def read_disk_cache_content(db_path: pathlib.Path) -> list[CacheContent]:
     """
     Returns all entries currently in the given hard disk image cache.
 
-    :returns: List with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
+    :returns: list with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
     """
-    result: List[CacheContent] = []
+    result: list[CacheContent] = []
     data: Iterable[tuple[pathlib.Path, bool, bool]] = (
         (db_path/CacheContent.format_level_1_directory_name(is_front, is_high_resolution),
          is_front, is_high_resolution)

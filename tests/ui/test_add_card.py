@@ -28,8 +28,6 @@ from mtg_proxy_printer.ui.add_card import HorizontalAddCardWidget, VerticalAddCa
 
 from tests.helpers import fill_card_database_with_json_card
 
-StringList = typing.List[str]
-OptString = typing.Optional[str]
 LeftButton = Qt.MouseButton.LeftButton
 ClearAndSelect = QItemSelectionModel.SelectionFlag.ClearAndSelect
 StandardButton = QDialogButtonBox.StandardButton

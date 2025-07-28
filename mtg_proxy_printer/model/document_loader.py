@@ -20,7 +20,7 @@ import itertools
 import pathlib
 import sqlite3
 import textwrap
-from typing import Counter, Dict, Iterable, List, NamedTuple, Optional, TYPE_CHECKING
+from typing import Counter, Dict, Iterable, NamedTuple, Optional, TYPE_CHECKING
 
 from pint import Quantity
 from PyQt5.QtGui import QPageLayout, QPageSize, QColor
@@ -295,13 +295,13 @@ class Worker(LoaderSignals):
         return db
 
 
-    def _load_cards(self, save_db: sqlite3.Connection) -> List[CardList]:
+    def _load_cards(self, save_db: sqlite3.Connection) -> list[CardList]:
         custom_cards: CustomCards = {}
         assert_that(
             save_db.execute("SELECT min(page) FROM Page").fetchone(),
             contains_exactly(all_of(instance_of(int), greater_than_or_equal_to(1))
         ))
-        pages: List[CardList] = []
+        pages: list[CardList] = []
         allowed_sizes = {CardSizes.REGULAR.to_save_data(), CardSizes.OVERSIZED.to_save_data()}
         for page, expected_size in save_db.execute(
                 "SELECT page, image_size FROM Page ORDER BY page ASC").fetchall():  # type: int, str
@@ -439,7 +439,7 @@ class Worker(LoaderSignals):
         return self.card_db.get_custom_card(
             name, set_code, set_name, collector_number, card_size, card_row.is_front, image_bytes)
 
-    def _fix_mixed_pages(self, pages: List[CardList], page_settings: PageLayoutSettings):
+    def _fix_mixed_pages(self, pages: list[CardList], page_settings: PageLayoutSettings):
         """
         Documents saved with older versions (or specifically crafted save files) can contain images with mixed
         sizes on the same page.

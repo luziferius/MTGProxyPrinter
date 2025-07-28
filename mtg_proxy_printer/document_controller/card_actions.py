@@ -52,7 +52,7 @@ class ActionAddCard(DocumentAction):
         self.count = count
         self.added_new_pages: int = 0
         self.first_added_page: typing.Optional[int] = None
-        self.added_cards_to_existing_pages: typing.List[tuple[int, int]] = []
+        self.added_cards_to_existing_pages: list[tuple[int, int]] = []
 
     def apply(self, document: "Document") -> Self:
         """
@@ -181,7 +181,7 @@ class ActionRemoveCards(DocumentAction):
         # if the user selects cards from bottom to top, the rows have to be sorted.
         self.card_ranges_to_remove = to_list_of_ranges(cards_to_remove)
         self.page_number = page_number
-        self.removed_cards: typing.List[Page] = []
+        self.removed_cards: list[Page] = []
 
     def apply(self, document: "Document") -> Self:
         if self.page_number is None:

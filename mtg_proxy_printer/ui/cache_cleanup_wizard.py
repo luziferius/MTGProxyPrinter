@@ -145,7 +145,7 @@ class KnownCardImageModel(QAbstractTableModel):
         super().__init__(parent)
         self.card_db = card_db
         self.preferred_language: str = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
-        self._data: typing.List[KnownCardRow] = []
+        self._data: list[KnownCardRow] = []
 
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self._data)
@@ -262,7 +262,7 @@ class UnknownCardImageModel(QAbstractTableModel):
 
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
-        self._data: typing.List[UnknownCardRow] = []
+        self._data: list[UnknownCardRow] = []
 
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self._data)
@@ -407,7 +407,7 @@ class CardFilterPage(QWizardPage):
     def validatePage(self) -> bool:
         logger.info(f"{self.__class__.__name__}: User clicks on Next, storing the selected indices")
         role = ItemDataRole.EditRole
-        selected_images: typing.List[tuple[str, bool, bool, int]] = [
+        selected_images: list[tuple[str, bool, bool, int]] = [
             (index.siblingAtColumn(UnknownCardColumns.ScryfallId).data(role),
              index.siblingAtColumn(UnknownCardColumns.IsFront).data(role),
              index.siblingAtColumn(UnknownCardColumns.HasHighResolution).data(role),

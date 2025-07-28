@@ -31,7 +31,7 @@ import typing
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import List, Dict, Union, Any, Generator, Callable, Iterable, LiteralString
+from typing import Dict, Union, Any, Generator, Callable, Iterable, LiteralString
 
 from PyQt5.QtCore import QCoreApplication, Qt
 
@@ -57,14 +57,14 @@ __all__ = [
 # Original dedent is annotated as str -> str, so overwrite that with LiteralString -> LiteralString,
 # allowing the type checker to detect SQL injections
 dedent: Callable[[LiteralString], LiteralString]
-Statement = Union[LiteralString, tuple[LiteralString, List[tuple[Any, ...]]]]
+Statement = Union[LiteralString, tuple[LiteralString, list[tuple[Any, ...]]]]
 
 
 @dataclasses.dataclass
 class MigrationScript:
-    script: List[Statement] = None
+    script: list[Statement] = None
 
-    def get_script(self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter) -> List[Statement]:
+    def get_script(self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter) -> list[Statement]:
         """Returns the script to run. Can be overridden by subclasses to allow dynamic behavior"""
         if self.script is None:
             raise RuntimeError("BUG: Migration script is None. Either not provided or this function wasn't overridden")
@@ -82,7 +82,7 @@ class MigrationScript:
 class Migrate_21_to_22(MigrationScript):
 
     def get_script(
-            self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter) -> List[Statement]:
+            self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter) -> list[Statement]:
         return list(self._migrate_21_to_22(db, suffix, progress_meter))
 
     @staticmethod

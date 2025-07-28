@@ -122,7 +122,7 @@ class CustomCardImportDialog(QDialog):
         self.model.add_cards(cards)
         self.show()
 
-    def create_cards(self, paths: typing.List[Path]) -> typing.Counter[CustomCard]:
+    def create_cards(self, paths: list[Path]) -> typing.Counter[CustomCard]:
         result: typing.Counter[CustomCard] = Counter()
         regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
         card_db = self.model.card_db

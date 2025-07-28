@@ -26,7 +26,7 @@ import urllib.parse
 from io import StringIO
 import platform
 import re
-from typing import Type, Counter, Iterable, Optional, Dict, List, Any, Union
+from typing import Type, Counter, Iterable, Optional, Dict, Any, Union
 
 import ijson
 from PyQt5.QtGui import QValidator
@@ -126,7 +126,7 @@ class ScryfallDownloader(DecklistDownloader):
 class MTGAZoneHTMLParser(html.parser.HTMLParser):
     def __init__(self, *, convert_charrefs: bool = True):
         super().__init__(convert_charrefs=convert_charrefs)
-        self.deck: List[str] = []
+        self.deck: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: HTMLAttributeType) -> None:
         attrs = dict(attrs)
@@ -253,7 +253,7 @@ class MoxfieldDownloader(DecklistDownloader):
         return buffer.getvalue()
 
     @staticmethod
-    def _read_board(data: bytes, board: str) -> List[tuple[str, str, str, str, str, str]]:
+    def _read_board(data: bytes, board: str) -> list[tuple[str, str, str, str, str, str]]:
         result = []
         for entry in next(ijson.items(data, board)).values():
             card = entry["card"]

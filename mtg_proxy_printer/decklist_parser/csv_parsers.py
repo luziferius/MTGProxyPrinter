@@ -113,7 +113,7 @@ class ScryfallCSVParser(BaseCSVParser):
     }
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+    def supported_file_types() -> typing.Dict[str, list[str]]:
         return  {
             QCoreApplication.translate("ScryfallCSVParser", "Scryfall CSV export"): ["csv"],
         }
@@ -192,7 +192,7 @@ class TappedOutCSVParser(BaseCSVParser):
     }
 
     @staticmethod
-    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+    def supported_file_types() -> typing.Dict[str, list[str]]:
         return {
             QCoreApplication.translate("TappedOutCSVParser", "Tappedout CSV export"): ["csv"]
         }

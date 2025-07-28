@@ -63,7 +63,7 @@ BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data/all-cards"
 socket.setdefaulttimeout(5)
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
-IntTuples = typing.List[tuple[int]]
+IntTuples = list[tuple[int]]
 CardStream = typing.Generator[CardDataType, None, None]
 CardOrFace = CardDataType | FaceDataType
 
@@ -493,7 +493,7 @@ class DatabaseImportWorker(DownloaderBase):
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
-        related_printings: typing.List[RelatedPrintingData] = []
+        related_printings: list[RelatedPrintingData] = []
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
@@ -595,7 +595,7 @@ class DatabaseImportWorker(DownloaderBase):
             )
         """))
 
-    def _insert_related_printings(self, related_printings: typing.List[RelatedPrintingData]):
+    def _insert_related_printings(self, related_printings: list[RelatedPrintingData]):
         db = self.db
         logger.debug(f"Inserting related printings data. {len(related_printings)} entries")
         db.execute("DELETE FROM RelatedPrintings")

@@ -76,16 +76,16 @@ class NaturallySortedSortFilterProxyModel(QSortFilterProxyModel):
             return str_less_than(left_data, right_data)
         return super().lessThan(left, right)
 
-    def row_sort_order(self) -> typing.List[int]:
+    def row_sort_order(self) -> list[int]:
         """Returns the row numbers of the source model in the current sort order."""
         return [
             self.mapToSource(self.index(row, 0)).row() for row in range(self.rowCount())
         ]
 
 
-def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[tuple[int, int]]:
+def to_list_of_ranges(sequence: typing.Iterable[int]) -> list[tuple[int, int]]:
     sequence = sorted(sequence)
-    ranges: typing.List[tuple[int, int]] = []
+    ranges: list[tuple[int, int]] = []
     sequence = itertools.chain(sequence, (sentinel := object(),))
     lower = upper = next(sequence)
     for item in sequence:

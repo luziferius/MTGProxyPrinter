@@ -29,8 +29,8 @@ __all__ = [
     "ActionShuffleDocument",
 ]
 
-IndexedCards = typing.List[tuple[int, Card]]
-ModelIndexList = typing.List[QModelIndex]
+IndexedCards = list[tuple[int, Card]]
+ModelIndexList = list[QModelIndex]
 ItemDataRole = Qt.ItemDataRole
 
 
@@ -44,7 +44,7 @@ class ActionShuffleDocument(DocumentAction):
         # The seed is created at instantiation time and ensures that two runs of apply() return a deterministic
         # order. This ensures that redoing the same action always returns the same result
         self.random_seed = randbytes(64)
-        self.shuffle_order: typing.Dict[PageType, typing.List[int]] = {}
+        self.shuffle_order: typing.Dict[PageType, list[int]] = {}
 
     def apply(self, document: Document) -> Self:
         if self.shuffle_order:

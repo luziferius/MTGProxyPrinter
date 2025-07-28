@@ -17,7 +17,7 @@
 import dataclasses
 import enum
 from functools import partial
-from typing import Iterable, List, Union
+from typing import Iterable, Union
 
 from mtg_proxy_printer.model.card import AnyCardType
 from mtg_proxy_printer.units_and_sizes import PageType
@@ -38,7 +38,7 @@ class CardContainer:
     card: AnyCardType
 
 
-class Page(List[CardContainer]):
+class Page(list[CardContainer]):
 
     def __init__(self, __iterable: Iterable[AnyCardType] = None):
         __iterable = __iterable or []

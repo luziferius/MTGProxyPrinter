@@ -229,7 +229,7 @@ def test_cut_lines_bounding_rects_cross_entire_page(
 ])
 def test_horizontal_cut_line_locations_when_enabled(
         page_scene: PageScene,
-        page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_y: typing.List):
+        page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_y: list):
     page_scene.render_mode |= flags
     document = page_scene.document
     document.page_layout.margin_top = margins*mm
@@ -306,7 +306,7 @@ def test_horizontal_cut_line_locations_when_enabled(
 ])
 def test_vertical_cut_line_locations_when_enabled(
         page_scene: PageScene,
-        page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_x: typing.List[float]):
+        page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_x: list[float]):
     page_scene.render_mode |= flags
     document = page_scene.document
     document.page_layout.margin_left = margins*mm
@@ -376,7 +376,7 @@ def test_vertical_cut_line_locations_when_enabled(
 ])
 def test__compute_position_for_image_x(
         page_scene: PageScene,
-        page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_x: typing.List[int]):
+        page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_x: list[int]):
     page_scene.render_mode |= flags
     document = page_scene.document
     document.page_layout.column_spacing = spacing*mm
@@ -437,7 +437,7 @@ def elementwise_repeat(items: typing.Iterable, times: int) -> list:
 ])
 def test__compute_position_for_image_y(
         page_scene: PageScene,
-        page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_y: typing.List[int]):
+        page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_y: list[int]):
     page_scene.render_mode |= flags
     document = page_scene.document
     document.page_layout.row_spacing = spacing*mm
@@ -545,7 +545,7 @@ def test_card_item_origin_equals_pixmap_origin(page_scene: PageScene, card_bleed
          NeighborsPresent(True, True, False, True), NeighborsPresent(True, True, True, True), NeighborsPresent(True, True, True, False),
          NeighborsPresent(True, False, False, True), NeighborsPresent(True, False, True, True), NeighborsPresent(True, False, True, False)]),
 ])
-def test__has_neighbors(page_scene: PageScene, cards: int, neighbors: typing.List[NeighborsPresent]):
+def test__has_neighbors(page_scene: PageScene, cards: int, neighbors: list[NeighborsPresent]):
     page_scene.document.apply(ActionAddCard(create_card_with_pixmap("Something", color=QColorConstants.Black), cards))
     for index, item, expected in zip(range(cards), page_scene.card_items, neighbors):
         assert_that(page_scene._has_neighbors(item), is_(equal_to(expected)), f"Broken {index=}")

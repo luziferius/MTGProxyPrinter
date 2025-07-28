@@ -105,7 +105,7 @@ class SettingsWindow(QDialog):
     def _setup_pages_model(self, ui: Ui_SettingsWindow) -> QStandardItemModel:
         model = QStandardItemModel(self)
         # Create the model entries for each page, in the order they are stacked.
-        pages: typing.List[Page] = [ui.stacked_pages.widget(index) for index in range(ui.stacked_pages.count())]
+        pages: list[Page] = [ui.stacked_pages.widget(index) for index in range(ui.stacked_pages.count())]
         for page in pages:
             model.appendRow(page.display_item())
         # Set the models

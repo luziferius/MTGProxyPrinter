@@ -15,7 +15,7 @@
 
 
 import pathlib
-from typing import Optional, List, Union
+from typing import Optional, Union
 from functools import partial
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl, Qt, QSize
@@ -59,7 +59,7 @@ __all__ = [
 TransformationMode = Qt.TransformationMode
 StandardButton = QMessageBox.StandardButton
 StandardKey = QKeySequence.StandardKey
-UiElements = List[QWidget | QAction]
+UiElements = list[QWidget | QAction]
 
 
 class MainWindow(QMainWindow):
@@ -128,7 +128,7 @@ class MainWindow(QMainWindow):
             action.triggered.connect(partial(QDesktopServices.openUrl, url))
 
     def _setup_platform_dependent_default_shortcuts(self):
-        actions_with_shortcuts: List[tuple[QAction, StandardKey]] = [
+        actions_with_shortcuts: list[tuple[QAction, StandardKey]] = [
             (self.ui.action_new_document, StandardKey.New),
             (self.ui.action_load_document, StandardKey.Open),
             (self.ui.action_save_document, StandardKey.Save),
@@ -563,8 +563,8 @@ class MainWindow(QMainWindow):
         return None
 
     @staticmethod
-    def _to_pixmaps(event: Union[QDragEnterEvent, QDropEvent]) -> List[QPixmap]:
-        result: List[QPixmap] = []
+    def _to_pixmaps(event: Union[QDragEnterEvent, QDropEvent]) -> list[QPixmap]:
+        result: list[QPixmap] = []
         mime_data = event.mimeData()
         regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
         width, height = regular.width.magnitude, regular.height.magnitude

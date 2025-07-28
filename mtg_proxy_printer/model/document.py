@@ -105,7 +105,7 @@ class Document(QAbstractItemModel):
         self.loader = DocumentLoader(self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.loader.load_requested.connect(self.apply)
-        self.pages: typing.List[Page] = [first_page := Page()]
+        self.pages: list[Page] = [first_page := Page()]
         # Mapping from page id() to list index in the page list
         self.page_index_cache: typing.Dict[int, int] = {id(first_page): 0}
         self.currently_edited_page = first_page

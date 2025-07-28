@@ -38,14 +38,13 @@ from mtg_proxy_printer.document_controller.import_deck_list import ActionImportD
 
 from tests.helpers import fill_card_database_with_json_cards
 
-StringList = typing.List[str]
 OptString = typing.Optional[str]
 Key = Qt.Key
 MouseButton = Qt.MouseButton
 WizardButton = QWizard.WizardButton
 
 
-def create_and_show_wizard(qtbot: QtBot, document: Document, cards: StringList) -> DeckImportWizard:
+def create_and_show_wizard(qtbot: QtBot, document: Document, cards: list[str]) -> DeckImportWizard:
     card_db = document.card_db
     fill_card_database_with_json_cards(qtbot, card_db, cards)
     language_model = QStringListModel(card_db.get_all_languages(), parent=None)
@@ -81,7 +80,7 @@ def test_going_back_to_textual_deck_list_resets_parsed_cards_model(qtbot: QtBot,
 ])
 def test_remove_basic_lands_button_works(
         qtbot: QtBot, document: Document,
-        removal_settings: typing.Dict[str, str], expected_cards: StringList):
+        removal_settings: typing.Dict[str, str], expected_cards: list[str]):
     deck_list = "\n".join(("1 Forest", "1 Snow-Covered Forest", "1 Wastes"))
     wizard = create_and_show_wizard(
         qtbot, document, ["english_basic_Forest", "english_basic_Snow_Forest", "english_basic_Wastes"]
@@ -98,7 +97,7 @@ def test_remove_basic_lands_button_works(
         wizard.button(WizardButton.CustomButton1).isEnabled(),
         is_(False)
     )
-    card_names_in_model: StringList = [
+    card_names_in_model: list[str] = [
         list_model.data(list_model.index(row, CardListColumns.CardName))
         for row in range(list_model.rowCount())
     ]
@@ -124,7 +123,7 @@ def test_remove_selected_cards_works(qtbot: QtBot, document: Document):
     wizard.button(wizard.WizardButton.CustomButton2).click()
     # Verify effects: Button is disabled and the Forest is no longer present in the parsed cards
     assert_that(wizard.button(wizard.WizardButton.CustomButton2).isEnabled(), is_(False))
-    card_names_in_model: StringList = [
+    card_names_in_model: list[str] = [
         list_model.data(list_model.index(row, CardListColumns.CardName))
         for row in range(list_model.rowCount())
     ]
