@@ -16,6 +16,7 @@
 
 import sqlite3
 import typing
+from typing import LiteralString
 
 from PySide6.QtCore import QObject, Signal, Qt, QCoreApplication
 
@@ -247,10 +248,8 @@ class PrintingFilterUpdater(AsyncTask):
         ]
         return result
 
-    def _update_cached_data(self):
-        # TODO: Provide list with pairs of logger lines and SQL statements, then iterate over that?
-        logger.debug("Update the Printing.is_hidden column")
-        self.db.execute(cached_dedent("""\
+    UPDATE_CACHED_DATA_STEPS: list[tuple[str, LiteralString]] = [
+        ("Update the Printing.is_hidden column", cached_dedent("""\
         UPDATE Printing    -- _update_cached_data()
             SET is_hidden = Printing.printing_id IN (
               SELECT HiddenPrintingIDs.printing_id FROM HiddenPrintingIDs
@@ -259,12 +258,8 @@ class PrintingFilterUpdater(AsyncTask):
               SELECT HiddenPrintingIDs.printing_id FROM HiddenPrintingIDs
             ))
         ;
-        """))
-        if self.should_abort:
-            return
-        self.advance_progress.emit()
-        logger.debug("Update the FaceName.is_hidden column")
-        self.db.execute(cached_dedent("""\
+        """)),
+        ("Update the FaceName.is_hidden column", cached_dedent("""\
         WITH FaceNameShouldBeHidden (face_name_id, should_be_hidden) AS (    -- _update_cached_data()
           -- A FaceName should be hidden, iff all uses by printings are hidden,
           -- i.e. the total use count is equal to the hidden use count
@@ -283,26 +278,19 @@ class PrintingFilterUpdater(AsyncTask):
           WHERE FaceName.face_name_id = FaceNameShouldBeHidden.face_name_id
           AND FaceName.is_hidden <> FaceNameShouldBeHidden.should_be_hidden
         ;
-        """))
-        if self.should_abort:
-            return
-        self.advance_progress.emit()
-        logger.debug("Update the RemovedPrintings table")
-        self.db.execute(cached_dedent("""\
+        """)),
+        ("Remove outdated entries in the RemovedPrintings table", cached_dedent("""\
         DELETE FROM RemovedPrintings    -- _update_cached_data()
           WHERE scryfall_id IN (
             SELECT Printing.scryfall_id
             FROM Printing
             WHERE Printing.is_hidden IS FALSE
           );
-        """))
-        if self.should_abort:
-            return
-        self.advance_progress.emit()
+        """)),
         # Performance note: Using INSERT OR IGNORE and removing the inner scryfall_id NOT IN (subquery) simplifies the
         # query plan, but takes about 40% longer to evaluate (on the card data of late April 2022)
         # than the current method that only inserts missing rows.
-        self.db.execute(cached_dedent("""\
+        ("Add new items to the RemovedPrintings table", cached_dedent("""\
         INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)    -- _update_cached_data()
           SELECT DISTINCT scryfall_id, language, oracle_id
             FROM Printing
@@ -314,11 +302,18 @@ class PrintingFilterUpdater(AsyncTask):
               AND scryfall_id NOT IN (
                 SELECT rp.scryfall_id
                 FROM RemovedPrintings AS rp
-              );
-        """))
-        if self.should_abort:
-            return
-        self.advance_progress.emit()
+            );
+        """)),
+    ]
+
+    def _update_cached_data(self):
+        db = self.db
+        for step, statement in self.UPDATE_CACHED_DATA_STEPS:  # type: str, LiteralString
+            logger.debug(step)
+            db.execute(statement)
+            self.advance_progress.emit()
+            if self.should_abort:
+                return
         logger.debug("Finished maintenance tasks.")
 
     def get_currently_enabled_set_code_filters(self) -> set[str]:
