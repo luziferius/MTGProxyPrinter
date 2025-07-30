@@ -10,15 +10,10 @@ authors = [
     {name = "Thomas Hess", email = "thomas.hess@udo.edu"},
 ]
 keywords = ["MTG", "Magic The Gathering", "Printing", "Proxies"]
-license = {text = "GNU GPLv3+, see LICENSE.md or https://www.gnu.org/licenses/gpl-3.0.html for details"}
-# PEP 639 license specification below. Should be activated at some point,
-# as the current license raises DeprecationWarning
-# Still incompatible with pip-tools 7, so not
-#license = "GPL-3.0-or-later"
-#license-files = ["LICENSE.md", "doc/ThirdPartyLicenses.md"]
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE.md", "doc/ThirdPartyLicenses.md"]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Environment :: X11 Applications :: Qt",
     "Environment :: Win32 (MS Windows)",
     "Intended Audience :: End Users/Desktop",
