@@ -30,7 +30,7 @@ import urllib.parse
 import urllib.request
 
 import ijson
-from PySide6.QtCore import Signal, QObject, Qt
+from PySide6.QtCore import QObject, Qt
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock, \
@@ -60,6 +60,11 @@ __all__ = [
 # from file system paths.
 looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
 BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data/all-cards"
+
+# Constants determined empirically. These fluctuate a bit over time, but give reasonable estimates.
+AVERAGE_SIZE_PER_UNCOMPRESSED_JSON_ENTRY_IN_BYTES = 4706
+GZIP_COMPRESSION_FACTOR = 7.09
+
 # Set a default socket timeout to prevent hanging indefinitely, if the network connection breaks while a download
 # is in progress
 socket.setdefaulttimeout(5)
@@ -156,7 +161,7 @@ class FileDownloadTask(CardInfoWorkerBase):
         # determined compression factor to estimate the download size. Only do so, if the CDN does not offer the size.
         if monitor.content_encoding() == "gzip":
             file_name += ".gz"
-            size = math.floor(size / 7.09)
+            size = math.floor(size / GZIP_COMPRESSION_FACTOR)
             logger.info(f"Content length estimated as {size} bytes")
         if monitor.content_length <= 0:
             monitor.content_length = size
@@ -198,10 +203,11 @@ class FileImportTask(AsyncTask):
     def run(self):
         card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
         self.worker = worker = DatabaseImportWorker(card_db)
-        worker.download_begins.connect(self.begin_task)
-        worker.download_progress.connect(self.set_progress)
+        worker.advance_progress.connect(self.advance_progress)
+        worker.begin_task.connect(self.begin_task)
+        worker.set_progress.connect(self.set_progress)
         worker.task_completed.connect(self.task_completed)
-        worker.task_completed.connect(self.task_deleted)
+        worker.task_deleted.connect(self.task_deleted)
         worker.network_error_occurred.connect(self.network_error_occurred)
         worker.other_error_occurred.connect(self.error_occurred)
 
@@ -221,13 +227,13 @@ class ApiImportTask(AsyncTask):
     def run(self):
         card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
         self.worker = worker = DatabaseImportWorker(card_db)
-        worker.download_begins.connect(self.begin_task)
-        worker.download_progress.connect(self.set_progress)
+        worker.advance_progress.connect(self.advance_progress)
+        worker.begin_task.connect(self.begin_task)
+        worker.set_progress.connect(self.set_progress)
         worker.task_completed.connect(self.task_completed)
-        worker.task_completed.connect(self.task_deleted)
+        worker.task_deleted.connect(self.task_deleted)
         worker.network_error_occurred.connect(self.network_error_occurred)
         worker.other_error_occurred.connect(self.error_occurred)
-
         worker.import_card_data_from_online_api()
 
     def cancel(self):
@@ -335,13 +341,23 @@ class DatabaseImportWorker(DownloaderBase):
     def import_card_data_from_local_file(self, path: Path):
         try:
             data = self.read_json_card_data_from_file(path)
+            # Determining the number of entries in the file requires parsing it once and counting the entries.
+            # So use some empirically determined constants to estimate the count instead.
+            estimated_total_card_count = round(
+                (GZIP_COMPRESSION_FACTOR if path.suffix.casefold() == ".gz" else 1)
+                * path.stat().st_size
+                / AVERAGE_SIZE_PER_UNCOMPRESSED_JSON_ENTRY_IN_BYTES
+            )
+            self.begin_task.emit(
+                estimated_total_card_count,
+                self.tr("Import card data from File:", "Progress bar label text"))
             self.populate_database(data)
         except Exception:
             self.db.rollback()
             logger.exception(f"Error during import from file: {path}")
             self.other_error_occurred.emit(self.tr("Error during import from file:\n{path}").format(path=path))
         finally:
-            self.download_finished.emit()
+            self.task_deleted.emit()
 
     @with_database_write_lock()
     def import_card_data_from_online_api(self):
@@ -350,7 +366,7 @@ class DatabaseImportWorker(DownloaderBase):
         try:
             estimated_total_card_count = aw.get_available_card_count()
             data = aw.read_json_card_data_from_url()
-            self.download_begins.emit(
+            self.begin_task.emit(
                 estimated_total_card_count,
                 self.tr("Updating card data from Scryfall:", "Progress bar label text"))
             self.populate_database(data, total_count=estimated_total_card_count)
@@ -363,7 +379,7 @@ class DatabaseImportWorker(DownloaderBase):
             self.network_error_occurred.emit(self.tr("Reading from socket failed: {error}").format(error=e))
             self.db.rollback()
         finally:
-            self.download_finished.emit()
+            self.task_deleted.emit()
 
     def read_json_card_data_from_file(self, file_path: Path, json_path: str = "item") -> CardStream:
         file_size = file_path.stat().st_size
@@ -389,6 +405,7 @@ class DatabaseImportWorker(DownloaderBase):
         card_count = 0
         try:
             card_count = self._populate_database(card_data, total_count=total_count)
+            self.task_completed.emit()
         except sqlite3.Error as e:
             self.db.rollback()
             logger.exception(f"Database error occurred: {e}")
@@ -414,7 +431,6 @@ class DatabaseImportWorker(DownloaderBase):
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
-                self.download_finished.emit()
                 return index
             if _should_skip_card(card):
                 skipped_cards += 1
@@ -437,10 +453,10 @@ class DatabaseImportWorker(DownloaderBase):
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
             if progress_report_step and not index % progress_report_step:
-                self.download_progress.emit(index)
+                self.set_progress.emit(index)
         logger.info(f"Skipped {skipped_cards} cards during the import")
         logger.info("Post-processing card data")
-        self.begin_task.emit(9, self.tr("Post-processing card data:"))
+        self.begin_task.emit(4+PrintingFilterUpdater.PROGRESS_STEP_COUNT, self.tr("Post-processing card data:"))
         self._insert_related_printings(related_printings)
         self.advance_progress.emit()
         self._clean_unused_data(face_ids)
@@ -454,8 +470,8 @@ class DatabaseImportWorker(DownloaderBase):
         self.advance_progress.emit()
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
-        db.commit()
         self.advance_progress.emit()
+        db.commit()
         self.task_completed.emit()
         return index
 
