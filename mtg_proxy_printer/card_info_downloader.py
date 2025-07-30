@@ -464,7 +464,7 @@ class DatabaseImportWorker(DownloaderBase):
         updater = PrintingFilterUpdater(
             self.model, self.db, force_update_hidden_column=True)
         updater.advance_progress.connect(self.advance_progress)
-        updater.run()
+        updater.store_current_printing_filters()  # Don't call run() to not deadlock via the db semaphore
         # Store the timestamp of this import.
         db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n", (index,))
         self.advance_progress.emit()

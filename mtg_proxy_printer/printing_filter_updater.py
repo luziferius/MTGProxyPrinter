@@ -91,7 +91,7 @@ class PrintingFilterUpdater(AsyncTask):
                     "PrintingFilterUpdater.store_current_printing_filters()",
                     "Processing updated card filters:")
             )
-            self.update_ui = self._store_current_printing_filters()
+            self.update_ui = self.store_current_printing_filters()
             if self.should_abort:
                 self.db.rollback()
                 return
@@ -106,7 +106,7 @@ class PrintingFilterUpdater(AsyncTask):
                 self.db.close()
                 self._db = None
 
-    def _store_current_printing_filters(self) -> bool:
+    def store_current_printing_filters(self) -> bool:
         db = self.db
         if not self.db_passed:
             db.execute("BEGIN IMMEDIATE TRANSACTION\n")
