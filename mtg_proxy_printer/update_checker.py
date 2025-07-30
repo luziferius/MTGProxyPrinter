@@ -18,7 +18,7 @@ import random
 import re
 import socket
 import sqlite3
-import typing
+import ssl
 import urllib.parse
 import urllib.error
 
@@ -54,9 +54,9 @@ KNOWN_APPLICATION_MIRRORS: list[str] = [
 class CardDataUpdateCheckWorker(ApiStreamWorker):
     card_data_update_found = Signal(int)
 
-    def __init__(self, parent: CardDatabase):
-        super().__init__(parent)
-        self.card_db = parent
+    def __init__(self, card_db: CardDatabase):
+        super().__init__()
+        self.card_db = card_db
         self._db = None
 
     @property
@@ -110,20 +110,22 @@ class CardDataUpdateCheckRunner(Runnable):
 
     def __init__(self, parent: "UpdateChecker"):
         super().__init__()
-        self.parent = parent
+        self._parent = parent
 
     def run(self):
         try:
             self._perform_check()
         except ValueError:
             logger.info("Card data update check cancelled.")
+        except ssl.SSLError as e:
+            logger.exception(f"Update check failed: {e}")
         finally:
             self.release_instance()
 
     def _perform_check(self):
-        worker = CardDataUpdateCheckWorker(self.parent.card_db)
-        worker.card_data_update_found.connect(self.parent.card_data_update_found)
-        worker.network_error_occurred.connect(self.parent.network_error_occurred)
+        worker = CardDataUpdateCheckWorker(self._parent.card_db)
+        worker.card_data_update_found.connect(self._parent.card_data_update_found)
+        worker.network_error_occurred.connect(self._parent.network_error_occurred)
         worker.perform_card_data_update_check()
 
 
@@ -186,6 +188,8 @@ class ApplicationUpdateCheckRunner(Runnable):
             self._perform_check()
         except ValueError:
             logger.info("Application update check cancelled.")
+        except ssl.SSLError as e:
+            logger.exception(f"Update check failed: {e}")
         finally:
             self.release_instance()
 
