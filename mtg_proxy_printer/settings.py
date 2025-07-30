@@ -52,7 +52,7 @@ __all__ = [
 
 Letter = QPageSize.PageSizeId.Letter
 # https://www.unicode.org/cldr/charts/47/supplemental/territory_information.html
-LOCATION_PAPER_SIZE_TABLE = defaultdict(lambda: PageSizeId.A4, {
+LOCATION_PAPER_SIZE_TABLE: defaultdict[Territory, PageSizeId] = defaultdict(lambda: PageSizeId.A4, {
     Territory.Belize: Letter,
     Territory.Canada: Letter,
     Territory.Chile: Letter,

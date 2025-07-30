@@ -18,6 +18,7 @@ from pathlib import Path
 import shutil
 import sys
 import typing
+from typing import Callable
 
 from PySide6.QtCore import QFile, Signal, Slot, QThreadPool, QObject, QEvent, Qt
 from PySide6.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
@@ -125,6 +126,8 @@ class SavePDFDialog(QFileDialog):
 
 class SavePNGDialog(QFileDialog):
 
+    parent: Callable[[], "MainWindow"]
+
     def __init__(self, parent: "MainWindow", document: "Document"):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
@@ -156,7 +159,7 @@ class SavePNGDialog(QFileDialog):
     def on_accept(self):
         logger.debug("User chose a file name, about to generate the PNG image sequence")
         path = self.selectedFiles()[0]
-        main_window: "MainWindow" = self.parent()
+        main_window = self.parent()
         renderer = mtg_proxy_printer.print.PNGRenderer(main_window, self.document, path)
         main_window.progress_bars.connect_outer_progress(renderer)
         renderer.render_document()
