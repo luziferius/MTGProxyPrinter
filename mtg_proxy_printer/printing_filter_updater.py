@@ -85,13 +85,11 @@ class PrintingFilterUpdater(AsyncTask):
     def run(self):
         logger.debug(f"Called {self.__class__.__name__}.run()")
         try:
-            if self.db_passed:
-                # Passed-in connections have a running transaction, which has to be closed
-                self.db.commit()
-            self.begin_task.emit(
-                self.PROGRESS_STEP_COUNT,
-                QCoreApplication.translate("PrintingFilterUpdater.store_current_printing_filters()",
-                                           "Processing updated card filters:"))
+            if not self.db_passed:
+                self.begin_task.emit(
+                    self.PROGRESS_STEP_COUNT,
+                    QCoreApplication.translate("PrintingFilterUpdater.store_current_printing_filters()",
+                                               "Processing updated card filters:"))
             self.update_ui = self._store_current_printing_filters()
             if self.should_abort:
                 self.db.rollback()
@@ -109,7 +107,8 @@ class PrintingFilterUpdater(AsyncTask):
 
     def _store_current_printing_filters(self) -> bool:
         db = self.db
-        db.execute("BEGIN IMMEDIATE TRANSACTION\n")
+        if not self.db_passed:
+            db.execute("BEGIN IMMEDIATE TRANSACTION\n")
         section = mtg_proxy_printer.settings.settings["card-filter"]
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
         old_filter_removed = self._remove_old_printing_filters(section)
@@ -139,7 +138,8 @@ class PrintingFilterUpdater(AsyncTask):
         update_ui = filters_need_update or old_filter_removed or self.force_update_hidden_column or set_code_updated
         if update_ui:
             self._update_cached_data()
-        db.commit()
+        if not self.db_passed:
+            db.commit()
         if update_ui:
             self.ui_update_required.emit()
         return update_ui
