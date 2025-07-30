@@ -18,7 +18,7 @@ import sqlite3
 import typing
 from typing import LiteralString
 
-from PySide6.QtCore import QObject, Signal, Qt, QCoreApplication
+from PySide6.QtCore import Qt, QCoreApplication
 
 import mtg_proxy_printer.settings
 if typing.TYPE_CHECKING:
