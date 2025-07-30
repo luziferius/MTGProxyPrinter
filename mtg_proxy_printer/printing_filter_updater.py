@@ -85,11 +85,11 @@ class PrintingFilterUpdater(AsyncTask):
     def run(self):
         logger.debug(f"Called {self.__class__.__name__}.run()")
         try:
-            if not self.db_passed:
-                self.begin_task.emit(
-                    self.PROGRESS_STEP_COUNT,
-                    QCoreApplication.translate("PrintingFilterUpdater.store_current_printing_filters()",
-                                               "Processing updated card filters:"))
+            self.begin_task.emit(
+                self.PROGRESS_STEP_COUNT, QCoreApplication.translate(
+                    "PrintingFilterUpdater.store_current_printing_filters()",
+                    "Processing updated card filters:")
+            )
             self.update_ui = self._store_current_printing_filters()
             if self.should_abort:
                 self.db.rollback()
