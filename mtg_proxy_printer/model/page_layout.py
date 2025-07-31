@@ -36,6 +36,7 @@ __all__ = [
     "PageLayoutSettings",
 ]
 
+
 def _is_quantity_setting(pair: tuple[str, typing.Any]):
     return isinstance(pair[1], Quantity)
 
@@ -216,7 +217,7 @@ class PageLayoutSettings:
             return 0
         cards = 1 + math.floor(
             (available_height - card_height) /
-                (card_height + distance_to_mm(self.row_spacing))
+            (card_height + distance_to_mm(self.row_spacing))
         )
         return cards
 

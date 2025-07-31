@@ -27,7 +27,7 @@ from hamcrest import *
 
 from mtg_proxy_printer.model.document_loader import DocumentLoader, CardType
 from tests.helpers import quantity_close_to
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, Unit, CardSizes, Quantity
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, Unit, CardSizes
 from mtg_proxy_printer.model.card import CheckCard
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document import Document
@@ -385,7 +385,7 @@ def test_load_settings_from_legacy_save_file_is_successful(
     assert_that(
         document.page_layout,
         has_properties({
-            item: instance_of(pint.Quantity if value is Quantity else value)
+            item: instance_of(value)
             for item, value in annotations.items()
         })
     )
