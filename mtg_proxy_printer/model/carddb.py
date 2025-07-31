@@ -355,7 +355,7 @@ class CardDatabase(QObject):
                 bool(highres_image), CardSizes.from_bool(is_oversized), face_number, bool(is_dfc),
             )
             for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
-                is_oversized, face_number, language, is_dfc in cursor
+            is_oversized, face_number, language, is_dfc in cursor
         ]
 
     def find_related_cards(self, card: Card) -> CardList:

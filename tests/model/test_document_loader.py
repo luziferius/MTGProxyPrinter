@@ -27,7 +27,7 @@ from hamcrest import *
 
 from mtg_proxy_printer.model.document_loader import DocumentLoader, CardType
 from tests.helpers import quantity_close_to
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, Unit, CardSizes
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes
 from mtg_proxy_printer.model.card import CheckCard
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document import Document
@@ -39,7 +39,7 @@ from tests.helpers import create_save_database_with
 OPEN_DATABASE = "mtg_proxy_printer.model.document_loader.open_database"
 MOCK_SAVE_PATH = Path("/tmp/invalid.mtgproxies")
 
-mm: Unit = unit_registry.mm
+mm = unit_registry.mm
 degree = unit_registry.degree
 
 
@@ -127,9 +127,9 @@ def test_empty_document_loads_correctly(
     document = loader.document
     create_save_database_with(empty_save_database, [], [], page_layout)
     with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as mock, \
-        qtbot.wait_signals([loader.load_requested, document.action_applied]), \
-        qtbot.assert_not_emitted(loader.loading_file_failed):
-            loader.run()
+            qtbot.wait_signals([loader.load_requested, document.action_applied]), \
+            qtbot.assert_not_emitted(loader.loading_file_failed):
+        loader.run()
     mock.assert_called_once()
     assert_that(document.rowCount(), is_(equal_to(1)))
     page_index = document.index(0, 0)
@@ -153,8 +153,8 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
         page_layout
     )
     with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database, \
-        qtbot.wait_signals([loader.load_requested, document.action_applied]):
-            loader.run()
+            qtbot.wait_signals([loader.load_requested, document.action_applied]):
+        loader.run()
     open_database.assert_called_once()
     assert_that(document.rowCount(), is_(2))
     total_cards = 0
@@ -192,9 +192,9 @@ def test_invalid_data_in_card_columns_raises_exception(
         "Setup failed: Data mismatch"
     )
     with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database, \
-        qtbot.wait_signal(loader.loading_file_failed, raising=True), \
-        qtbot.assert_not_emitted(loader.load_requested):
-            loader.run()
+            qtbot.wait_signal(loader.loading_file_failed, raising=True), \
+            qtbot.assert_not_emitted(loader.load_requested):
+        loader.run()
     open_database.assert_called_once()
     assert_document_is_empty(document)
     assert_that(document.save_file_path, is_(none()))
@@ -218,9 +218,9 @@ def test_protects_against_infinite_save_data(
         SELECT * FROM card_gen
         """))
     with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database, \
-        qtbot.wait_signal(loader.loading_file_failed, raising=True), \
-        qtbot.assert_not_emitted(loader.load_requested):
-            loader.run()
+            qtbot.wait_signal(loader.loading_file_failed, raising=True), \
+            qtbot.assert_not_emitted(loader.load_requested):
+        loader.run()
     open_database.assert_called_once()
     assert_document_is_empty(document)
     assert_that(document.save_file_path, is_(none()))
@@ -288,9 +288,9 @@ def test_protects_against_infinite_settings_data(
     empty_save_database.execute("DROP TABLE DocumentSettings")
     empty_save_database.execute(script)
     with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database, \
-        qtbot.wait_signal(loader.loading_file_failed, raising=True), \
-        qtbot.assert_not_emitted(loader.load_requested):
-            loader.run()
+            qtbot.wait_signal(loader.loading_file_failed, raising=True), \
+            qtbot.assert_not_emitted(loader.load_requested):
+        loader.run()
     open_database.assert_called_once()
     assert_document_is_empty(document)
     assert_that(document.save_file_path, is_(none()))
