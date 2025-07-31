@@ -83,8 +83,8 @@ def setup_settings_for_testing():
 
 
 def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict):
-    dw = mtg_proxy_printer.card_info_downloader.DatabaseImportWorker(card_db)
-    dw._db = card_db.db  # Explicitly share the in-memory database connection
+    # Explicitly share the in-memory database connection
+    dw = mtg_proxy_printer.card_info_downloader.DatabaseImportWorker(card_db, card_db.db)
     section = mtg_proxy_printer.settings.settings["card-filter"]
     with qtbot.assertNotEmitted(dw.other_error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
         settings_to_use = update_database_printing_filters(card_db, filter_settings)
@@ -100,8 +100,7 @@ def update_database_printing_filters(
         settings_to_use.update(filter_settings)
     section = mtg_proxy_printer.settings.settings["card-filter"]
     with patch.dict(section, settings_to_use):
-        updater = PrintingFilterUpdater(card_db, card_db.db, force_update_hidden_column=True)
-        updater.run()
+        PrintingFilterUpdater(card_db, card_db.db, force_update_hidden_column=True).run()
     return settings_to_use
 
 
@@ -111,8 +110,7 @@ def load_json(name: str) -> CardDataType:
     return json.loads(data)
 
 
-def load_multiple_json_cards(
-        json_files_or_names: list[str | CardDataType]):
+def load_multiple_json_cards(json_files_or_names: list[str | CardDataType]) -> list[CardDataType]:
     return [
         load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
         for json_file_or_name in json_files_or_names

@@ -55,7 +55,7 @@ class PrintingFilterUpdater(AsyncTask):
         :param force_update_hidden_column: Force re-writing the is_hidden columns. The columns need updates,
           if the filter values change (determined internally) or the card data changes.
           This boolean can be used by the card data update to enforce refreshing
-          the cached is_hidden, as the value may change for each card, even if the filters stayed constant.
+          the cached is_hidden, as the value may change for each card, even if the filters were unchanged.
         """
         super().__init__()
         self.model = model
@@ -63,7 +63,7 @@ class PrintingFilterUpdater(AsyncTask):
         self.ui_update_required.connect(model.restart_transaction, QueuedConnection)
         self.ui_update_required.connect(model.card_data_updated, QueuedConnection)
         self.force_update_hidden_column = force_update_hidden_column
-        self.db_passed = bool(db_connection)
+        self.uses_self_opened_db_connection = not db_connection
         self._db = db_connection
         self.update_ui = False
         self.should_abort = False
@@ -101,14 +101,14 @@ class PrintingFilterUpdater(AsyncTask):
             self.db.rollback()
         finally:
             self.task_completed.emit()
-            if not self.db_passed:
+            if self.uses_self_opened_db_connection:
                 logger.debug(f"Closing {self.__class__.__name__} connection")
                 self.db.close()
                 self._db = None
 
     def store_current_printing_filters(self) -> bool:
         db = self.db
-        if not self.db_passed:
+        if self.uses_self_opened_db_connection:
             db.execute("BEGIN IMMEDIATE TRANSACTION\n")
         section = mtg_proxy_printer.settings.settings["card-filter"]
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
@@ -139,7 +139,7 @@ class PrintingFilterUpdater(AsyncTask):
         update_ui = filters_need_update or old_filter_removed or self.force_update_hidden_column or set_code_updated
         if update_ui:
             self._update_cached_data()
-        if not self.db_passed:
+        if self.uses_self_opened_db_connection:
             db.commit()
         if update_ui:
             self.ui_update_required.emit()

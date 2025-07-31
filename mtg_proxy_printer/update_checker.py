@@ -52,14 +52,13 @@ KNOWN_APPLICATION_MIRRORS: list[str] = [
 ]
 
 
-
 class CardDataUpdateCheckTask(ApiStreamWorker):
     card_data_update_found = Signal(int)
 
-    def __init__(self, card_db: CardDatabase):
+    def __init__(self, card_db: CardDatabase, db: sqlite3.Connection = None):
         super().__init__()
         self.card_db = card_db
-        self._db = None
+        self._db = db
 
     @property
     def db(self) -> sqlite3.Connection:
