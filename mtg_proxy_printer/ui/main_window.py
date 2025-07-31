@@ -274,6 +274,7 @@ class MainWindow(QMainWindow):
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = dialog = PrintDialog(self.document, self)
+        dialog.request_run_async_task.connect(self.request_run_async_task)
         dialog.finished.connect(self.on_dialog_finished)
         # Use the QDialog base class open() method, because QPrintDialog.open() performs additional, unwanted actions.
         self.missing_images_manager.obtain_missing_images(super(QPrintDialog, dialog).open)
@@ -299,6 +300,7 @@ class MainWindow(QMainWindow):
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = dialog = SavePDFDialog(self, self.document)
+        dialog.request_run_async_task.connect(self.request_run_async_task)
         dialog.finished.connect(self.on_dialog_finished)
         self.missing_images_manager.obtain_missing_images(dialog.open)
 
@@ -311,6 +313,7 @@ class MainWindow(QMainWindow):
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = dialog = SavePNGDialog(self, self.document)
+        dialog.request_run_async_task.connect(self.request_run_async_task)
         dialog.finished.connect(self.on_dialog_finished)
         self.missing_images_manager.obtain_missing_images(dialog.open)
 

@@ -86,6 +86,7 @@ def read_path(section: str, setting: str) -> str:
 
 class SavePDFDialog(QFileDialog):
     parent: Callable[[], "MainWindow"]
+    request_run_async_task = Signal(AsyncTask)
 
     def __init__(self, parent: "MainWindow", document: "Document"):
         # Note: Cannot supply already translated strings to __init__,
@@ -119,7 +120,7 @@ class SavePDFDialog(QFileDialog):
         logger.debug("User chose a file name, about to generate the PDF document")
         path = self.selectedFiles()[0]
         mtg_proxy_printer.print.export_pdf(self.document, path, self)
-        QThreadPool.globalInstance().start(PrintCountUpdater(self.document))
+        self.request_run_async_task.emit(PrintCountUpdater(self.document))
         logger.info(f"Saved document to {path}")
 
     @Slot()
@@ -128,6 +129,9 @@ class SavePDFDialog(QFileDialog):
 
 
 class SavePNGDialog(QFileDialog):
+
+    parent: Callable[[], "MainWindow"]
+    request_run_async_task = Signal(AsyncTask)
 
     def __init__(self, parent: "MainWindow", document: "Document"):
         # Note: Cannot supply already translated strings to __init__,
@@ -160,11 +164,11 @@ class SavePNGDialog(QFileDialog):
     def on_accept(self):
         logger.debug("User chose a file name, about to generate the PNG image sequence")
         path = self.selectedFiles()[0]
-        main_window: "MainWindow" = self.parent()
+        main_window = self.parent()
         renderer = mtg_proxy_printer.print.PNGRenderer(main_window, self.document, path)
         main_window.progress_bar_manager.add_task(renderer)
-        QThreadPool.globalInstance().start(AsyncTaskRunner(renderer))
-        QThreadPool.globalInstance().start(PrintCountUpdater(self.document))
+        self.request_run_async_task.emit(renderer)
+        self.request_run_async_task.emit(PrintCountUpdater(self.document))
         logger.info(f"Saved document to {path}")
 
     @Slot()
@@ -340,6 +344,8 @@ class PrintPreviewDialog(QPrintPreviewDialog):
 
 class PrintDialog(QPrintDialog):
 
+    request_run_async_task = Signal(AsyncTask)
+
     def __init__(self, document: "Document", parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
         self.q_printer = mtg_proxy_printer.print.create_printer(self.renderer)
@@ -347,7 +353,7 @@ class PrintDialog(QPrintDialog):
         self.renderer.setParent(self)
         # When the user accepts the dialog, print the document and increase the usage counts
         self.accepted[QPrinter].connect(self.renderer.print_document)
-        self.accepted.connect(lambda: QThreadPool.globalInstance().start(PrintCountUpdater(document)))
+        self.accepted.connect(lambda: self.request_run_async_task.emit(PrintCountUpdater(document)))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 

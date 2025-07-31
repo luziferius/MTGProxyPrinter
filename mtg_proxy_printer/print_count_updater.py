@@ -19,7 +19,7 @@ import typing
 
 from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import open_database
-from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.runner import AsyncTask
 from mtg_proxy_printer.logger import get_logger
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -28,7 +28,7 @@ logger = get_logger(__name__)
 del get_logger
 
 
-class PrintCountUpdater(Runnable):
+class PrintCountUpdater(AsyncTask):
     """
     This class updates the print counts stored in the database.
 
@@ -64,10 +64,7 @@ class PrintCountUpdater(Runnable):
         Increments the usage count of all cards used in the document and updates the last use timestamps.
         Should be called after a successful PDF/PNG export and direct printing.
         """
-        try:
-            self._update_image_usage()
-        finally:
-            self.release_instance()
+        self._update_image_usage()
 
     @with_database_write_lock()
     def _update_image_usage(self):
