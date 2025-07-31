@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>336</width>
+    <width>348</width>
     <height>304</height>
    </rect>
   </property>
@@ -73,7 +73,7 @@ which should increase compatibility, at the expense of drawing shorter cut helpe
    <item row="3" column="0" colspan="2">
     <spacer name="vertical_spacer">
      <property name="orientation">
-      <enum>Qt::Vertical</enum>
+      <enum>Qt::Orientation::Vertical</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>

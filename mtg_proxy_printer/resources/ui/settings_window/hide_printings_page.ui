@@ -45,7 +45,7 @@
 LEA DDU TC13 J21</string>
      </property>
      <property name="inputMethodHints">
-      <set>Qt::ImhLatinOnly|Qt::ImhMultiLine|Qt::ImhNoAutoUppercase|Qt::ImhNoPredictiveText</set>
+      <set>Qt::InputMethodHint::ImhLatinOnly|Qt::InputMethodHint::ImhMultiLine|Qt::InputMethodHint::ImhNoAutoUppercase|Qt::InputMethodHint::ImhNoPredictiveText</set>
      </property>
      <property name="placeholderText">
       <string>No sets currently hidden.</string>

@@ -6,9 +6,9 @@
    <item>
     <widget class="QSplitter" name="splitter">
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+      <enum>Qt::Orientation::Horizontal</enum>
      </property>
-     <widget class="PageConfigWidget" name="page_config_widget" native="true"/>
+     <widget class="PageConfigWidget" name="page_config_widget"/>
      <widget class="PageConfigPreviewArea" name="page_config_preview_area" native="true"/>
     </widget>
    </item>

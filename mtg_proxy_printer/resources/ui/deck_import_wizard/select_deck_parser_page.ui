@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>SelectDeckParserPage</class>
  <widget class="QWizardPage" name="SelectDeckParserPage">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>767</width>
-    <height>596</height>
-   </rect>
-  </property>
   <property name="title">
    <string>Import a deck list for printing</string>
   </property>
@@ -35,10 +27,10 @@ or any other preference, like card price.</string>
    <item row="11" column="1">
     <spacer name="sample_buttons_spacer">
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+      <enum>Qt::Orientation::Horizontal</enum>
      </property>
      <property name="sizeType">
-      <enum>QSizePolicy::Fixed</enum>
+      <enum>QSizePolicy::Policy::Fixed</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
@@ -185,7 +177,7 @@ Not all groups are required for a successful match. For example, `set_code` and 
 Hint: You may want to use an online Regular Expression editor, like [](https://regex101.com/), for example.</string>
        </property>
        <property name="inputMethodHints">
-        <set>Qt::ImhPreferLatin</set>
+        <set>Qt::InputMethodHint::ImhPreferLatin</set>
        </property>
        <property name="placeholderText">
         <string notr="true">(?P&lt;copies&gt;\w+) (?P&lt;name&gt;.+) \((?P&lt;set_code&gt;\w+)\) (?P&lt;collector_number&gt;\d+)</string>
@@ -200,7 +192,7 @@ Hint: You may want to use an online Regular Expression editor, like [](https://r
    <item row="14" column="1" colspan="4">
     <spacer name="verticalSpacer">
      <property name="orientation">
-      <enum>Qt::Vertical</enum>
+      <enum>Qt::Orientation::Vertical</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
@@ -276,10 +268,10 @@ You have to separate them with the “control structures”, like spaces, as use
    <item row="7" column="1">
     <spacer name="tapped_out_board_spacer">
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+      <enum>Qt::Orientation::Horizontal</enum>
      </property>
      <property name="sizeType">
-      <enum>QSizePolicy::Fixed</enum>
+      <enum>QSizePolicy::Policy::Fixed</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
@@ -292,7 +284,7 @@ You have to separate them with the “control structures”, like spaces, as use
    <item row="7" column="4">
     <spacer name="horizontalSpacer">
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+      <enum>Qt::Orientation::Horizontal</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
@@ -425,4 +417,7 @@ You have to separate them with the “control structures”, like spaces, as use
    <slot>isComplete()</slot>
   </connection>
  </connections>
+ <slots>
+  <slot>isComplete()</slot>
+ </slots>
 </ui>

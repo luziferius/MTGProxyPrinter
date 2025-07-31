@@ -39,7 +39,7 @@
           <string>Application Version:</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
+          <set>Qt::TextInteractionFlag::NoTextInteraction</set>
          </property>
         </widget>
        </item>
@@ -65,13 +65,13 @@
           <string notr="true"/>
          </property>
          <property name="textFormat">
-          <enum>Qt::PlainText</enum>
+          <enum>Qt::TextFormat::PlainText</enum>
          </property>
          <property name="alignment">
-          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+          <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::TextSelectableByMouse</set>
+          <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
          </property>
         </widget>
        </item>
@@ -97,7 +97,7 @@
           <string/>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::TextSelectableByMouse</set>
+          <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
          </property>
         </widget>
        </item>
@@ -107,7 +107,7 @@
           <string>Python runtime version</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::TextSelectableByMouse</set>
+          <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
          </property>
         </widget>
        </item>
@@ -136,6 +136,7 @@ nor any documents created, both in digital and physical form.
 Project Website: [{application_name} home page]({application_home_page})
 
 Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
+
 </string>
          </property>
          <property name="openExternalLinks">
@@ -176,14 +177,14 @@ Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
             <string notr="true">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:xx-large; font-weight:600;&quot;&gt;MTGProxyPrinter&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
            <property name="textInteractionFlags">
-            <set>Qt::NoTextInteraction</set>
+            <set>Qt::TextInteractionFlag::NoTextInteraction</set>
            </property>
           </widget>
          </item>
          <item>
           <spacer name="about_header_spacer">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Orientation::Horizontal</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -199,13 +200,13 @@ Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
      </widget>
      <widget class="QTextBrowser" name="changelog_text_browser">
       <property name="inputMethodHints">
-       <set>Qt::ImhNone</set>
+       <set>Qt::InputMethodHint::ImhNone</set>
       </property>
       <property name="documentTitle">
        <string>Changelog</string>
       </property>
       <property name="textInteractionFlags">
-       <set>Qt::LinksAccessibleByKeyboard|Qt::LinksAccessibleByMouse|Qt::TextBrowserInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+       <set>Qt::TextInteractionFlag::LinksAccessibleByKeyboard|Qt::TextInteractionFlag::LinksAccessibleByMouse|Qt::TextInteractionFlag::TextBrowserInteraction|Qt::TextInteractionFlag::TextSelectableByKeyboard|Qt::TextInteractionFlag::TextSelectableByMouse</set>
       </property>
       <property name="openExternalLinks">
        <bool>true</bool>
@@ -216,10 +217,10 @@ Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
      </widget>
      <widget class="QTextBrowser" name="license_text_browser">
       <property name="inputMethodHints">
-       <set>Qt::ImhNone</set>
+       <set>Qt::InputMethodHint::ImhNone</set>
       </property>
       <property name="textInteractionFlags">
-       <set>Qt::LinksAccessibleByKeyboard|Qt::LinksAccessibleByMouse|Qt::TextBrowserInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+       <set>Qt::TextInteractionFlag::LinksAccessibleByKeyboard|Qt::TextInteractionFlag::LinksAccessibleByMouse|Qt::TextInteractionFlag::TextBrowserInteraction|Qt::TextInteractionFlag::TextSelectableByKeyboard|Qt::TextInteractionFlag::TextSelectableByMouse</set>
       </property>
       <property name="openExternalLinks">
        <bool>true</bool>
@@ -230,7 +231,7 @@ Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
      </widget>
      <widget class="QTextBrowser" name="third_party_license_text_browser">
       <property name="textInteractionFlags">
-       <set>Qt::LinksAccessibleByKeyboard|Qt::LinksAccessibleByMouse|Qt::TextBrowserInteraction|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+       <set>Qt::TextInteractionFlag::LinksAccessibleByKeyboard|Qt::TextInteractionFlag::LinksAccessibleByMouse|Qt::TextInteractionFlag::TextBrowserInteraction|Qt::TextInteractionFlag::TextSelectableByKeyboard|Qt::TextInteractionFlag::TextSelectableByMouse</set>
       </property>
       <property name="openExternalLinks">
        <bool>true</bool>
@@ -244,10 +245,10 @@ Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+      <enum>Qt::Orientation::Horizontal</enum>
      </property>
      <property name="standardButtons">
-      <set>QDialogButtonBox::Close</set>
+      <set>QDialogButtonBox::StandardButton::Close</set>
      </property>
     </widget>
    </item>

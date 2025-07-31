@@ -98,7 +98,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
           <string>Right margin</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
+          <set>Qt::TextInteractionFlag::NoTextInteraction</set>
          </property>
          <property name="buddy">
           <cstring>margin_right</cstring>
@@ -124,7 +124,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
           <string>Card bleed</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
+          <set>Qt::TextInteractionFlag::NoTextInteraction</set>
          </property>
          <property name="buddy">
           <cstring>card_bleed</cstring>
@@ -137,7 +137,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
           <string>Paper width</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
+          <set>Qt::TextInteractionFlag::NoTextInteraction</set>
          </property>
          <property name="buddy">
           <cstring>custom_page_width</cstring>
@@ -150,7 +150,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
           <string>Row spacing</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
+          <set>Qt::TextInteractionFlag::NoTextInteraction</set>
          </property>
          <property name="buddy">
           <cstring>row_spacing</cstring>
@@ -182,7 +182,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
           <string>Paper height</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
+          <set>Qt::TextInteractionFlag::NoTextInteraction</set>
          </property>
          <property name="buddy">
           <cstring>custom_page_height</cstring>
@@ -198,7 +198,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
           <string>Column spacing</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
+          <set>Qt::TextInteractionFlag::NoTextInteraction</set>
          </property>
          <property name="buddy">
           <cstring>column_spacing</cstring>
@@ -211,7 +211,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
           <string>Resulting page capacity:</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
+          <set>Qt::TextInteractionFlag::NoTextInteraction</set>
          </property>
         </widget>
        </item>
@@ -221,7 +221,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
           <string>Left margin</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
+          <set>Qt::TextInteractionFlag::NoTextInteraction</set>
          </property>
          <property name="buddy">
           <cstring>margin_left</cstring>
@@ -234,7 +234,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
           <string>Top margin</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
+          <set>Qt::TextInteractionFlag::NoTextInteraction</set>
          </property>
          <property name="buddy">
           <cstring>margin_top</cstring>
@@ -247,7 +247,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
           <string>Bottom margin</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
+          <set>Qt::TextInteractionFlag::NoTextInteraction</set>
          </property>
          <property name="buddy">
           <cstring>margin_bottom</cstring>
@@ -397,7 +397,7 @@ otherwise you need two cuts but require less precision hitting the exact middle.
 based on the page size and spacings configured</string>
          </property>
          <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
+          <set>Qt::TextInteractionFlag::NoTextInteraction</set>
          </property>
         </widget>
        </item>
@@ -464,7 +464,7 @@ based on the page size and spacings configured</string>
        <item row="7" column="0" colspan="4">
         <spacer name="tab_watermark_spacer">
          <property name="orientation">
-          <enum>Qt::Vertical</enum>
+          <enum>Qt::Orientation::Vertical</enum>
          </property>
          <property name="sizeHint" stdset="0">
           <size>
@@ -552,10 +552,10 @@ based on the page size and spacings configured</string>
           <number>255</number>
          </property>
          <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+          <enum>Qt::Orientation::Horizontal</enum>
          </property>
          <property name="tickPosition">
-          <enum>QSlider::NoTicks</enum>
+          <enum>QSlider::TickPosition::NoTicks</enum>
          </property>
         </widget>
        </item>
@@ -568,7 +568,7 @@ based on the page size and spacings configured</string>
      <item>
       <spacer name="preview_button_spacer">
        <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <enum>Qt::Orientation::Horizontal</enum>
        </property>
        <property name="sizeHint" stdset="0">
         <size>
@@ -613,7 +613,7 @@ based on the page size and spacings configured</string>
    <item row="29" column="1" colspan="3">
     <spacer name="spacer_bottom">
      <property name="orientation">
-      <enum>Qt::Vertical</enum>
+      <enum>Qt::Orientation::Vertical</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>

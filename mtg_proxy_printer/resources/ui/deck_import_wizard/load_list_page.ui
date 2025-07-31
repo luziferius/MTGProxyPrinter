@@ -36,7 +36,7 @@
    <item row="0" column="0" colspan="2">
     <widget class="QLineEdit" name="deck_list_download_url_line_edit">
      <property name="inputMethodHints">
-      <set>Qt::ImhUrlCharactersOnly</set>
+      <set>Qt::InputMethodHint::ImhUrlCharactersOnly</set>
      </property>
      <property name="placeholderText">
       <string>Paste a link to a public deck list here. Hover to see supported sites.</string>
@@ -120,7 +120,7 @@ Enabling this can potentially save disk space and download volume, based on the 
    <item row="5" column="0" colspan="4">
     <widget class="Line" name="line">
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+      <enum>Qt::Orientation::Horizontal</enum>
      </property>
     </widget>
    </item>
