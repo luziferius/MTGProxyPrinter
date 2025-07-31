@@ -67,6 +67,7 @@ __all__ = [
 
 
 class AsyncTask(QObject):
+    # TODO: Introduce a "blocking UI" flag. A blocking task disables most of the GUI
     """Base class for asynchronous tasks with progress reporting"""
 
     begin_task = Signal(int, str)  # Task begin. Carries the expected work steps and a UI display string
