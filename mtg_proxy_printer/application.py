@@ -22,7 +22,6 @@ import platform
 import shutil
 import sys
 from tempfile import mkdtemp
-import typing
 
 from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo
 from PySide6.QtWidgets import QApplication

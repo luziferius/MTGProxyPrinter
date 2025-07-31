@@ -26,7 +26,7 @@ import threading
 from typing import Iterable, TYPE_CHECKING, Callable
 import urllib.error
 
-from PySide6.QtCore import QObject, Signal, Slot, QModelIndex, Qt, QThreadPool
+from PySide6.QtCore import QObject, Signal, Slot, QModelIndex, Qt, QTimer
 from PySide6.QtGui import QPixmap, QColorConstants
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from .card import Card, CheckCard, AnyCardType
-from mtg_proxy_printer.runner import Runnable, AsyncTask
+from mtg_proxy_printer.runner import AsyncTask
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -65,7 +65,7 @@ OptionalPixmap = QPixmap | None
 download_semaphore = threading.BoundedSemaphore()
 
 
-class InitOnDiskDataRunner(Runnable):
+class InitOnDiskDataTask(AsyncTask):
     """
     Iterates the image storage directory and computes the set of ImageKey instances, placing them in the image database.
     """
@@ -77,12 +77,9 @@ class InitOnDiskDataRunner(Runnable):
 
     def run(self):
         logger.info("Reading all image IDs of images stored on disk.")
-        try:
-            self.images_on_disk.update(
-                image.as_key() for image in read_disk_cache_content(self.db_path)
-            )
-        finally:
-            self.release_instance()
+        self.images_on_disk.update(
+            image.as_key() for image in read_disk_cache_content(self.db_path)
+        )
 
 
 class ImageDatabase(QObject):
@@ -114,7 +111,7 @@ class ImageDatabase(QObject):
         # to save memory.
         self.loaded_images: dict[ImageKey, QPixmap] = {}
         self.images_on_disk: set[ImageKey] = set()
-        QThreadPool.globalInstance().start(InitOnDiskDataRunner(self.images_on_disk, db_path))
+        InitOnDiskDataTask(self.images_on_disk, db_path).run()
         self.download_worker = ImageDownloader(self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
