@@ -89,6 +89,7 @@ def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.Card
     with qtbot.assertNotEmitted(dw.other_error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
         settings_to_use = update_database_printing_filters(card_db, filter_settings)
         with patch.dict(section, settings_to_use):
+
             dw.populate_database(data)
 
 
@@ -101,6 +102,7 @@ def update_database_printing_filters(
     section = mtg_proxy_printer.settings.settings["card-filter"]
     with patch.dict(section, settings_to_use):
         PrintingFilterUpdater(card_db, card_db.db, force_update_hidden_column=True).run()
+
     return settings_to_use
 
 

@@ -94,7 +94,9 @@ class PrintingFilterUpdater(AsyncTask):
             self.update_ui = self.store_current_printing_filters()
             if self.should_abort:
                 self.db.rollback()
-                return
+            else:
+                self.db.commit()
+            return
         except sqlite3.Error as e:
             logger.exception(e)
             self.error_occurred.emit(e.sqlite_errorname)
