@@ -203,6 +203,7 @@ class Application(QApplication):
 
     def _create_update_checker(self, args: Namespace) -> UpdateChecker:
         update_checker = UpdateChecker(self.card_db, args, self)
+        update_checker.request_run_async_task.connect(self.run_async_task)
         update_checker.network_error_occurred.connect(self.main_window.on_network_error_occurred)
         update_checker.card_data_update_found.connect(self.main_window.show_card_data_update_available_message_box)
         update_checker.application_update_found.connect(self.main_window.show_application_update_available_message_box)
