@@ -109,18 +109,18 @@ Except for Scryfall, these websites do not offer a stable, public Web API. Suppo
 
 ## Requirements
 
-- Python >= 3.8
+- Python >= 3.11
 
 These external libraries are used in the code. They can be installed from PyPI.
 
 - `platformdirs`
 - `ijson`
 - `pint`
-- `PySide6`
+- `PySide6` (Only the core libraries `PySide6-Essentials` is required)
 - `delegateto`
 - `PyHamcrest`
 - `cx_Freeze` (Stand-alone bundles only. Used by the installer for Windows®-based platforms.)
-- Either `truststore` (Py >= 3.10) or `certifi` (Py < 3.10)
+- `truststore`
 - `typing_extensions` (Py < 3.11)
 
 ### System libraries
