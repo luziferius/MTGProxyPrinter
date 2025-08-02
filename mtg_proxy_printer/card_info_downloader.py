@@ -299,9 +299,12 @@ class ApiStreamTask(CardInfoWorkerBase):
         logger.debug(f"Card data update query URL: {url}")
         try:
             total_cards_available = next(self.read_json_card_data_from_url(url, "total_cards"))
-        except (urllib.error.URLError, socket.timeout, StopIteration):
-            logger.warning("Reading total cards failed with a network error. Report zero available cards.")
-            # TODO: Perform better notification in any error case
+        except (urllib.error.URLError, socket.timeout, StopIteration) as e:
+            logger.warning(
+                "Requesting the number of available cards on Scryfall failed with a network error. "
+                "Report zero available cards.")
+            self.network_error_occurred.emit(
+                self.tr("Requesting the number of available cards on Scryfall failed: \n{error}").format(error=e))
             total_cards_available = 0
         logger.debug(f"Total cards currently available: {total_cards_available}")
         return total_cards_available
