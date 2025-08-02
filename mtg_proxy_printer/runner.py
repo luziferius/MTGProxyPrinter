@@ -124,15 +124,20 @@ class AsyncTaskRunner(QRunnable):
         AsyncTaskRunner.INSTANCES[id(self)] = self
 
     def run(self):
+        """
+        Executes the saved task.
+
+        When the task run() returns,
+        emits the tasks emit_delete_recursive signal to clean up progress bars.
+
+        Implicitly called by QThreadPool.start()
+        """
         try:
             self.task.run()
         finally:
             self.task.emit_delete_recursive()
-            self.release_instance()
-
-    def release_instance(self):
-        logger.debug(f"Releasing instance {self}")
-        del AsyncTaskRunner.INSTANCES[id(self)]
+            logger.debug(f"Releasing instance {self}")
+            del AsyncTaskRunner.INSTANCES[id(self)]
 
     def cancel(self):
         pass
@@ -145,3 +150,4 @@ class AsyncTaskRunner(QRunnable):
         for item in list(cls.INSTANCES.values()):
             logger.debug(f"Cancel task {item}")
             item.cancel()
+        cls.INSTANCES.clear()
