@@ -103,7 +103,9 @@ class AsyncTask(QObject):
 
     @Slot()
     def cancel(self):
-        raise NotImplementedError(f"cancel() called on task {self.__class__.__name__} with {self.can_cancel=}")
+        msg = f"cancel() called on task {self.__class__.__name__} with {self.can_cancel=}"
+        logger.critical(msg)
+        raise NotImplementedError(msg)
 
     def run(self):
         pass
