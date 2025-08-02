@@ -516,15 +516,18 @@ class MainWindow(QMainWindow):
         )
 
     def _ask_user_about_update_policy(self, title: str, question: str, logger_message: str, settings_key: str):
-        if (result := QMessageBox.question(
+        result = QMessageBox.question(
                 self, title,
                 self.tr("{question}\nYou can change this later in the settings.").format(question=question),
                 StandardButton.Yes | StandardButton.No | StandardButton.Cancel
-                )) in {StandardButton.Yes, StandardButton.No}:
-            logger.info(f"{logger_message} User choice: {'Yes' if result == StandardButton.Yes else 'No'}")
+        )  # type: StandardButton
+        if result in {StandardButton.Yes, StandardButton.No}:
+            logger.info(f"{logger_message} User choice: {result.name}")
             mtg_proxy_printer.settings.settings["update-checks"][settings_key] = str(result == StandardButton.Yes)
             mtg_proxy_printer.settings.write_settings_to_file()
             logger.debug("Written settings to disk.")
+        else:
+            logger.info("User declined answering. Will ask again at next start")
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
         if self._to_save_file_path(event):
