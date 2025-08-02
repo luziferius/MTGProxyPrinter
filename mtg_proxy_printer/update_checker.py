@@ -30,7 +30,7 @@ import mtg_proxy_printer.meta_data
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME
-from mtg_proxy_printer.card_info_downloader import ApiStreamWorker
+from mtg_proxy_printer.card_info_downloader import ApiStreamTask
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
 from mtg_proxy_printer.runner import AsyncTask
@@ -52,7 +52,7 @@ KNOWN_APPLICATION_MIRRORS: list[str] = [
 ]
 
 
-class CardDataUpdateCheckTask(ApiStreamWorker):
+class CardDataUpdateCheckTask(ApiStreamTask):
     card_data_update_found = Signal(int)
 
     def __init__(self, card_db: CardDatabase, db: sqlite3.Connection = None):

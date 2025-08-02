@@ -49,7 +49,7 @@ del get_logger
 __all__ = [
     "CardInfoWorkerBase",
     "DatabaseImportWorker",
-    "ApiStreamWorker",
+    "ApiStreamTask",
     "SetWackinessScore",
     "ApiImportTask",
     "FileImportTask",
@@ -240,9 +240,11 @@ class ApiImportTask(AsyncTask):
         self.worker.should_run = False
 
 
-class ApiStreamRunner(Runnable):
+class ApiStreamTask(CardInfoWorkerBase):
     """
-    A runner that streams the decoded card data from the API and batches the result.
+    This class implements reading the card data from the API as a CardStream.
+
+    When used as a Task, it streams the decoded card data from the API and batches the result.
     This encapsulates requesting data via HTTPS, decryption, gzip stream decompression and parsing into dicts via ijson.
     It enqueues a single None as the last value after finishing the last batch.
     """
@@ -250,25 +252,19 @@ class ApiStreamRunner(Runnable):
     _batch_size = 1000
 
     def __init__(self):
-        # TODO: Implement a FileStreamWorker, similar to ApiStreamWorker. Then introduce a parameter to pass in the
-        #  class to use, instead of hard-coding the ApiStreamWorker in run().
+        # TODO: Implement a FileStreamTask, similar to ApiStreamTask. Then introduce a parameter to pass in the
+        #  class to use, instead of hard-coding the ApiStreamTask in run().
         #  Then rename this class to StreamRunner or similar. The top-level API can then put together the logic
         #  from modular blocks.
         super().__init__()
         self.queue: collections.deque[tuple[CardDataType, ...] | None] = collections.deque(maxlen=self._queue_depth)
 
     def run(self):
-        stream = ApiStreamWorker()
-        data = stream.read_json_card_data_from_url()
+        data = self.read_json_card_data_from_url()
         for batch in itertools.batched(data, self._batch_size):
             self.queue.append(batch)
         self.queue.append(None)
 
-
-class ApiStreamWorker(CardInfoWorkerBase):
-    """
-    This class implements reading the card data from the API as a CardStream.
-    """
 
     def read_json_card_data_from_url(self, url: str = None, json_path: str = "item") -> CardStream:
         """
@@ -362,7 +358,7 @@ class DatabaseImportWorker(DownloaderBase):
     @with_database_write_lock()
     def import_card_data_from_online_api(self):
         logger.info("About to import card data from Scryfall")
-        aw = ApiStreamWorker()
+        aw = ApiStreamTask()
         try:
             estimated_total_card_count = aw.get_available_card_count()
             data = aw.read_json_card_data_from_url()

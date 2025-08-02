@@ -49,10 +49,10 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> ty
             return_value=request.param), \
             unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "get_scryfall_bulk_card_data_url",
+                mtg_proxy_printer.card_info_downloader.ApiStreamTask, "get_scryfall_bulk_card_data_url",
                 return_value=(unittest.mock.MagicMock(), 10)), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "read_json_card_data_from_url",
+                mtg_proxy_printer.card_info_downloader.ApiStreamTask, "read_json_card_data_from_url",
                 return_value=iter([10])):
         main_window = MainWindow(card_db, document.image_db, document, QStringListModel(["en"]))
         qtbot.add_widget(main_window)

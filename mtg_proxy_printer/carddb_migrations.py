@@ -89,7 +89,7 @@ class Migrate_21_to_22(MigrationScript):
         # Full edit procedure not needed here, because the table has no indices or foreign keys associated
         # Import locally to break a cyclic dependency
         import mtg_proxy_printer.card_info_downloader
-        aw = mtg_proxy_printer.card_info_downloader.ApiStreamWorker()
+        aw = mtg_proxy_printer.card_info_downloader.ApiStreamTask()
         updates: Iterable[tuple[int, datetime.datetime]] = db.execute(
             "SELECT update_id, update_timestamp FROM LastDatabaseUpdate"+suffix)
         data = []
