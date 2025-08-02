@@ -84,7 +84,7 @@ class PNGRenderer(AsyncTask):
         scene = PageScene(document, RenderMode.ON_PAPER, self)
         number_width = len(str(page_count))
         parent = file_path.parent
-        self.begin_task.emit(page_count, self.tr("Export as PNGs"))
+        self.task_begins.emit(page_count, self.tr("Export as PNGs"))
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
             output_path = str(parent / file_name)
@@ -120,7 +120,7 @@ def export_pdf(document: Document, file_path: str, parent: "SavePDFDialog"):
     total_documents = math.ceil(total_pages/pages_to_print)
     export_progress = AsyncTask()
     main_window.progress_bar_manager.add_task(export_progress)
-    export_progress.begin_task.emit(
+    export_progress.task_begins.emit(
         total_pages, QApplication.translate("export_pdf", "Write PDF:", "Progress label"))
     QApplication.processEvents()
     for document_index in range(total_documents):

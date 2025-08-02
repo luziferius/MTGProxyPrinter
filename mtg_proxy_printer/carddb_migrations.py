@@ -799,7 +799,7 @@ class DatabaseMigrationTask(AsyncTask):
     def _begin_top_level_progress(self, begin_schema_version: int, target_version: int):
         steps = target_version - begin_schema_version + 2  # ANALYZE and VACUUM (2 steps) are run as top-level tasks
         msg = QCoreApplication.translate("DatabaseMigrationRunner", "Running database migrations:", "")
-        self.begin_task.emit(steps, msg)
+        self.task_begins.emit(steps, msg)
 
     @staticmethod
     def _get_schema_version(db: sqlite3.Connection) -> int:
@@ -814,7 +814,7 @@ class DatabaseMigrationTask(AsyncTask):
         msg = QCoreApplication.translate(
             "DatabaseMigrationRunner", "Migrate to version %n:",
             "The numeric parameter is a version number, and not countable.", source_version)
-        signals.begin_task.emit(steps, msg)
+        signals.task_begins.emit(steps, msg)
 
         logger.debug(f"Starting migration from {source_version}")
         db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)

@@ -204,7 +204,7 @@ class FileImportTask(AsyncTask):
         card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
         self.worker = worker = DatabaseImportWorker(card_db)
         worker.advance_progress.connect(self.advance_progress)
-        worker.begin_task.connect(self.begin_task)
+        worker.task_begins.connect(self.task_begins)
         worker.set_progress.connect(self.set_progress)
         worker.task_completed.connect(self.task_completed)
         worker.task_deleted.connect(self.task_deleted)
@@ -228,7 +228,7 @@ class ApiImportTask(AsyncTask):
         card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
         self.worker = worker = DatabaseImportWorker(card_db)
         worker.advance_progress.connect(self.advance_progress)
-        worker.begin_task.connect(self.begin_task)
+        worker.task_begins.connect(self.task_begins)
         worker.set_progress.connect(self.set_progress)
         worker.task_completed.connect(self.task_completed)
         worker.task_deleted.connect(self.task_deleted)
@@ -348,7 +348,7 @@ class DatabaseImportWorker(DownloaderBase):
                 * path.stat().st_size
                 / AVERAGE_SIZE_PER_UNCOMPRESSED_JSON_ENTRY_IN_BYTES
             )
-            self.begin_task.emit(
+            self.task_begins.emit(
                 estimated_total_card_count,
                 self.tr("Import card data from File:", "Progress bar label text"))
             self.populate_database(data)
@@ -366,7 +366,7 @@ class DatabaseImportWorker(DownloaderBase):
         try:
             estimated_total_card_count = aw.get_available_card_count()
             data = aw.read_json_card_data_from_url()
-            self.begin_task.emit(
+            self.task_begins.emit(
                 estimated_total_card_count,
                 self.tr("Updating card data from Scryfall:", "Progress bar label text"))
             self.populate_database(data, total_count=estimated_total_card_count)
@@ -456,7 +456,7 @@ class DatabaseImportWorker(DownloaderBase):
                 self.set_progress.emit(index)
         logger.info(f"Skipped {skipped_cards} cards during the import")
         logger.info("Post-processing card data")
-        self.begin_task.emit(4+PrintingFilterUpdater.PROGRESS_STEP_COUNT, self.tr("Post-processing card data:"))
+        self.task_begins.emit(4 + PrintingFilterUpdater.PROGRESS_STEP_COUNT, self.tr("Post-processing card data:"))
         self._insert_related_printings(related_printings)
         self.advance_progress.emit()
         self._clean_unused_data(face_ids)

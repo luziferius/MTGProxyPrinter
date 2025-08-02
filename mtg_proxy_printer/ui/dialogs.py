@@ -19,8 +19,7 @@ import shutil
 import sys
 import typing
 from typing import Callable
-from typing import Tuple, Callable
-from PySide6.QtCore import QFile, Signal, Slot, QThreadPool, QObject, QEvent, Qt
+from PySide6.QtCore import QFile, Signal, Slot, QObject, QEvent, Qt
 from PySide6.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PySide6.QtGui import QIcon
 from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
@@ -34,7 +33,7 @@ import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.model.document_loader import DocumentLoader
-from mtg_proxy_printer.runner import AsyncTaskRunner, AsyncTask
+from mtg_proxy_printer.runner import AsyncTask
 
 from mtg_proxy_printer.model.imagedb_files import ImageKey
 
@@ -440,10 +439,11 @@ class DocumentSettingsDialog(QDialog):
 
     def clear_highlight(self):
         """Clears all GUI widget highlights."""
-        for item in self.findChildren(QWidget, options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
+        for item in self.findChildren(QWidget, options=Qt.FindChildOption.FindChildrenRecursively):
             item.setGraphicsEffect(None)
 
 
+# Some platforms disallow certain characters in file names. Card names may contain them, so map those to underscores
 UNSAFE_FILE_NAME_CHARS = r'''*"/\<>:|?^'''
 UNSAFE_FILE_NAME_MAPPING = str.maketrans(UNSAFE_FILE_NAME_CHARS, "_"*len(UNSAFE_FILE_NAME_CHARS))
 

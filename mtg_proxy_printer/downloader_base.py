@@ -64,5 +64,5 @@ class DownloaderBase(AsyncTask):
             raise RuntimeError(f"Error from server! Error code: {response_code}")
         if ui_hint:  # Without a display text for the UI, there is no meaningful progress report. So skip if not given
             response.total_bytes_processed.connect(self.set_progress)
-            response.io_begin.connect(self.begin_task)
+            response.io_begin.connect(self.task_begins)
         return response

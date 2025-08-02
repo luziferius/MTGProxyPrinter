@@ -182,7 +182,7 @@ class DocumentLoader(AsyncTask):
         additional_steps = 2
         save_db = self._open_validate_and_migrate_save_file(self.save_path)
         total_cards = save_db.execute("SELECT count(1) FROM Card").fetchone()[0]
-        self.begin_task.emit(total_cards+additional_steps, "Loading document:")
+        self.task_begins.emit(total_cards + additional_steps, "Loading document:")
         page_layout = self._load_document_settings(save_db)
         self.advance_progress.emit()
         logger.debug(f"About to load {total_cards} cards.")

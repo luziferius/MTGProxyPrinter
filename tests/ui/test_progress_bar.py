@@ -46,7 +46,7 @@ def test___init___initializes_hidden_state(bar: ProgressBar):
     ("", False),
 ])
 def test_begin_task_signal_sets_ui_label(bar: ProgressBar, text: str, visible: bool):
-    bar.task.begin_task.emit(123, text)
+    bar.task.task_begins.emit(123, text)
     label = bar.ui.task_label
     assert_that(
         label, has_getters({
@@ -58,7 +58,7 @@ def test_begin_task_signal_sets_ui_label(bar: ProgressBar, text: str, visible: b
 
 @pytest.mark.parametrize("value", [1, 10, 1000])
 def test_begin_task_signal_sets_progress_bar_maximum(bar: ProgressBar, value: int):
-    bar.task.begin_task.emit(value, "")
+    bar.task.task_begins.emit(value, "")
     progress_bar = bar.ui.progress_bar
     assert_that(
         progress_bar, has_getters({
@@ -70,7 +70,7 @@ def test_begin_task_signal_sets_progress_bar_maximum(bar: ProgressBar, value: in
 
 
 def test_advance_progress_signal_advances_progress_by_1(bar: ProgressBar):
-    bar.task.begin_task.emit(10, "")
+    bar.task.task_begins.emit(10, "")
     for value in range(1, 11):
         bar.task.advance_progress.emit()
         progress_bar = bar.ui.progress_bar
@@ -85,7 +85,7 @@ def test_advance_progress_signal_advances_progress_by_1(bar: ProgressBar):
 
 @pytest.mark.parametrize("value", [1, 10, 100])
 def test_set_progress_signal_sets_progress(bar: ProgressBar, value: int):
-    bar.task.begin_task.emit(1000, "")
+    bar.task.task_begins.emit(1000, "")
     bar.task.set_progress.emit(value)
     progress_bar = bar.ui.progress_bar
     assert_that(
@@ -103,7 +103,7 @@ def test_task_completed_hides_itself(bar: ProgressBar):
 def test_task_begin_shows_itself(bar: ProgressBar):
     bar.task.task_completed.emit()
     assert_that(bar.isHidden(), is_(True), "Test setup failed")
-    bar.task.begin_task.emit(123, "Test")
+    bar.task.task_begins.emit(123, "Test")
     assert_that(bar.isVisible(), is_(True))
     assert_that(bar.ui, has_properties({
         "progress_bar": has_getter("isVisible", equal_to(True)),

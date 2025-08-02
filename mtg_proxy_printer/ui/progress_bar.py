@@ -48,7 +48,7 @@ class ProgressBar(QWidget):
         ui.cancel_button.hide()
         ui.cancel_button.clicked.connect(task.cancel)
         self.set_progress = ui.progress_bar.setValue
-        task.begin_task.connect(self.begin_progress)
+        task.task_begins.connect(self.begin_progress)
         task.set_progress.connect(ui.progress_bar.setValue)
         task.advance_progress.connect(self.advance_progress)
         task.task_completed.connect(self.hide)
