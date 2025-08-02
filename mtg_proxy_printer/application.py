@@ -44,7 +44,7 @@ import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
 import mtg_proxy_printer.progress_meter
-from mtg_proxy_printer.runner import Runnable, AsyncTask, AsyncTaskRunner
+from mtg_proxy_printer.runner import AsyncTaskRunner, AsyncTask, AsyncTaskRunner
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -275,7 +275,7 @@ class Application(QApplication):
         self.main_window.hide()
         self.main_window.close()
         self.closeAllWindows()
-        Runnable.cancel_all_runners()
+        AsyncTaskRunner.cancel_all_tasks()
         logger.debug("All windows closed. Waiting for background threads to finish")
         pool = QThreadPool.globalInstance()
         pool.clear()

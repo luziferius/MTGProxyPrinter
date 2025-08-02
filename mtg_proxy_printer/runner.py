@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 del get_logger
 
 __all__ = [
-    "Runnable",
+    "AsyncTaskRunner",
     "AsyncTask",
     "AsyncTaskRunner",
 ]
@@ -63,7 +63,6 @@ __all__ = [
 
 
 """
-
 
 
 class AsyncTask(QObject):
@@ -114,35 +113,15 @@ class AsyncTask(QObject):
         return self.__class__.__name__
 
 
-class Runnable(QRunnable):
-    INSTANCES: dict[int, "Runnable"] = {}
+class AsyncTaskRunner(QRunnable):
+    """A QRunnable that executes an AsyncTask instance"""
 
-    def __init__(self):
-        super().__init__()
-        Runnable.INSTANCES[id(self)] = self
+    INSTANCES: dict[int, "AsyncTaskRunner"] = {}
 
-    def release_instance(self):
-        logger.debug(f"Releasing instance {self}")
-        del Runnable.INSTANCES[id(self)]
-
-    def cancel(self):
-        pass
-
-    @classmethod
-    def cancel_all_runners(cls):
-        if not cls.INSTANCES:
-            return
-        logger.info(f"Cancelling {len(cls.INSTANCES)} running tasks.")
-        for item in list(cls.INSTANCES.values()):
-            logger.debug(f"Cancel task {item}")
-            item.cancel()
-
-
-class AsyncTaskRunner(Runnable):
-    """A Runnable that executes an AsyncTask instance"""
     def __init__(self, task: AsyncTask):
         super().__init__()
         self.task = task
+        AsyncTaskRunner.INSTANCES[id(self)] = self
 
     def run(self):
         try:
@@ -150,3 +129,19 @@ class AsyncTaskRunner(Runnable):
         finally:
             self.task.emit_delete_recursive()
             self.release_instance()
+
+    def release_instance(self):
+        logger.debug(f"Releasing instance {self}")
+        del AsyncTaskRunner.INSTANCES[id(self)]
+
+    def cancel(self):
+        pass
+
+    @classmethod
+    def cancel_all_tasks(cls):
+        if not cls.INSTANCES:
+            return
+        logger.info(f"Cancelling {len(cls.INSTANCES)} running tasks.")
+        for item in list(cls.INSTANCES.values()):
+            logger.debug(f"Cancel task {item}")
+            item.cancel()
