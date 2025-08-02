@@ -41,7 +41,7 @@ import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID
 from mtg_proxy_printer.sqlite_helpers import open_database
-from mtg_proxy_printer.runner import Runnable, AsyncTask
+from mtg_proxy_printer.runner import AsyncTask
 
 logger = get_logger(__name__)
 del get_logger
@@ -240,33 +240,61 @@ class ApiImportTask(AsyncTask):
         self.worker.should_run = False
 
 
-class ApiStreamTask(CardInfoWorkerBase):
+class StreamTask(CardInfoWorkerBase):
+    """Base class for tasks that stream data via a queue."""
+    _queue_depth = 3
+    _batch_size = 1000
+
+    def __init__(self, source: str | Path = None, json_path: str = "item"):
+        super().__init__()
+        self.source = source
+        self.json_path = json_path
+        self.queue: collections.deque[tuple[CardDataType, ...] | None] = collections.deque(maxlen=self._queue_depth)
+
+
+class FileStreamTask(StreamTask):
+    """Reads card data from a local file and streams the content"""
+    def run(self):
+        data = self.read_json_card_data_from(self.source, self.json_path)
+        for batch in itertools.batched(data, self._batch_size):
+            self.queue.append(batch)
+        self.queue.append(None)
+
+    def read_json_card_data_from(self, file_path: Path, json_path: str = "item") -> CardStream:
+        file_size = file_path.stat().st_size
+        raw_file = file_path.open("rb")
+        with self._wrap_in_metered_file(raw_file, file_size) as file:
+            if file_path.suffix.casefold() == ".gz":
+                file = gzip.open(file, "rb")
+            yield from ijson.items(file, json_path, use_float=True)
+
+
+    def _wrap_in_metered_file(self, raw_file, file_size: int):
+        monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
+        monitor.total_bytes_processed.connect(self.set_progress)
+        monitor.io_begin.connect(lambda size: self.task_begins.emit(
+            size,
+            self.tr("Importing card data from disk:", "Progress bar label text")))
+        return monitor
+
+
+class ApiStreamTask(StreamTask):
     """
-    This class implements reading the card data from the API as a CardStream.
+    This class implements reading the card data from the Scryfall API as a CardStream.
 
     When used as a Task, it streams the decoded card data from the API and batches the result.
     This encapsulates requesting data via HTTPS, decryption, gzip stream decompression and parsing into dicts via ijson.
     It enqueues a single None as the last value after finishing the last batch.
     """
-    _queue_depth = 3
-    _batch_size = 1000
-
-    def __init__(self):
-        # TODO: Implement a FileStreamTask, similar to ApiStreamTask. Then introduce a parameter to pass in the
-        #  class to use, instead of hard-coding the ApiStreamTask in run().
-        #  Then rename this class to StreamRunner or similar. The top-level API can then put together the logic
-        #  from modular blocks.
-        super().__init__()
-        self.queue: collections.deque[tuple[CardDataType, ...] | None] = collections.deque(maxlen=self._queue_depth)
 
     def run(self):
-        data = self.read_json_card_data_from_url()
+        data = self.read_json_card_data_from(self.source, self.json_path)
         for batch in itertools.batched(data, self._batch_size):
             self.queue.append(batch)
         self.queue.append(None)
 
 
-    def read_json_card_data_from_url(self, url: str = None, json_path: str = "item") -> CardStream:
+    def read_json_card_data_from(self, url: str = None, json_path: str = "item") -> CardStream:
         """
         Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function takes a URL pointing to the card data json array in the Scryfall API.
@@ -298,7 +326,7 @@ class ApiStreamTask(CardInfoWorkerBase):
         url = f"https://api.scryfall.com/cards/search?{url_parameters}"
         logger.debug(f"Card data update query URL: {url}")
         try:
-            total_cards_available = next(self.read_json_card_data_from_url(url, "total_cards"))
+            total_cards_available = next(self.read_json_card_data_from(url, "total_cards"))
         except (urllib.error.URLError, socket.timeout, StopIteration) as e:
             logger.warning(
                 "Requesting the number of available cards on Scryfall failed with a network error. "
@@ -338,8 +366,9 @@ class DatabaseImportWorker(DownloaderBase):
 
     @with_database_write_lock()
     def import_card_data_from_local_file(self, path: Path):
+        worker = FileStreamTask(path)
         try:
-            data = self.read_json_card_data_from_file(path)
+            data = worker.read_json_card_data_from(path)
             # Determining the number of entries in the file requires parsing it once and counting the entries.
             # So use some empirically determined constants to estimate the count instead.
             estimated_total_card_count = round(
@@ -364,7 +393,7 @@ class DatabaseImportWorker(DownloaderBase):
         aw = ApiStreamTask()
         try:
             estimated_total_card_count = aw.get_available_card_count()
-            data = aw.read_json_card_data_from_url()
+            data = aw.read_json_card_data_from()
             self.task_begins.emit(
                 estimated_total_card_count,
                 self.tr("Updating card data from Scryfall:", "Progress bar label text"))
@@ -379,22 +408,6 @@ class DatabaseImportWorker(DownloaderBase):
             self.db.rollback()
         finally:
             self.task_deleted.emit()
-
-    def read_json_card_data_from_file(self, file_path: Path, json_path: str = "item") -> CardStream:
-        file_size = file_path.stat().st_size
-        raw_file = file_path.open("rb")
-        with self._wrap_in_metered_file(raw_file, file_size) as file:
-            if file_path.suffix.casefold() == ".gz":
-                file = gzip.open(file, "rb")
-            yield from ijson.items(file, json_path, use_float=True)
-
-    def _wrap_in_metered_file(self, raw_file, file_size):
-        monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
-        monitor.total_bytes_processed.connect(self.download_progress)
-        monitor.io_begin.connect(lambda size: self.download_begins.emit(
-            size,
-            self.tr("Importing card data from disk:", "Progress bar label text")))
-        return monitor
 
     def populate_database(self, card_data: CardStream, *, total_count: int = 0):
         """

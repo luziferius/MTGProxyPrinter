@@ -102,7 +102,7 @@ class Migrate_21_to_22(MigrationScript):
                 "q": f"date>1970-01-01 date<={timestamp.date()}"
             })
             try:
-                card_count = next(aw.read_json_card_data_from_url(
+                card_count = next(aw.read_json_card_data_from(
                     f'https://api.scryfall.com/cards/search?{url_parameters}', 'total_cards'
                 ))
             except (urllib.error.URLError, socket.error):

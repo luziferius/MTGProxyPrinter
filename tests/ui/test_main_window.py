@@ -52,7 +52,7 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> ty
                 mtg_proxy_printer.card_info_downloader.ApiStreamTask, "get_scryfall_bulk_card_data_url",
                 return_value=(unittest.mock.MagicMock(), 10)), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.ApiStreamTask, "read_json_card_data_from_url",
+                mtg_proxy_printer.card_info_downloader.ApiStreamTask, "read_json_card_data_from",
                 return_value=iter([10])):
         main_window = MainWindow(card_db, document.image_db, document, QStringListModel(["en"]))
         qtbot.add_widget(main_window)
