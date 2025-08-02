@@ -569,7 +569,7 @@ class PageScene(QGraphicsScene):
         for index, card in enumerate(self.card_items):
             card.setPos(self._compute_position_for_image(index, page_type))
 
-    def _is_valid_page_index(self, index: QModelIndex):
+    def _is_valid_page_index(self, index: QModelIndex | QPersistentModelIndex):
         return index.isValid() and not index.parent().isValid() and index.row() < self.document.rowCount()
 
     @Slot(QModelIndex)

@@ -42,7 +42,7 @@
       <item>
        <widget class="QListView" name="set_name_list">
         <property name="editTriggers">
-         <set>QAbstractItemView::NoEditTriggers</set>
+         <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
         </property>
         <property name="alternatingRowColors">
          <bool>true</bool>
@@ -70,7 +70,7 @@
       <item>
        <widget class="QListView" name="collector_number_list">
         <property name="editTriggers">
-         <set>QAbstractItemView::NoEditTriggers</set>
+         <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
         </property>
         <property name="alternatingRowColors">
          <bool>true</bool>
@@ -111,7 +111,7 @@
          <string>The filtered list of card names in the currently selected language. Click on an entry to select it and choose a printing.</string>
         </property>
         <property name="editTriggers">
-         <set>QAbstractItemView::NoEditTriggers</set>
+         <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
         </property>
         <property name="alternatingRowColors">
          <bool>true</bool>
@@ -166,7 +166,7 @@
    <item row="12" column="0" colspan="3">
     <widget class="QDialogButtonBox" name="button_box">
      <property name="standardButtons">
-      <set>QDialogButtonBox::Ok|QDialogButtonBox::Reset</set>
+      <set>QDialogButtonBox::StandardButton::Ok|QDialogButtonBox::StandardButton::Reset</set>
      </property>
     </widget>
    </item>

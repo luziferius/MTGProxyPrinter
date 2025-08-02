@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>280</width>
-    <height>36</height>
+    <height>38</height>
    </rect>
   </property>
   <layout class="QHBoxLayout" name="horizontal_layout">
@@ -52,7 +52,7 @@
       </sizepolicy>
      </property>
      <property name="inputMethodHints">
-      <set>Qt::ImhUppercaseOnly</set>
+      <set>Qt::InputMethodHint::ImhUppercaseOnly</set>
      </property>
      <property name="maxLength">
       <number>6</number>

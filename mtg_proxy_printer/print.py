@@ -87,20 +87,21 @@ class PNGRenderer(AsyncTask):
         self.begin_task.emit(page_count, self.tr("Export as PNGs"))
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
-            output_path = parent / file_name
+            output_path = str(parent / file_name)
             background_color = QColor(settings["export"]["png-background-color"])
             # 255 is solid. So avoid adding the alpha channel, if it won't be used.
             image_format = Format.Format_RGB888 if background_color.alpha() == 255 else Format.Format_RGBA8888
             image = QImage(page_size, image_format)
             image.fill(background_color)
             painter = QPainter(image)
-            scene.on_current_page_changed(document.index(page_nr, 0))
+            page_index = QPersistentModelIndex(document.index(page_nr, 0))
+            scene.on_current_page_changed(page_index)
             scene.render(painter)
             pool.start(partial(self._compress_single_image, image, output_path))
 
     @with_database_write_lock(PNGEncoderThreadLimit)
-    def _compress_single_image(self, image: QImage, output_path: Path):
-        image.save(str(output_path), "PNG", 0)
+    def _compress_single_image(self, image: QImage, output_path: str):
+        image.save(output_path, "PNG", 0)
         self.completed += 1
         self.advance_progress.emit()
         if self.completed == self.page_count:

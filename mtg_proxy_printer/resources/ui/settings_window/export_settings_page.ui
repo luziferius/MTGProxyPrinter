@@ -74,7 +74,7 @@ So only enable this, if actually required.</string>
       <string>If set, use this as the default location for saving exported PDF documents.</string>
      </property>
      <property name="inputMethodHints">
-      <set>Qt::ImhNoAutoUppercase</set>
+      <set>Qt::InputMethodHint::ImhNoAutoUppercase</set>
      </property>
      <property name="placeholderText">
       <string>Path to a directory</string>
@@ -100,7 +100,7 @@ So only enable this, if actually required.</string>
    <item row="12" column="0" colspan="3">
     <spacer name="vertical_spacer">
      <property name="orientation">
-      <enum>Qt::Vertical</enum>
+      <enum>Qt::Orientation::Vertical</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
@@ -144,7 +144,7 @@ it will be exported into multiple PDF documents automatically.</string>
    <item row="8" column="0" colspan="3">
     <widget class="Line" name="line_2">
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+      <enum>Qt::Orientation::Horizontal</enum>
      </property>
     </widget>
    </item>
@@ -164,7 +164,7 @@ it will be exported into multiple PDF documents automatically.</string>
    <item row="5" column="0" colspan="3">
     <widget class="Line" name="line">
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+      <enum>Qt::Orientation::Horizontal</enum>
      </property>
     </widget>
    </item>

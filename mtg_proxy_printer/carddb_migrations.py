@@ -807,7 +807,7 @@ class DatabaseMigrationTask(AsyncTask):
 
     def _migrate_version(self, db: sqlite3.Connection, source_version: int, script: MigrationScript):
         next_version = source_version + 1
-        suffix = f";  -- Migrate {source_version} to {next_version}\n"
+        suffix: LiteralString = f";  -- Migrate {source_version} to {next_version}\n"
         signals = self.script_update_signals
         steps = script.script_length(db, suffix) + 1  # Add 1 for the call to db.commit()
 

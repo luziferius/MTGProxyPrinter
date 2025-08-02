@@ -26,7 +26,7 @@
       <bool>false</bool>
      </property>
      <property name="renderHints">
-      <set>QPainter::Antialiasing</set>
+      <set>QPainter::RenderHint::Antialiasing</set>
      </property>
     </widget>
    </item>
@@ -39,7 +39,7 @@
       </sizepolicy>
      </property>
      <property name="contextMenuPolicy">
-      <enum>Qt::CustomContextMenu</enum>
+      <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
      </property>
      <property name="lineWidth">
       <number>0</number>
@@ -48,7 +48,7 @@
       <bool>true</bool>
      </property>
      <property name="selectionBehavior">
-      <enum>QAbstractItemView::SelectRows</enum>
+      <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
      </property>
      <attribute name="verticalHeaderVisible">
       <bool>false</bool>
@@ -111,10 +111,10 @@
       <bool>true</bool>
      </property>
      <property name="selectionMode">
-      <enum>QAbstractItemView::SingleSelection</enum>
+      <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
      </property>
      <property name="selectionBehavior">
-      <enum>QAbstractItemView::SelectRows</enum>
+      <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
      </property>
     </widget>
    </item>
@@ -139,8 +139,6 @@
    <class>PageCardTableView</class>
    <extends>QTableView</extends>
    <header>mtg_proxy_printer.ui.page_card_table_view</header>
-   <slots>
-   </slots>
   </customwidget>
  </customwidgets>
  <resources/>

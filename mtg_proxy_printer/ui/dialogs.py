@@ -18,6 +18,7 @@ from pathlib import Path
 import shutil
 import sys
 import typing
+from typing import Callable
 from typing import Tuple, Callable
 from PySide6.QtCore import QFile, Signal, Slot, QThreadPool, QObject, QEvent, Qt
 from PySide6.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog

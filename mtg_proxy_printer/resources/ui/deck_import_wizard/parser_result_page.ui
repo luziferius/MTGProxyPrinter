@@ -47,7 +47,7 @@ If unchecked, append the cards found below to the document.</string>
       </sizepolicy>
      </property>
      <property name="sizeAdjustPolicy">
-      <enum>QAbstractScrollArea::AdjustToContents</enum>
+      <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents</enum>
      </property>
      <property name="alternatingRowColors">
       <bool>true</bool>
@@ -76,7 +76,7 @@ If unchecked, append the cards found below to the document.</string>
       </sizepolicy>
      </property>
      <property name="sizeAdjustPolicy">
-      <enum>QAbstractScrollArea::AdjustToContents</enum>
+      <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents</enum>
      </property>
      <property name="acceptRichText">
       <bool>false</bool>

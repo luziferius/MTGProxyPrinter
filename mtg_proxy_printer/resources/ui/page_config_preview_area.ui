@@ -64,6 +64,9 @@
    <class>PageRenderer</class>
    <extends>QGraphicsView</extends>
    <header>mtg_proxy_printer.ui.page_renderer</header>
+   <slots>
+    <slot>on_resize_event_triggered()</slot>
+   </slots>
   </customwidget>
  </customwidgets>
  <resources/>
