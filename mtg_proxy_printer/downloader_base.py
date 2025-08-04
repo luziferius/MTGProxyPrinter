@@ -16,8 +16,6 @@
 
 import gzip
 
-from PySide6.QtCore import Signal
-
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.runner import AsyncTask

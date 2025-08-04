@@ -53,7 +53,7 @@ def parse_args() -> Namespace:
 
 
 to_be_profiled_functions = {
-    mtg_proxy_printer.card_info_downloader.DatabaseImportWorker: [
+    mtg_proxy_printer.card_info_downloader.DatabaseImportTask: [
         "_populate_database",
         "_parse_single_printing",
         "_insert_set",
@@ -111,7 +111,7 @@ if __name__ == "__main__":
         print("Re-use existing database…")
     cdb = mtg_proxy_printer.model.carddb.CardDatabase(args.database_path)
     fup = mtg_proxy_printer.printing_filter_updater.PrintingFilterUpdater(cdb)
-    cid = mtg_proxy_printer.card_info_downloader.DatabaseImportWorker(cdb)
+    cid = mtg_proxy_printer.card_info_downloader.DatabaseImportTask(cdb)
     # Remove the semaphore protection, because it also checks the QApplication instance to determine if tasks should
     # start. That does not exist in this context, and thus needs to be removed.
     cid.import_card_data_from_local_file = types.MethodType(cid.import_card_data_from_local_file.__wrapped__, cid)

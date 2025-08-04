@@ -47,8 +47,8 @@ logger = get_logger(__name__)
 del get_logger
 
 __all__ = [
-    "CardInfoWorkerBase",
-    "DatabaseImportWorker",
+    "CardInfoDownloadTaskBase",
+    "DatabaseImportTask",
     "ApiStreamTask",
     "SetWackinessScore",
     "ApiImportTask",
@@ -114,8 +114,8 @@ class SetWackinessScore(int, enum.Enum):
     OVERSIZED = 10  # Not playable
 
 
-class CardInfoWorkerBase(DownloaderBase):
-
+class CardInfoDownloadTaskBase(DownloaderBase):
+    """Base class for tasks that fetch card data from the Scryfall bulk-data API."""
     def get_scryfall_bulk_card_data_url(self) -> tuple[str, int]:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
@@ -128,10 +128,8 @@ class CardInfoWorkerBase(DownloaderBase):
         return uri, size
 
 
-class FileDownloadTask(CardInfoWorkerBase):
-    """
-    This class implements downloading the raw card data to a file stored in the file system.
-    """
+class FileDownloadTask(CardInfoDownloadTaskBase):
+    """Downloading the raw card data to a file stored in the file system."""
     def __init__(self, download_path: Path):
         super().__init__()
         self.download_path = download_path
@@ -193,16 +191,16 @@ class FileDownloadTask(CardInfoWorkerBase):
 
 
 class FileImportTask(AsyncTask):
-
+    # FIXME: Deprecated. Use FileStreamTask and DatabaseImportTask as independent tasks instead.
     def __init__(self, file_to_import: Path, card_db_path: Path = DEFAULT_DATABASE_LOCATION):
         super().__init__()
         self.file_to_import = file_to_import
         self.card_db_path = card_db_path
-        self.worker: DatabaseImportWorker| None = None
+        self.worker: DatabaseImportTask | None = None
 
     def run(self):
         card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
-        self.worker = worker = DatabaseImportWorker(card_db)
+        self.worker = worker = DatabaseImportTask(card_db)
         worker.advance_progress.connect(self.advance_progress)
         worker.task_begins.connect(self.task_begins)
         worker.set_progress.connect(self.set_progress)
@@ -218,7 +216,7 @@ class FileImportTask(AsyncTask):
 
 
 class ApiImportTask(AsyncTask):
-
+    # FIXME: Deprecated. Use ApiStreamTask and DatabaseImportTask as independent tasks instead.
     def __init__(self, card_db_path: Path = DEFAULT_DATABASE_LOCATION):
         super().__init__()
         self.card_db_path = card_db_path
@@ -226,7 +224,7 @@ class ApiImportTask(AsyncTask):
 
     def run(self):
         card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
-        self.worker = worker = DatabaseImportWorker(card_db)
+        self.worker = worker = DatabaseImportTask(card_db)
         worker.advance_progress.connect(self.advance_progress)
         worker.task_begins.connect(self.task_begins)
         worker.set_progress.connect(self.set_progress)
@@ -240,7 +238,7 @@ class ApiImportTask(AsyncTask):
         self.worker.should_run = False
 
 
-class StreamTask(CardInfoWorkerBase):
+class StreamTask(CardInfoDownloadTaskBase):
     """Base class for tasks that stream data via a queue."""
     _queue_depth = 3
     _batch_size = 1000
@@ -338,10 +336,8 @@ class ApiStreamTask(StreamTask):
         return total_cards_available
 
 
-class DatabaseImportWorker(AsyncTask):
-    """
-    This class implements importing a CardStream into the given CardDatabase instance
-    """
+class DatabaseImportTask(AsyncTask):
+    """This class implements importing a CardStream into the given CardDatabase instance"""
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  db: sqlite3.Connection = None, parent: QObject = None):
