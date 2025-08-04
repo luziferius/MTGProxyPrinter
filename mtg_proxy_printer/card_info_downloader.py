@@ -209,7 +209,7 @@ class FileImportTask(AsyncTask):
         worker.task_completed.connect(self.task_completed)
         worker.task_deleted.connect(self.task_deleted)
         worker.network_error_occurred.connect(self.network_error_occurred)
-        worker.other_error_occurred.connect(self.error_occurred)
+        worker.error_occurred.connect(self.error_occurred)
 
         worker.import_card_data_from_local_file(self.file_to_import)
 
@@ -233,7 +233,7 @@ class ApiImportTask(AsyncTask):
         worker.task_completed.connect(self.task_completed)
         worker.task_deleted.connect(self.task_deleted)
         worker.network_error_occurred.connect(self.network_error_occurred)
-        worker.other_error_occurred.connect(self.error_occurred)
+        worker.error_occurred.connect(self.error_occurred)
         worker.import_card_data_from_online_api()
 
     def cancel(self):
@@ -383,7 +383,7 @@ class DatabaseImportWorker(DownloaderBase):
         except Exception:
             self.db.rollback()
             logger.exception(f"Error during import from file: {path}")
-            self.other_error_occurred.emit(self.tr("Error during import from file:\n{path}").format(path=path))
+            self.error_occurred.emit(self.tr("Error during import from file:\n{path}").format(path=path))
         finally:
             self.task_deleted.emit()
 
@@ -421,11 +421,11 @@ class DatabaseImportWorker(DownloaderBase):
         except sqlite3.Error as e:
             self.db.rollback()
             logger.exception(f"Database error occurred: {e}")
-            self.other_error_occurred.emit(str(e))
+            self.error_occurred.emit(str(e))
         except Exception as e:
             self.db.rollback()
             logger.exception(f"Error in parsing step")
-            self.other_error_occurred.emit(
+            self.error_occurred.emit(
                 self.tr("Failed to parse data from Scryfall. Reported error: {error}").format(error=e))
         finally:
             self._clear_lru_caches()

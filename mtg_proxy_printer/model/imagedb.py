@@ -411,7 +411,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             download_uri,
             self.tr("Downloading '{card_name}'", "Progress bar label text").format(
                 card_name=card.name))
-        self.currently_opened_file_monitor.total_bytes_processed.connect(self.download_progress)
+        self.currently_opened_file_monitor.total_bytes_processed.connect(self.set_progress)
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
         # getting terminated by the user, a mid-transfer network outage, a full disk or any other failure condition.
@@ -432,7 +432,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         finally:
             self.currently_opened_file = None
             download_path.unlink(missing_ok=True)
-            self.download_finished.emit()
+            self.task_completed.emit()
         return pixmap
 
 

@@ -34,12 +34,6 @@ class DownloaderBase(AsyncTask):
     Base class for classes that are able to download data from the Internet.
     """
 
-    other_error_occurred = Signal(str)  # Emitted when database population failed due to non-network issues.
-    network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
-    download_finished = Signal()  # Emitted when the input data is exhausted and processing finished
-    download_begins = Signal(int, str)  # Emitted when the download starts. Data represents the expected total data
-    download_progress = Signal(int)  # Emits the total number of processed data after processing each item
-
     def read_from_url(self, url: str, ui_hint: str = ""):
         """
         Reads a given URL and returns a file-like object that can and should be used as a context manager.

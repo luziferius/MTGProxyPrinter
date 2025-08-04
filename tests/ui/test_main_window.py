@@ -108,7 +108,7 @@ def test_action_download_card_data_is_enabled_after_other_error(qtbot: QtBot, ma
     with unittest.mock.patch.object(
         mtg_proxy_printer.ui.main_window.QMessageBox, "critical", return_value=StandardButton.Ok
     ) as warning_box:
-        main_window.card_data_downloader.other_error_occurred.emit("Test reason")
+        main_window.card_data_downloader.error_occurred.emit("Test reason")
     warning_box.assert_called_once()
     assert_that(ui.action_download_card_data.isEnabled(), is_(True))
 
