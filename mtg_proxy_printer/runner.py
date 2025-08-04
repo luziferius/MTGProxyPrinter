@@ -12,10 +12,11 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import abc
 from typing import List
 
-from PySide6.QtCore import QRunnable, QObject, Signal, Slot
+from PySide6.QtCore import QRunnable, QObject, Signal, Slot, QThread
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -64,7 +65,7 @@ __all__ = [
 """
 
 
-class AsyncTask(QObject, metaclass=abc.ABCMeta):
+class AsyncTask(QObject):
     # TODO: Introduce a "blocking UI" flag. A blocking task disables most of the GUI
     """
     Base class for asynchronous tasks with progress reporting.
@@ -133,6 +134,7 @@ class AsyncTaskRunner(QRunnable):
         Implicitly called by QThreadPool.start()
         """
         try:
+            logger.debug(f"Entering {self.task}.run()")
             self.task.run()
         finally:
             self.task.emit_delete_recursive()

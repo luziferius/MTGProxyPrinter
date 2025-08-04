@@ -12,8 +12,8 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import abc
-import collections
 import enum
 import functools
 import gzip
@@ -22,6 +22,7 @@ import math
 import shutil
 from pathlib import Path
 import re
+import queue
 import sqlite3
 import socket
 import typing
@@ -51,7 +52,6 @@ __all__ = [
     "DatabaseImportTask",
     "ApiStreamTask",
     "SetWackinessScore",
-    "ApiImportTask",
     "FileImportTask",
     "FileDownloadTask",
 ]
@@ -73,7 +73,7 @@ QueuedConnection = Qt.ConnectionType.QueuedConnection
 IntTuples = list[tuple[int]]
 CardStream = typing.Generator[CardDataType, None, None]
 CardOrFace = CardDataType | FaceDataType
-CardDataQueue = collections.deque[tuple[CardDataType, ...] | None]
+CardDataQueue = queue.Queue[tuple[CardDataType, ...] | None]
 
 class CardFaceData(typing.NamedTuple):
     """Information unique to each card face."""
@@ -215,29 +215,6 @@ class FileImportTask(AsyncTask):
         self.worker.should_run = False
 
 
-class ApiImportTask(AsyncTask):
-    # FIXME: Deprecated. Use ApiStreamTask and DatabaseImportTask as independent tasks instead.
-    def __init__(self, card_db_path: Path = DEFAULT_DATABASE_LOCATION):
-        super().__init__()
-        self.card_db_path = card_db_path
-        self.worker = None
-
-    def run(self):
-        card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
-        self.worker = worker = DatabaseImportTask(card_db)
-        worker.advance_progress.connect(self.advance_progress)
-        worker.task_begins.connect(self.task_begins)
-        worker.set_progress.connect(self.set_progress)
-        worker.task_completed.connect(self.task_completed)
-        worker.task_deleted.connect(self.task_deleted)
-        worker.network_error_occurred.connect(self.network_error_occurred)
-        worker.error_occurred.connect(self.error_occurred)
-        worker.import_card_data_from_online_api()
-
-    def cancel(self):
-        self.worker.should_run = False
-
-
 class StreamTask(CardInfoDownloadTaskBase):
     """Base class for tasks that stream data via a queue."""
     _queue_depth = 3
@@ -247,7 +224,7 @@ class StreamTask(CardInfoDownloadTaskBase):
         super().__init__()
         self.source = source
         self.json_path = json_path
-        self.queue: CardDataQueue = collections.deque(maxlen=self._queue_depth)
+        self.queue: CardDataQueue = queue.Queue(self._queue_depth)
 
     @property
     @abc.abstractmethod
@@ -260,8 +237,8 @@ class FileStreamTask(StreamTask):
     def run(self):
         data = self.read_json_card_data_from(self.source, self.json_path)
         for batch in itertools.batched(data, self._batch_size):
-            self.queue.append(batch)
-        self.queue.append(None)
+            self.queue.put(batch)
+        self.queue.put(None)
 
     def read_json_card_data_from(self, file_path: Path, json_path: str = "item") -> CardStream:
         file_size = file_path.stat().st_size
@@ -299,10 +276,12 @@ class ApiStreamTask(StreamTask):
     """
 
     def run(self):
+        logger.info(f"{self.__class__.__name__}: About to stream card data in batches of {self._batch_size}")
         data = self.read_json_card_data_from(self.source, self.json_path)
         for batch in itertools.batched(data, self._batch_size):
-            self.queue.append(batch)
-        self.queue.append(None)
+            self.queue.put(batch)
+        logger.debug("Card data exhausted.")
+        self.queue.put(None)
 
     def read_json_card_data_from(self, url: str = None, json_path: str = "item") -> CardStream:
         """
@@ -379,9 +358,7 @@ class DatabaseImportTask(AsyncTask):
 
     @staticmethod
     def _consume_from_queue(queue: CardDataQueue) -> CardStream:
-        for batch in queue:
-            if batch is None:
-                raise StopIteration()
+        while (batch := queue.get()) is not None:
             yield from batch
 
     def run(self):
@@ -412,8 +389,6 @@ class DatabaseImportTask(AsyncTask):
                     f"Error during import from Scryfall: {e}")
                 self.error_occurred.emit(self.tr(
                     "Error during update from Scryfall"))
-        finally:
-            self.task_deleted.emit()
 
     @with_database_write_lock()
     def import_card_data_from_local_file(self, path: Path):
@@ -435,28 +410,6 @@ class DatabaseImportTask(AsyncTask):
             self.db.rollback()
             logger.exception(f"Error during import from file: {path}")
             self.error_occurred.emit(self.tr("Error during import from file:\n{path}").format(path=path))
-        finally:
-            self.task_deleted.emit()
-
-    @with_database_write_lock()
-    def import_card_data_from_online_api(self):
-        logger.info("About to import card data from Scryfall")
-        aw = ApiStreamTask()
-        try:
-            estimated_total_card_count = aw.get_available_card_count()
-            data = aw.read_json_card_data_from()
-            self.task_begins.emit(
-                estimated_total_card_count,
-                self.tr("Updating card data from Scryfall:", "Progress bar label text"))
-            self.populate_database(data, total_count=estimated_total_card_count)
-        except urllib.error.URLError as e:
-            logger.exception("Handling URLError during card data download.")
-            self.network_error_occurred.emit(str(e.reason))
-            self.db.rollback()
-        except socket.timeout as e:
-            logger.exception("Handling socket timeout error during card data download.")
-            self.network_error_occurred.emit(self.tr("Reading from socket failed: {error}").format(error=e))
-            self.db.rollback()
         finally:
             self.task_deleted.emit()
 

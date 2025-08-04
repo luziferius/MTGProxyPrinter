@@ -24,7 +24,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, Q
 from PySide6.QtPrintSupport import QPrintDialog
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
-from mtg_proxy_printer.card_info_downloader import ApiImportTask
+from mtg_proxy_printer.card_info_downloader import ApiStreamTask, DatabaseImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
@@ -168,9 +168,16 @@ class MainWindow(QMainWindow):
         ui.action_shuffle_document.triggered.connect(lambda: document.apply(ActionShuffleDocument()))
 
     def _setup_card_data_download_actions(self):
-        ui = self.ui
-        ui.action_download_card_data.triggered.connect(lambda: self.request_run_async_task.emit(ApiImportTask()))
-        ui.action_download_card_data.triggered.connect(lambda: ui.action_download_card_data.setDisabled(True))
+        self.ui.action_download_card_data.triggered.connect(self._update_card_data_from_scryfall)
+
+    @Slot()
+    def _update_card_data_from_scryfall(self):
+        logger.info("About to update the card data from Scryfall")
+        self.ui.action_download_card_data.setDisabled(True)
+        data_source = ApiStreamTask()
+        import_task = DatabaseImportTask(self.card_database, data_source)
+        self.request_run_async_task.emit(data_source)
+        self.request_run_async_task.emit(import_task)
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> UiElements:
         ui = self.ui
@@ -372,7 +379,7 @@ class MainWindow(QMainWindow):
                     "Without the data, you can only print custom cards by drag&dropping "
                     "the image files onto the main window."),
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes) == StandardButton.Yes:
-            self.card_data_downloader.import_from_api()
+            self._update_card_data_from_scryfall()
 
     @Slot()
     def on_action_save_document_triggered(self):
@@ -468,7 +475,7 @@ class MainWindow(QMainWindow):
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes
         ) == StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
-            self.card_data_downloader.import_from_api()
+            self._update_card_data_from_scryfall()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.ui.action_download_card_data.setEnabled(True)
