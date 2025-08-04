@@ -338,7 +338,7 @@ class ApiStreamTask(StreamTask):
         return total_cards_available
 
 
-class DatabaseImportWorker(DownloaderBase):
+class DatabaseImportWorker(AsyncTask):
     """
     This class implements importing a CardStream into the given CardDatabase instance
     """
