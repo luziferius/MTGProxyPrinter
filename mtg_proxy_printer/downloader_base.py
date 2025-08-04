@@ -51,7 +51,7 @@ class DownloaderBase(AsyncTask):
 
     def _open_url(self, url: str, ui_hint: str) -> mtg_proxy_printer.http_file.MeteredSeekableHTTPFile:
         headers = {"Accept-Encoding": ", ".join(supported_encodings)}
-        response = mtg_proxy_printer.http_file.MeteredSeekableHTTPFile(url, headers, self, ui_hint=ui_hint)
+        response = mtg_proxy_printer.http_file.MeteredSeekableHTTPFile(url, headers, ui_hint=ui_hint)
         if (response_code := response.getcode()) >= 300:
             raise RuntimeError(f"Error from server! Error code: {response_code}")
         if ui_hint:  # Without a display text for the UI, there is no meaningful progress report. So skip if not given
