@@ -27,7 +27,7 @@ from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QLin
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.card_info_downloader import FileDownloadTask, FileImportTask
+from mtg_proxy_printer.card_info_downloader import FileDownloadTask, FileStreamTask, DatabaseImportTask
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.runner import AsyncTask
@@ -215,7 +215,8 @@ class DebugSettingsPage(Page):
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Import card data from {path}")
-        self.request_run_async_task.emit(FileImportTask(path))
+        self.request_run_async_task.emit(data_source := FileStreamTask(path))
+        self.request_run_async_task.emit(DatabaseImportTask(data_source))  # TODO: Pass the actually used carddb path
 
 
 class DecklistImportSettingsPage(Page):

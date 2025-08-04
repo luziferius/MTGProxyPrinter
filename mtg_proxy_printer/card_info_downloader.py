@@ -29,6 +29,7 @@ import typing
 import urllib.error
 import urllib.parse
 import urllib.request
+from typing import Literal
 
 import ijson
 from PySide6.QtCore import QObject, Qt
@@ -52,7 +53,6 @@ __all__ = [
     "DatabaseImportTask",
     "ApiStreamTask",
     "SetWackinessScore",
-    "FileImportTask",
     "FileDownloadTask",
 ]
 
@@ -74,6 +74,7 @@ IntTuples = list[tuple[int]]
 CardStream = typing.Generator[CardDataType, None, None]
 CardOrFace = CardDataType | FaceDataType
 CardDataQueue = queue.Queue[tuple[CardDataType, ...] | None]
+
 
 class CardFaceData(typing.NamedTuple):
     """Information unique to each card face."""
@@ -190,31 +191,6 @@ class FileDownloadTask(CardInfoDownloadTaskBase):
             pass
 
 
-class FileImportTask(AsyncTask):
-    # FIXME: Deprecated. Use FileStreamTask and DatabaseImportTask as independent tasks instead.
-    def __init__(self, file_to_import: Path, card_db_path: Path = DEFAULT_DATABASE_LOCATION):
-        super().__init__()
-        self.file_to_import = file_to_import
-        self.card_db_path = card_db_path
-        self.worker: DatabaseImportTask | None = None
-
-    def run(self):
-        card_db = CardDatabase(self.card_db_path, register_exit_hooks=False)
-        self.worker = worker = DatabaseImportTask(card_db)
-        worker.advance_progress.connect(self.advance_progress)
-        worker.task_begins.connect(self.task_begins)
-        worker.set_progress.connect(self.set_progress)
-        worker.task_completed.connect(self.task_completed)
-        worker.task_deleted.connect(self.task_deleted)
-        worker.network_error_occurred.connect(self.network_error_occurred)
-        worker.error_occurred.connect(self.error_occurred)
-
-        worker.import_card_data_from_local_file(self.file_to_import)
-
-    def cancel(self):
-        self.worker.should_run = False
-
-
 class StreamTask(CardInfoDownloadTaskBase):
     """Base class for tasks that stream data via a queue."""
     _queue_depth = 3
@@ -225,6 +201,7 @@ class StreamTask(CardInfoDownloadTaskBase):
         self.source = source
         self.json_path = json_path
         self.queue: CardDataQueue = queue.Queue(self._queue_depth)
+
 
     @property
     @abc.abstractmethod
@@ -334,14 +311,13 @@ class ApiStreamTask(StreamTask):
 class DatabaseImportTask(AsyncTask):
     """This class implements importing a CardStream into the given CardDatabase instance"""
 
-    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
-                 source: StreamTask, db: sqlite3.Connection = None):
+    def __init__(self, source: StreamTask, db: sqlite3.Connection = None,
+                 carddb_path: Path | Literal[":memory:"] = DEFAULT_DATABASE_LOCATION):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super().__init__()
-        self.model = model
+        self.carddb_path = carddb_path
         self.source = source
         self._db = db
-        self.task_completed.connect(model.card_data_updated, QueuedConnection)
         self.should_run = True
         self.set_code_cache: dict[str, int] = {}
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -353,7 +329,7 @@ class DatabaseImportTask(AsyncTask):
         # in the thread that actually uses it.
         if self._db is None:
             logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
-            self._db = open_database(self.model.db_path, SCHEMA_NAME)
+            self._db = open_database(self.carddb_path, SCHEMA_NAME)
         return self._db
 
     @staticmethod
@@ -361,6 +337,7 @@ class DatabaseImportTask(AsyncTask):
         while (batch := queue.get()) is not None:
             yield from batch
 
+    @with_database_write_lock()
     def run(self):
         item_count = self.source.item_count
         file_task = isinstance(self.source, FileStreamTask)
@@ -391,29 +368,6 @@ class DatabaseImportTask(AsyncTask):
                     "Error during update from Scryfall"))
         finally:
             self.task_completed.emit()
-
-    @with_database_write_lock()
-    def import_card_data_from_local_file(self, path: Path):
-        worker = FileStreamTask(path)
-        try:
-            data = worker.read_json_card_data_from(path)
-            # Determining the number of entries in the file requires parsing it once and counting the entries.
-            # So use some empirically determined constants to estimate the count instead.
-            estimated_total_card_count = round(
-                (GZIP_COMPRESSION_FACTOR if path.suffix.casefold() == ".gz" else 1)
-                * path.stat().st_size
-                / AVERAGE_SIZE_PER_UNCOMPRESSED_JSON_ENTRY_IN_BYTES
-            )
-            self.task_begins.emit(
-                estimated_total_card_count,
-                self.tr("Import card data from File:", "Progress bar label text"))
-            self.populate_database(data)
-        except Exception:
-            self.db.rollback()
-            logger.exception(f"Error during import from file: {path}")
-            self.error_occurred.emit(self.tr("Error during import from file:\n{path}").format(path=path))
-        finally:
-            self.task_deleted.emit()
 
     def populate_database(self, card_data: CardStream, *, total_count: int = 0):
         """
@@ -480,7 +434,8 @@ class DatabaseImportTask(AsyncTask):
         self._clean_unused_data(face_ids)
         self.advance_progress.emit()
         updater = PrintingFilterUpdater(
-            self.model, self.db, force_update_hidden_column=True)
+            CardDatabase(self.carddb_path, check_same_thread=True, register_exit_hooks=False),
+            self.db, force_update_hidden_column=True)
         updater.advance_progress.connect(self.advance_progress)
         updater.store_current_printing_filters()  # Don't call run() to not deadlock via the db semaphore
         # Store the timestamp of this import.

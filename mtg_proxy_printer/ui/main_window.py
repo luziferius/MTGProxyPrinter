@@ -175,7 +175,8 @@ class MainWindow(QMainWindow):
         logger.info("About to update the card data from Scryfall")
         self.ui.action_download_card_data.setDisabled(True)
         data_source = ApiStreamTask()
-        import_task = DatabaseImportTask(self.card_database, data_source)
+        import_task = DatabaseImportTask(data_source, carddb_path=self.card_database.db_path)
+        import_task.task_completed.connect(self.card_database.card_data_updated, Qt.ConnectionType.QueuedConnection)
         self.request_run_async_task.emit(data_source)
         self.request_run_async_task.emit(import_task)
 

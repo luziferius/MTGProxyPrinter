@@ -33,7 +33,7 @@ import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.carddb_migrations
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
-from mtg_proxy_printer.card_info_downloader import FileImportTask
+from mtg_proxy_printer.card_info_downloader import FileStreamTask, DatabaseImportTask
 from mtg_proxy_printer.carddb_migrations import DatabaseMigrationTask
 from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
@@ -44,7 +44,7 @@ import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
 import mtg_proxy_printer.progress_meter
-from mtg_proxy_printer.runner import AsyncTaskRunner, AsyncTask, AsyncTaskRunner
+from mtg_proxy_printer.runner import AsyncTask, AsyncTaskRunner
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -137,7 +137,8 @@ class Application(QApplication):
         args = self.args
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
-            self.run_async_task(FileImportTask(args.card_data))
+            self.run_async_task(data_source := FileStreamTask(args.card_data))
+            self.run_async_task(DatabaseImportTask(data_source, carddb_path=self.card_db.db_path))
         elif not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
