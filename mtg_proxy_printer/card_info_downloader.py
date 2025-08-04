@@ -389,6 +389,8 @@ class DatabaseImportTask(AsyncTask):
                     f"Error during import from Scryfall: {e}")
                 self.error_occurred.emit(self.tr(
                     "Error during update from Scryfall"))
+        finally:
+            self.task_completed.emit()
 
     @with_database_write_lock()
     def import_card_data_from_local_file(self, path: Path):
