@@ -12,7 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import abc
 import collections
 import enum
 import functools
@@ -249,6 +249,11 @@ class StreamTask(CardInfoDownloadTaskBase):
         self.json_path = json_path
         self.queue: collections.deque[tuple[CardDataType, ...] | None] = collections.deque(maxlen=self._queue_depth)
 
+    @property
+    @abc.abstractmethod
+    def item_count(self) -> int:
+        return 0
+
 
 class FileStreamTask(StreamTask):
     """Reads card data from a local file and streams the content"""
@@ -266,7 +271,6 @@ class FileStreamTask(StreamTask):
                 file = gzip.open(file, "rb")
             yield from ijson.items(file, json_path, use_float=True)
 
-
     def _wrap_in_metered_file(self, raw_file, file_size: int):
         monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
         monitor.total_bytes_processed.connect(self.set_progress)
@@ -274,6 +278,15 @@ class FileStreamTask(StreamTask):
             size,
             self.tr("Importing card data from disk:", "Progress bar label text")))
         return monitor
+
+    @property
+    def item_count(self):
+        estimated_total_card_count = round(
+            (GZIP_COMPRESSION_FACTOR if self.source.suffix.casefold() == ".gz" else 1)
+            * self.source.stat().st_size
+            / AVERAGE_SIZE_PER_UNCOMPRESSED_JSON_ENTRY_IN_BYTES
+        )
+        return estimated_total_card_count
 
 
 class ApiStreamTask(StreamTask):
@@ -290,7 +303,6 @@ class ApiStreamTask(StreamTask):
         for batch in itertools.batched(data, self._batch_size):
             self.queue.append(batch)
         self.queue.append(None)
-
 
     def read_json_card_data_from(self, url: str = None, json_path: str = "item") -> CardStream:
         """
@@ -335,17 +347,22 @@ class ApiStreamTask(StreamTask):
         logger.debug(f"Total cards currently available: {total_cards_available}")
         return total_cards_available
 
+    @property
+    def item_count(self):
+        return self.get_available_card_count()
+
 
 class DatabaseImportTask(AsyncTask):
     """This class implements importing a CardStream into the given CardDatabase instance"""
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
-                 db: sqlite3.Connection = None, parent: QObject = None):
+                 source: StreamTask, db: sqlite3.Connection = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        super().__init__(parent)
+        super().__init__()
         self.model = model
-        self.task_completed.connect(model.card_data_updated, QueuedConnection)
+        self.source = source
         self._db = db
+        self.task_completed.connect(model.card_data_updated, QueuedConnection)
         self.should_run = True
         self.set_code_cache: dict[str, int] = {}
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -359,6 +376,9 @@ class DatabaseImportTask(AsyncTask):
             logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
             self._db = open_database(self.model.db_path, SCHEMA_NAME)
         return self._db
+
+    def run(self):
+        pass
 
     @with_database_write_lock()
     def import_card_data_from_local_file(self, path: Path):

@@ -12,8 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-
+import abc
 from typing import List
 
 from PySide6.QtCore import QRunnable, QObject, Signal, Slot
@@ -65,7 +64,7 @@ __all__ = [
 """
 
 
-class AsyncTask(QObject):
+class AsyncTask(QObject, metaclass=abc.ABCMeta):
     # TODO: Introduce a "blocking UI" flag. A blocking task disables most of the GUI
     """
     Base class for asynchronous tasks with progress reporting.
@@ -106,6 +105,7 @@ class AsyncTask(QObject):
         logger.critical(msg)
         raise NotImplementedError(msg)
 
+    @abc.abstractmethod
     def run(self):
         pass
 
