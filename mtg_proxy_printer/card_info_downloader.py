@@ -73,7 +73,7 @@ QueuedConnection = Qt.ConnectionType.QueuedConnection
 IntTuples = list[tuple[int]]
 CardStream = typing.Generator[CardDataType, None, None]
 CardOrFace = CardDataType | FaceDataType
-
+CardDataQueue = collections.deque[tuple[CardDataType, ...] | None]
 
 class CardFaceData(typing.NamedTuple):
     """Information unique to each card face."""
@@ -247,7 +247,7 @@ class StreamTask(CardInfoDownloadTaskBase):
         super().__init__()
         self.source = source
         self.json_path = json_path
-        self.queue: collections.deque[tuple[CardDataType, ...] | None] = collections.deque(maxlen=self._queue_depth)
+        self.queue: CardDataQueue = collections.deque(maxlen=self._queue_depth)
 
     @property
     @abc.abstractmethod
@@ -377,8 +377,43 @@ class DatabaseImportTask(AsyncTask):
             self._db = open_database(self.model.db_path, SCHEMA_NAME)
         return self._db
 
+    @staticmethod
+    def _consume_from_queue(queue: CardDataQueue) -> CardStream:
+        for batch in queue:
+            if batch is None:
+                raise StopIteration()
+            yield from batch
+
     def run(self):
-        pass
+        item_count = self.source.item_count
+        file_task = isinstance(self.source, FileStreamTask)
+        if file_task:
+            logger.info("About to import card data from a local file on disk")
+            self.task_begins.emit(
+                item_count,
+                self.tr("Import card data from File:", "Progress bar label text"))
+        else:
+            logger.info("About to import card data from Scryfall")
+            self.task_begins.emit(
+                item_count,
+                self.tr("Update card data from Scryfall:", "Progress bar label text"))
+        try:
+            items = self._consume_from_queue(self.source.queue)
+            self.populate_database(items, total_count=item_count)
+        except Exception as e:
+            self.db.rollback()
+            if file_task:
+                logger.exception(
+                    f"Error during import from file: {self.source.source}")
+                self.error_occurred.emit(self.tr(
+                    "Error during import from file:\n{path}").format(path=self.source.source))
+            else:
+                logger.exception(
+                    f"Error during import from Scryfall: {e}")
+                self.error_occurred.emit(self.tr(
+                    "Error during update from Scryfall"))
+        finally:
+            self.task_deleted.emit()
 
     @with_database_write_lock()
     def import_card_data_from_local_file(self, path: Path):
