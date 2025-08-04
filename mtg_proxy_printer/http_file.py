@@ -97,7 +97,8 @@ class MeteredSeekableHTTPFile(QObject):
         return None
 
     def __enter__(self):
-        self.io_begin.emit(self.content_length, self.ui_hint)
+        if self.ui_hint:  # Without a display text, don't report io
+            self.io_begin.emit(self.content_length, self.ui_hint)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
