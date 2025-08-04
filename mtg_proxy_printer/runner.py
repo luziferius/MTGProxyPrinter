@@ -150,6 +150,6 @@ class AsyncTaskRunner(QRunnable):
             return
         logger.info(f"Cancelling {len(cls.INSTANCES)} running tasks.")
         for item in list(cls.INSTANCES.values()):
-            logger.debug(f"Cancel task {item}")
+            logger.debug(f"Cancel task {item.task}")
             item.cancel()
         cls.INSTANCES.clear()
