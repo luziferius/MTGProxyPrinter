@@ -23,10 +23,11 @@ Argument = Union[str, Path]
 async def run(prog: str, *args: List[Argument]):
     proc = await asyncio.create_subprocess_exec(
         prog, *args,
-        stdin=asyncio.subprocess.DEVNULL,
+        stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
+    await proc.wait()
     for channel in await proc.communicate():
         if channel:
             print(channel.decode("utf-8"))

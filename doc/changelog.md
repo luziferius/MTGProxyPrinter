@@ -1,5 +1,12 @@
 # Changelog
 
+# Version 0.33.2 (2025-08-05)  <a name="v0_33_2"></a>
+
+## Fixed issues
+
+- Fixed bug in the document loader that caused the app to drop all but the first card on the page one when
+  loading a previously saved document.
+
 # Version 0.33.1 (2025-07-25)  <a name="v0_33_1"></a>
 
 ## Fixed issues
