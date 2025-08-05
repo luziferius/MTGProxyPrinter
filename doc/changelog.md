@@ -4,8 +4,8 @@
 
 ## Fixed issues
 
-- Fixed bug in the document loader that caused the app to drop all but the first card on the page one when
-  loading a previously saved document.
+- Fixed loading documents:
+  - Fixed bug in the document loader that caused the app to drop one copy of each but the first card on the first page.
 
 # Version 0.33.1 (2025-07-25)  <a name="v0_33_1"></a>
 
