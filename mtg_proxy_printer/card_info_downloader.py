@@ -252,7 +252,7 @@ class FileStreamTask(StreamTask):
             yield from ijson.items(file, json_path, use_float=True)
 
     def _wrap_in_metered_file(self, raw_file, file_size: int):
-        monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
+        monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size)
         monitor.total_bytes_processed.connect(self.set_progress)
         monitor.io_begin.connect(lambda size: self.task_begins.emit(
             size,
