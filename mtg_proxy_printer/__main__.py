@@ -21,8 +21,7 @@ import os
 import platform
 import sys
 
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtCore import QTimer
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.argument_parser import parse_args
@@ -61,9 +60,6 @@ def main():
     mtg_proxy_printer.app_dirs.migrate_from_old_appdirs()
     mtg_proxy_printer.logger.configure_root_logger()
     handle_ssl_certificates()
-    # According to https://doc.qt.io/qt-5/qt.html#ApplicationAttribute-enum,
-    # Qt.AA_EnableHighDpiScaling has to be set prior to creating the QApplication instance
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
     _app = Application(arguments, sys.argv)
     if arguments.test_exit_on_launch:
         logger.info("Skipping startup tasks, because immediate application exit was requested.")
@@ -72,7 +68,7 @@ def main():
         logger.debug("Enqueueing startup tasks.")
         _app.enqueue_startup_tasks(arguments)
     logger.debug("Initialisation done. Starting event loop.")
-    _app.exec_()
+    _app.exec()
     logger.debug("Left event loop.")
 
 

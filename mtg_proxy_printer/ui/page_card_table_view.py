@@ -19,9 +19,9 @@ import operator
 from pathlib import Path
 from typing import Union, Optional
 
-from PyQt5.QtCore import QPoint, Qt, pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QTableView, QWidget, QMenu, QAction, QInputDialog, QFileDialog
+from PySide6.QtCore import QPoint, Qt, Signal, Slot, QPersistentModelIndex
+from PySide6.QtGui import QIcon, QAction
+from PySide6.QtWidgets import QTableView, QWidget, QMenu, QInputDialog, QFileDialog
 
 from mtg_proxy_printer.app_dirs import data_directories
 from mtg_proxy_printer.document_controller import DocumentAction

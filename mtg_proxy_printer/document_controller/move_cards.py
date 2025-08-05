@@ -18,7 +18,7 @@ import functools
 import itertools
 import typing
 
-from PyQt5.QtCore import QModelIndex
+from PySide6.QtCore import QModelIndex
 
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger

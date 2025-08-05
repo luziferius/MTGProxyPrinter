@@ -19,7 +19,7 @@ This module contains an assortment of small helper functions used in the tests f
 """
 import itertools
 
-from PyQt5.QtGui import QPixmap
+from PySide6.QtGui import QPixmap
 
 import hamcrest.core.base_matcher
 from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to, has_property

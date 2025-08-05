@@ -1,5 +1,5 @@
 #!/bin/bash
 
-source venv/bin/activate
+source venv-PySide6/bin/activate
 tox run
 deactivate

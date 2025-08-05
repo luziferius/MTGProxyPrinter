@@ -15,7 +15,8 @@
 
 
 from pytestqt.qtbot import QtBot
-from PyQt5.QtCore import Qt
+from PySide6.QtCore import Qt
+
 from hamcrest import *
 
 from mtg_proxy_printer.model.document_page import Page

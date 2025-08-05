@@ -20,7 +20,7 @@ import typing
 from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
-from PyQt5.QtCore import QItemSelectionModel, Qt
+from PySide6.QtCore import QItemSelectionModel, Qt
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.model.card import CustomCard, MTGSet

@@ -20,8 +20,8 @@ import typing
 from typing import Generator, Tuple
 
 import pint
-from PyQt5.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
-from PyQt5.QtCore import QMarginsF, QSizeF
+from PySide6.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
+from PySide6.QtCore import QMarginsF, QSizeF
 
 try:
     from hamcrest import contains_exactly

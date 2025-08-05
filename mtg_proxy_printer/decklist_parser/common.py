@@ -17,7 +17,7 @@
 from abc import abstractmethod
 import typing
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal
+from PySide6.QtCore import QObject, Signal
 
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card import Card, AnyCardType

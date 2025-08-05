@@ -17,9 +17,9 @@ from collections import Counter
 from pathlib import Path
 import typing
 
-from PyQt5.QtCore import Qt, pyqtSignal as Signal, pyqtSlot as Slot
-from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QPixmap
-from PyQt5.QtWidgets import QDialog, QWidget, QFileDialog, QPushButton
+from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QPixmap
+from PySide6.QtWidgets import QDialog, QWidget, QFileDialog, QPushButton
 
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
@@ -47,7 +47,7 @@ class CustomCardImportDialog(QDialog):
 
     request_action = Signal(DocumentAction)
 
-    def __init__(self, document: Document, parent: QWidget = None, flags=Qt.WindowFlags()):
+    def __init__(self, document: Document, parent: QWidget = None, flags=Qt.WindowType.Window):
         super().__init__(parent, flags)
         self.ui = ui = Ui_CustomCardImportDialog()
         ui.setupUi(self)

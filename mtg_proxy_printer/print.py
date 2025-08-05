@@ -25,9 +25,9 @@ from pathlib import Path
 from threading import BoundedSemaphore
 import typing
 
-from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex, QThreadPool
-from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize, QImage, QColor
-from PyQt5.QtPrintSupport import QPrinter
+from PySide6.QtCore import QObject, QMarginsF, QSizeF, Slot, QPersistentModelIndex, QThreadPool
+from PySide6.QtGui import QPainter, QPdfWriter, QPageSize, QImage, QColor
+from PySide6.QtPrintSupport import QPrinter
 
 
 from mtg_proxy_printer.runner import ProgressSignalContainer
@@ -132,7 +132,6 @@ def create_printer(renderer: "Renderer") -> QPrinter:
     # magnitude returns a float by default, so round to int to avoid a TypeError
     printer.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
     # Disable duplex printing by default
-    printer.setDoubleSidedPrinting(False)
     printer.setDuplex(QPrinter.DuplexMode.DuplexNone)
     printer.setOutputFormat(QPrinter.OutputFormat.NativeFormat)
     if RenderMode.IMPLICIT_MARGINS not in renderer.render_mode:
@@ -218,7 +217,6 @@ class PDFPrinter(QPdfWriter):
         """Render the given page on the internal scene"""
         index = QPersistentModelIndex(self.document.index(page_number, 0))
         self.scene.on_current_page_changed(index)
-
 
 
 class Renderer(QObject):

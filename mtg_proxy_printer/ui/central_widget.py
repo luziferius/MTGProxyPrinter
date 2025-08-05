@@ -15,8 +15,8 @@
 
 from typing import Union, Type
 
-from PyQt5.QtCore import  pyqtSlot as Slot, QItemSelectionModel, QModelIndex
-from PyQt5.QtWidgets import QWidget
+from PySide6.QtCore import Slot, QItemSelectionModel, QModelIndex
+from PySide6.QtWidgets import QWidget
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings

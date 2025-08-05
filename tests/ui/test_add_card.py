@@ -20,8 +20,8 @@ import pytest
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 
-from PyQt5.QtCore import Qt, QPoint, QRect, QItemSelectionModel
-from PyQt5.QtWidgets import QDialogButtonBox
+from PySide6.QtCore import Qt, QPoint, QRect, QItemSelectionModel
+from PySide6.QtWidgets import QDialogButtonBox
 
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.ui.add_card import HorizontalAddCardWidget, VerticalAddCardWidget
@@ -47,11 +47,16 @@ def test_add_card_works_with_art_series_card(qtbot: QtBot, card_db: CardDatabase
     )
     qtbot.add_widget(add_card_widget := widget_class())
     add_card_widget.set_card_database(card_db)
-    add_card_widget.ui.copies_input.setValue(1)
+    add_card_widget.card_name_filter_updated("")  # Populate the card name list
+    add_card_widget.ui.card_name_list.setSelection(QRect(1, 1, 1, 1), ClearAndSelect)
+    qtbot.mouseClick(add_card_widget.ui.card_name_list, LeftButton, pos=QPoint(10, 10))
+    ok_button = add_card_widget.ui.button_box.button(StandardButton.Ok)
+    qtbot.mouseClick(ok_button, LeftButton, pos=QPoint(10, 10))
     add_card_widget.ui.card_name_list.setSelection(QRect(1, 1, 1, 1), ClearAndSelect)
     qtbot.mouseClick(add_card_widget.ui.card_name_list, LeftButton, pos=QPoint(10, 10))
     qtbot.wait(10)
     qtbot.mouseClick(
         add_card_widget.ui.button_box.button(StandardButton.Ok), LeftButton
     )
+    add_card_widget.ui.copies_input.setValue(1)
     assert_that(add_card_widget._read_card_data_from_ui(), is_(equal_to(expected_card_identification_data)))

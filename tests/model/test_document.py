@@ -17,8 +17,9 @@ import copy
 import typing
 import unittest.mock
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
+
 from hamcrest import *
 
 from hamcrest import contains_exactly
@@ -352,8 +353,7 @@ def document_custom_layout(document: Document) -> Document:
         paper_size="Custom", paper_orientation="Portrait",
     )
     document.apply(ActionEditDocumentSettings(custom_layout))
-    yield document
-    document.__dict__.clear()
+    return document
 
 
 def test_document_reset_clears_modified_page_layout(qtbot: QtBot, page_layout: PageLayoutSettings, document_custom_layout: Document):

@@ -18,9 +18,11 @@ import pathlib
 import typing
 from functools import partial
 
-from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl, Qt, QSize
-from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices, QDragEnterEvent, QDropEvent, QPixmap
-from PyQt5.QtWidgets import QApplication, QMessageBox, QAction, QWidget, QMainWindow, QDialog
+
+from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl, Qt
+from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, QDragEnterEvent, QDropEvent
+from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, QDialog
+from PySide6.QtPrintSupport import QPrintDialog
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
@@ -143,7 +145,6 @@ class MainWindow(QMainWindow):
             action.setShortcut(shortcut)
 
     def _setup_central_widget(self):
-        self.setCentralWidget(self.ui.central_widget)
         self.ui.central_widget.set_data(self.document, self.card_database, self.image_db)
 
     def _setup_loading_state_connections(self):
@@ -297,7 +298,8 @@ class MainWindow(QMainWindow):
             return
         self.current_dialog = dialog = PrintDialog(self.document, self)
         dialog.finished.connect(self.on_dialog_finished)
-        self.missing_images_manager.obtain_missing_images(dialog.open)
+        # Use the QDialog base class open() method, because QPrintDialog.open() performs additional, unwanted actions.
+        self.missing_images_manager.obtain_missing_images(super(QPrintDialog, dialog).open)
 
     @Slot()
     def on_action_print_preview_triggered(self):
@@ -390,7 +392,7 @@ class MainWindow(QMainWindow):
                     "Without the data, you can only print custom cards by drag&dropping "
                     "the image files onto the main window."),
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes) == StandardButton.Yes:
-            self.ui.action_download_card_data.trigger()
+            self.card_data_downloader.import_from_api()
 
     @Slot()
     def on_action_save_document_triggered(self):
@@ -485,7 +487,7 @@ class MainWindow(QMainWindow):
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes
         ) == StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
-            self.ui.action_download_card_data.trigger()
+            self.card_data_downloader.import_from_api()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.ui.action_download_card_data.setEnabled(True)
@@ -561,18 +563,3 @@ class MainWindow(QMainWindow):
             if acceptable:
                 return path
         return None
-
-    @staticmethod
-    def _to_pixmaps(event: typing.Union[QDragEnterEvent, QDropEvent]) -> typing.List[QPixmap]:
-        result: typing.List[QPixmap] = []
-        mime_data = event.mimeData()
-        regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
-        width, height = regular.width.magnitude, regular.height.magnitude
-        for url in mime_data.urls():
-            pixmap = QPixmap(url.toLocalFile())
-            if not pixmap.isNull():
-                if pixmap.width() != width or pixmap.height() != height:
-                    new_size = QSize(width, height)
-                    pixmap = pixmap.scaled(new_size, transformMode=TransformationMode.SmoothTransformation)
-                result.append(pixmap)
-        return result

@@ -80,7 +80,7 @@ class ActionEditDocumentSettings(DocumentAction):
     def _partition_pages_by_accepting_card_size(document: "Document") -> typing.List[PagePartition]:
         """
         Partitions the document pages into consecutive lists of pages.
-        Each partition only contains pages with exactly one page type (REGULAR or OVERSIZED) plus empty pages.
+        Each partition only contains pages with exactly one page-type (REGULAR or OVERSIZED) plus empty pages.
         Leading empty pages are ignored.
         """
         pages = document.pages

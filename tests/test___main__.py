@@ -46,7 +46,7 @@ def main_mocks():
             patch.multiple(
             "mtg_proxy_printer.__main__",
             _app=DEFAULT, Application=DEFAULT, handle_ssl_certificates=DEFAULT,
-            parse_args=DEFAULT, QTimer=DEFAULT, logger=DEFAULT, QApplication=DEFAULT) as mocks:
+            parse_args=DEFAULT, QTimer=DEFAULT, logger=DEFAULT) as mocks:
         mocks["configure_root_logger"] = configure_root_logger
         yield mocks
     mocks.clear()
@@ -82,7 +82,7 @@ def test_main_configures_logger(main_mocks):
 
 def test_main_calls_exec_on_application_instance(main_mocks):
     mtg_proxy_printer.__main__.main()
-    main_mocks["Application"]().exec_.assert_called_once()
+    main_mocks["Application"]().exec.assert_called_once()
 
 
 def test_enqueues_startup_tasks_on_regular_launch(main_mocks):

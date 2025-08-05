@@ -18,7 +18,7 @@ from typing import Optional
 
 import pytest
 from hamcrest import *
-from PyQt5.QtCore import QModelIndex
+from PySide6.QtCore import QModelIndex
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.units_and_sizes import CardSizes, IntList

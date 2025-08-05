@@ -1,6 +1,6 @@
-python -m venv venv
+python -m venv venv-PySide6
 
-call venv\Scripts\activate.bat
+call venv-PySide6\Scripts\activate.bat
 
 python -m pip install --upgrade pip setuptools
 python -m pip install wheel "pip-tools >= 7"

@@ -15,8 +15,8 @@
 import copy
 
 import pytest
-from PyQt5.QtCore import QBuffer, QIODevice
-from PyQt5.QtGui import QPixmap, QColorConstants, QColor
+from PySide6.QtCore import QBuffer, QIODevice
+from PySide6.QtGui import QPixmap, QColorConstants, QColor
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.model.card import Card, MTGSet, CardCorner, CustomCard, CheckCard

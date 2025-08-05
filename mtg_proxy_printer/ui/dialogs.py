@@ -20,10 +20,10 @@ import sys
 import typing
 from typing import Tuple
 
-from PyQt5.QtCore import QFile, pyqtSignal as Signal, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
-from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
-from PyQt5.QtGui import QIcon
-from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
+from PySide6.QtCore import QFile, Signal, Slot, QThreadPool, QObject, QEvent, Qt
+from PySide6.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
+from PySide6.QtGui import QIcon
+from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.carddb import CardDatabase
@@ -307,7 +307,7 @@ class AboutDialog(QDialog):
         file = QFile(file_path, self)
         file.open(QFile.OpenModeFlag.ReadOnly)
         try:
-            content = file.readAll().data().decode("utf-8")
+            content = file.readAll().toStdString()
         finally:
             file.close()
         text_browser.setMarkdown(content)
@@ -427,7 +427,7 @@ class DocumentSettingsDialog(QDialog):
 
     def clear_highlight(self):
         """Clears all GUI widget highlights."""
-        for item in self.findChildren((QWidget,), options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
+        for item in self.findChildren(QWidget, options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
             item.setGraphicsEffect(None)
 
 

@@ -17,7 +17,7 @@
 from unittest.mock import patch
 
 import pint
-from PyQt5.QtWidgets import QDoubleSpinBox, QCheckBox, QLineEdit
+from PySide6.QtWidgets import QDoubleSpinBox, QCheckBox, QLineEdit
 
 from hamcrest import *
 import pytest

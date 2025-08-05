@@ -22,7 +22,7 @@ import pathlib
 import sys
 import typing
 
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, \
+from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
     QPersistentModelIndex
 
 from mtg_proxy_printer.model.imagedb_files import ImageKey
@@ -223,7 +223,7 @@ class Document(QAbstractItemModel):
         else:  # Page
             return self._data_page(index, role)
 
-    def flags(self, index: AnyIndex) -> Qt.ItemFlags:
+    def flags(self, index: AnyIndex) -> Qt.ItemFlag:
         index = self._to_index(index)
         data = index.internalPointer()
         flags = super().flags(index)

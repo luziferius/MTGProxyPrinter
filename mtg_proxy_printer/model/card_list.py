@@ -19,8 +19,8 @@ import enum
 import itertools
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSignal as Signal, QItemSelection
-from PyQt5.QtGui import QIcon
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt, Signal, QItemSelection
+from PySide6.QtGui import QIcon
 
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCustomCard
@@ -136,7 +136,7 @@ class CardListModel(QAbstractTableModel):
             return self._oversized_icon
         return None
 
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+    def flags(self, index: QModelIndex) -> ItemFlag:
         flags = super().flags(index)
         if index.column() in self.EDITABLE_COLUMNS or self.rows[index.row()].card.is_custom_card:
             flags |= ItemFlag.ItemIsEditable

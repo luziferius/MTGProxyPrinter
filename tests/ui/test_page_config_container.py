@@ -14,7 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QLineEdit
+from PySide6.QtWidgets import QCheckBox, QDoubleSpinBox, QLineEdit
 
 import pytest
 from pytestqt.qtbot import QtBot

@@ -29,7 +29,7 @@ import re
 import typing
 
 import ijson
-from PyQt5.QtGui import QValidator
+from PySide6.QtGui import QValidator
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase

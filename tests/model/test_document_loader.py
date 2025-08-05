@@ -22,7 +22,7 @@ import textwrap
 
 
 import pint
-from PyQt5.QtGui import QColorConstants
+from PySide6.QtGui import QColorConstants
 from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *

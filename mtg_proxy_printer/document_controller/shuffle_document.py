@@ -23,7 +23,7 @@ except ImportError:
 
 import typing
 
-from PyQt5.QtCore import Qt, QModelIndex
+from PySide6.QtCore import Qt, QModelIndex
 
 from ._interface import DocumentAction, IllegalStateError, Self
 from ..model.card import Card

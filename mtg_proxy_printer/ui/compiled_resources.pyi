@@ -14,7 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Declares the interface created by the PyQt5 resource compiler.
+Declares the interface created by the PySide6 resource compiler.
 This is only used for type hinting.
 """
 

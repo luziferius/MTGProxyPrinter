@@ -19,10 +19,10 @@ import functools
 import itertools
 import typing
 
-from PyQt5.QtCore import Qt, QSizeF, QPointF, QRectF, pyqtSignal as Signal, QObject, pyqtSlot as Slot, \
+from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, Signal, QObject, Slot, \
     QPersistentModelIndex, QModelIndex, QRect, QPoint, QSize
-from PyQt5.QtGui import QPen, QColorConstants, QColor, QPalette, QFontMetrics, QPixmap, QTransform, QPolygonF
-from PyQt5.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
+from PySide6.QtGui import QPen, QColorConstants, QColor, QPalette, QFontMetrics, QPixmap, QTransform, QPolygonF
+from PySide6.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene, QGraphicsPolygonItem
 
 from mtg_proxy_printer.model.card import CardCorner, AnyCardType
@@ -253,6 +253,7 @@ class CardItem(QGraphicsItemGroup):
         rect.setZValue(RenderLayers.CORNERS.value)
         return rect
 
+    @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
         for corner in self.corners:
             corner.setOpacity(new_page_layout.draw_sharp_corners)
@@ -604,8 +605,9 @@ class PageScene(QGraphicsScene):
             next_item = self.card_items[first] if needs_reorder else None
             page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
             logger.debug(f"Added {inserted_cards} cards to the currently shown page, drawing them.")
+            model = parent.model()
             for new in range(first, last+1):
-                self.draw_card(parent.child(new, PageColumns.Image), page_type, next_item)
+                self.draw_card(model.index(new, PageColumns.Image, parent), page_type, next_item)
             if needs_reorder:
                 logger.debug("Cards added in the middle of the page, re-order existing cards.")
                 self.update_card_positions()

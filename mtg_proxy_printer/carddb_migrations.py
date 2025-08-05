@@ -33,7 +33,7 @@ import urllib.parse
 from textwrap import dedent
 from typing import List, Dict, Union, Tuple, Any, Generator, Callable, Iterable
 
-from PyQt5.QtCore import QCoreApplication, Qt
+from PySide6.QtCore import QCoreApplication, Qt
 
 try:
     from typing import LiteralString

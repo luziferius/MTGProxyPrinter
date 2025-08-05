@@ -20,7 +20,7 @@ import itertools
 import operator
 import typing
 
-from PyQt5.QtCore import QCoreApplication
+from PySide6.QtCore import QCoreApplication
 
 from mtg_proxy_printer.units_and_sizes import StringList
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-ENVIRONMENT_NAME="venv"
+ENVIRONMENT_NAME="venv-PySide6"
 # Generate an application bundle using cx_Freeze for Linux.
 
 if [ ! -e "${ENVIRONMENT_NAME}" ]; then

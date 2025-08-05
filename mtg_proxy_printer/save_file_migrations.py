@@ -17,8 +17,8 @@
 import sqlite3
 import textwrap
 
-from PyQt5.QtCore import QSizeF
-from PyQt5.QtGui import QPageSize, QPageLayout
+from PySide6.QtCore import QSizeF
+from PySide6.QtGui import QPageSize, QPageLayout
 
 from mtg_proxy_printer.units_and_sizes import PageSizeManager
 

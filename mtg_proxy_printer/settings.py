@@ -23,9 +23,9 @@ import tokenize
 from collections import defaultdict
 
 import pint
-from PyQt5.QtCore import QStandardPaths, QLocale
-from PyQt5.QtGui import QPageSize, QPageLayout, QColor
-from PyQt5.QtPrintSupport import QPrinterInfo
+from PySide6.QtCore import QStandardPaths, QLocale
+from PySide6.QtGui import QPageSize, QPageLayout, QColor
+from PySide6.QtPrintSupport import QPrinterInfo
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
@@ -76,7 +76,7 @@ LOCATION_PAPER_SIZE_TABLE = defaultdict(lambda: PageSizeId.A4, {
 
 
 def get_default_paper_size() -> str:
-    system_country = QLocale.system().country()
+    system_country = QLocale.system().territory()
     default = PageSizeManager.PageSizeReverse[LOCATION_PAPER_SIZE_TABLE[system_country]]
     printer_info = QPrinterInfo.defaultPrinter()
     if printer_info.isNull():
@@ -544,7 +544,7 @@ def _validate_string_is_in_set(section: SectionProxy, defaults: SectionProxy, va
 
 
 def _validate_color(section: SectionProxy, defaults: SectionProxy, key: str):
-    if not QColor.isValidColor(section.get(key)):
+    if not QColor.isValidColorName(section.get(key)):
         _restore_default(section, defaults, key)
 
 

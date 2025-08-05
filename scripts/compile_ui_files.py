@@ -27,14 +27,12 @@ It has two usage modes:
 
 import argparse
 import ast
-import io
 import itertools
 import textwrap
 from pathlib import Path
 import shutil
+import subprocess
 from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Any, Dict, Set
-
-import PyQt5.uic
 
 SOURCE_ROOT = Path(__file__).parent.parent  # Checkout root directory
 MAIN_PACKAGE = SOURCE_ROOT / "mtg_proxy_printer"
@@ -79,6 +77,12 @@ def type_filter(any_: Iterable[Any], types: Union[Type[T], Tuple[Type[T], ...]])
     return filter(lambda x: isinstance(x, types), any_)
 
 
+def create_python_package(location: Path, /):
+    """Creates an empty Python package at the given Path"""
+    location.mkdir(parents=True, exist_ok=True)
+    (location/"__init__.py").touch(exist_ok=True)
+
+
 def compile_ui_files(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
     """
     Compiles all UI files found in source_path to Python types, storing results in target_path.
@@ -88,28 +92,12 @@ def compile_ui_files(args: Namespace, target_path: Path = TARGET_PATH, source_pa
     """
     if args.purge_existing and target_path.is_dir():
         shutil.rmtree(target_path)
-
-    source_path = source_path.resolve()
-    target_path.mkdir(exist_ok=True)
-
-    def map_to_output(directory, file_name):
-        dir_path = Path(directory).relative_to(source_path)
-        return target_path/dir_path, file_name
-    import functools
-    PyQt5.uic.open = functools.partial(open, encoding="utf-8")
-    PyQt5.uic.compileUiDir(str(source_path), recurse=True, map=map_to_output)
     create_python_package(target_path)
-
-
-def create_python_package(target_dir: Path):
-    """
-    Creates an empty __init__.py file in target_dir and each subdirectory, recursively.
-    This marks these directories as proper Python packages.
-    """
-    (target_dir/"__init__.py").touch(exist_ok=True)
-    for entry in target_dir.rglob("*"):
-        if entry.is_dir():
-            (entry/"__init__.py").touch(exist_ok=True)
+    for ui_file in source_path.rglob("*.ui"):
+        compiled = compile_ui_file(ui_file)
+        parent_dir = (target_path/ui_file.relative_to(source_path)).parent
+        create_python_package(parent_dir)
+        (parent_dir/f"{ui_file.stem}.py").write_text(compiled, "utf-8")
 
 
 def create_ui_type_stubs(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
@@ -122,13 +110,13 @@ def create_ui_type_stubs(args: Namespace, target_path: Path = TARGET_PATH, sourc
     if args.purge_existing and target_path.is_dir():
         shutil.rmtree(target_path)
     class_registry = build_class_registry(MAIN_PACKAGE)
+    create_python_package(target_path)
     for ui_file in source_path.rglob("*.ui"):
         compiled = compile_ui_file(ui_file)
         stub = generate_stub(compiled, ui_file, class_registry)
         parent_dir = (target_path/ui_file.relative_to(source_path)).parent
-        parent_dir.mkdir(exist_ok=True)
+        create_python_package(parent_dir)
         (parent_dir/f"{ui_file.stem}.pyi").write_text(stub, "utf-8")
-    create_python_package(target_path)
 
 
 def build_class_registry(package_path: Path) -> ClassRegistry:
@@ -143,12 +131,11 @@ def build_class_registry(package_path: Path) -> ClassRegistry:
 
 
 def compile_ui_file(path: Path) -> str:
-    buffer = io.StringIO()
     try:
-        PyQt5.uic.compileUi(path, buffer, from_imports=True)
+        command = ("pyside6-uic", "--generator", "python", str(path))
     except Exception as e:
         raise RuntimeError(f"Compilation failed for file {path}") from e
-    return buffer.getvalue()
+    return subprocess.check_output(command, encoding="utf-8")
 
 
 def generate_stub(compiled_ui: str, ui_file: Path, class_registry: ClassRegistry) -> str:
@@ -217,21 +204,12 @@ def get_assignments(function_body: List[ast.stmt]) -> List[Assignment]:
     return [
         Assignment(
             assignment.targets[0].attr,
-            get_assignment_type(assignment)
+            assignment.value.func.id
         )
         for assignment
         in type_filter(function_body, ast.Assign)
         if hasattr(assignment.targets[0], "attr")  # Filter out local variables
     ]
-
-
-def get_assignment_type(assignment: ast.Assign):
-    func = assignment.value.func
-    if isinstance(func, ast.Attribute):
-        return f"{func.value.id}.{func.attr}"  # Qualified name: module.ClassName()
-    elif isinstance(func, ast.Name):
-        return func.id
-    raise NotImplementedError("Unknown assignment type")
 
 
 def get_function_stub(function_body: ast.FunctionDef, found_class_uses: UsedClasses):

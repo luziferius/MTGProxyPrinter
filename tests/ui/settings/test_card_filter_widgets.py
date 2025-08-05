@@ -17,7 +17,7 @@
 import typing
 from unittest.mock import patch
 
-from PyQt5.QtWidgets import QCheckBox
+from PySide6.QtWidgets import QCheckBox
 import pytest
 from hamcrest import *
 
