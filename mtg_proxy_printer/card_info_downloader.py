@@ -205,6 +205,18 @@ class StreamTask(CardInfoDownloadTaskBase):
         self.json_path = json_path
         self.queue: CardDataQueue = queue.Queue(self._queue_depth)
 
+    def _enqueue_stream(self, data: CardStream):
+        """Put the CardStream into the queue for downstream consumption"""
+        try:
+            for batch in itertools.batched(data, self._batch_size):
+                self.queue.put(batch)
+        except AttributeError:  # Cancelling closes and deletes the underlying file, causing an AttributeError in run()
+            logger.info(f"{self.__class__.__name__}: Read operation cancelled")
+        else:
+            logger.debug(f"{self.__class__.__name__}: Card data exhausted.")
+        finally:
+            self.queue.put(None)
+
     @property
     def report_progress(self):
         return False
@@ -220,7 +232,6 @@ class StreamTask(CardInfoDownloadTaskBase):
 
     def cancel(self):
         if self.open_file is not None:
-            self.queue.put(None)
             self.open_file.close()
             self.open_file = None
 
@@ -230,9 +241,7 @@ class FileStreamTask(StreamTask):
 
     def run(self):
         data = self.read_json_card_data_from(self.source, self.json_path)
-        for batch in itertools.batched(data, self._batch_size):
-            self.queue.put(batch)
-        self.queue.put(None)
+        self._enqueue_stream(data)
 
     def read_json_card_data_from(self, file_path: Path, json_path: str = "item") -> CardStream:
         file_size = file_path.stat().st_size
@@ -272,10 +281,7 @@ class ApiStreamTask(StreamTask):
     def run(self):
         logger.info(f"{self.__class__.__name__}: About to stream card data in batches of {self._batch_size}")
         data = self.read_json_card_data_from(self.source, self.json_path)
-        for batch in itertools.batched(data, self._batch_size):
-            self.queue.put(batch)
-        logger.debug("Card data exhausted.")
-        self.queue.put(None)
+        self._enqueue_stream(data)
 
     def read_json_card_data_from(self, url: str = None, json_path: str = "item") -> CardStream:
         """

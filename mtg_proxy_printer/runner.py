@@ -146,15 +146,14 @@ class AsyncTaskRunner(QRunnable):
             logger.debug(f"Releasing instance {self}")
             del AsyncTaskRunner.INSTANCES[id(self)]
 
-    def cancel(self):
-        pass
-
     @classmethod
     def cancel_all_tasks(cls):
         if not cls.INSTANCES:
             return
         logger.info(f"Cancelling {len(cls.INSTANCES)} running tasks.")
         for item in list(cls.INSTANCES.values()):
-            logger.debug(f"Cancel task {item.task}")
-            item.cancel()
+            task = item.task
+            logger.debug(f"Cancel task {task}")
+            if task.can_cancel:
+                task.cancel()
         cls.INSTANCES.clear()
