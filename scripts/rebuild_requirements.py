@@ -27,7 +27,10 @@ async def run(prog: str, *args: List[Argument]):
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
-    await proc.wait()
+    for channel in await proc.communicate():
+        if channel:
+            print(channel.decode("utf-8"))
+
 
 
 async def main():
