@@ -20,6 +20,7 @@ import gzip
 import itertools
 import math
 import shutil
+from gzip import GzipFile
 from pathlib import Path
 import re
 import queue
@@ -35,6 +36,7 @@ import ijson
 from PySide6.QtCore import Qt
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
+from mtg_proxy_printer.http_file import MeteredSeekableHTTPFile
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock, \
     DEFAULT_DATABASE_LOCATION
 from mtg_proxy_printer.sqlite_helpers import cached_dedent
@@ -198,6 +200,7 @@ class StreamTask(CardInfoDownloadTaskBase):
 
     def __init__(self, source: str | Path = None, json_path: str = "item"):
         super().__init__()
+        self.open_file: GzipFile | MeteredSeekableHTTPFile | None = None
         self.source = source
         self.json_path = json_path
         self.queue: CardDataQueue = queue.Queue(self._queue_depth)
@@ -211,9 +214,20 @@ class StreamTask(CardInfoDownloadTaskBase):
     def item_count(self) -> int:
         return 0
 
+    @property
+    def can_cancel(self) -> bool:
+        return True
+
+    def cancel(self):
+        if self.open_file is not None:
+            self.queue.put(None)
+            self.open_file.close()
+            self.open_file = None
+
 
 class FileStreamTask(StreamTask):
     """Reads card data from a local file and streams the content"""
+
     def run(self):
         data = self.read_json_card_data_from(self.source, self.json_path)
         for batch in itertools.batched(data, self._batch_size):
@@ -225,7 +239,7 @@ class FileStreamTask(StreamTask):
         raw_file = file_path.open("rb")
         with self._wrap_in_metered_file(raw_file, file_size) as file:
             if file_path.suffix.casefold() == ".gz":
-                file = gzip.open(file, "rb")
+                self.open_file = file = gzip.open(file, "rb")
             yield from ijson.items(file, json_path, use_float=True)
 
     def _wrap_in_metered_file(self, raw_file, file_size: int):
@@ -279,7 +293,7 @@ class ApiStreamTask(StreamTask):
         else:
             logger.debug(f"Reading from given URL {url}")
         # Ignore the monitor, because progress reporting is done in the main import loop.
-        source, _ = self.read_from_url(url)
+        self.open_file, _ = source, _ = self.read_from_url(url)
         with source:
             yield from ijson.items(source, json_path, use_float=True)
 
@@ -324,6 +338,14 @@ class DatabaseImportTask(AsyncTask):
         self.should_run = True
         self.set_code_cache: dict[str, int] = {}
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @property
+    def can_cancel(self) -> bool:
+        return True
+
+    def cancel(self):
+        self.should_run = False
+        self.source.cancel()
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -406,6 +428,7 @@ class DatabaseImportTask(AsyncTask):
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
+                db.rollback()
                 return index
             if _should_skip_card(card):
                 skipped_cards += 1
@@ -766,8 +789,9 @@ def _should_skip_card(card: CardDataType) -> bool:
     # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
     # Also skip double faced cards that have at least one face without images
     return card["image_status"] == "missing" or (
-            "card_faces" in card
-            and "image_uris" not in card
+            # Has faces, but no image_uris, therefore is a DFC
+            "card_faces" in card and "image_uris" not in card
+            # And at least one face has no images
             and any("image_uris" not in face for face in card["card_faces"])
     )
 
