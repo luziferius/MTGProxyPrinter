@@ -97,6 +97,11 @@ class AsyncTask(QObject):
         self.task_deleted.emit()
 
     @property
+    def report_progress(self) -> bool:
+        """If True, the task progress should be shown in the UI via a progress bar."""
+        return True
+
+    @property
     def can_cancel(self) -> bool:
         return False
 

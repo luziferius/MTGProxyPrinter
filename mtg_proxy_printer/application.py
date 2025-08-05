@@ -184,7 +184,8 @@ class Application(QApplication):
     def run_async_task(self, task: AsyncTask):
         task.error_occurred.connect(self.main_window.on_error_occurred)
         task.network_error_occurred.connect(self.main_window.on_network_error_occurred)
-        self.main_window.progress_bar_manager.add_task(task)
+        if task.report_progress:
+            self.main_window.progress_bar_manager.add_task(task)
         QThreadPool.globalInstance().start(AsyncTaskRunner(task))
 
     def _create_document_instance(

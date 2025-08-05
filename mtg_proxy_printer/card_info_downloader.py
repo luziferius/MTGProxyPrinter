@@ -32,7 +32,7 @@ import urllib.request
 from typing import Literal
 
 import ijson
-from PySide6.QtCore import QObject, Qt
+from PySide6.QtCore import Qt
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock, \
@@ -193,8 +193,8 @@ class FileDownloadTask(CardInfoDownloadTaskBase):
 
 class StreamTask(CardInfoDownloadTaskBase):
     """Base class for tasks that stream data via a queue."""
-    _queue_depth = 3
-    _batch_size = 1000
+    _queue_depth = 5
+    _batch_size = 5000
 
     def __init__(self, source: str | Path = None, json_path: str = "item"):
         super().__init__()
@@ -202,6 +202,9 @@ class StreamTask(CardInfoDownloadTaskBase):
         self.json_path = json_path
         self.queue: CardDataQueue = queue.Queue(self._queue_depth)
 
+    @property
+    def report_progress(self):
+        return False
 
     @property
     @abc.abstractmethod
