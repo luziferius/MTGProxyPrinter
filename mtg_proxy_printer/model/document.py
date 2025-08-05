@@ -260,6 +260,15 @@ class Document(QAbstractItemModel):
             return self._request_replacement_card(index, card_data)
         return False
 
+    def moveRow(self, source_parent: AnyIndex, source_row: int, destination_parent: AnyIndex, destination_child: int, /):
+        if source_parent.isValid() or destination_parent.isValid():
+            raise NotImplementedError("Cannot move cards yet")
+        if source_row == destination_child:
+            return
+        page = self.pages[source_row]
+        del self.pages[source_row]
+        self.pages.insert(destination_child, page)
+
     @staticmethod
     def _to_index(other: QPersistentModelIndex | QModelIndex) -> QModelIndex:
         return QModelIndex(other) if isinstance(other, QPersistentModelIndex) else other

@@ -29,7 +29,7 @@ from mtg_proxy_printer.model.document_page import PageColumns
 @pytest.fixture()
 def document_with_pages(document: Document) -> Document:
     ActionNewPage(count=3).apply(document)
-    for number in range(3):
+    for number in range(document.rowCount()):
         append_new_card_in_page(document.pages[number], f"{number}")
     return document
 
@@ -62,10 +62,12 @@ def _card_name_on_page(document: Document, page: int) -> str:
 
 ])
 def test_apply(document_with_pages: Document, source_page: int, target_page: int, expected_order: str):
-    pytest.skip()
     action = ActionMovePage(source_page, target_page)
     assert_that(action.apply(document_with_pages), is_(same_instance(action)))
     assert_that(document_with_pages.rowCount(), is_(4))
+    pages_after_move = "".join(
+        _card_name_on_page(document_with_pages, page) for page in range(document_with_pages.rowCount()))
+    assert_that(pages_after_move, is_(equal_to(expected_order)))
     for page, expected_on_page in enumerate(expected_order):
         assert_that(_card_name_on_page(document_with_pages, page), is_(equal_to(expected_on_page)))
 

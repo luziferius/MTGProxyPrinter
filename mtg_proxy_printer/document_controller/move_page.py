@@ -49,6 +49,7 @@ class ActionMovePage(DocumentAction):
     def apply(self, document: "Document") -> Self:
         super().apply(document)
         self._validate_parameters(document)
+        document.moveRow(document.INVALID_INDEX, self.source_page, document.INVALID_INDEX, self.target_page)
         return self
 
     def undo(self, document: "Document") -> Self:
@@ -58,8 +59,7 @@ class ActionMovePage(DocumentAction):
 
     def _validate_parameters(self, document: "Document"):
         if not (
-                self.source_page >= 0 <= self.target_page and
-                self.source_page > document.rowCount() < self.target_page):
+                self.source_page >= 0 <= self.target_page < document.rowCount() > self.source_page):
             raise IllegalStateError()
 
     @functools.cached_property
