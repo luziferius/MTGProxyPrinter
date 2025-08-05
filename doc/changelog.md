@@ -1,5 +1,13 @@
 # Changelog
 
+# Next version (in development)
+
+## Changed features
+
+- Reworked handling of background tasks
+  - Progress reporting of background tasks no longer breaks, when more than one task runs
+  - Some tasks, like the card data update, can be canceled. These show a cancel button next to the progress bar 
+
 # Version 0.33.1 (2025-07-25)  <a name="v0_33_1"></a>
 
 ## Fixed issues
