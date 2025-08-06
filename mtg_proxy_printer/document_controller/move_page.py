@@ -49,9 +49,27 @@ class ActionMovePage(DocumentAction):
     def apply(self, document: "Document") -> Self:
         super().apply(document)
         self._validate_parameters(document)
-        target_page = self.target_page + (self.target_page > self.source_page)  # Moving down requires adding 1
+        target_page = self.target_page # + (self.target_page > self.source_page)  # Moving down requires adding 1
+        logger.info(f"Moving Page {self.source_page} to position {target_page}")
         document.moveRow(document.INVALID_INDEX, self.source_page, document.INVALID_INDEX, target_page)
         return self
+
+    def moveRows(
+            self, source_parent: AnyIndex, source_row: int, count: int,
+            destination_parent: AnyIndex, destination_child: int, /) -> bool:
+        if source_parent.isValid() or destination_parent.isValid():
+            return False  # Moving cards is unsupported
+        if not self.beginMoveRows(source_parent, source_row, source_row+count-1, destination_parent, destination_child):
+            logger.warning("Invalid page move attempted")
+            return False
+        if source_row+count <= destination_child:
+            # If the source is before the destination index, deleting the source shifts the destination count items down
+            destination_child -= count
+        pages = self.pages[source_row:source_row+count]
+        del self.pages[source_row:source_row+count]
+        self.pages[destination_child:destination_child] = pages
+        self.endMoveRows()
+        return True
 
     def undo(self, document: "Document") -> Self:
         super().undo(document)

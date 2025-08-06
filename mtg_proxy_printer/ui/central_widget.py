@@ -84,9 +84,10 @@ class CentralWidget(QWidget):
         self.ui.add_card_widget.request_action.connect(image_db.fill_document_action_image)
 
     def _setup_document_view(self, document: Document):
-        self.ui.document_view.setModel(document)
+        view = self.ui.document_view
+        view.setModel(document)
         # Has to be set up here, because setModel() implicitly creates the QItemSelectionModel
-        self.ui.document_view.selectionModel().currentChanged.connect(document.on_ui_selects_new_page)
+        view.selectionModel().currentChanged.connect(document.on_ui_selects_new_page)
         self.select_first_page()
 
     def on_document_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
