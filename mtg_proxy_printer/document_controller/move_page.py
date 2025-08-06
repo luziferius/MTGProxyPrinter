@@ -15,16 +15,13 @@
 
 
 import functools
-import itertools
 import typing
 
-from PySide6.QtCore import QModelIndex
 
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
 
 if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.model.document_page import Page
     from mtg_proxy_printer.model.document import Document
 
 logger = get_logger(__name__)
@@ -49,27 +46,26 @@ class ActionMovePage(DocumentAction):
     def apply(self, document: "Document") -> Self:
         super().apply(document)
         self._validate_parameters(document)
-        target_page = self.target_page # + (self.target_page > self.source_page)  # Moving down requires adding 1
-        logger.info(f"Moving Page {self.source_page} to position {target_page}")
-        document.moveRow(document.INVALID_INDEX, self.source_page, document.INVALID_INDEX, target_page)
+        self.move_page(document, self.source_page, 1, self.target_page)
         return self
 
-    def moveRows(
-            self, source_parent: AnyIndex, source_row: int, count: int,
-            destination_parent: AnyIndex, destination_child: int, /) -> bool:
-        if source_parent.isValid() or destination_parent.isValid():
-            return False  # Moving cards is unsupported
-        if not self.beginMoveRows(source_parent, source_row, source_row+count-1, destination_parent, destination_child):
+    @staticmethod
+    def move_page(
+            document: "Document", source_page: int, count: int,
+            insert_at: int, /) -> None:
+        logger.info(f"Moving Page {source_page} to position {insert_at}")
+        index = document.INVALID_INDEX
+        if not document.beginMoveRows(index, source_page, source_page + count - 1, index, insert_at):
             logger.warning("Invalid page move attempted")
-            return False
-        if source_row+count <= destination_child:
+            return
+        if source_page+count <= insert_at:
             # If the source is before the destination index, deleting the source shifts the destination count items down
-            destination_child -= count
-        pages = self.pages[source_row:source_row+count]
-        del self.pages[source_row:source_row+count]
-        self.pages[destination_child:destination_child] = pages
-        self.endMoveRows()
-        return True
+            insert_at -= count
+        pages = document.pages[source_page:source_page + count]
+        del document.pages[source_page:source_page + count]
+        document.pages[insert_at:insert_at] = pages
+        document.endMoveRows()
+        return
 
     def undo(self, document: "Document") -> Self:
         super().undo(document)
@@ -77,7 +73,7 @@ class ActionMovePage(DocumentAction):
         return self
 
     def _validate_parameters(self, document: "Document"):
-        if not (self.source_page >= 0 <= self.target_page < document.rowCount() > self.source_page):
+        if not (self.source_page >= 0 <= self.target_page <= document.rowCount() > self.source_page):
             raise IllegalStateError()
 
     @functools.cached_property
@@ -86,4 +82,4 @@ class ActionMovePage(DocumentAction):
             "ActionMovePage",
             "Move page {source_page} to position {target_page}",
             "Both parameters are page numbers, like in 'Move page 3 to position 7'"
-        ).format(source_page=self.source_page+1, target_page=self.target_page+1)
+        ).format(source_page=self.source_page+1, target_page=self.target_page)

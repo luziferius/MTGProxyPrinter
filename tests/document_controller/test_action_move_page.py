@@ -20,12 +20,13 @@ import pytest
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 
-from document_controller.helpers import append_new_card_in_page
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.move_page import ActionMovePage
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
+
+from tests.document_controller.helpers import append_new_card_in_page
 
 
 @pytest.fixture()
@@ -64,30 +65,33 @@ def validate_qt_model_move_signal_parameter(
 
 @pytest.mark.parametrize("source_page, target_page, expected_order", [
     (0, 0, "0123"),
-    (0, 1, "1023"),
-    (0, 2, "1203"),
-    (0, 3, "1230"),
+    (0, 1, "0123"),
+    (0, 2, "1023"),
+    (0, 3, "1203"),
+    (0, 4, "1230"),
 
     (1, 0, "1023"),
     (1, 1, "0123"),
-    (1, 2, "0213"),
-    (1, 3, "0231"),
+    (1, 2, "0123"),
+    (1, 3, "0213"),
+    (1, 4, "0231"),
 
     (2, 0, "2013"),
     (2, 1, "0213"),
     (2, 2, "0123"),
-    (2, 3, "0132"),
+    (2, 3, "0123"),
+    (2, 4, "0132"),
 
     (3, 0, "3012"),
     (3, 1, "0312"),
     (3, 2, "0132"),
     (3, 3, "0123"),
-
+    (3, 4, "0123"),
 ])
 def test_apply(qtbot: QtBot, document_with_pages: Document, source_page: int, target_page: int, expected_order: str):
     action = ActionMovePage(source_page, target_page)
     move_signal_validator = partial(validate_qt_model_move_signal_parameter, source_page, target_page)
-    if source_page == target_page or True:
+    if source_page == target_page or source_page == target_page - 1:
         with qtbot.assert_not_emitted(document_with_pages.rowsAboutToBeMoved), qtbot.assert_not_emitted(document_with_pages.rowsMoved):
             assert_that(action.apply(document_with_pages), is_(same_instance(action)))
     else:
@@ -110,8 +114,8 @@ def test_apply(qtbot: QtBot, document_with_pages: Document, source_page: int, ta
     (0, -1),
     (4, -1),
     (4, 0),
-    (-1, 4),
-    (0, 4),
+    (-1, 5),
+    (0, 5),
 ])
 def test_apply_outside_range_raises_exception(document_with_pages: Document, source_page: int, target_page: int):
     action = ActionMovePage(source_page, target_page)
@@ -120,24 +124,28 @@ def test_apply_outside_range_raises_exception(document_with_pages: Document, sou
 
 @pytest.mark.parametrize("target_page, source_page, expected_order", [  # source and target intentionally swapped
     (0, 0, "0123"),
-    (0, 1, "1023"),
-    (0, 2, "1203"),
-    (0, 3, "1230"),
+    (0, 1, "0123"),
+    (0, 2, "1023"),
+    (0, 3, "1203"),
+    (0, 4, "1230"),
 
     (1, 0, "1023"),
     (1, 1, "0123"),
-    (1, 2, "0213"),
-    (1, 3, "0231"),
+    (1, 2, "0123"),
+    (1, 3, "0213"),
+    (1, 4, "0231"),
 
     (2, 0, "2013"),
     (2, 1, "0213"),
     (2, 2, "0123"),
-    (2, 3, "0132"),
+    (2, 3, "0123"),
+    (2, 4, "0132"),
 
     (3, 0, "3012"),
     (3, 1, "0312"),
     (3, 2, "0132"),
     (3, 3, "0123"),
+    (3, 4, "0123"),
 ])
 def test_undo(document_with_pages: Document, source_page: int, target_page: int, expected_order: list):
     pytest.skip()
@@ -153,8 +161,8 @@ def test_undo(document_with_pages: Document, source_page: int, target_page: int,
     (0, -1),
     (4, -1),
     (4, 0),
-    (-1, 4),
-    (0, 4),
+    (-1, 5),
+    (0, 5),
 ])
 def test_undo_outside_range_raises_exception(document_with_pages: Document, source_page: int, target_page: int):
     action = ActionMovePage(source_page, target_page)
