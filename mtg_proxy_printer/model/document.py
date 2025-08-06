@@ -270,8 +270,11 @@ class Document(QAbstractItemModel):
         if source_parent.isValid() or destination_parent.isValid():
             return False  # Moving cards is unsupported
         if not self.beginMoveRows(source_parent, source_row, source_row+count-1, destination_parent, destination_child):
-            return False  # Invalid move
-
+            logger.warning("Invalid page move attempted")
+            return False
+        if source_row+count <= destination_child:
+            # If the source is before the destination index, deleting the source shifts the destination count items down
+            destination_child -= count
         pages = self.pages[source_row:source_row+count]
         del self.pages[source_row:source_row+count]
         self.pages[destination_child:destination_child] = pages
@@ -280,7 +283,6 @@ class Document(QAbstractItemModel):
 
     def moveRow(self, source_parent: AnyIndex, source_row: int, destination_parent: AnyIndex, destination_child: int,/) -> bool:
         return self.moveRows(source_parent, source_row, 1, destination_parent, destination_child)
-
 
     def supportedDropActions(self, /) -> Qt.DropAction:
         return Qt.DropAction.MoveAction

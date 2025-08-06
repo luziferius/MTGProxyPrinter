@@ -2,23 +2,32 @@
 <ui version="4.0">
  <class>GroupedCentralWidget</class>
  <widget class="QWidget" name="GroupedCentralWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>792</width>
+    <height>273</height>
+   </rect>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="bottomMargin">
     <number>0</number>
    </property>
-   <item row="5" column="3" rowspan="3">
-    <widget class="PageRenderer" name="page_renderer">
+   <item row="0" column="2" colspan="2">
+    <widget class="QLabel" name="add_card_widget_label">
+     <property name="text">
+      <string>Add new cards:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2" rowspan="2" colspan="2">
+    <widget class="HorizontalAddCardWidget" name="add_card_widget" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>7</horstretch>
-       <verstretch>10</verstretch>
+       <verstretch>6</verstretch>
       </sizepolicy>
-     </property>
-     <property name="acceptDrops">
-      <bool>false</bool>
-     </property>
-     <property name="renderHints">
-      <set>QPainter::RenderHint::Antialiasing</set>
      </property>
     </widget>
    </item>
@@ -47,7 +56,40 @@
      </property>
     </widget>
    </item>
-   <item row="7" column="2">
+   <item row="0" column="0" colspan="2">
+    <widget class="QLabel" name="document_view_label">
+     <property name="text">
+      <string>All pages:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="1">
+    <widget class="QPushButton" name="page_move_down">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string>Move down</string>
+     </property>
+     <property name="icon">
+      <iconset theme="arrow-down"/>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0">
+    <widget class="QPushButton" name="page_move_up">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string>Move up</string>
+     </property>
+     <property name="icon">
+      <iconset theme="arrow-up"/>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="2">
     <widget class="QPushButton" name="delete_selected_images_button">
      <property name="enabled">
       <bool>false</bool>
@@ -60,7 +102,23 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="2" rowspan="2">
+   <item row="5" column="3" rowspan="4">
+    <widget class="PageRenderer" name="page_renderer">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>7</horstretch>
+       <verstretch>10</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="acceptDrops">
+      <bool>false</bool>
+     </property>
+     <property name="renderHints">
+      <set>QPainter::RenderHint::Antialiasing</set>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="2" rowspan="3">
     <widget class="PageCardTableView" name="page_card_table_view">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -83,30 +141,6 @@
      <attribute name="verticalHeaderVisible">
       <bool>false</bool>
      </attribute>
-    </widget>
-   </item>
-   <item row="1" column="2" rowspan="2" colspan="2">
-    <widget class="HorizontalAddCardWidget" name="add_card_widget" native="true">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>7</horstretch>
-       <verstretch>6</verstretch>
-      </sizepolicy>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0" colspan="2">
-    <widget class="QLabel" name="document_view_label">
-     <property name="text">
-      <string>All pages:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="2" colspan="2">
-    <widget class="QLabel" name="add_card_widget_label">
-     <property name="text">
-      <string>Add new cards:</string>
-     </property>
     </widget>
    </item>
   </layout>

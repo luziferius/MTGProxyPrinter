@@ -12,11 +12,13 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
+from functools import partial
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QModelIndex
 
 import pytest
 from hamcrest import *
+from pytestqt.qtbot import QtBot
 
 from document_controller.helpers import append_new_card_in_page
 from mtg_proxy_printer.document_controller import IllegalStateError
@@ -33,10 +35,31 @@ def document_with_pages(document: Document) -> Document:
         append_new_card_in_page(document.pages[number], f"{number}")
     return document
 
+
 def _card_name_on_page(document: Document, page: int) -> str:
     page_index = document.index(page, 0)
     card_index = document.index(0, PageColumns.CardName, page_index)
     return document.data(card_index, Qt.ItemDataRole.EditRole)
+
+
+def validate_qt_model_move_signal_parameter(
+        expected_source_row: int,
+        expected_target_row: int,
+
+        source_index: QModelIndex, row_start: int, row_end: int,
+        target_index: QModelIndex, target_row: int) -> bool:
+
+    models_match = source_index.model() is target_index.model()
+    both_parents_must_be_invalid = not source_index.isValid() and not target_index.isValid()
+    source_rows_match = row_start == row_end == expected_source_row
+    target_row_matches = target_row == expected_target_row
+    rows_valid = 0 <= row_start <= row_end and 0 <= target_row
+
+    return models_match \
+        and both_parents_must_be_invalid \
+        and source_rows_match \
+        and target_row_matches \
+        and rows_valid
 
 
 @pytest.mark.parametrize("source_page, target_page, expected_order", [
@@ -61,9 +84,19 @@ def _card_name_on_page(document: Document, page: int) -> str:
     (3, 3, "0123"),
 
 ])
-def test_apply(document_with_pages: Document, source_page: int, target_page: int, expected_order: str):
+def test_apply(qtbot: QtBot, document_with_pages: Document, source_page: int, target_page: int, expected_order: str):
     action = ActionMovePage(source_page, target_page)
-    assert_that(action.apply(document_with_pages), is_(same_instance(action)))
+    move_signal_validator = partial(validate_qt_model_move_signal_parameter, source_page, target_page)
+    if source_page == target_page or True:
+        with qtbot.assert_not_emitted(document_with_pages.rowsAboutToBeMoved), qtbot.assert_not_emitted(document_with_pages.rowsMoved):
+            assert_that(action.apply(document_with_pages), is_(same_instance(action)))
+    else:
+        with (qtbot.wait_signal(
+                (document_with_pages.rowsAboutToBeMoved, "rowsAboutToBeMoved"), timeout=10,
+                check_params_cb=move_signal_validator),
+              qtbot.wait_signal(
+                  (document_with_pages.rowsMoved, "rowsMoved"), timeout=10)):
+            assert_that(action.apply(document_with_pages), is_(same_instance(action)))
     assert_that(document_with_pages.rowCount(), is_(4))
     pages_after_move = "".join(
         _card_name_on_page(document_with_pages, page) for page in range(document_with_pages.rowCount()))

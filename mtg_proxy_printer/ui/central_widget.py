@@ -15,13 +15,15 @@
 
 from typing import Type
 
-from PySide6.QtCore import Slot, QItemSelectionModel, QModelIndex
+from PySide6.QtCore import Slot, QItemSelectionModel, QModelIndex, QPersistentModelIndex
 from PySide6.QtWidgets import QWidget
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.document_controller.move_page import ActionMovePage
+from mtg_proxy_printer.model.document import Document, DocumentColumns
 from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 
 try:
@@ -48,6 +50,7 @@ UiType = Type[Ui_GroupedCentralWidget] | Type[Ui_ColumnarCentralWidget] | Type[U
 
 class CentralWidget(QWidget):
 
+
     def __init__(self, parent: QWidget = None):
         logger.debug(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
@@ -56,12 +59,14 @@ class CentralWidget(QWidget):
         self.ui = ui_class()
         self.ui.setupUi(self)
         self.document: Document = None
+        self._currently_edited_page: int = 0
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_data(self, document: Document, card_db: CardDatabase, image_db: ImageDatabase):
         logger.debug(f"{self.__class__.__name__} received model instances. Setting up child widgets…")
         self.document = document
         ui = self.ui
+        document.current_page_changed.connect(self.on_document_current_page_changed)
         ui.page_card_table_view.set_data(document, card_db)
         ui.page_card_table_view.obtain_card_image.connect(image_db.fill_document_action_image)
         # Have the "delete selected" button enabled iff the current selection is non-empty
@@ -110,6 +115,26 @@ class CentralWidget(QWidget):
             new_selection = self.document.index(0, 0)
             self.ui.document_view.selectionModel().select(new_selection, QItemSelectionModel.SelectionFlag.Select)
             self.document.on_ui_selects_new_page(new_selection)
+
+    @Slot(QPersistentModelIndex)
+    def on_document_current_page_changed(self, page: QPersistentModelIndex):
+        self._currently_edited_page = row = page.row()
+        row_count = self.document.rowCount()
+        ui = self.ui
+        ui.page_move_up.setEnabled(row > 0)
+        ui.page_move_down.setEnabled(row < row_count-1)
+
+    @Slot()
+    def on_page_move_up_clicked(self):
+        target = self._currently_edited_page - 1
+        self.document.apply(ActionMovePage(self._currently_edited_page, target))
+        self.ui.document_view.setCurrentIndex(self.document.index(target, DocumentColumns.Page))
+
+    @Slot()
+    def on_page_move_down_clicked(self):
+        target = self._currently_edited_page + 1
+        self.document.apply(ActionMovePage(self._currently_edited_page, target))
+        self.ui.document_view.setCurrentIndex(self.document.index(target, DocumentColumns.Page))
 
 
 def get_configured_central_widget_layout_class() -> UiType:
