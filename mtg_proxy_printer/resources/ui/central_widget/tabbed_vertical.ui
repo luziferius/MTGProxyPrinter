@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>TabbedCentralWidget</class>
  <widget class="QWidget" name="TabbedCentralWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>454</width>
-    <height>765</height>
-   </rect>
-  </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="leftMargin">
     <number>0</number>
@@ -29,6 +21,12 @@
       <number>0</number>
      </property>
      <widget class="QListView" name="document_view">
+      <property name="dragDropMode">
+       <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
+      </property>
+      <property name="defaultDropAction">
+       <enum>Qt::DropAction::MoveAction</enum>
+      </property>
       <attribute name="title">
        <string>All pages</string>
       </attribute>

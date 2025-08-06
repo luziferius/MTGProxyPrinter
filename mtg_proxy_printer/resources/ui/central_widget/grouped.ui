@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>GroupedCentralWidget</class>
  <widget class="QWidget" name="GroupedCentralWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>580</width>
-    <height>539</height>
-   </rect>
-  </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="bottomMargin">
     <number>0</number>
@@ -37,6 +29,12 @@
        <horstretch>3</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
+     </property>
+     <property name="dragDropMode">
+      <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
+     </property>
+     <property name="defaultDropAction">
+      <enum>Qt::DropAction::MoveAction</enum>
      </property>
      <property name="alternatingRowColors">
       <bool>true</bool>

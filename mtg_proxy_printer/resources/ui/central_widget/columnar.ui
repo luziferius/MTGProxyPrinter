@@ -2,18 +2,42 @@
 <ui version="4.0">
  <class>ColumnarCentralWidget</class>
  <widget class="QWidget" name="ColumnarCentralWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>888</width>
-    <height>258</height>
-   </rect>
-  </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="bottomMargin">
     <number>0</number>
    </property>
+   <item row="0" column="1">
+    <widget class="QLabel" name="add_card_widget_label">
+     <property name="text">
+      <string>Add new cards:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" rowspan="3">
+    <widget class="QListView" name="document_view">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>4</horstretch>
+       <verstretch>1</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="dragDropMode">
+      <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
+     </property>
+     <property name="defaultDropAction">
+      <enum>Qt::DropAction::MoveAction</enum>
+     </property>
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+     </property>
+    </widget>
+   </item>
    <item row="4" column="3" rowspan="3">
     <widget class="PageRenderer" name="page_renderer">
      <property name="sizePolicy">
@@ -55,20 +79,6 @@
      </attribute>
     </widget>
    </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="document_view_label">
-     <property name="text">
-      <string>All pages:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="2" colspan="2">
-    <widget class="QLabel" name="page_view_label">
-     <property name="text">
-      <string>Current page:</string>
-     </property>
-    </widget>
-   </item>
    <item row="6" column="2">
     <widget class="QPushButton" name="delete_selected_images_button">
      <property name="enabled">
@@ -82,10 +92,10 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="1">
-    <widget class="QLabel" name="add_card_widget_label">
+   <item row="0" column="0">
+    <widget class="QLabel" name="document_view_label">
      <property name="text">
-      <string>Add new cards:</string>
+      <string>All pages:</string>
      </property>
     </widget>
    </item>
@@ -99,22 +109,10 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0" rowspan="3">
-    <widget class="QListView" name="document_view">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>4</horstretch>
-       <verstretch>1</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="alternatingRowColors">
-      <bool>true</bool>
-     </property>
-     <property name="selectionMode">
-      <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
-     </property>
-     <property name="selectionBehavior">
-      <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+   <item row="0" column="2" colspan="2">
+    <widget class="QLabel" name="page_view_label">
+     <property name="text">
+      <string>Current page:</string>
      </property>
     </widget>
    </item>
