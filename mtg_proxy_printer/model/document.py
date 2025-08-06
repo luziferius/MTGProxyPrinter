@@ -229,6 +229,10 @@ class Document(QAbstractItemModel):
         flags = super().flags(index)
         if isinstance(data, CardContainer) and (index.column() in self.EDITABLE_COLUMNS or data.card.is_custom_card):
             flags |= ItemFlag.ItemIsEditable
+        if isinstance(data, Page):
+            flags |= ItemFlag.ItemIsDragEnabled  # Pages can be moved
+        if not index.isValid():
+            flags | ItemFlag.ItemIsDropEnabled  # Only the root can accept drops to not overwrite items
         return flags
 
     def setData(self, index: AnyIndex, value: Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
@@ -260,14 +264,29 @@ class Document(QAbstractItemModel):
             return self._request_replacement_card(index, card_data)
         return False
 
-    def moveRow(self, source_parent: AnyIndex, source_row: int, destination_parent: AnyIndex, destination_child: int, /):
+    def moveRows(
+            self, source_parent: AnyIndex, source_row: int, count: int,
+            destination_parent: AnyIndex, destination_child: int, /) -> bool:
         if source_parent.isValid() or destination_parent.isValid():
-            raise NotImplementedError("Cannot move cards yet")
-        if source_row == destination_child:
-            return
-        page = self.pages[source_row]
-        del self.pages[source_row]
-        self.pages.insert(destination_child, page)
+            return False  # Moving cards is unsupported
+        if not self.beginMoveRows(source_parent, source_row, source_row+count-1, destination_parent, destination_child):
+            return False  # Invalid move
+
+        pages = self.pages[source_row:source_row+count]
+        del self.pages[source_row:source_row+count]
+        self.pages[destination_child:destination_child] = pages
+        self.endMoveRows()
+        return True
+
+    def moveRow(self, source_parent: AnyIndex, source_row: int, destination_parent: AnyIndex, destination_child: int,/) -> bool:
+        return self.moveRows(source_parent, source_row, 1, destination_parent, destination_child)
+
+
+    def supportedDropActions(self, /) -> Qt.DropAction:
+        return Qt.DropAction.MoveAction
+
+    def mimeTypes(self, /) -> list[str]:
+        return ["application/x-MTGProxyPrinter-PageMove"]
 
     @staticmethod
     def _to_index(other: QPersistentModelIndex | QModelIndex) -> QModelIndex:
