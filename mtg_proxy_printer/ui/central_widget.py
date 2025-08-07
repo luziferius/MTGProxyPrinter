@@ -119,7 +119,11 @@ class CentralWidget(QWidget):
 
     @Slot(QPersistentModelIndex)
     def on_document_current_page_changed(self, page: QPersistentModelIndex):
-        self._currently_edited_page = row = page.row()
+        self._currently_edited_page = page.row()
+        self._update_page_move_buttons()
+
+    def _update_page_move_buttons(self):
+        row = self._currently_edited_page
         row_count = self.document.rowCount()
         ui = self.ui
         ui.page_move_up.setEnabled(row > 0)
@@ -127,15 +131,19 @@ class CentralWidget(QWidget):
 
     @Slot()
     def on_page_move_up_clicked(self):
-        target = self._currently_edited_page - 1
-        self.document.apply(ActionMovePage(self._currently_edited_page, target))
-        self.ui.document_view.setCurrentIndex(self.document.index(target, DocumentColumns.Page))
+        self.document.apply(ActionMovePage(self._currently_edited_page, self._currently_edited_page - 1))
+        self._currently_edited_page -= 1
+        self.ui.document_view.setCurrentIndex(self.document.index(self._currently_edited_page, DocumentColumns.Page))
+        self._update_page_move_buttons()
 
     @Slot()
     def on_page_move_down_clicked(self):
-        target = self._currently_edited_page + 1
-        self.document.apply(ActionMovePage(self._currently_edited_page, target))
-        self.ui.document_view.setCurrentIndex(self.document.index(target, DocumentColumns.Page))
+        # The API moves cards *before* the given row, so to move one row down,
+        # move the current page before the next but one page
+        self.document.apply(ActionMovePage(self._currently_edited_page, self._currently_edited_page + 2))
+        self._currently_edited_page += 1
+        self.ui.document_view.setCurrentIndex(self.document.index(self._currently_edited_page, DocumentColumns.Page))
+        self._update_page_move_buttons()
 
 
 def get_configured_central_widget_layout_class() -> UiType:
