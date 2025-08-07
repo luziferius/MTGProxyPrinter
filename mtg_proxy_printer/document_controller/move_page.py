@@ -46,23 +46,23 @@ class ActionMovePage(DocumentAction):
     def apply(self, document: "Document") -> Self:
         super().apply(document)
         self._validate_parameters(document)
-        self.move_page(document, self.source_page, 1, self.target_page)
+        source, target = self.source_page, self.target_page
+        self.move_page(document, source, target)
         return self
 
     @staticmethod
     def move_page(
-            document: "Document", source_page: int, count: int,
-            insert_at: int, /) -> None:
+            document: "Document", source_page: int, insert_at: int, /) -> None:
         logger.info(f"Moving Page {source_page} to position {insert_at}")
         index = document.INVALID_INDEX
-        if not document.beginMoveRows(index, source_page, source_page + count - 1, index, insert_at):
+        if not document.beginMoveRows(index, source_page, source_page, index, insert_at):
             logger.warning("Invalid page move attempted")
             return
-        if source_page+count <= insert_at:
+        if source_page+1 <= insert_at:
             # If the source is before the destination index, deleting the source shifts the destination count items down
-            insert_at -= count
-        pages = document.pages[source_page:source_page + count]
-        del document.pages[source_page:source_page + count]
+            insert_at -= 1
+        pages = document.pages[source_page:source_page + 1]
+        del document.pages[source_page:source_page + 1]
         document.pages[insert_at:insert_at] = pages
         document.endMoveRows()
         return
@@ -70,6 +70,9 @@ class ActionMovePage(DocumentAction):
     def undo(self, document: "Document") -> Self:
         super().undo(document)
         self._validate_parameters(document)
+        source = self.target_page + (self.source_page > self.target_page) - 1
+        target = self.source_page + (self.source_page > self.target_page)
+        self.move_page(document, source, target)
         return self
 
     def _validate_parameters(self, document: "Document"):
@@ -82,4 +85,4 @@ class ActionMovePage(DocumentAction):
             "ActionMovePage",
             "Move page {source_page} to position {target_page}",
             "Both parameters are page numbers, like in 'Move page 3 to position 7'"
-        ).format(source_page=self.source_page+1, target_page=self.target_page)
+        ).format(source_page=self.source_page+1, target_page=self.target_page+1)
