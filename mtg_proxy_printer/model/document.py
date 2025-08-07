@@ -209,16 +209,15 @@ class Document(QAbstractItemModel):
         return INVALID_INDEX  # Pages have no parent
 
     def index(self, row: int, column: int, parent: AnyIndex = INVALID_INDEX) -> QModelIndex:
-        data = self._to_index(parent).internalPointer()
+        data: Page | None = self._to_index(parent).internalPointer()
         if isinstance(data, Page):
             card_container = data[row]
             return self.createIndex(row, column, card_container)
         else:
-            try:
-                page = self.pages[row]
-            except IndexError:
-                logger.exception(f"Invalid Page: {row=}")
-                raise
+            if row == len(self.pages):
+                # Dropping data onto the last
+                return INVALID_INDEX
+            page = self.pages[row]
             return self.createIndex(row, column, page)
 
     def data(self, index: AnyIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> Any:
@@ -287,7 +286,7 @@ class Document(QAbstractItemModel):
         """Supports dropping pages moved via drag&drop. Only Page moves supported at the moment."""
         if data.hasFormat(PAGE_MOVE_MIME_TYPE):
             logger.debug(f"Received page drop onto {row=}")
-            if row == -1 or row > self.rowCount():  # Drop onto empty space or after last entry. Append in this case
+            if row == -1:  # Drop onto empty space or after last entry. Append in this case
                 row = self.rowCount()
             source_row = int.from_bytes(data.data(PAGE_MOVE_MIME_TYPE).data())
             self.apply(ActionMovePage(source_row, row))
