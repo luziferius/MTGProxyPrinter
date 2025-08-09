@@ -1,5 +1,11 @@
 # Changelog
 
+# Next version (in development)
+
+# New features
+
+- Reorder pages: It is now possible to re-order pages via drag&drop or via the two new buttons below the page list.
+
 # Version 0.33.2 (2025-08-05)  <a name="v0_33_2"></a>
 
 ## Fixed issues

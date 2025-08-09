@@ -641,6 +641,9 @@ class PageScene(QGraphicsScene):
             # Moved in cards are treated as if they were added
             logger.debug("Cards moved onto the currently shown page, calling card insertion handler.")
             self.on_rows_inserted(destination, row, row+end-start)
+        if not parent.isValid() and not destination.isValid():
+            # Moved pages around. Needs to update the current page text
+            self._update_page_number_text()
 
     @functools.lru_cache(None)
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
