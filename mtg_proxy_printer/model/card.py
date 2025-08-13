@@ -97,8 +97,13 @@ def post_process_image(image: QImage, size: CardSize):
 def round_off_corners(source: QImage):
     size = source.size()
     alpha_channel = CORNER_MASKS[size]
-    # FIXME: This breaks custom card images that contain transparent areas.
-    #  Use additive blend with the source alpha channel?
+    if source.hasAlphaChannel():
+        alpha_channel = alpha_channel.copy()
+        painter = QPainter(alpha_channel)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
+        painter.drawImage(0, 0, source.createAlphaMask())
+        painter.end()
     source.setAlphaChannel(alpha_channel)
 
 
