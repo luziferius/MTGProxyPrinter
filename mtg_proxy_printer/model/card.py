@@ -22,6 +22,7 @@ from typing import Union
 from PySide6.QtCore import QRect, QPoint, QSize, Qt, QPointF
 from PySide6.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform, QImage
 
+from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import CardSize, PageType, CardSizes, UUID
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -87,8 +88,7 @@ def post_process_image(image: QImage, size: CardSize):
     if image.size() != (expected_size := size.as_qsize_px()):
         logger.info(f"Got image with a non-standard size. Scaling to {size}")
         image = image.scaled(expected_size, IgnoreAspectRatio, SmoothTransformation)
-    # TODO: Replace True with a settings read
-    if True and image.pixelColor(0, 0).alpha():
+    if settings["cards"].getboolean("custom-cards-force-round-corners") and image.pixelColor(0, 0).alpha():
         logger.info("Custom card corners not fully transparent. Masking round corners")
         round_off_corners(image)
     return image
