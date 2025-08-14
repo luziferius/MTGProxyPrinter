@@ -306,8 +306,8 @@ class CheckCard:
         # The scaled cards get a bit compressed horizontally.
         vertical_scaling_factor = card_size.width() / card_size.height()
         horizontal_scaling_factor = card_size.height() / (2 * card_size.width())
-        combined_image = QImage(card_size, QImage.Format.Format_RGBA8888)
-        combined_image.fill(QColorConstants.Transparent)
+        combined_image = QImage(card_size, QImage.Format.Format_RGB888)
+        combined_image.fill(QColorConstants.Black)
         painter = QPainter(combined_image)
         painter.setRenderHints(RenderHint.SmoothPixmapTransform)
         transformation = QTransform()
