@@ -17,7 +17,8 @@
 import functools
 import typing
 
-from PySide6.QtCore import QModelIndex, Qt
+from PySide6.QtCore import QModelIndex, Qt, QCoreApplication
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import CardContainer, PageColumns
@@ -39,6 +40,7 @@ class ActionEditCustomCard(DocumentAction):
     COMPARISON_ATTRIBUTES = ["old_value", "new_value", "page", "row", "column"]
 
     def __init__(self, index: QModelIndex, value):
+        super().__init__()
         self.page = index.parent().row()
         self.row = index.row()
         self.column = PageColumns(index.column())
@@ -82,6 +84,6 @@ class ActionEditCustomCard(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
-        return self.translate(
-            "ActionEditCustomCard", "Edit custom card, set {column_header_text} to {new_value}",
+        return self.tr(
+            "Edit custom card, set {column_header_text} to {new_value}",
             "Undo/redo tooltip text").format(column_header_text=self.header_text, new_value=self.new_display_value)

@@ -13,7 +13,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
 import functools
 
 from mtg_proxy_printer.model.document import Document
@@ -43,6 +42,7 @@ class ActionCompactDocument(DocumentAction):
     COMPARISON_ATTRIBUTES = ["actions"]
 
     def __init__(self):
+        super().__init__()
         self.actions: ActionList = []
 
     def apply(self, document: Document) -> Self:
@@ -106,6 +106,6 @@ class ActionCompactDocument(DocumentAction):
     def as_str(self):
         last_action = self.actions[-1] if self.actions else None
         saved_pages = last_action.count if isinstance(last_action, ActionRemovePage) else 0
-        return self.translate(
-            "ActionCompactDocument", "Compact document, removing %n page(s)",
+        return self.tr(
+            "Compact document, removing %n page(s)",
             "Undo/redo tooltip text", saved_pages)

@@ -52,6 +52,7 @@ class ActionEditDocumentSettings(DocumentAction):
     COMPARISON_ATTRIBUTES = ["new_settings", "old_settings", "reflow_actions"]
 
     def __init__(self, new_settings: PageLayoutSettings):
+        super().__init__()
         if new_settings.compute_page_card_capacity(PageType.OVERSIZED) < 1:
             raise ValueError("New document settings must allow at least one card per page")
         self.new_settings = copy.copy(new_settings)
@@ -130,6 +131,6 @@ class ActionEditDocumentSettings(DocumentAction):
 
     @property
     def as_str(self):
-        return self.translate(
-            "ActionEditDocumentSettings", "Update document settings", "Undo/redo tooltip text"
+        return self.tr(
+            "Update document settings", "Undo/redo tooltip text"
         )

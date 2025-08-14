@@ -25,7 +25,6 @@ if typing.TYPE_CHECKING:
 from mtg_proxy_printer.model.card import CardList
 from ._interface import DocumentAction, IllegalStateError, ActionList, Self
 from .page_actions import ActionNewPage, ActionRemovePage
-from .card_actions import ActionAddCard
 from .new_document import ActionNewDocument
 from .edit_document_settings import ActionEditDocumentSettings
 
@@ -42,6 +41,7 @@ class ActionLoadDocument(DocumentAction):
     COMPARISON_ATTRIBUTES = ["save_path", "loaded_cards", "page_layout"]
 
     def __init__(self, save_path: pathlib.Path, loaded_cards: list[CardList], page_layout: "PageLayoutSettings"):
+        super().__init__()
         self.save_path = save_path
         self.page_layout = page_layout
         self.actions: ActionList = []
@@ -68,12 +68,11 @@ class ActionLoadDocument(DocumentAction):
     def as_str(self):
         page_count = len(self.loaded_cards)
         card_count = sum(map(len, self.loaded_cards))
-        cards_total = self.translate(
-            "ActionLoadDocument. Card total", "with %n card(s) total",
+        cards_total = self.tr(
+            "with %n card(s) total",
             "Undo/redo tooltip text. Will be inserted as {cards_total}", card_count
         )
-        return self.translate(
-            "ActionLoadDocument",
+        return self.tr(
             "Load document from '{save_path}',\ncontaining %n page(s) {cards_total}",
             "Undo/redo tooltip text.", page_count
         ).format(save_path=self.save_path, cards_total=cards_total)

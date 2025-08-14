@@ -17,7 +17,6 @@
 import functools
 import typing
 
-
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
 
@@ -81,8 +80,7 @@ class ActionMovePage(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
-        return self.translate(
-            "ActionMovePage",
+        return self.tr(
             "Move page {source_page} to position {target_page}",
             "Both parameters are page numbers, like in 'Move page 3 to position 7'"
         ).format(source_page=self.source_page+1, target_page=self.target_page+1)
