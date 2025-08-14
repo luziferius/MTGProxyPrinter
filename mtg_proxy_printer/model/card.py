@@ -88,7 +88,7 @@ def post_process_image(image: QImage, size: CardSize):
     if image.size() != (expected_size := size.as_qsize_px()):
         logger.info(f"Got image with a non-standard size. Scaling to {size}")
         image = image.scaled(expected_size, IgnoreAspectRatio, SmoothTransformation)
-    if settings["cards"].getboolean("custom-cards-force-round-corners") and image.pixelColor(0, 0).alpha():
+    if settings["cards"].getboolean("custom-cards-force-round-corners"):
         logger.info("Custom card corners not fully transparent. Masking round corners")
         round_off_corners(image)
     return image
@@ -97,6 +97,8 @@ def post_process_image(image: QImage, size: CardSize):
 def round_off_corners(source: QImage):
     size = source.size()
     alpha_channel = CORNER_MASKS[size]
+    # FIXME
+    """  # This seems to not work
     if source.hasAlphaChannel():
         alpha_channel = alpha_channel.copy()
         painter = QPainter(alpha_channel)
@@ -104,8 +106,8 @@ def round_off_corners(source: QImage):
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
         painter.drawImage(0, 0, source.createAlphaMask())
         painter.end()
+    """
     source.setAlphaChannel(alpha_channel)
-
 
 @dataclasses.dataclass(unsafe_hash=True)
 class Card:
