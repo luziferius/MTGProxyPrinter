@@ -582,21 +582,29 @@ class PageScene(QGraphicsScene):
                 self.draw_cut_markers()
 
     def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: list[ItemDataRole]):
-        if (top_left.parent().row() == self.selected_page.row()
-                and ItemDataRole.DisplayRole in roles
-                # Multiple columns changed means card replaced.
-                # Editing custom cards only changes single columns.
-                # Thes cases can be ignored, as the pixmap never changes
-                and top_left.column() < bottom_right.column()
-        ):
-            parent = top_left.parent()
+        parent = top_left.parent()
+        if not parent.isValid() or parent.row() != self.selected_page.row() or ItemDataRole.DisplayRole not in roles:
+            # Ignore all events not regarding the currently shown page
+            return
+        card_items = self.card_items
+
+        # Editing custom cards only changes single columns other than the Image column.
+        # So multiple columns edited means the card was replaced and all affected rows needs to be replaced
+        if top_left.column() < bottom_right.column():
             page_type: PageType = parent.data(ItemDataRole.UserRole)
-            card_items = self.card_items
             for row in range(top_left.row(), bottom_right.row()+1):
                 logger.debug(f"Card {row} on the current page was replaced, replacing image.")
                 current_item = card_items[row]
                 self.draw_card(top_left.siblingAtRow(row), page_type, current_item)
                 self.removeItem(current_item)
+        # Editing the Image column only happens when the custom card corner style was toggled.
+        elif top_left.column() == PageColumns.Image:
+
+            for row in range(top_left.row(), bottom_right.row()+1):
+                index = top_left.siblingAtRow(row)
+                logger.debug(f"Update pixmap for custom card on {row=} on the current page")
+                current_item = card_items[row]
+                current_item.card_pixmap_item.setPixmap(index.data(ItemDataRole.DisplayRole))
 
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
         if self._is_valid_page_index(parent) and parent.row() == self.selected_page.row():

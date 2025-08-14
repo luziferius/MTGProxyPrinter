@@ -290,6 +290,8 @@ class DecklistImportSettingsPage(Page):
 
 class GeneralSettingsPage(Page):
 
+    custom_card_corner_style_changed = Signal()
+
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(self.tr("General settings"), "configure", None)
 
@@ -372,10 +374,16 @@ class GeneralSettingsPage(Page):
             return languages.index("en")
 
     def save(self):
+        corner_style_changed = \
+            self.ui.custom_cards_force_round_corners.isChecked() \
+            != mtg_proxy_printer.settings.settings["cards"].getboolean("custom-cards-force-round-corners")
         self._save_boolean_settings()
         self._save_look_and_feel_settings()
         self._save_cards_settings()
         self._save_path_settings()
+        if corner_style_changed:
+            logger.info("Custom card corner rounding style changed. Notifying the renderer to update the current view")
+            self.custom_card_corner_style_changed.emit()
 
     def _save_boolean_settings(self):
         for widget, section_name, setting in self._get_boolean_check_settings_widgets():
