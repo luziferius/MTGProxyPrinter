@@ -599,7 +599,6 @@ class PageScene(QGraphicsScene):
                 self.removeItem(current_item)
         # Editing the Image column only happens when the custom card corner style was toggled.
         elif top_left.column() == PageColumns.Image:
-
             for row in range(top_left.row(), bottom_right.row()+1):
                 index = top_left.siblingAtRow(row)
                 logger.debug(f"Update pixmap for custom card on {row=} on the current page")
@@ -718,7 +717,7 @@ class PageScene(QGraphicsScene):
         index_row = item.index.row()
         cards_on_page = self.document.rowCount(self.selected_page)
         return NeighborsPresent(
-            # Cards in all rows except the top row have cards above them
+            # There is a card above, iff the card's row > 1, i.e. there are at least column_count cards before it
             index_row >= self.column_count,
             # There is a card below, iff there are at least column_count more cards on the page
             index_row + self.column_count < cards_on_page,
