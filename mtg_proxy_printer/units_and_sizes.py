@@ -110,6 +110,7 @@ class UUID(str):
 class CardSize(NamedTuple):
     width: Quantity
     height: Quantity
+    # TODO: Add corner radius
 
     def as_qsize_px(self):
         return QSize(round(self.width.magnitude), round(self.height.magnitude))

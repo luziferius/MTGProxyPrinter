@@ -73,7 +73,7 @@ mm: Quantity = unit_registry.mm
 class PageMetadata(typing.NamedTuple):
     text: str
     icon_name: OptStr
-    tooltip: OptStr = None
+    tooltip: OptStr
 
 class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
@@ -290,8 +290,10 @@ class DecklistImportSettingsPage(Page):
 
 class GeneralSettingsPage(Page):
 
+    custom_card_corner_style_changed = Signal()
+
     def display_metadata(self) -> PageMetadata:
-        return PageMetadata(self.tr("General settings"), "configure")
+        return PageMetadata(self.tr("General settings"), "configure", None)
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -360,6 +362,7 @@ class GeneralSettingsPage(Page):
             (ui.automatically_add_opposing_faces, "cards", "automatically-add-opposing-faces"),
             (ui.gui_open_maximized, "gui", "gui-open-maximized"),
             (ui.wizards_open_maximized, "gui", "wizards-open-maximized"),
+            (ui.custom_cards_force_round_corners, "cards", "custom-cards-force-round-corners"),
         ]
         return widgets_with_settings
 
@@ -371,10 +374,16 @@ class GeneralSettingsPage(Page):
             return languages.index("en")
 
     def save(self):
+        corner_style_changed = \
+            self.ui.custom_cards_force_round_corners.isChecked() \
+            != mtg_proxy_printer.settings.settings["cards"].getboolean("custom-cards-force-round-corners")
         self._save_boolean_settings()
         self._save_look_and_feel_settings()
         self._save_cards_settings()
         self._save_path_settings()
+        if corner_style_changed:
+            logger.info("Custom card corner rounding style changed. Notifying the renderer to update the current view")
+            self.custom_card_corner_style_changed.emit()
 
     def _save_boolean_settings(self):
         for widget, section_name, setting in self._get_boolean_check_settings_widgets():

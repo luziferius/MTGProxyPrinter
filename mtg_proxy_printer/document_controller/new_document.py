@@ -39,6 +39,7 @@ class ActionNewDocument(DocumentAction):
     COMPARISON_ATTRIBUTES = ["old_save_path", "remove_pages_action", "reset_settings_action"]
 
     def __init__(self):
+        super().__init__()
         self.old_save_path: Path | None = None
         self.remove_pages_action: ActionRemovePage | None = None
         self.reset_settings_action: ActionEditDocumentSettings | None = None
@@ -66,4 +67,4 @@ class ActionNewDocument(DocumentAction):
 
     @property
     def as_str(self):
-        return self.translate("ActionNewDocument", "Create new document", "Undo/redo tooltip text")
+        return self.tr("Create new document", "Undo/redo tooltip text")

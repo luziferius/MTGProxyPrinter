@@ -168,6 +168,20 @@ class Document(QAbstractItemModel):
         self.currently_edited_page = self.pages[new_page.row()]
         self.current_page_changed.emit(QPersistentModelIndex(new_page))
 
+    @Slot()
+    def on_custom_card_corner_style_changed(self):
+        logger.info("Custom card corner style toggled. Resetting custom card pixmaps.")
+        column = PageColumns.Image
+        roles = [ItemDataRole.DisplayRole]
+        for page_row, page in enumerate(self.pages):
+            page_index = self.index(page_row, DocumentColumns.Page)
+            for card_row, container in enumerate(page):
+                card = container.card
+                if card.is_custom_card:
+                    del card.image_file  # Rebuild the pixmap the next time it is accessed.
+                    card_index = self.index(card_row, column, page_index)
+                    self.dataChanged.emit(card_index, card_index, roles)
+
     def headerData(
             self, section: int | PageColumns,
             orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:

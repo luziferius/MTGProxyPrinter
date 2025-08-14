@@ -5,6 +5,11 @@
 # New features
 
 - Reorder pages: It is now possible to re-order pages via drag&drop or via the two new buttons below the page list.
+- Add option to enforce rounded corners for imported custom cards. Enabled by default, but can be disabled in the settings.
+
+# Changed features
+
+- DFC placeholder cards are now generated with the proper corner radius.
 
 # Version 0.33.2 (2025-08-05)  <a name="v0_33_2"></a>
 

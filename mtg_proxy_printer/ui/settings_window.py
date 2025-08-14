@@ -78,6 +78,7 @@ class SettingsWindow(QDialog):
     saved = Signal()
     preferred_language_changed = Signal(str)
     document_settings_updated = Signal(DocumentAction)
+    custom_card_corner_style_changed = Signal()
     error_occurred = Signal(str)
     requested_card_download = Signal(pathlib.Path)
     long_running_process_begins = Signal(int, str)
@@ -90,6 +91,7 @@ class SettingsWindow(QDialog):
         self.document = document
         self.ui = ui = Ui_SettingsWindow()
         ui.setupUi(self)
+        ui.general_settings_page.custom_card_corner_style_changed.connect(self.custom_card_corner_style_changed)
         ui.debug_settings_page.requested_card_download.connect(self.requested_card_download)
         self.pages_model = self._setup_pages_model(ui)
         ui.general_settings_page.set_language_model(language_model)

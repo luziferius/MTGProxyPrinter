@@ -13,16 +13,14 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
 import functools
 import itertools
 import math
 import typing
 
-from ..model.card import Card, AnyCardType
-
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.card import Card, AnyCardType
 from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.natsort import to_list_of_ranges
 from ._interface import DocumentAction, IllegalStateError, Self, split_iterable
@@ -47,6 +45,7 @@ class ActionAddCard(DocumentAction):
     COMPARISON_ATTRIBUTES = ["card", "count", "added_new_pages", "added_cards_to_existing_pages"]
 
     def __init__(self, card: AnyCardType, count: int = 1, *, target_page: int = None):
+        super().__init__()
         self.target_page = target_page
         self.card = card
         self.count = count
@@ -158,8 +157,8 @@ class ActionAddCard(DocumentAction):
             # Human-readable representation: pages are comma-separated,
             # with consecutive values collapsed into hyphen-separated ranges like lower-upper
             target = ", ".join(itertools.starmap(self._format_number_range, page_ranges))
-        return self.translate(
-            "ActionAddCard", "Add {count} × {card_display_string} to page {target}",
+        return self.tr(
+            "Add {count} × {card_display_string} to page {target}",
             "Undo/redo tooltip text. Plural form refers to {target}, not {count}. "
             "{target} can be multiple ranges of multiple pages each", n
         ).format(count=self.count, card_display_string=self.card.display_string(), target=target)
@@ -176,6 +175,7 @@ class ActionRemoveCards(DocumentAction):
     def __init__(self, cards_to_remove: typing.Sequence[int], page_number: int = None):
         if not cards_to_remove:
             raise ValueError("Parameter cards_to_remove must not be empty")
+        super().__init__()
         # The source of the input row sequence is a Qt multi-selection, which is unordered.
         # The individual selections are ordered, but the selection groups are not. To not break the algorithm,
         # if the user selects cards from bottom to top, the rows have to be sorted.
@@ -216,7 +216,7 @@ class ActionRemoveCards(DocumentAction):
     def as_str(self):
         card_count = sum(upper-lower+1 for lower, upper in self.card_ranges_to_remove)
         page_number = self.page_number+1
-        return self.translate(
-            "ActionRemoveCards", "Remove %n card(s) from page {page_number}",
+        return self.tr(
+            "Remove %n card(s) from page {page_number}",
             "Undo/redo tooltip text", card_count
         ).format(page_number=page_number)

@@ -17,7 +17,7 @@
 import functools
 import typing
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QCoreApplication
 
 from ..model.card import Card
 
@@ -44,6 +44,7 @@ class ActionReplaceCard(DocumentAction):
     COMPARISON_ATTRIBUTES = ["card", "old_card", "page", "slot"]
 
     def __init__(self, new_card: Card, page: int, slot: int):
+        super().__init__()
         self.card = new_card
         self.old_card: Card | None = None
         # The new card may have a different size than the old one. Most likely when the commander card of old
@@ -96,7 +97,7 @@ class ActionReplaceCard(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
-        return self.translate(
-            "ActionReplaceCard", "Replace card {old_card} on page {page_number} with {new_card}",
+        return self.tr(
+            "Replace card {old_card} on page {page_number} with {new_card}",
             "Undo/redo tooltip text"
         ).format(old_card=self.old_card.display_string(), page_number=self.page+1, new_card=self.card.display_string())

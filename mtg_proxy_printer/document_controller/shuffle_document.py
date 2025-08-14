@@ -13,12 +13,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
 from random import Random, randbytes
 
-import typing
-
-from PySide6.QtCore import Qt, QModelIndex
+from PySide6.QtCore import Qt, QModelIndex, QCoreApplication
 
 from ._interface import DocumentAction, IllegalStateError, Self
 from ..model.card import Card
@@ -94,7 +91,7 @@ class ActionShuffleDocument(DocumentAction):
 
     @property
     def as_str(self):
-        return self.translate(
-            "ActionShuffleDocument", "Shuffle document",
+        return self.tr(
+            "Shuffle document",
             "Undo/redo tooltip text"
         )

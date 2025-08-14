@@ -40,6 +40,7 @@ class ActionImportDeckList(DocumentAction):
     COMPARISON_ATTRIBUTES = ["cards", "clear_document", "actions"]
 
     def __init__(self, cards: "CardCounter", clear_document: bool):
+        super().__init__()
         self.cards = cards
         self.clear_document = clear_document
         self.actions: ActionList = []
@@ -74,12 +75,10 @@ class ActionImportDeckList(DocumentAction):
     def as_str(self):
         count = self.card_count()
         if self.clear_document:
-            return self.translate(
-                "ActionImportDeckList",
+            return self.tr(
                 "Replace document with imported deck list containing %n card(s)",
                 "Undo/redo tooltip text. Option to delete the current document enabled.", count)
         else:
-            return self.translate(
-                "ActionImportDeckList",
+            return self.tr(
                 "Import a deck list containing %n card(s)",
                 "Undo/redo tooltip text. Option to delete the current document disabled.", count)
