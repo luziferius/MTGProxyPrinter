@@ -17,7 +17,7 @@
 import functools
 import typing
 
-from PySide6.QtCore import Qt, QCoreApplication
+from PySide6.QtCore import Qt
 
 from ..model.card import Card
 
