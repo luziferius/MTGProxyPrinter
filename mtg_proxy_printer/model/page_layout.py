@@ -44,6 +44,9 @@ def _is_quantity_setting(pair: tuple[str, typing.Any]):
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
     card_bleed: Quantity = 0 * unit_registry.mm
+    cut_marker_color: QColor = QColorConstants.Black
+    cut_marker_style = None
+    cut_marker_width: Quantity = 0 * unit_registry.point
     document_name: str = ""
     draw_cut_markers: bool = False
     draw_page_numbers: bool = False
