@@ -86,6 +86,7 @@ CREATE VIEW AllPrintings AS
 COMMIT;
 """
 
+
 @pytest.fixture()
 def old_db(tmp_path: pathlib.Path) -> pathlib.Path:
     target_path = tmp_path/"CardDatabase.sqlite3"

@@ -36,6 +36,7 @@ __all__ = [
     "PageLayoutSettings",
 ]
 
+
 def _is_quantity_setting(pair: tuple[str, typing.Any]):
     return isinstance(pair[1], Quantity)
 
@@ -44,11 +45,10 @@ def _is_quantity_setting(pair: tuple[str, typing.Any]):
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
     card_bleed: Quantity = 0 * unit_registry.mm
-    cut_marker_color: QColor = QColorConstants.Black
-    cut_marker_style = None
+    cut_marker_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Black)
+    cut_marker_style: str = ""  # TODO
     cut_marker_width: Quantity = 0 * unit_registry.point
     document_name: str = ""
-    draw_cut_markers: bool = False
     draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
     row_spacing: Quantity = 0 * unit_registry.mm
@@ -67,6 +67,11 @@ class PageLayoutSettings:
     watermark_pos_x: Quantity = 0 * unit_registry.mm
     watermark_pos_y: Quantity = 0 * unit_registry.mm
     watermark_text: str = ""
+
+    @property
+    def draw_cut_markers(self) -> bool:
+        # FIXME: Deprecated alias and temporary compatibility hack for a removed boolean attribute
+        return self.cut_marker_style == "Solid"
 
     @property
     def page_height(self) -> Quantity:
@@ -101,8 +106,10 @@ class PageLayoutSettings:
         document_settings = settings["documents"]
         return cls(
             document_settings.get_quantity("card-bleed"),
+            document_settings.get_color("cut-marker-color"),
+            document_settings["cut-marker-style"],
+            document_settings.get_quantity("cut-marker-width"),
             document_settings["default-document-name"],
-            document_settings.getboolean("print-cut-marker"),
             document_settings.getboolean("print-page-numbers"),
             document_settings.getboolean("print-sharp-corners"),
             document_settings.get_quantity("row-spacing"),

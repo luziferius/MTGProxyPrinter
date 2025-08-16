@@ -101,7 +101,7 @@ class PageConfigWidget(QGroupBox):
         ui.watermark_opacity.valueChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
         ui.watermark_color_button.clicked.connect(self._on_watermark_color_button_clicked)
 
-        ui.cut_marker_color_button.clicked.conneect(self._on_cut_marker_color_button_clicked)
+        ui.cut_marker_color_button.clicked.connect(self._on_cut_marker_color_button_clicked)
         ui.cut_marker_opacity.valueChanged.connect(self._on_cut_marker_color_opacity_changed)
         ui.cut_marker_opacity.valueChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
