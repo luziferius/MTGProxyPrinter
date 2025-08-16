@@ -50,6 +50,7 @@ class ActionMoveCards(DocumentAction):
         :param target_row: If given, the cards_to_move are inserted at that array index (0-indexed).
                            Existing cards in the target page at that index are pushed back.
         """
+        super().__init__()
         self.source_page = source
         self.target_page = target_page
         self.target_row = target_row
@@ -137,7 +138,7 @@ class ActionMoveCards(DocumentAction):
         source_page = self.source_page+1
         target_page = self.target_page+1
         count = sum(upper-lower+1 for lower, upper in self.card_ranges_to_move)
-        return self.translate(
-            "ActionMoveCards", "Move %n card(s) from page {source_page} to {target_page}",
+        return self.tr(
+            "Move %n card(s) from page {source_page} to {target_page}",
             "Undo/redo tooltip text", count
         ).format(source_page=source_page, target_page=target_page)

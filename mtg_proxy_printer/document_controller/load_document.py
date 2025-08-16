@@ -24,8 +24,7 @@ if typing.TYPE_CHECKING:
 
 from mtg_proxy_printer.model.card import CardList
 from ._interface import DocumentAction, IllegalStateError, ActionList, Self
-from .page_actions import ActionNewPage
-from .card_actions import ActionAddCard
+from .page_actions import ActionNewPage, ActionRemovePage
 from .new_document import ActionNewDocument
 from .edit_document_settings import ActionEditDocumentSettings
 
@@ -42,6 +41,7 @@ class ActionLoadDocument(DocumentAction):
     COMPARISON_ATTRIBUTES = ["save_path", "loaded_cards", "page_layout"]
 
     def __init__(self, save_path: pathlib.Path, loaded_cards: list[CardList], page_layout: "PageLayoutSettings"):
+        super().__init__()
         self.save_path = save_path
         self.page_layout = page_layout
         self.actions: ActionList = []
@@ -55,28 +55,9 @@ class ActionLoadDocument(DocumentAction):
         document.set_currently_edited_page(document.pages[0])
         document.save_file_path = self.save_path
         if self.loaded_cards:
-            for copies, card in self._batch_page_content(self.loaded_cards[0]):
-                self.actions.append(ActionAddCard(card, copies).apply(document))
-            if page_count := len(self.loaded_cards)-1:
-                self.actions.append(ActionNewPage(count=page_count, content=self.loaded_cards[1:]).apply(document))
+            self.actions.append(ActionNewPage(count=len(self.loaded_cards), content=self.loaded_cards).apply(document))
+            self.actions.append(ActionRemovePage(0).apply(document))
         return super().apply(document)
-
-    @staticmethod
-    def _batch_page_content(cards: CardList):
-        if not cards:
-            return
-        cards.append(object())  # sentinel, will not be returned
-        count, last = 0, cards[0]
-        for card in cards:
-            if card == last:
-                count += 1
-            else:
-                yield count, last
-                count, last = 0, card
-        if count:
-            yield count, last
-
-
 
     def undo(self, document: "Document") -> Self:
         for action in reversed(self.actions):
@@ -88,12 +69,11 @@ class ActionLoadDocument(DocumentAction):
     def as_str(self):
         page_count = len(self.loaded_cards)
         card_count = sum(map(len, self.loaded_cards))
-        cards_total = self.translate(
-            "ActionLoadDocument. Card total", "with %n card(s) total",
+        cards_total = self.tr(
+            "with %n card(s) total",
             "Undo/redo tooltip text. Will be inserted as {cards_total}", card_count
         )
-        return self.translate(
-            "ActionLoadDocument",
+        return self.tr(
             "Load document from '{save_path}',\ncontaining %n page(s) {cards_total}",
             "Undo/redo tooltip text.", page_count
         ).format(save_path=self.save_path, cards_total=cards_total)

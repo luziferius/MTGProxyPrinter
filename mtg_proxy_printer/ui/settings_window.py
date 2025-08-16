@@ -78,6 +78,7 @@ class SettingsWindow(QDialog):
     saved = Signal()
     preferred_language_changed = Signal(str)
     document_settings_updated = Signal(DocumentAction)
+    custom_card_corner_style_changed = Signal()
 
     def __init__(self, language_model: QStringListModel, document: Document, parent: QWidget = None):
         super().__init__(parent)
@@ -85,6 +86,7 @@ class SettingsWindow(QDialog):
         self.document = document
         self.ui = ui = Ui_SettingsWindow()
         ui.setupUi(self)
+        ui.general_settings_page.custom_card_corner_style_changed.connect(self.custom_card_corner_style_changed)
         self.pages_model = self._setup_pages_model(ui)
         ui.general_settings_page.set_language_model(language_model)
         ui.default_document_layout_page.ui.page_config_preview_area.hide()
@@ -177,7 +179,7 @@ class SettingsWindow(QDialog):
         ui.page_selection_list_view.setHidden(is_narrow)
         ui.page_selection_combo_box.setVisible(is_narrow)
 
-    def _get_pages(self) -> typing.Sequence[Page]:
+    def _get_pages(self) -> list[Page]:
         ui = self.ui
         return [ui.stacked_pages.widget(index) for index in range(ui.stacked_pages.count())]
 

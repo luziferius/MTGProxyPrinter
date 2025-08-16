@@ -21,6 +21,7 @@ import re
 import typing
 import tokenize
 from collections import defaultdict
+from typing import Callable
 
 from pint import DimensionalityError, Quantity, Unit
 from PySide6.QtCore import QStandardPaths, QLocale
@@ -51,8 +52,9 @@ __all__ = [
 
 
 Letter = QPageSize.PageSizeId.Letter
+_default_size: Callable[[], PageSizeId] = lambda: PageSizeId.A4
 # https://www.unicode.org/cldr/charts/47/supplemental/territory_information.html
-LOCATION_PAPER_SIZE_TABLE: defaultdict[Territory, PageSizeId] = defaultdict(lambda: PageSizeId.A4, {
+LOCATION_PAPER_SIZE_TABLE: defaultdict[Territory, PageSizeId] = defaultdict(_default_size, {
     Territory.Belize: Letter,
     Territory.Canada: Letter,
     Territory.Chile: Letter,
@@ -135,6 +137,7 @@ VERSION_CHECK_RE = re.compile(
 DEFAULT_SETTINGS["cards"] = {
     "preferred-language": "en",
     "automatically-add-opposing-faces": "True",
+    "custom-cards-force-round-corners": "True",
 }
 DEFAULT_SETTINGS["card-filter"] = {
     "hide-cards-depicting-racism": "True",
@@ -362,7 +365,7 @@ def _validate_card_filter_section(to_validate: ConfigParser, section_name: str =
 def _validate_images_section(to_validate: ConfigParser, section_name: str = "cards"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
-    for key in ("automatically-add-opposing-faces",):
+    for key in ("automatically-add-opposing-faces", "custom-cards-force-round-corners",):
         _validate_boolean(section, defaults, key)
     language = section["preferred-language"]
     if not re.fullmatch(r"[a-z]{2}", language):

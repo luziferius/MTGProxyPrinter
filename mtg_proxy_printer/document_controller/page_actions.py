@@ -51,6 +51,7 @@ class ActionNewPage(DocumentAction):
     def __init__(self, position: int = None, *, count: int = 1, content: ContentType = None):
         if count <= 0:
             raise ValueError(f"Invalid page count given: {count}")
+        super().__init__()
         self.position = position
         self.count = count
         self.content: ContentType = content or [[]] * count
@@ -79,8 +80,8 @@ class ActionNewPage(DocumentAction):
         pages = self._format_number_range(self.position+1, self.position+count)
         # Implementation note: pylupdate5 does not support passing object attributes as parameters.
         # Passing "self.count", instead of "count" breaks the string extraction.
-        result = self.translate(
-            "ActionNewPage", "Add page(s) {pages}",
+        result = self.tr(
+            "Add page(s) {pages}",
             "Undo/redo tooltip text. Translations should drop the %n placeholder", count
         ).format(pages=pages)
         return result
@@ -102,6 +103,7 @@ class ActionRemovePage(DocumentAction):
     COMPARISON_ATTRIBUTES = ["position", "count", "removed_all_pages", "currently_edited_page", "removed_pages"]
 
     def __init__(self, position: int = None, count: int = 1):
+        super().__init__()
         self.position = position
         self.count = count
         self.removed_pages: list[Page] = []
@@ -179,14 +181,14 @@ class ActionRemovePage(DocumentAction):
         cards_removed = sum(map(len, self.removed_pages))
         count = self.count
         formatted_pages = self._format_number_range(self.position+1, self.position+count)
-        formatted_card_count = self.translate(
-            "ActionRemovePage", "%n card(s) total",
+        formatted_card_count = self.tr(
+            "%n card(s) total",
             "Undo/redo tooltip text. The total number of cards removed. Used as {formatted_card_count}", cards_removed
         )
         # Implementation note: pylupdate5 does not support passing object attributes as parameters.
         # Passing "self.count", instead of "count" breaks the string extraction.
-        result = self.translate(
-            "ActionRemovePage", "Remove page(s) {formatted_pages} containing {formatted_card_count}",
+        result = self.tr(
+            "Remove page(s) {formatted_pages} containing {formatted_card_count}",
             "Undo/redo tooltip text", count
         ).format(formatted_pages=formatted_pages, formatted_card_count=formatted_card_count)
         return result

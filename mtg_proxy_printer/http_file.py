@@ -121,7 +121,7 @@ class MeteredSeekableHTTPFile(QObject):
         elif whence == 1:  # Relative to the current position
             pass
         elif whence == 2:  # Relative to the file end
-            self._pos = self.content_length - 1
+            self._pos = self.content_length
         self._pos += offset
         if self._pos != old_pos:
             # Ignore the seek() call, if seeking distance is zero.

@@ -20,7 +20,7 @@ import itertools
 import operator
 from typing import Self, TypeVar, TYPE_CHECKING, Iterable
 
-from PySide6.QtCore import QCoreApplication
+from PySide6.QtCore import QObject
 
 if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -46,11 +46,10 @@ class IllegalStateError(RuntimeError):
     pass
 
 
-class DocumentAction:
+class DocumentAction(QObject):
     """Base class for modifying Document instances via the Command pattern."""
 
     COMPARISON_ATTRIBUTES: list[str] = []  # Defines which attributes have to be compared in __eq__()
-    translate = QCoreApplication.translate
 
     @abstractmethod
     def apply(self, document: "Document") -> Self:
@@ -96,8 +95,8 @@ class DocumentAction:
         """
         if first == last:
             return str(first)
-        return self.translate(
-            "DocumentAction", "{first}-{last}", "Inclusive, formatted number range, from first to last")
+        return self.tr(
+            "{first}-{last}", "Inclusive, formatted number range, from first to last")
 
 
 ActionList = list[DocumentAction]

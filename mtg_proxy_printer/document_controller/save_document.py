@@ -18,6 +18,8 @@ import sqlite3
 from pathlib import Path
 import typing
 
+from PySide6.QtCore import QCoreApplication
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 
@@ -166,6 +168,6 @@ class ActionSaveDocument(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
-        return self.translate(
-            "ActionSaveDocument", "Save document to '{save_file_path}'."
+        return self.tr(
+            "Save document to '{save_file_path}'."
         ).format(save_file_path=self.file_path)

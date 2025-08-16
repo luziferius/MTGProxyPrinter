@@ -20,14 +20,36 @@ import functools
 from typing import Union
 
 from PySide6.QtCore import QRect, QPoint, QSize, Qt, QPointF
-from PySide6.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform
+from PySide6.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform, QImage
 
+from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import CardSize, PageType, CardSizes, UUID
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 ItemDataRole = Qt.ItemDataRole
 RenderHint = QPainter.RenderHint
 SmoothTransformation = Qt.TransformationMode.SmoothTransformation
 IgnoreAspectRatio = Qt.AspectRatioMode.IgnoreAspectRatio
+
+
+def _create_corner_mask(size: QSize, corner_radius: int):
+    image = QImage(size, QImage.Format.Format_Alpha8)
+    image.fill(QColorConstants.Transparent)
+    painter = QPainter(image)
+    painter.setRenderHint(RenderHint.Antialiasing)
+    painter.setPen(QColorConstants.Transparent)
+    painter.setBrush(QColorConstants.Black)
+    painter.drawRoundedRect(image.rect(), corner_radius, corner_radius)
+    painter.end()
+    return image
+
+
+CORNER_MASKS = {
+    CardSizes.REGULAR.as_qsize_px(): _create_corner_mask(CardSizes.REGULAR.as_qsize_px(), 32),
+    CardSizes.OVERSIZED.as_qsize_px(): _create_corner_mask(CardSizes.OVERSIZED.as_qsize_px(), 50),
+}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -61,6 +83,31 @@ class CardCorner(enum.Enum):
     BOTTOM_LEFT = (15/745, 1-25/1040)
     BOTTOM_RIGHT = (1-25/745, 1-25/1040)
 
+
+def post_process_image(image: QImage, size: CardSize):
+    if image.size() != (expected_size := size.as_qsize_px()):
+        logger.info(f"Got image with a non-standard size. Scaling to {size}")
+        image = image.scaled(expected_size, IgnoreAspectRatio, SmoothTransformation)
+    if settings["cards"].getboolean("custom-cards-force-round-corners"):
+        logger.info("Custom card corners not fully transparent. Masking round corners")
+        round_off_corners(image)
+    return image
+
+
+def round_off_corners(source: QImage):
+    size = source.size()
+    alpha_channel = CORNER_MASKS[size]
+    # FIXME
+    """  # This seems to not work
+    if source.hasAlphaChannel():
+        alpha_channel = alpha_channel.copy()
+        painter = QPainter(alpha_channel)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
+        painter.drawImage(0, 0, source.createAlphaMask())
+        painter.end()
+    """
+    source.setAlphaChannel(alpha_channel)
 
 @dataclasses.dataclass(unsafe_hash=True)
 class Card:
@@ -171,11 +218,9 @@ class CustomCard:
 
     @functools.cached_property
     def image_file(self) -> QPixmap:
-        source = QPixmap()
-        source.loadFromData(self.source_image_file)
-        target_size = self.size.as_qsize_px()
-        return source if source.size() == target_size else source.scaled(
-            target_size, IgnoreAspectRatio, SmoothTransformation)
+        source = QImage.fromData(self.source_image_file)
+        source = post_process_image(source, self.size)
+        return QPixmap(source)
 
     @functools.cached_property
     def scryfall_id(self) -> UUID:
@@ -263,8 +308,8 @@ class CheckCard:
         # The scaled cards get a bit compressed horizontally.
         vertical_scaling_factor = card_size.width() / card_size.height()
         horizontal_scaling_factor = card_size.height() / (2 * card_size.width())
-        combined_image = QPixmap(card_size)
-        combined_image.fill(QColorConstants.Transparent)
+        combined_image = QImage(card_size, QImage.Format.Format_RGB888)
+        combined_image.fill(QColorConstants.Black)
         painter = QPainter(combined_image)
         painter.setRenderHints(RenderHint.SmoothPixmapTransform)
         transformation = QTransform()
@@ -273,8 +318,9 @@ class CheckCard:
         painter.setTransform(transformation)
         painter.drawPixmap(QPointF(card_size.width(), -card_size.height()), self.back.image_file)
         painter.drawPixmap(QPointF(0, -card_size.height()), self.front.image_file)
-
-        return combined_image
+        painter.end()
+        round_off_corners(combined_image)
+        return QPixmap(combined_image)
 
     def requested_page_type(self) -> PageType:
         return self.front.requested_page_type()

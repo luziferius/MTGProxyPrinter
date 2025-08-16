@@ -119,9 +119,9 @@ def test_seek_raises_error_if_connection_is_not_seekable(http_file: MeteredSeeka
     (1, 1, 10, 11),
     (-1, 1, 10, 9),
 
-    (0, 2, 10, 99),
-    (-1, 2, 10, 98),
-    (0, 2, 99, 99),
+    (0, 2, 10, 100),
+    (-1, 2, 10, 99),
+    (0, 2, 99, 100),
 ])
 def test_seek_moves_to_expected_position(
         http_file: MeteredSeekableHTTPFile,  offset: int, whence: int, start_pos: int, expected: int):

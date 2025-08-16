@@ -23,8 +23,9 @@ import sys
 from typing import Counter, Iterable, Any, Generator
 
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
-    QPersistentModelIndex
+    QPersistentModelIndex, QMimeData
 
+from mtg_proxy_printer.document_controller.move_page import ActionMovePage
 from mtg_proxy_printer.model.imagedb_files import ImageKey
 from mtg_proxy_printer.natsort import to_list_of_ranges
 from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCustomCard
@@ -39,6 +40,8 @@ from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
+
+PAGE_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-PageMove"
 
 logger = get_logger(__name__)
 del get_logger
@@ -160,6 +163,20 @@ class Document(QAbstractItemModel):
         self.currently_edited_page = self.pages[new_page.row()]
         self.current_page_changed.emit(QPersistentModelIndex(new_page))
 
+    @Slot()
+    def on_custom_card_corner_style_changed(self):
+        logger.info("Custom card corner style toggled. Resetting custom card pixmaps.")
+        column = PageColumns.Image
+        roles = [ItemDataRole.DisplayRole]
+        for page_row, page in enumerate(self.pages):
+            page_index = self.index(page_row, DocumentColumns.Page)
+            for card_row, container in enumerate(page):
+                card = container.card
+                if card.is_custom_card:
+                    del card.image_file  # Rebuild the pixmap the next time it is accessed.
+                    card_index = self.index(card_row, column, page_index)
+                    self.dataChanged.emit(card_index, card_index, roles)
+
     def headerData(
             self, section: int | PageColumns,
             orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
@@ -201,11 +218,14 @@ class Document(QAbstractItemModel):
         return INVALID_INDEX  # Pages have no parent
 
     def index(self, row: int, column: int, parent: AnyIndex = INVALID_INDEX) -> QModelIndex:
-        data = self._to_index(parent).internalPointer()
+        data: Page | None = self._to_index(parent).internalPointer()
         if isinstance(data, Page):
             card_container = data[row]
             return self.createIndex(row, column, card_container)
         else:
+            if row == len(self.pages):
+                # Dropping data onto the last
+                return INVALID_INDEX
             page = self.pages[row]
             return self.createIndex(row, column, page)
 
@@ -224,6 +244,10 @@ class Document(QAbstractItemModel):
         flags = super().flags(index)
         if isinstance(data, CardContainer) and (index.column() in self.EDITABLE_COLUMNS or data.card.is_custom_card):
             flags |= ItemFlag.ItemIsEditable
+        if isinstance(data, Page):
+            flags |= ItemFlag.ItemIsDragEnabled  # Pages can be moved
+        if not index.isValid():
+            flags |= ItemFlag.ItemIsDropEnabled  # Only the root can accept drops to not overwrite items
         return flags
 
     def setData(self, index: AnyIndex, value: Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
@@ -254,6 +278,35 @@ class Document(QAbstractItemModel):
                 return False
             return self._request_replacement_card(index, card_data)
         return False
+
+    def mimeData(self, indexes: list[QModelIndex], /) -> QMimeData:
+        """Supports encoding the row of a singular QModelIndex as QMimeData. Used for moving Pages via drag&drop."""
+        if len(indexes) != 1:
+            return QMimeData()
+        row = indexes[0].row()
+        logger.debug(f"Initiating drag for page {row}")
+        mime_data = QMimeData()
+        mime_data.setData(PAGE_MOVE_MIME_TYPE, row.to_bytes(8))
+        return mime_data
+
+    def dropMimeData(
+            self, data: QMimeData, action: Qt.DropAction,
+            row: int, column: PageColumns | DocumentColumns, parent: QModelIndex, /):
+        """Supports dropping pages moved via drag&drop. Only Page moves supported at the moment."""
+        if data.hasFormat(PAGE_MOVE_MIME_TYPE):
+            logger.debug(f"Received page drop onto {row=}")
+            if row == -1:  # Drop onto empty space or after last entry. Append in this case
+                row = self.rowCount()
+            source_row = int.from_bytes(data.data(PAGE_MOVE_MIME_TYPE).data())
+            self.apply(ActionMovePage(source_row, row))
+        return False  # Move complete, so signal via False that the caller does not have to remove the source rows
+
+    def supportedDropActions(self, /) -> Qt.DropAction:
+        return Qt.DropAction.MoveAction
+
+    def mimeTypes(self, /) -> list[str]:
+        """Supported mime types. Currently only supporting Page moves"""
+        return [PAGE_MOVE_MIME_TYPE]
 
     @staticmethod
     def _to_index(other: QPersistentModelIndex | QModelIndex) -> QModelIndex:

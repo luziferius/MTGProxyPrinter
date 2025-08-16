@@ -2,11 +2,26 @@
 
 # Next version (in development)
 
-## Changed features
+# New features
 
+- Reorder pages: It is now possible to re-order pages via drag&drop or via the two new buttons below the page list.
+- Add option to enforce rounded corners for imported custom cards. Enabled by default, but can be disabled in the settings.
+
+# Changed features
+
+- DFC placeholder cards are now generated with the proper corner radius.
 - Reworked handling of background tasks
   - Progress reporting of background tasks no longer breaks, when more than one task runs
   - Some tasks, like the card data update, can be canceled. These show a cancel button next to the progress bar 
+
+
+
+# Version 0.33.2 (2025-08-05)  <a name="v0_33_2"></a>
+
+## Fixed issues
+
+- Fixed loading documents:
+  - Fixed bug in the document loader that caused the app to drop one copy of each but the first card on the first page.
 
 # Version 0.33.1 (2025-07-25)  <a name="v0_33_1"></a>
 

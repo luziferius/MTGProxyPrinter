@@ -173,6 +173,7 @@ class Application(QApplication):
         settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             language_model, document, main_window)
         settings_window.request_run_async_task.connect(self.run_async_task)
+        settings_window.custom_card_corner_style_changed.connect(document.on_custom_card_corner_style_changed)
         settings_window.document_settings_updated.connect(document.apply)
         settings_window.preferred_language_changed.connect(
             main_window.ui.central_widget.ui.add_card_widget.on_settings_preferred_language_changed)

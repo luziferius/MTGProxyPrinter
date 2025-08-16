@@ -26,8 +26,8 @@ import threading
 from typing import Iterable, TYPE_CHECKING, Callable
 import urllib.error
 
-from PySide6.QtCore import QObject, Signal, Slot, QModelIndex, Qt, QTimer
-from PySide6.QtGui import QPixmap, QColorConstants
+from PySide6.QtCore import QObject, Signal, Slot, QModelIndex, Qt, QTimer, QSize, QPoint
+from PySide6.QtGui import QPixmap, QColorConstants, QImage, QPainter
 
 if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -42,7 +42,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
-from .card import Card, CheckCard, AnyCardType
+from .card import Card, CheckCard, AnyCardType, CustomCard
 from mtg_proxy_printer.runner import AsyncTask
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -63,6 +63,17 @@ SingleActions = ActionAddCard | ActionReplaceCard
 IndexList = list[QModelIndex]
 OptionalPixmap = QPixmap | None
 download_semaphore = threading.BoundedSemaphore()
+
+
+def _create_corner_mask(size: QSize, corner_radius: int):
+    image = QImage(size, QImage.Format.Format_RGBA8888)
+    image.fill(QColorConstants.Transparent)
+    painter = QPainter(image)
+    painter.setPen(QColorConstants.Transparent)
+    painter.setBrush(QColorConstants.White)
+    painter.drawRoundedRect(image.rect(),corner_radius, corner_radius)
+    painter.end()
+    return image
 
 
 class InitOnDiskDataTask(AsyncTask):
@@ -113,7 +124,20 @@ class ImageDatabase(QObject):
         self.images_on_disk: set[ImageKey] = set()
         InitOnDiskDataTask(self.images_on_disk, db_path).run()
         self.download_worker = ImageDownloader(self)
+        self._corner_masks = {
+            CardSizes.REGULAR.value: _create_corner_mask(CardSizes.REGULAR.as_qsize_px(), 32),
+            CardSizes.OVERSIZED.value: _create_corner_mask(CardSizes.OVERSIZED.as_qsize_px(), 50),
+        }
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def make_corner_transparent(self, card: Card | CustomCard):
+        if card.image_file is not None and (image := card.image_file.toImage()).pixelColor(QPoint(0, 0)).alpha():
+            painter = QPainter(image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+            painter.drawImage(0, 0, self._corner_masks[card.size])
+            painter.end()
+            pixmap = QPixmap(image)
+            card.set_image_file(pixmap)
 
     @functools.lru_cache()
     def get_blank(self, size: CardSize = CardSizes.REGULAR):
