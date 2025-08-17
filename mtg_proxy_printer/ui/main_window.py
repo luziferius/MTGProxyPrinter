@@ -173,9 +173,18 @@ class MainWindow(QMainWindow):
     @Slot()
     def _update_card_data_from_scryfall(self):
         logger.info("About to update the card data from Scryfall")
-        self.ui.action_download_card_data.setDisabled(True)
+        ui = self.ui
+        ui.action_download_card_data.setDisabled(True)
         data_source = ApiStreamTask()
+        data_source.network_error_occurred.connect(self.on_network_error_occurred)
+        data_source.network_error_occurred.connect(lambda: ui.action_download_card_data.setEnabled(True))
+        data_source.error_occurred.connect(self.on_error_occurred)
+        data_source.error_occurred.connect(lambda: ui.action_download_card_data.setEnabled(True))
+
         import_task = DatabaseImportTask(data_source, carddb_path=self.card_database.db_path)
+        import_task.error_occurred.connect(self.on_error_occurred)
+        import_task.error_occurred.connect(lambda: ui.action_download_card_data.setEnabled(True))
+
         import_task.task_completed.connect(self.card_database.card_data_updated, Qt.ConnectionType.QueuedConnection)
         self.request_run_async_task.emit(data_source)
         self.request_run_async_task.emit(import_task)
@@ -338,21 +347,23 @@ class MainWindow(QMainWindow):
         empty_card = self.document.get_empty_card_for_current_page()
         self.document.apply(ActionAddCard(empty_card))
 
+    @Slot(str)
     def on_network_error_occurred(self, message: str):
         QMessageBox.warning(
             self, self.tr("Network error"),
             self.tr("Operation failed, because a network error occurred.\n"
             "Check your internet connection. Reported error message:\n\n{message}").format(message=message),
             StandardButton.Ok, StandardButton.Ok)
-        self.loading_state_changed.emit(False)
+        self.loading_state_changed.emit(False)  # FIXME: This looks wrong with the new task API. Not all tasks should do this
 
+    @Slot(str)
     def on_error_occurred(self, message: str):
         QMessageBox.critical(
             self, self.tr("Error"),
             self.tr("Operation failed, because an internal error occurred.\n"
             "Reported error message:\n\n{message}").format(message=message),
             StandardButton.Ok, StandardButton.Ok)
-        self.loading_state_changed.emit(False)
+        self.loading_state_changed.emit(False)  # FIXME: This looks wrong with the new task API. Not all tasks should do this
 
     def _ask_user_about_compacting_document(self, action: str) -> StandardButton:
         if savable_pages := self.document.compute_pages_saved_by_compacting():
@@ -476,7 +487,7 @@ class MainWindow(QMainWindow):
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes
         ) == StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
-            self._update_card_data_from_scryfall()
+            self.ui.action_download_card_data.trigger()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.ui.action_download_card_data.setEnabled(True)

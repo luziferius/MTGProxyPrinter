@@ -19,12 +19,13 @@ import functools
 import json
 import os
 import sqlite3
+import typing
 from numbers import Real
 from pathlib import Path
 from typing import Literal, Any, Callable
 from unittest.mock import patch, MagicMock
 
-from pint import Quantity
+from PySide6.QtCore import QObject, Slot
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest import assert_that, is_, empty, contains_inanyorder, has_properties, equal_to, any_of, instance_of, \
     close_to, all_of, greater_than_or_equal_to, less_than_or_equal_to
@@ -32,6 +33,8 @@ from hamcrest.core.description import Description
 from hamcrest.core.matcher import Matcher
 from pytestqt.qtbot import QtBot
 
+from mtg_proxy_printer.card_info_downloader import ApiStreamTask, DatabaseImportTask
+from mtg_proxy_printer.runner import AsyncTask
 import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
@@ -44,6 +47,7 @@ import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import read_resource_text, open_database
 
+T = typing.TypeVar("T")
 
 def _should_skip_network_tests() -> bool:
     result = os.getenv("MTGPROXYPRINTER_RUN_NETWORK_TESTS", "0")
@@ -59,6 +63,31 @@ def _should_skip_network_tests() -> bool:
 SHOULD_SKIP_NETWORK_TESTS = _should_skip_network_tests()
 close_to_: Callable[[Real], Matcher[Real]] = functools.partial(close_to, delta=0.005)
 
+
+class AsyncTaskReceiver(QObject):
+    """Collects tasks received via its slot method"""
+
+    def __init__(self, parent: QObject = None):
+        super().__init__(parent)
+        self.tasks: list[AsyncTask] = []
+
+    @Slot(AsyncTask)
+    def receive_task(self, task: AsyncTask):
+        self.tasks.append(task)
+
+    @property
+    def api_stream_task(self) -> ApiStreamTask | None:
+        return self.find_task(ApiStreamTask)
+
+    @property
+    def database_import_task(self) -> DatabaseImportTask | None:
+        return self.find_task(DatabaseImportTask)
+
+    def find_task(self, class_: type[T]) -> T | None:
+        for task in self.tasks:
+            if isinstance(task, class_):
+                return task
+        return None
 
 def setup_logging_for_testing():
     with patch.dict(
