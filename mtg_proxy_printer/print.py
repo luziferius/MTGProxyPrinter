@@ -85,6 +85,7 @@ class PNGRenderer(AsyncTask):
         number_width = len(str(page_count))
         parent = file_path.parent
         self.task_begins.emit(page_count, self.tr("Export as PNGs"))
+        self.ui_lock_acquire.emit()
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
             output_path = str(parent / file_name)
@@ -98,6 +99,7 @@ class PNGRenderer(AsyncTask):
             scene.on_current_page_changed(page_index)
             scene.render(painter)
             pool.start(partial(self._compress_single_image, image, output_path))
+        self.ui_lock_release.emit()
 
     @with_database_write_lock(PNGEncoderThreadLimit)
     def _compress_single_image(self, image: QImage, output_path: str):

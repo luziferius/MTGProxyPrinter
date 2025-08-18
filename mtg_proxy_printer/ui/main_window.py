@@ -16,7 +16,7 @@
 
 from pathlib import Path
 from functools import partial
-
+from threading import BoundedSemaphore
 
 from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl, Qt
 from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, QDragEnterEvent, QDropEvent
@@ -62,7 +62,7 @@ TransformationMode = Qt.TransformationMode
 StandardButton = QMessageBox.StandardButton
 StandardKey = QKeySequence.StandardKey
 UiElements = list[QWidget | QAction]
-
+UI_LOCK_SEMAPHORE = 0  # Counts
 
 class MainWindow(QMainWindow):
 
@@ -566,3 +566,19 @@ class MainWindow(QMainWindow):
             if acceptable:
                 return path
         return None
+
+    @Slot()
+    def ui_lock_acquire(self):
+        global UI_LOCK_SEMAPHORE
+        if not UI_LOCK_SEMAPHORE:
+            for item in self._get_widgets_and_actions_disabled_in_loading_state():
+                item.setDisabled(True)
+        UI_LOCK_SEMAPHORE += 1
+
+    @Slot()
+    def ui_lock_release(self):
+        global UI_LOCK_SEMAPHORE
+        UI_LOCK_SEMAPHORE = max(0, UI_LOCK_SEMAPHORE-1)
+        if not UI_LOCK_SEMAPHORE:
+            for item in self._get_widgets_and_actions_disabled_in_loading_state():
+                item.setEnabled(True)

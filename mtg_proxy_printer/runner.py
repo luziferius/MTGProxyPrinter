@@ -80,6 +80,8 @@ class AsyncTask(QObject):
     error_occurred = Signal(str)  # A general error occurred. The signal carries the error description for display
     network_error_occurred = Signal(str)  # A network error occurred. Only applicable for network-facing tasks
     task_deleted = Signal()  # Task gone for good. Progress bars can be deleted from the UI
+    ui_lock_acquire = Signal()  # Task enters a critical section during which the document must be immutable
+    ui_lock_release = Signal()  # Task leaves a critical section
 
     # Can be used by a task to register progress bars for sub-tasks. Carries AsyncTask,
     # but that can't be specified here, because the name is still undefined in the static class context

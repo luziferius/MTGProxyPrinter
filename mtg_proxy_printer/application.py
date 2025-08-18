@@ -183,10 +183,13 @@ class Application(QApplication):
 
     @Slot(AsyncTask)
     def run_async_task(self, task: AsyncTask):
-        task.error_occurred.connect(self.main_window.on_error_occurred)
-        task.network_error_occurred.connect(self.main_window.on_network_error_occurred)
+        main_window = self.main_window
+        task.ui_lock_acquire.connect(main_window.ui_lock_acquire)
+        task.ui_lock_release.connect(main_window.ui_lock_release)
+        task.error_occurred.connect(main_window.on_error_occurred)
+        task.network_error_occurred.connect(main_window.on_network_error_occurred)
         if task.report_progress:
-            self.main_window.progress_bar_manager.add_task(task)
+            main_window.progress_bar_manager.add_task(task)
         QThreadPool.globalInstance().start(AsyncTaskRunner(task))
 
     def _create_document_instance(
