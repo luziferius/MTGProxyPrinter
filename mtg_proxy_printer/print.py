@@ -17,7 +17,6 @@
 from functools import partial
 import math
 from pathlib import Path
-from threading import BoundedSemaphore
 import typing
 
 try:
@@ -41,7 +40,6 @@ import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.model.carddb import with_database_write_lock
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.units_and_sizes
@@ -58,7 +56,7 @@ __all__ = [
     "PNGRenderer",
 ]
 
-PNGEncoderThreadLimit = BoundedSemaphore(max(1, process_cpu_count()-1))
+PNGEncoderThreadLimit = max(1, process_cpu_count()-1)
 
 
 class PNGRenderer(AsyncTask):
@@ -80,7 +78,7 @@ class PNGRenderer(AsyncTask):
         logger.info(f'Exporting document with {document.rowCount()} pages as PNG image sequence to "{file_path}"')
         page_size = document.page_layout.to_page_layout(RenderMode.ON_PAPER).pageSize().sizePixels(
             round(RESOLUTION.magnitude))
-        pool = QThreadPool.globalInstance()
+        pool = QThreadPool(self, maxThreadCount=PNGEncoderThreadLimit)
         scene = PageScene(document, RenderMode.ON_PAPER, self)
         number_width = len(str(page_count))
         parent = file_path.parent
@@ -100,14 +98,12 @@ class PNGRenderer(AsyncTask):
             scene.render(painter)
             pool.start(partial(self._compress_single_image, image, output_path))
         self.ui_lock_release.emit()
+        pool.waitForDone()
+        self.task_completed.emit()
 
-    @with_database_write_lock(PNGEncoderThreadLimit)
     def _compress_single_image(self, image: QImage, output_path: str):
         image.save(output_path, "PNG", 0)
-        self.completed += 1
         self.advance_progress.emit()
-        if self.completed == self.page_count:
-            self.task_completed.emit()
 
 
 def export_pdf(document: Document, file_path: str, parent: "SavePDFDialog"):
