@@ -67,10 +67,14 @@ def test___enter___emits_io_begin_signal(
         http_file: MeteredSeekableHTTPFile, qtbot: QtBot, ui_hint: str, expected_size: int):
     set_file_size(http_file, expected_size)
     http_file.ui_hint = ui_hint
-    with qtbot.wait_signal(
-            http_file.io_begin,
-            check_params_cb=lambda size, hint: size == expected_size and hint == ui_hint):
-        http_file.__enter__()
+    if ui_hint:
+        with qtbot.wait_signal(
+                (http_file.io_begin, "io_begin"),
+                check_params_cb=lambda size, hint: size == expected_size and hint == ui_hint):
+            http_file.__enter__()
+    else:
+        with qtbot.assert_not_emitted(http_file.io_begin):
+            http_file.__enter__()
 
 
 @pytest.mark.parametrize("expected_size", [123, 1])
