@@ -17,6 +17,8 @@
 import functools
 from typing import Iterable, TYPE_CHECKING
 
+from PySide6.QtCore import QObject
+
 if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import Page
@@ -48,10 +50,10 @@ class ActionNewPage(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["position", "count", "content",]
 
-    def __init__(self, position: int = None, *, count: int = 1, content: ContentType = None):
+    def __init__(self, position: int = None, *, count: int = 1, content: ContentType = None, parent: QObject = None):
         if count <= 0:
             raise ValueError(f"Invalid page count given: {count}")
-        super().__init__()
+        super().__init__(parent)
         self.position = position
         self.count = count
         self.content: ContentType = content or [[]] * count
@@ -72,7 +74,7 @@ class ActionNewPage(DocumentAction):
         if self.position is None:
             raise IllegalStateError("Page position not set")
         ActionRemovePage(self.position, self.count).apply(document)
-        return self
+        return super().undo(document)
 
     @functools.cached_property
     def as_str(self):
@@ -102,8 +104,8 @@ class ActionRemovePage(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["position", "count", "removed_all_pages", "currently_edited_page", "removed_pages"]
 
-    def __init__(self, position: int = None, count: int = 1):
-        super().__init__()
+    def __init__(self, position: int = None, count: int = 1, parent: QObject = None):
+        super().__init__(parent)
         self.position = position
         self.count = count
         self.removed_pages: list[Page] = []
@@ -136,7 +138,7 @@ class ActionRemovePage(DocumentAction):
             # Since the page list is non-empty, there is always a page to select.
             # Choose the first after the removed range or the last, whichever comes first.
             document.set_currently_edited_page(document.pages[newly_selected_page])
-        return self
+        return super().apply(document)
 
     def undo(self, document: "Document") -> Self:
         start = self.position
@@ -163,7 +165,7 @@ class ActionRemovePage(DocumentAction):
         self.removed_pages.clear()
         self.currently_edited_page = None
         self.removed_all_pages = False
-        return self
+        return super().undo(document)
 
     def _append_pages(self, document: "Document", start: int):
         document.pages += self.removed_pages

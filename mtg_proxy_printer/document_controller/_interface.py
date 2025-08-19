@@ -51,10 +51,16 @@ class DocumentAction(QObject):
 
     COMPARISON_ATTRIBUTES: list[str] = []  # Defines which attributes have to be compared in __eq__()
 
+    def __init__(self, parent: QObject = None):
+        super().__init__(parent)
+        self._already_applied = False
+
     @abstractmethod
     def apply(self, document: "Document") -> Self:
         """Apply the action to the given document"""
         str(self)  # Populate the as_str cache
+        if self._already_applied:
+            raise IllegalStateError(f"BUG: Action {str(self)} already applied!")
         return self
 
     @abstractmethod
@@ -63,6 +69,8 @@ class DocumentAction(QObject):
         Reverses the application of the action to the given document, undoing its effects.
         For this to work properly, this action must have been the most recent action applied to the document.
         """
+        if not self._already_applied:
+            raise IllegalStateError(f"BUG: Action {str(self)} not applied!")
         return self
 
     def __eq__(self, other) -> bool:

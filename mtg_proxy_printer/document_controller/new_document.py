@@ -17,6 +17,8 @@
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from PySide6.QtCore import QObject
+
 if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 
@@ -38,8 +40,8 @@ class ActionNewDocument(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["old_save_path", "remove_pages_action", "reset_settings_action"]
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent: QObject = None):
+        super().__init__(parent)
         self.old_save_path: Path | None = None
         self.remove_pages_action: ActionRemovePage | None = None
         self.reset_settings_action: ActionEditDocumentSettings | None = None
@@ -63,7 +65,7 @@ class ActionNewDocument(DocumentAction):
         self.remove_pages_action.undo(document)
         self.reset_settings_action.undo(document)
         self.old_save_path = self.remove_pages_action = self.reset_settings_action = None
-        return self
+        return super().undo(document)
 
     @property
     def as_str(self):

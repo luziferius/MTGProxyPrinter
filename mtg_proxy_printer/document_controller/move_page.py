@@ -17,6 +17,8 @@
 import functools
 import typing
 
+from PySide6.QtCore import QObject
+
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
 
@@ -37,8 +39,8 @@ class ActionMovePage(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["source_page", "target_page"]
 
-    def __init__(self, source_page: int, target_page: int):
-        super().__init__()
+    def __init__(self, source_page: int, target_page: int, parent: QObject = None):
+        super().__init__(parent)
         self.source_page = source_page
         self.target_page = target_page
 
@@ -47,7 +49,7 @@ class ActionMovePage(DocumentAction):
         self._validate_parameters(document)
         source, target = self.source_page, self.target_page
         self.move_page(document, source, target)
-        return self
+        return super().apply(document)
 
     @staticmethod
     def move_page(
@@ -72,7 +74,7 @@ class ActionMovePage(DocumentAction):
         source = self.target_page + (self.source_page > self.target_page) - 1
         target = self.source_page + (self.source_page > self.target_page)
         self.move_page(document, source, target)
-        return self
+        return super().undo(document)
 
     def _validate_parameters(self, document: "Document"):
         if not (self.source_page >= 0 <= self.target_page <= document.rowCount() > self.source_page):

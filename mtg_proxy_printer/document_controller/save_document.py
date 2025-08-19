@@ -18,7 +18,7 @@ import sqlite3
 from pathlib import Path
 import typing
 
-from PySide6.QtCore import QCoreApplication
+from PySide6.QtCore import QObject
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -46,8 +46,8 @@ class ActionSaveDocument(DocumentAction):
     """
     COMPARISON_ATTRIBUTES = []
 
-    def __init__(self, file_path: Path):
-        super().__init__()
+    def __init__(self, file_path: Path, parent: QObject = None):
+        super().__init__(parent)
         self.file_path = file_path
 
     def apply(self, document: "Document") -> Self:
