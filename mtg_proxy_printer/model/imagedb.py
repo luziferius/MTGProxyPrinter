@@ -208,7 +208,7 @@ class ImageDatabase(QObject):
         self.images_on_disk.add(key)
 
 
-class ImageDbTask(AsyncTask):
+class ImageDownloadTask(AsyncTask):
 
 
     def __init__(self, image_db: ImageDatabase):
@@ -241,7 +241,7 @@ class ImageDbTask(AsyncTask):
             pass
 
 
-class ObtainMissingImagesTask(ImageDbTask):
+class ObtainMissingImagesTask(ImageDownloadTask):
 
     def __init__(self, image_db: ImageDatabase, indices: IndexList):
         super().__init__(image_db)
@@ -253,7 +253,7 @@ class ObtainMissingImagesTask(ImageDbTask):
         downloader.obtain_missing_images(self.indices)
 
 
-class SingleDownloadTask(ImageDbTask):
+class SingleDownloadTask(ImageDownloadTask):
     def __init__(self, image_db: ImageDatabase, action: SingleActions):
         super().__init__(image_db)
         self.action = action
@@ -264,7 +264,7 @@ class SingleDownloadTask(ImageDbTask):
         downloader.fill_document_action_image(self.action)
 
 
-class BatchDownloadTask(ImageDbTask):
+class BatchDownloadTask(ImageDownloadTask):
     def __init__(self, image_db: ImageDatabase, action: BatchActions):
         super().__init__(image_db)
         self.action = action
@@ -276,6 +276,8 @@ class BatchDownloadTask(ImageDbTask):
 
 
 class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
+    # TODO: Deprecate this? It looks like it could be merged into ImageDownloadTask and its subclasses.
+    #  Support code can go into the base, and the high-level API entry points can be moved to the concrete classes.
     """
     This class performs image downloads from Scryfall. It is designed to be used as an asynchronous worker inside
     a QThread. To perform its tasks, it offers multiple Qt Signals that broadcast its state changes
