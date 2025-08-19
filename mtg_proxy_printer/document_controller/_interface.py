@@ -61,6 +61,7 @@ class DocumentAction(QObject):
         str(self)  # Populate the as_str cache
         if self._already_applied:
             raise IllegalStateError(f"BUG: Action {str(self)} already applied!")
+        self._already_applied = True
         return self
 
     @abstractmethod
@@ -71,6 +72,7 @@ class DocumentAction(QObject):
         """
         if not self._already_applied:
             raise IllegalStateError(f"BUG: Action {str(self)} not applied!")
+        self._already_applied = False
         return self
 
     def __eq__(self, other) -> bool:
