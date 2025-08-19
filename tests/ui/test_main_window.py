@@ -76,8 +76,7 @@ def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, mai
     ui.action_download_card_data.setEnabled(False)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No), \
-        qtbot.assert_not_emitted(main_window.request_run_async_task), \
-        qtbot.assert_not_emitted(main_window.loading_state_changed):
+        qtbot.assert_not_emitted(main_window.request_run_async_task):
             main_window.show_card_data_update_available_message_box(10000)
 
 
@@ -141,8 +140,7 @@ def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtB
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No) as message_box, \
         unittest.mock.patch("mtg_proxy_printer.card_info_downloader.ApiStreamTask.run") as stream_run, \
         unittest.mock.patch("mtg_proxy_printer.card_info_downloader.DatabaseImportTask.run") as import_run, \
-            qtbot.assert_not_emitted(main_window.request_run_async_task), \
-            qtbot.assert_not_emitted(main_window.loading_state_changed):
+            qtbot.assert_not_emitted(main_window.request_run_async_task):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
     stream_run.assert_not_called()

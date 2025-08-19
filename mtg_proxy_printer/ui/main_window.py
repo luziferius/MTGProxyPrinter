@@ -66,7 +66,6 @@ UI_LOCK_SEMAPHORE = 0  # Counts
 
 class MainWindow(QMainWindow):
 
-    loading_state_changed = Signal(bool)
     request_run_async_task = Signal(AsyncTask)
 
     def __init__(self,
@@ -97,7 +96,6 @@ class MainWindow(QMainWindow):
         self.language_model = language_model
         self._setup_card_data_download_actions()
         self._setup_central_widget()
-        self._setup_loading_state_connections()
         self._setup_undo_redo_actions(document)
         self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
@@ -145,10 +143,6 @@ class MainWindow(QMainWindow):
 
     def _setup_central_widget(self):
         self.ui.central_widget.set_data(self.document, self.card_database, self.image_db)
-
-    def _setup_loading_state_connections(self):
-        for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
-            self.loading_state_changed.connect(widget_or_action.setDisabled)
 
     def _setup_undo_redo_actions(self, document: Document):
         ui = self.ui
@@ -217,7 +211,6 @@ class MainWindow(QMainWindow):
 
     def _connect_image_database_signals(self, image_db: ImageDatabase):
         image_db.request_run_async_task.connect(self.request_run_async_task)
-        image_db.batch_processing_state_changed.connect(self.loading_state_changed)
         image_db.network_error_occurred.connect(self.on_network_error_occurred)
 
     def _create_progress_bar_manager(self):
@@ -354,7 +347,6 @@ class MainWindow(QMainWindow):
             self.tr("Operation failed, because a network error occurred.\n"
             "Check your internet connection. Reported error message:\n\n{message}").format(message=message),
             StandardButton.Ok, StandardButton.Ok)
-        self.loading_state_changed.emit(False)  # FIXME: This looks wrong with the new task API. Not all tasks should do this
 
     @Slot(str)
     def on_error_occurred(self, message: str):
@@ -363,7 +355,6 @@ class MainWindow(QMainWindow):
             self.tr("Operation failed, because an internal error occurred.\n"
             "Reported error message:\n\n{message}").format(message=message),
             StandardButton.Ok, StandardButton.Ok)
-        self.loading_state_changed.emit(False)  # FIXME: This looks wrong with the new task API. Not all tasks should do this
 
     def _ask_user_about_compacting_document(self, action: str) -> StandardButton:
         if savable_pages := self.document.compute_pages_saved_by_compacting():
