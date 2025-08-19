@@ -93,7 +93,7 @@ class DocumentAction(QObject):
         # DocumentAction methods, like __str__(), because instances aren’t hashable.
         # Other caches, like @functools.cache() aren’t available in Py 3.8, require third-party dependencies or
         # require some boilerplate code. Using @functools.cached_property is a reasonably elegant workaround.
-        pass
+        return ""
 
     def __str__(self):
         return self.as_str
