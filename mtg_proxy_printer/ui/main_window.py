@@ -89,7 +89,6 @@ class MainWindow(QMainWindow):
         self.progress_bar_manager = self._create_progress_bar_manager()
         self.card_database = card_db
         self.image_db = image_db
-        self._connect_image_database_signals(image_db)
         self.document = document
         self._connect_document_signals(document)
         self._setup_web_action_signals(ui)
@@ -208,10 +207,6 @@ class MainWindow(QMainWindow):
             ui.action_download_missing_card_images,
             ui.action_export_card_images,
         ]
-
-    def _connect_image_database_signals(self, image_db: ImageDatabase):
-        image_db.request_run_async_task.connect(self.request_run_async_task)
-        image_db.network_error_occurred.connect(self.on_network_error_occurred)
 
     def _create_progress_bar_manager(self):
         manager = ProgressBarManager(self)

@@ -82,6 +82,7 @@ class Application(QApplication):
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.image_db, self.document, self.language_model
         )
+        self.image_db.network_error_occurred.connect(self.main_window.on_network_error_occurred)
         self.main_window.request_run_async_task.connect(self.run_async_task)
         self.update_checker = self._create_update_checker(args)
         self.main_window.ui.action_download_card_data.setEnabled(False)
