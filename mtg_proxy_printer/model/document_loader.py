@@ -22,7 +22,7 @@ import textwrap
 from typing import Counter, Iterable, NamedTuple, TYPE_CHECKING
 
 from PySide6.QtGui import QPageLayout, QPageSize, QColor
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, is_, any_of, none, has_item, has_property, equal_to, contains_exactly
 
@@ -104,13 +104,15 @@ class DocumentLoader(AsyncTask):
     def __init__(self, document: "Document", path: pathlib.Path):
         super().__init__(None)
         self.document = document
-        self.load_requested.connect(document.apply)
+        # BlockingQueuedConnection keeps the task alive until the action is processed by the Document instance.
+        # This prevents the garbage collector from collecting it in-flight, resulting in SegmentationFaults
+        self.load_requested.connect(document.apply, Qt.ConnectionType.BlockingQueuedConnection)
         self.save_path = path
-        self.card_db: CardDatabase = None
+        self.card_db: CardDatabase | None = None
         # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
         # That one lives in its own thread and runs asynchronously and is thus unusable for loading documents.
         # So create a separate instance and use it synchronously inside this worker thread.
-        self.image_loader: ImageDownloader = None
+        self.image_loader: ImageDownloader | None = None
         self.network_errors_during_load: Counter[str] = collections.Counter()
         self.task_completed.connect(self.propagate_errors_during_load)
         self.should_run: bool = True
@@ -177,8 +179,6 @@ class DocumentLoader(AsyncTask):
         self.task_completed.emit()
 
     def _load_document(self):
-        # Imported here to break a circular import. TODO: Investigate a better fix
-        from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
         additional_steps = 2
         save_db = self._open_validate_and_migrate_save_file(self.save_path)
         total_cards = save_db.execute("SELECT count(1) FROM Card").fetchone()[0]
@@ -191,6 +191,8 @@ class DocumentLoader(AsyncTask):
         save_db.close()
         self._fix_mixed_pages(pages, page_layout)
         self.advance_progress.emit()
+        # Imported here to break a circular import
+        from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
         action = ActionLoadDocument(self.save_path, pages, page_layout)
         self.load_requested.emit(action)
         self._complete_loading()
