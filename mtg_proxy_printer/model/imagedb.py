@@ -264,6 +264,9 @@ class ImageDownloadTask(mtg_proxy_printer.downloader_base.DownloaderBase):
             download_uri,
             self.tr("Downloading '{card_name}'", "Progress bar label text").format(
                 card_name=card.name))
+        # Disconnect the implicitly connected signals. TODO: Rework that?
+        self.currently_opened_file_monitor.io_begin.disconnect(self.task_begins)
+        self.currently_opened_file_monitor.total_bytes_processed.disconnect(self.set_progress)
         self.currently_opened_file_monitor.io_begin.connect(progress_container.task_begins)
         self.currently_opened_file_monitor.total_bytes_processed.connect(progress_container.set_progress)
         # Download to the root of the cache first. Move to the target only after downloading finished.
@@ -338,6 +341,7 @@ class BatchDownloadTask(ImageDownloadTask):
             self.tr("Importing deck list", "Progress bar label text"))
         for card in cards:
             self.get_image_synchronous(card, self.image_download_task)
+            self.advance_progress.emit()
         self.request_action.emit(action)
         self.task_completed.emit()
         logger.info(f"Obtained images for {total_cards} cards.")

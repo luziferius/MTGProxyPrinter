@@ -218,7 +218,6 @@ class DocumentLoader(AsyncTask):
             raise
         return db
 
-
     def _load_cards(self, save_db: sqlite3.Connection) -> list[CardList]:
         custom_cards: CustomCards = {}
         assert_that(
