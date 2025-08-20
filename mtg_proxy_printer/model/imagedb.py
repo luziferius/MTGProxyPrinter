@@ -50,6 +50,7 @@ del get_logger
 
 ItemDataRole = Qt.ItemDataRole
 QueuedConnection = Qt.ConnectionType.QueuedConnection
+BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
 __all__ = [
     "ImageDatabase",
@@ -92,11 +93,6 @@ class ImageDatabase(QObject):
     request_action = Signal(DocumentAction)
     missing_images_obtained = Signal()
     missing_image_obtained = Signal(QModelIndex)
-    """
-    Messages if the internal ImageDownloader instance performs a batch operation when it processes image requests for
-    a deck list. It signals if such a long-running process starts or finishes.
-    """
-    batch_processing_state_changed = Signal(bool)
 
     network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
 
@@ -112,7 +108,6 @@ class ImageDatabase(QObject):
         self.loaded_images: dict[ImageKey, QPixmap] = {}
         self.images_on_disk: set[ImageKey] = set()
         InitOnDiskDataTask(self.images_on_disk, db_path).run()
-        self.download_worker = ImageDownloader(self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @functools.lru_cache()
@@ -164,18 +159,30 @@ class ImageDatabase(QObject):
     @Slot(list)
     def obtain_missing_images(self, card_indices: IndexList):
         logger.info(f"Trying to obtain {len(card_indices)} missing images.")
+        task = ObtainMissingImagesTask(self, card_indices)
+        # Ensure the task lives until the Document processed it to prevent the garbage collector
+        # from collecting it mid-flight through C++ code
+        task.request_action.connect(self.request_action, BlockingQueuedConnection)
         self.request_run_async_task.emit(ObtainMissingImagesTask(self, card_indices))
 
     @Slot(ActionReplaceCard)
     @Slot(ActionAddCard)
     def fill_document_action_image(self, action: SingleActions):
         logger.debug(f"About to obtain image for card in action")
-        self.request_run_async_task.emit(SingleDownloadTask(self, action))
+        task = SingleDownloadTask(self, action)
+        # Ensure the task lives until the Document processed it to prevent the garbage collector
+        # from collecting it mid-flight through C++ code
+        task.request_action.connect(self.request_action, BlockingQueuedConnection)
+        self.request_run_async_task.emit(task)
 
     @Slot(ActionImportDeckList)
     def fill_batch_document_action_images(self, action: BatchActions):
         logger.debug(f"About to obtain images for cards in batch action")
-        self.request_run_async_task.emit(BatchDownloadTask(self, action))
+        task = BatchDownloadTask(self, action)
+        # Ensure the task lives until the Document processed it to prevent the garbage collector
+        # from collecting it mid-flight through C++ code
+        task.request_action.connect(self.request_action, BlockingQueuedConnection)
+        self.request_run_async_task.emit(task)
 
     @Slot(ImageKey, QPixmap)
     def on_image_obtained(self, key: ImageKey, pixmap: QPixmap):
@@ -184,49 +191,118 @@ class ImageDatabase(QObject):
         self.images_on_disk.add(key)
 
 
-class ImageDownloadTask(AsyncTask):
-
+class ImageDownloadTask(mtg_proxy_printer.downloader_base.DownloaderBase):
+    image_obtained = Signal(ImageKey, QPixmap)
+    request_action = Signal(DocumentAction)
 
     def __init__(self, image_db: ImageDatabase):
         super().__init__()
-        self.image_db = image_db
-        self.downloader: ImageDownloader | None = None
+        self.should_run = True
+        self.image_database = image_db
 
-    def _create_downloader(self):
-        image_db = self.image_db
-        downloader = ImageDownloader(image_db)
-        downloader.image_obtained.connect(image_db.on_image_obtained, QueuedConnection)
-        downloader.missing_images_obtained.connect(image_db.missing_images_obtained, QueuedConnection)
-        downloader.missing_image_obtained.connect(image_db.missing_image_obtained, QueuedConnection)
-        downloader.network_error_occurred.connect(image_db.network_error_occurred, QueuedConnection)  # TODO: Can this indirection be removed?
-        downloader.request_action.connect(image_db.request_action, QueuedConnection)
-        downloader.request_register_subtask.connect(self.request_register_subtask)
-        return downloader
+    def get_image_synchronous(self, card: AnyCardType, progress_container: AsyncTask):
+        """
+        Fetch the image for the given card. Fetches both sides for DFCs. Implicitly populates the memory and disk cache.
+        :param card: Card to download the image for. When completed successfully, the image is loaded into the card
+        :param progress_container: AsyncTask via which download progress is reported. Can be self,
+          or a subtask for batch downloads
+        """
+        try:
+            if isinstance(card, CheckCard):
+                self._fetch_and_set_image(card.front, progress_container)
+                self._fetch_and_set_image(card.back, progress_container)
+            else:
+                self._fetch_and_set_image(card, progress_container)
+        except urllib.error.URLError as e:
+            self._handle_network_error_during_download(card, str(e.reason))
+        except socket.timeout as e:
+            self._handle_network_error_during_download(card, f"Reading from socket failed: {e}")
 
-    def cancel(self):
-        if getattr(self, "downloader", None) is None:
+    def _fetch_and_set_image(self, card: Card, progress_container: AsyncTask):
+        key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
+        image_path = self.image_database.db_path / key.format_relative_path()
+        blank = self.image_database.get_blank(card.size)
+        pixmap = self._load_from_memory(key) \
+            or self._load_from_disk(image_path) \
+            or self._download_from_scryfall(card, image_path, progress_container) \
+            or blank
+        if pixmap is not blank:
+            self._remove_outdated_low_resolution_image(card)
+            self.image_obtained.emit(key, pixmap)
+        card.set_image_file(pixmap)
+
+    def _load_from_memory(self, key: ImageKey) -> OptionalPixmap:
+        return self.image_database.loaded_images.get(key)
+
+    def _load_from_disk(self, image_path: pathlib.Path) -> OptionalPixmap:
+        if not self.should_run:
+            return None
+        logger.debug("Image not in memory, requesting from disk")
+        if image_path.exists():
+            pixmap = QPixmap(str(image_path))
+            if pixmap.isNull():
+                logger.warning(f'Failed to load image from "{image_path}", deleting corrupted file.')
+                image_path.unlink()
+            else:
+                logger.debug("Image loaded from disk")
+                return pixmap
+        return None
+
+    def _download_from_scryfall(
+            self, card: Card, image_path: pathlib.Path, progress_container: AsyncTask) -> OptionalPixmap:
+        if not self.should_run:
+            return None
+        logger.debug("Image not on disk, downloading from Scryfall")
+        image_path.parent.mkdir(parents=True, exist_ok=True)
+        download_uri = card.image_uri
+        # Download to the root of the image database directory, not into the target directory. If something goes wrong,
+        # the incomplete image can be deleted. Once loading the image succeeds, it can be moved to the final location.
+        # Append the side, so that concurrent downloads of both sides of a DFC do not collide.
+        side = 'Front' if card.is_front else 'Back'
+        download_path = self.image_database.db_path / f"{image_path.stem}-{side}{image_path.suffix}"
+        self.currently_opened_file, self.currently_opened_file_monitor = self.read_from_url(
+            download_uri,
+            self.tr("Downloading '{card_name}'", "Progress bar label text").format(
+                card_name=card.name))
+        self.currently_opened_file_monitor.io_begin.connect(progress_container.task_begins)
+        self.currently_opened_file_monitor.total_bytes_processed.connect(progress_container.set_progress)
+        # Download to the root of the cache first. Move to the target only after downloading finished.
+        # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
+        # getting terminated by the user, a mid-transfer network outage, a full disk or any other failure condition.
+        pixmap = None
+        try:
+            with self.currently_opened_file, download_path.open("wb") as file_in_cache:
+                shutil.copyfileobj(self.currently_opened_file, file_in_cache)
+            pixmap = QPixmap(str(download_path))
+            if pixmap.isNull():
+                raise ValueError("Invalid image fetched from Scryfall")
+        except Exception as e:
+            logger.exception(e)
+            logger.info("Download aborted, not moving potentially incomplete download into the cache.")
+            download_path.unlink(missing_ok=True)
+        else:
+            logger.debug(f"Moving downloaded image into the image cache at {image_path}")
+            shutil.move(download_path, image_path)
+        finally:
+            self.currently_opened_file = None
+            download_path.unlink(missing_ok=True)
+            progress_container.task_completed.emit()
+        return pixmap
+
+    def _remove_outdated_low_resolution_image(self, card: Card):
+        if not card.highres_image:
             return
-        self.downloader.should_run = False
-        try:
-            self.downloader.currently_opened_file.close()
-        except AttributeError:
-            pass
-        try:
-            self.downloader.currently_opened_file_monitor.close()
-        except AttributeError:
-            pass
+        low_resolution_image_path = self.image_database.db_path / ImageKey(
+            card.scryfall_id, card.is_front, False).format_relative_path()
+        if low_resolution_image_path.exists():
+            logger.info("Removing outdated low-resolution image")
+            low_resolution_image_path.unlink()
 
-
-class ObtainMissingImagesTask(ImageDownloadTask):
-
-    def __init__(self, image_db: ImageDatabase, indices: IndexList):
-        super().__init__(image_db)
-        self.indices = indices
-
-    @with_database_write_lock(download_semaphore)
-    def run(self):
-        self.downloader = downloader = self._create_downloader()
-        downloader.obtain_missing_images(self.indices)
+    def _handle_network_error_during_download(self, card: Card, reason_str: str):
+        card.set_image_file(self.image_database.get_blank(card.size))
+        logger.warning(
+            f"Image download failed for card {card}, reason is \"{reason_str}\". Using blank replacement image.")
+        self.network_error_occurred.emit(reason_str)
 
 
 class SingleDownloadTask(ImageDownloadTask):
@@ -236,19 +312,71 @@ class SingleDownloadTask(ImageDownloadTask):
 
     @with_database_write_lock(download_semaphore)
     def run(self):
-        self.downloader = downloader = self._create_downloader()
-        downloader.fill_document_action_image(self.action)
+        logger.info("Got DocumentAction, filling card")
+        self.get_image_synchronous(self.action.card, self)
+        logger.info("Obtained image, requesting apply()")
+        self.request_action.emit(self.action)
 
 
 class BatchDownloadTask(ImageDownloadTask):
     def __init__(self, image_db: ImageDatabase, action: BatchActions):
         super().__init__(image_db)
         self.action = action
+        self.image_download_task = AsyncTask()
 
     @with_database_write_lock(download_semaphore)
     def run(self):
-        self.downloader = downloader = self._create_downloader()
-        downloader.fill_batch_document_action_images(self.action)
+        self.request_register_subtask.emit(self.image_download_task)
+        self.fill_batch_document_action_images(self.action)
+
+    def fill_batch_document_action_images(self, action: BatchActions):
+        cards = action.cards
+        total_cards = len(cards)
+        logger.info(f"Got batch DocumentAction, filling {total_cards} cards")
+        self.task_begins.emit(
+            total_cards,
+            self.tr("Importing deck list", "Progress bar label text"))
+        for card in cards:
+            self.get_image_synchronous(card, self.image_download_task)
+        self.request_action.emit(action)
+        self.task_completed.emit()
+        logger.info(f"Obtained images for {total_cards} cards.")
+
+
+class ObtainMissingImagesTask(ImageDownloadTask):
+    missing_image_obtained = Signal(QModelIndex)
+
+    def __init__(self, image_db: ImageDatabase, indices: IndexList):
+        super().__init__(image_db)
+        self.indices = indices
+        if indices:
+            document: "Document" = indices[0].model()
+            self.missing_image_obtained.connect(document.on_missing_image_obtained, QueuedConnection)
+        self.image_download_task = AsyncTask()
+
+    @with_database_write_lock(download_semaphore)
+    def run(self):
+        self.request_register_subtask.emit(self.image_download_task)
+        self.obtain_missing_images(self.indices)
+
+    def obtain_missing_images(self, card_indices: list[QModelIndex]):
+        if not card_indices:
+            return
+        total_cards = len(card_indices)
+        logger.debug(f"Requesting {total_cards} missing images")
+        blanks = {self.image_database.get_blank(CardSizes.REGULAR),
+                  self.image_database.get_blank(CardSizes.OVERSIZED)}
+        self.task_begins.emit(
+            total_cards,
+            self.tr("Fetching missing images", "Progress bar label text"))
+        for card_index in card_indices:
+            card = card_index.data(ItemDataRole.UserRole)
+            self.get_image_synchronous(card, self.image_download_task)
+            if card.image_file not in blanks:
+                self.missing_image_obtained.emit(card_index)
+            self.advance_progress.emit()
+        self.task_completed.emit()
+        logger.debug(f"Done fetching {total_cards} missing images.")
 
 
 class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
@@ -263,8 +391,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     """
     image_obtained = Signal(ImageKey, QPixmap)
     request_action = Signal(DocumentAction)
-    missing_images_obtained = Signal()
-    missing_image_obtained = Signal(QModelIndex)
     batch_processing_state_changed = Signal(bool)
 
     batch_process_starting = Signal(int, str)
@@ -305,29 +431,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.update_batch_processing_state(False)
         logger.info(f"Obtained images for {total_cards} cards.")
 
-    def obtain_missing_images(self, card_indices: list[QModelIndex]):
-        if not card_indices:
-            self.missing_images_obtained.emit()
-            return
-        total_cards = len(card_indices)
-        logger.debug(f"Requesting {total_cards} missing images")
-        blanks = {self.image_database.get_blank(CardSizes.REGULAR), self.image_database.get_blank(CardSizes.OVERSIZED)}
-        document: "Document" = card_indices[0].model()
-        self.update_batch_processing_state(True)
-        self.batch_process_starting.emit(
-            total_cards,
-            self.tr("Fetching missing images", "Progress bar label text"))
-        for index, card_index in enumerate(card_indices, start=1):
-            card = card_index.data(ItemDataRole.UserRole)
-            self.get_image_synchronous(card)
-            if card.image_file not in blanks:
-                self.missing_image_obtained.emit(card_index)
-            document.on_missing_image_obtained(card_index)
-            self.batch_process_progress.emit(index)
-        self.batch_process_finished.emit()
-        self.update_batch_processing_state(False)
-        logger.debug(f"Done fetching {total_cards} missing images.")
-        self.missing_images_obtained.emit()
 
     def update_batch_processing_state(self, value: bool):
         self.batch_processing_state = value
