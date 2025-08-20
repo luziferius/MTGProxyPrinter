@@ -31,7 +31,7 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardDatabase
 from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType, CustomCard
-from mtg_proxy_printer.model.imagedb import ImageDownloader
+from mtg_proxy_printer.model.imagedb import ImageDownloadTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import  PageType, CardSize, CardSizes, unit_registry, \
@@ -112,7 +112,7 @@ class DocumentLoader(AsyncTask):
         # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
         # That one lives in its own thread and runs asynchronously and is thus unusable for loading documents.
         # So create a separate instance and use it synchronously inside this worker thread.
-        self.image_loader: ImageDownloader | None = None
+        self.image_loader: ImageDownloadTask | None = None
         self.network_errors_during_load: Counter[str] = collections.Counter()
         self.task_completed.connect(self.propagate_errors_during_load)
         self.should_run: bool = True
@@ -128,14 +128,14 @@ class DocumentLoader(AsyncTask):
             self.document.card_db.db.backup(card_db.db)
         return card_db
 
-    def _create_image_loader(self) -> ImageDownloader:
+    def _create_image_loader(self) -> ImageDownloadTask:
         """
-        Create an ImageDownloader instance. This is used to fetch card images not already downloaded.
+        Create an ImageDownloadTask instance. This is used to fetch card images not already downloaded.
         It is required when card images are missing during load, which can happen if card images were deleted previously,
         or when a document was received from another system.
         It is registered as a subtask, so that its own download progress reporting is shown via the UI.
         """
-        image_loader = ImageDownloader(self.document.image_db, self)
+        image_loader = ImageDownloadTask(self.document.image_db)
         self.inner_tasks.append(image_loader)
         self.request_register_subtask.emit(image_loader)
         image_loader.network_error_occurred.connect(self.on_network_error_occurred)
@@ -320,7 +320,7 @@ class DocumentLoader(AsyncTask):
                 "Unable to find suitable replacement card for the DFC back. This should not happen. Skipping it.")
             return None
         card = CheckCard(front, back)
-        self.image_loader.get_image_synchronous(card)
+        self.image_loader.get_image_synchronous(card, self.image_loader)
         return DatabaseLoadResult(card, migrated)
 
     def _load_official_card(self, data: CardRow) -> DatabaseLoadResult | None:
@@ -334,7 +334,7 @@ class DocumentLoader(AsyncTask):
         if card is None:
             logger.info("Unable to find suitable replacement card. Skipping it.")
             return None
-        self.image_loader.get_image_synchronous(card)
+        self.image_loader.get_image_synchronous(card, self.image_loader)
         return DatabaseLoadResult(card, migrated)
 
     def _find_replacement_card_for_hidden_official_card(

@@ -54,7 +54,6 @@ BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
 __all__ = [
     "ImageDatabase",
-    "ImageDownloader",
 ]
 
 PathSizeList = list[tuple[pathlib.Path, int]]
@@ -326,6 +325,7 @@ class BatchDownloadTask(ImageDownloadTask):
         super().__init__(image_db)
         self.action = action
         self.image_download_task = AsyncTask()
+        self.inner_tasks.append(self.image_download_task)
 
     @with_database_write_lock(download_semaphore)
     def run(self):
@@ -357,6 +357,7 @@ class ObtainMissingImagesTask(ImageDownloadTask):
             document: "Document" = indices[0].model()
             self.missing_image_obtained.connect(document.on_missing_image_obtained, QueuedConnection)
         self.image_download_task = AsyncTask()
+        self.inner_tasks.append(self.image_download_task)
 
     @with_database_write_lock(download_semaphore)
     def run(self):
@@ -381,168 +382,6 @@ class ObtainMissingImagesTask(ImageDownloadTask):
             self.advance_progress.emit()
         self.task_completed.emit()
         logger.debug(f"Done fetching {total_cards} missing images.")
-
-
-class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
-    # TODO: Deprecate this? It looks like it could be merged into ImageDownloadTask and its subclasses.
-    #  Support code can go into the base, and the high-level API entry points can be moved to the concrete classes.
-    """
-    This class performs image downloads from Scryfall. It is designed to be used as an asynchronous worker inside
-    a QThread. To perform its tasks, it offers multiple Qt Signals that broadcast its state changes
-    over thread-safe signal connections.
-
-    It can be used synchronously, if precise, synchronous sequencing of small operations is required.
-    """
-    image_obtained = Signal(ImageKey, QPixmap)
-    request_action = Signal(DocumentAction)
-    batch_processing_state_changed = Signal(bool)
-
-    batch_process_starting = Signal(int, str)
-    batch_process_progress = Signal(int)
-    batch_process_finished = Signal()
-
-    def __init__(self, image_db: ImageDatabase, parent: QObject = None):
-        super().__init__(parent)
-        self.image_database = image_db
-        self.should_run = True
-        self.batch_processing_state: bool = False
-        self.last_error_message = ""
-        # Reference to the currently opened file. Used here to be able to force close it in case the user wants to quit
-        # or cancel the download process.
-        self.currently_opened_file: io.BytesIO | None = None
-        self.currently_opened_file_monitor: mtg_proxy_printer.http_file.MeteredSeekableHTTPFile | None = None
-        logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def fill_document_action_image(self, action: SingleActions):
-        logger.info("Got DocumentAction, filling card")
-        self.get_image_synchronous(action.card)
-        logger.info("Obtained image, requesting apply()")
-        self.request_action.emit(action)
-
-    def fill_batch_document_action_images(self, action: BatchActions):
-        cards = action.cards
-        total_cards = len(cards)
-        logger.info(f"Got batch DocumentAction, filling {total_cards} cards")
-        self.update_batch_processing_state(True)
-        self.batch_process_starting.emit(
-            total_cards,
-            self.tr("Importing deck list", "Progress bar label text"))
-        for index, card in enumerate(cards, start=1):
-            self.get_image_synchronous(card)
-            self.batch_process_progress.emit(index)
-        self.request_action.emit(action)
-        self.batch_process_finished.emit()
-        self.update_batch_processing_state(False)
-        logger.info(f"Obtained images for {total_cards} cards.")
-
-
-    def update_batch_processing_state(self, value: bool):
-        self.batch_processing_state = value
-        if not self.batch_processing_state and self.last_error_message:
-            self.network_error_occurred.emit(self.last_error_message)
-        self.batch_processing_state_changed.emit(value)
-
-    def _handle_network_error_during_download(self, card: Card, reason_str: str):
-        card.set_image_file(self.image_database.get_blank(card.size))
-        logger.warning(
-            f"Image download failed for card {card}, reason is \"{reason_str}\". Using blank replacement image.")
-        # Only return the error message for storage, if the queue currently processes a batch job.
-        # Otherwise, it’ll be re-raised if a batch job starts right after a singular request failed.
-        if not self.batch_processing_state:
-            self.network_error_occurred.emit(reason_str)
-        return reason_str
-
-    def get_image_synchronous(self, card: AnyCardType):
-        try:
-            if isinstance(card, CheckCard):
-                self._fetch_and_set_image(card.front)
-                self._fetch_and_set_image(card.back)
-            else:
-                self._fetch_and_set_image(card)
-        except urllib.error.URLError as e:
-            self.last_error_message = self._handle_network_error_during_download(
-                card, str(e.reason))
-        except socket.timeout as e:
-            self.last_error_message = self._handle_network_error_during_download(
-                card, f"Reading from socket failed: {e}")
-
-    def _fetch_and_set_image(self, card: Card):
-        key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
-        image_path = self.image_database.db_path / key.format_relative_path()
-        blank = self.image_database.get_blank()  # TODO: needs to be size-aware?
-        pixmap = self._load_from_memory(key) \
-            or self._load_from_disk(image_path) \
-            or self._download_from_scryfall(card, image_path) \
-            or blank
-        if pixmap is not blank:
-            self._remove_outdated_low_resolution_image(card)
-            self.image_obtained.emit(key, pixmap)
-        card.set_image_file(pixmap)
-
-    def _load_from_memory(self, key: ImageKey) -> OptionalPixmap:
-        return self.image_database.loaded_images.get(key)
-
-    def _load_from_disk(self, image_path: pathlib.Path) -> OptionalPixmap:
-        if not self.should_run:
-            return None
-        logger.debug("Image not in memory, requesting from disk")
-        if image_path.exists():
-            pixmap = QPixmap(str(image_path))
-            if pixmap.isNull():
-                logger.warning(f'Failed to load image from "{image_path}", deleting corrupted file.')
-                image_path.unlink()
-            else:
-                logger.debug("Image loaded from disk")
-                return pixmap
-        return None
-
-    def _remove_outdated_low_resolution_image(self, card):
-        if not card.highres_image:
-            return
-        low_resolution_image_path = self.image_database.db_path / ImageKey(
-            card.scryfall_id, card.is_front, False).format_relative_path()
-        if low_resolution_image_path.exists():
-            logger.info("Removing outdated low-resolution image")
-            low_resolution_image_path.unlink()
-
-    def _download_from_scryfall(self, card: Card, image_path: pathlib.Path) -> OptionalPixmap:
-        if not self.should_run:
-            return None
-        logger.debug("Image not on disk, downloading from Scryfall")
-        image_path.parent.mkdir(parents=True, exist_ok=True)
-        download_uri = card.image_uri
-        # Download to the root of the image database directory, not into the target directory. If something goes wrong,
-        # the incomplete image can be deleted. Once loading the image succeeds, it can be moved to the final location.
-        # Append the side, so that concurrent downloads of both sides of a DFC do not collide.
-        side = 'Front' if card.is_front else 'Back'
-        download_path = self.image_database.db_path / f"{image_path.stem}-{side}{image_path.suffix}"
-        self.currently_opened_file, self.currently_opened_file_monitor = self.read_from_url(
-            download_uri,
-            self.tr("Downloading '{card_name}'", "Progress bar label text").format(
-                card_name=card.name))
-        self.currently_opened_file_monitor.total_bytes_processed.connect(self.set_progress)
-        # Download to the root of the cache first. Move to the target only after downloading finished.
-        # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
-        # getting terminated by the user, a mid-transfer network outage, a full disk or any other failure condition.
-        pixmap = None
-        try:
-            with self.currently_opened_file, download_path.open("wb") as file_in_cache:
-                shutil.copyfileobj(self.currently_opened_file, file_in_cache)
-            pixmap = QPixmap(str(download_path))
-            if pixmap.isNull():
-                raise ValueError("Invalid image fetched from Scryfall")
-        except Exception as e:
-            logger.exception(e)
-            logger.info("Download aborted, not moving potentially incomplete download into the cache.")
-            download_path.unlink(missing_ok=True)
-        else:
-            logger.debug(f"Moving downloaded image into the image cache at {image_path}")
-            shutil.move(download_path, image_path)
-        finally:
-            self.currently_opened_file = None
-            download_path.unlink(missing_ok=True)
-            self.task_completed.emit()
-        return pixmap
 
 
 def read_disk_cache_content(db_path: pathlib.Path) -> list[CacheContent]:
