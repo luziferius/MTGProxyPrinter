@@ -73,6 +73,8 @@ class CentralWidget(QWidget):
         ui.page_card_table_view.changed_selection_is_empty.connect(ui.delete_selected_images_button.setDisabled)
         ui.delete_selected_images_button.clicked.connect(ui.page_card_table_view.delete_selected_images)
         document.rowsAboutToBeRemoved.connect(self.on_document_rows_about_to_be_removed)
+        document.rowsInserted.connect(self.on_document_rows_inserted)
+        document.rowsRemoved.connect(self.on_document_rows_removed)
         document.loading_state_changed.connect(self.select_first_page)
         ui.page_renderer.set_document(document)
         self._setup_add_card_widget(card_db, image_db)
@@ -90,6 +92,7 @@ class CentralWidget(QWidget):
         view.selectionModel().currentChanged.connect(document.on_ui_selects_new_page)
         self.select_first_page()
 
+    @Slot(QModelIndex, int, int)
     def on_document_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
         if parent.isValid():
             # Not interested in removed cards here, so return if cards are about to be removed.
@@ -109,11 +112,27 @@ class CentralWidget(QWidget):
             f"New page to select: {new_page_to_select}")
         document_view.setCurrentIndex(self.document.index(new_page_to_select, 0))
 
+    @Slot(QModelIndex,int,int)
+    def on_document_rows_inserted(self, parent: QModelIndex, first: int, _: int):
+        if parent.isValid():  # Not interested in card additions
+            return
+        # When inserting after the current page, the current page can now be moved down.
+        self.ui.page_move_down.setEnabled(self._currently_edited_page < first)
+
+    @Slot(QModelIndex,int,int)
+    def on_document_rows_removed(self, parent: QModelIndex, first: int, last: int):
+        if parent.isValid():  # Not interested in card removals
+            return
+        # When the current page becomes the first, disable the move up button
+        self.ui.page_move_up.setDisabled(self._currently_edited_page-last+first == 0)
+        # When the current page becomes the last, disable the move down button
+        self.ui.page_move_down.setEnabled(self._currently_edited_page >= self.document.rowCount()-1)
+
     @Slot()
-    def select_first_page(self, loading_in_progress: bool = False):
+    def select_first_page(self, loading_in_progress: bool = False, page_to_select: int = 0):
         if not loading_in_progress:
             logger.info("Loading finished. Selecting first page.")
-            new_selection = self.document.index(0, 0)
+            new_selection = self.document.index(page_to_select, 0)
             self.ui.document_view.selectionModel().select(new_selection, QItemSelectionModel.SelectionFlag.Select)
             self.document.on_ui_selects_new_page(new_selection)
 

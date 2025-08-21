@@ -101,6 +101,7 @@ def generate_test_cases_for_move_tests():
 
 @pytest.mark.parametrize("source_page, target_page, expected_order", generate_test_cases_for_move_tests())
 def test_apply_moves_page(document_with_pages: Document, source_page: int, target_page: int, expected_order: str):
+    current_page_row = document_with_pages.get_current_page_index().row()
     action = ActionMovePage(source_page, target_page)
     assert_that(action.apply(document_with_pages), is_(same_instance(action)))
     assert_that(document_with_pages.rowCount(), is_(4))
