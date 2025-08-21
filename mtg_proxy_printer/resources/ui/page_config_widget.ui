@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>PageConfigWidget</class>
  <widget class="QGroupBox" name="PageConfigWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>799</width>
-    <height>814</height>
-   </rect>
-  </property>
   <property name="title">
    <string>Default settings for new documents</string>
   </property>
@@ -600,16 +592,6 @@ based on the page size and spacings configured</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="2" colspan="2">
-    <widget class="QCheckBox" name="draw_cut_markers">
-     <property name="toolTip">
-      <string>Enable printing additional lines to aid cutting the printed sheets.</string>
-     </property>
-     <property name="text">
-      <string>Print cut markers</string>
-     </property>
-    </widget>
-   </item>
    <item row="29" column="1" colspan="3">
     <spacer name="spacer_bottom">
      <property name="orientation">
@@ -623,7 +605,7 @@ based on the page size and spacings configured</string>
      </property>
     </spacer>
    </item>
-   <item row="1" column="2" colspan="2">
+   <item row="1" column="1" colspan="3">
     <widget class="QCheckBox" name="draw_page_numbers">
      <property name="toolTip">
       <string>If enabled, the page number is printed on each page. Makes it easier to notice missing pages in a stack.</string>
@@ -633,7 +615,17 @@ based on the page size and spacings configured</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="2" colspan="2">
+   <item row="2" column="1" colspan="3">
+    <widget class="QCheckBox" name="draw_cut_markers">
+     <property name="toolTip">
+      <string>Enable printing additional lines to aid cutting the printed sheets.</string>
+     </property>
+     <property name="text">
+      <string>Print cut markers</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1" colspan="3">
     <widget class="QCheckBox" name="draw_sharp_corners">
      <property name="text">
       <string>Draw 90° card corners, instead of round ones</string>

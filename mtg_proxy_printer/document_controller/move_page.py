@@ -65,6 +65,7 @@ class ActionMovePage(DocumentAction):
         pages = document.pages[source_page:source_page + 1]
         del document.pages[source_page:source_page + 1]
         document.pages[insert_at:insert_at] = pages
+        document.recreate_page_index_cache()
         document.endMoveRows()
         return
 
