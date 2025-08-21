@@ -49,7 +49,7 @@ class ActionMovePage(DocumentAction):
         self._validate_parameters(document)
         source, target = self.source_page, self.target_page
         self.move_page(document, source, target)
-        return super().apply(document)
+        return self
 
     @staticmethod
     def move_page(
@@ -75,7 +75,7 @@ class ActionMovePage(DocumentAction):
         source = self.target_page + (self.source_page > self.target_page) - 1
         target = self.source_page + (self.source_page > self.target_page)
         self.move_page(document, source, target)
-        return super().undo(document)
+        return self
 
     def _validate_parameters(self, document: "Document"):
         if not (self.source_page >= 0 <= self.target_page <= document.rowCount() > self.source_page):
