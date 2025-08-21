@@ -320,7 +320,7 @@ class DocumentLoader(AsyncTask):
                 "Unable to find suitable replacement card for the DFC back. This should not happen. Skipping it.")
             return None
         card = CheckCard(front, back)
-        self.image_loader.get_image_synchronous(card, self.image_loader)
+        self.image_loader.fetch_and_set_image(card, self.image_loader)
         return DatabaseLoadResult(card, migrated)
 
     def _load_official_card(self, data: CardRow) -> DatabaseLoadResult | None:
@@ -334,7 +334,7 @@ class DocumentLoader(AsyncTask):
         if card is None:
             logger.info("Unable to find suitable replacement card. Skipping it.")
             return None
-        self.image_loader.get_image_synchronous(card, self.image_loader)
+        self.image_loader.fetch_and_set_image(card, self.image_loader)
         return DatabaseLoadResult(card, migrated)
 
     def _find_replacement_card_for_hidden_official_card(

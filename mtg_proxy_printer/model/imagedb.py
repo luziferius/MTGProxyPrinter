@@ -199,7 +199,7 @@ class ImageDownloadTask(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.should_run = True
         self.image_database = image_db
 
-    def get_image_synchronous(self, card: AnyCardType, progress_container: AsyncTask):
+    def fetch_and_set_image(self, card: AnyCardType, progress_container: AsyncTask):
         """
         Fetch the image for the given card. Fetches both sides for DFCs. Implicitly populates the memory and disk cache.
         :param card: Card to download the image for. When completed successfully, the image is loaded into the card
@@ -299,6 +299,10 @@ class ImageDownloadTask(mtg_proxy_printer.downloader_base.DownloaderBase):
         if low_resolution_image_path.exists():
             logger.info("Removing outdated low-resolution image")
             low_resolution_image_path.unlink()
+        try:  # Clean-up the parent directory used to bucket the images
+            low_resolution_image_path.parent.rmdir()
+        except (OSError, FileNotFoundError):  # It may not exist, or contain other images, so ignore those errors
+            pass
 
     def _handle_network_error_during_download(self, card: Card, reason_str: str):
         card.set_image_file(self.image_database.get_blank(card.size))
@@ -315,7 +319,7 @@ class SingleDownloadTask(ImageDownloadTask):
     @with_database_write_lock(download_semaphore)
     def run(self):
         logger.info("Got DocumentAction, filling card")
-        self.get_image_synchronous(self.action.card, self)
+        self.fetch_and_set_image(self.action.card, self)
         logger.info("Obtained image, requesting apply()")
         self.request_action.emit(self.action)
 
@@ -340,7 +344,7 @@ class BatchDownloadTask(ImageDownloadTask):
             total_cards,
             self.tr("Importing deck list", "Progress bar label text"))
         for card in cards:
-            self.get_image_synchronous(card, self.image_download_task)
+            self.fetch_and_set_image(card, self.image_download_task)
             self.advance_progress.emit()
         self.request_action.emit(action)
         self.task_completed.emit()
@@ -376,7 +380,7 @@ class ObtainMissingImagesTask(ImageDownloadTask):
             self.tr("Fetching missing images", "Progress bar label text"))
         for card_index in card_indices:
             card = card_index.data(ItemDataRole.UserRole)
-            self.get_image_synchronous(card, self.image_download_task)
+            self.fetch_and_set_image(card, self.image_download_task)
             if card.image_file not in blanks:
                 self.missing_image_obtained.emit(card_index)
             self.advance_progress.emit()
