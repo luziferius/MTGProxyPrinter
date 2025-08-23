@@ -90,6 +90,23 @@ class AsyncTask(QObject):
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
         self.inner_tasks: List[AsyncTask] = []
+        self._running = False
+        self._ui_hint = ""
+        self.task_begins.connect(self._on_task_begins)
+        self.task_completed.connect(self._on_task_completed)
+
+    @Slot(int, str)
+    def _on_task_begins(self, _: int, ui_hint: str):
+        self._ui_hint = ui_hint
+        self._running = True
+
+    @Slot()
+    def _on_task_completed(self):
+        self._ui_hint = ""
+        self._running = False
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}. Running: {self._running}, Processing task:'{self._ui_hint}'"
 
     def emit_delete_recursive(self):
         """Emits the task_deleted signal for all inner child tasks, then for itself.
