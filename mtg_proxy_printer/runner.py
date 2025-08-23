@@ -99,6 +99,7 @@ class AsyncTask(QObject):
     def _on_task_begins(self, _: int, ui_hint: str):
         self._ui_hint = ui_hint
         self._running = True
+        logger.debug(f"Work begins for {self}")
 
     @Slot()
     def _on_task_completed(self):
@@ -155,7 +156,7 @@ class AsyncTaskRunner(QRunnable):
         Implicitly called by QThreadPool.start()
         """
         try:
-            logger.debug(f"Entering {self.task}.run()")
+            logger.debug(f"Entering {self.task.__class__.__name__}.run()")
             self.task.run()
         finally:
             self.task.emit_delete_recursive()

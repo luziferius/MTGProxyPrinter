@@ -222,7 +222,7 @@ class ImageDownloadTask(mtg_proxy_printer.downloader_base.DownloaderBase):
         image_path = self.image_database.db_path / key.format_relative_path()
         blank = self.image_database.get_blank(card.size)
         pixmap = self._load_from_memory(key) \
-            or self._load_from_disk(image_path) \
+            or self._load_from_disk(image_path, card.name) \
             or self._download_from_scryfall(card, image_path, progress_container) \
             or blank
         if pixmap is not blank:
@@ -233,10 +233,10 @@ class ImageDownloadTask(mtg_proxy_printer.downloader_base.DownloaderBase):
     def _load_from_memory(self, key: ImageKey) -> OptionalPixmap:
         return self.image_database.loaded_images.get(key)
 
-    def _load_from_disk(self, image_path: pathlib.Path) -> OptionalPixmap:
+    def _load_from_disk(self, image_path: pathlib.Path, card_name: str) -> OptionalPixmap:
         if not self.should_run:
             return None
-        logger.debug("Image not in memory, requesting from disk")
+        logger.debug(f'Image of "{card_name}" not in memory, requesting from disk')
         if image_path.exists():
             pixmap = QPixmap(str(image_path))
             if pixmap.isNull():
@@ -251,7 +251,7 @@ class ImageDownloadTask(mtg_proxy_printer.downloader_base.DownloaderBase):
             self, card: Card, image_path: pathlib.Path, progress_container: AsyncTask) -> OptionalPixmap:
         if not self.should_run:
             return None
-        logger.debug("Image not on disk, downloading from Scryfall")
+        logger.debug(f'Image of "{card.name}" not on disk, downloading from Scryfall')
         image_path.parent.mkdir(parents=True, exist_ok=True)
         download_uri = card.image_uri
         # Download to the root of the image database directory, not into the target directory. If something goes wrong,
@@ -297,7 +297,7 @@ class ImageDownloadTask(mtg_proxy_printer.downloader_base.DownloaderBase):
         low_resolution_image_path = self.image_database.db_path / ImageKey(
             card.scryfall_id, card.is_front, False).format_relative_path()
         if low_resolution_image_path.exists():
-            logger.info("Removing outdated low-resolution image")
+            logger.info(f"Removing outdated low-resolution image of {card.name}")
             low_resolution_image_path.unlink()
         try:  # Clean-up the parent directory used to bucket the images
             low_resolution_image_path.parent.rmdir()

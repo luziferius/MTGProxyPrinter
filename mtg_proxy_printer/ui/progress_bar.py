@@ -52,18 +52,19 @@ class ProgressBar(QWidget):
         task.set_progress.connect(ui.progress_bar.setValue)
         task.advance_progress.connect(self.advance_progress)
         task.task_completed.connect(self.hide)
+        self.hide()
 
     @Slot(int)
     @Slot(int, str)
     def begin_progress(self, upper_limit: int, ui_hint: str = ""):
         ui = self.ui
-        self.setVisible(True)  # Support re-use
+        self.show()  # Support re-use
         label = ui.task_label
         label.setText(ui_hint)
         label.setVisible(bool(ui_hint))
         progress_bar = ui.progress_bar
         progress_bar.setMaximum(upper_limit)
-        progress_bar.setVisible(True)  # Support re-use
+        progress_bar.show()  # Support re-use
         ui.cancel_button.setVisible(self.can_cancel)
 
     @Slot()
@@ -92,6 +93,7 @@ class ProgressBarManager(QWidget):
         logger.debug(f"Adding progress bar for task {task}")
         bar = ProgressBar(task, self)
         layout = self.layout()
+        task.request_register_subtask.connect(lambda subtask: logger.debug(f"Registering subtask {subtask}"))
         task.request_register_subtask.connect(self.add_task)
         task.task_deleted.connect(lambda: logger.debug(f"Deleting progress bar for task {task}"))
         task.task_deleted.connect(partial(layout.removeWidget, bar))
