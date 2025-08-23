@@ -16,7 +16,6 @@
 
 import errno
 import functools
-import io
 import itertools
 import pathlib
 import shutil
