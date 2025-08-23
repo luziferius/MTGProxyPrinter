@@ -42,7 +42,6 @@ class ProgressBar(QWidget):
         super().__init__(parent, flags)
         self.task = task
         self.ui = ui = Ui_ProgressBar()
-        self.can_cancel = task.can_cancel
         ui.setupUi(self)
         policy = self.sizePolicy()
         policy.setRetainSizeWhenHidden(True)  # Prevent jitter when batch tasks hide/show subtask progress bars.
@@ -50,7 +49,6 @@ class ProgressBar(QWidget):
         ui.progress_bar.setValue(0)
         ui.cancel_button.hide()
         ui.cancel_button.clicked.connect(task.cancel)
-        self.set_progress = ui.progress_bar.setValue
         task.task_begins.connect(self.begin_progress)
         task.set_progress.connect(ui.progress_bar.setValue)
         task.advance_progress.connect(self.advance_progress)
@@ -68,7 +66,7 @@ class ProgressBar(QWidget):
         progress_bar = ui.progress_bar
         progress_bar.setMaximum(upper_limit)
         progress_bar.show()  # Support re-use
-        ui.cancel_button.setVisible(self.can_cancel)
+        ui.cancel_button.setVisible(self.task.can_cancel)
 
     @Slot()
     @Slot(int)
