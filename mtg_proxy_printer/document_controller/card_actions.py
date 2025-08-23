@@ -136,7 +136,7 @@ class ActionAddCard(DocumentAction):
 
         self.added_new_pages = self.first_added_page = 0
         self.added_cards_to_existing_pages.clear()
-        return super().undo()
+        return super().undo(document)
 
     @functools.cached_property
     def as_str(self):
