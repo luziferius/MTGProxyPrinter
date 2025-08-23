@@ -105,9 +105,6 @@ class AsyncTask(QObject):
         self._ui_hint = ""
         self._running = False
 
-    def __str__(self) -> str:
-        return f"{self.__class__.__name__}. Running: {self._running}, Processing task:'{self._ui_hint}'"
-
     def emit_delete_recursive(self):
         """Emits the task_deleted signal for all inner child tasks, then for itself.
         Called by the AsyncTaskRunner to clean up the progress bars in the main window"""
@@ -134,8 +131,8 @@ class AsyncTask(QObject):
     def run(self):
         pass
 
-    def __str__(self):
-        return self.__class__.__name__
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}. Running: {self._running}, Processing task:'{self._ui_hint}'"
 
 
 class AsyncTaskRunner(QRunnable):

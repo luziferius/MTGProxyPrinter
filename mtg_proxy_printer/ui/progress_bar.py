@@ -93,7 +93,7 @@ class ProgressBarManager(QWidget):
         bar = ProgressBar(task, self)
         layout = self.layout()
         task.request_register_subtask.connect(self.add_task)
-        task.task_deleted.connect(partial(logger.debug, f"Deleting progress bar for task {task}"))
+        task.task_deleted.connect(lambda: logger.debug(f"Deleting progress bar for task {task}"))
         task.task_deleted.connect(partial(layout.removeWidget, bar))
         task.task_deleted.connect(partial(bar.setParent, None))
         layout.insertWidget(0, bar)
