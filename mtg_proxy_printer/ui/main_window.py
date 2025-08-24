@@ -23,7 +23,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, Q
 from PySide6.QtPrintSupport import QPrintDialog
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
-from mtg_proxy_printer.card_info_downloader import ApiStreamTask, DatabaseImportTask
+from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document

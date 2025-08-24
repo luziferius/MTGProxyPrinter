@@ -27,8 +27,8 @@ from PySide6.QtCore import QCoreApplication, QThreadPool
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
-import mtg_proxy_printer.card_info_downloader
-from mtg_proxy_printer.card_info_downloader import DatabaseImportTask, FileStreamTask
+import mtg_proxy_printer.async_tasks.card_info_downloader
+from mtg_proxy_printer.async_tasks.card_info_downloader import DatabaseImportTask, FileStreamTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.async_tasks.base import AsyncTaskRunner
 
@@ -68,7 +68,7 @@ to_be_profiled_functions = {
         "_handle_printing",
         "_insert_face_name",
     ],
-    mtg_proxy_printer.card_info_downloader: [
+    mtg_proxy_printer.async_tasks.card_info_downloader: [
         "_get_card_filter_data",
     ]
 }

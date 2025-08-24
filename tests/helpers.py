@@ -33,11 +33,11 @@ from hamcrest.core.description import Description
 from hamcrest.core.matcher import Matcher
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.card_info_downloader import ApiStreamTask, DatabaseImportTask
+from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.card_info_downloader
+import mtg_proxy_printer.async_tasks.card_info_downloader
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 from mtg_proxy_printer.async_tasks.document_loader import CardType
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
@@ -113,7 +113,7 @@ def setup_settings_for_testing():
 
 def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict):
     # Explicitly share the in-memory database connection
-    dw = mtg_proxy_printer.card_info_downloader.DatabaseImportTask(card_db, card_db.db)
+    dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(card_db, card_db.db)
     section = mtg_proxy_printer.settings.settings["card-filter"]
     with qtbot.assertNotEmitted(dw.error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
         settings_to_use = update_database_printing_filters(card_db, filter_settings)

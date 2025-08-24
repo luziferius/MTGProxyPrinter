@@ -27,8 +27,8 @@ import pytest
 
 import mtg_proxy_printer.http_file
 import mtg_proxy_printer.downloader_base
-import mtg_proxy_printer.card_info_downloader
-from mtg_proxy_printer.card_info_downloader import ApiStreamTask, DatabaseImportTask
+import mtg_proxy_printer.async_tasks.card_info_downloader
+from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.main_window import MainWindow
@@ -56,10 +56,10 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> ty
             return_value=request.param), \
             unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.ApiStreamTask, "get_scryfall_bulk_card_data_url",
+                mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask, "get_scryfall_bulk_card_data_url",
                 return_value=(unittest.mock.MagicMock(), 10)), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.ApiStreamTask, "read_json_card_data_from",
+                mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask, "read_json_card_data_from",
                 return_value=iter([10])):
         main_window = MainWindow(card_db, document.image_db, document, QStringListModel(["en"]))
         qtbot.add_widget(main_window)
@@ -138,8 +138,8 @@ def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtB
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No) as message_box, \
-        unittest.mock.patch("mtg_proxy_printer.card_info_downloader.ApiStreamTask.run") as stream_run, \
-        unittest.mock.patch("mtg_proxy_printer.card_info_downloader.DatabaseImportTask.run") as import_run, \
+        unittest.mock.patch("mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask.run") as stream_run, \
+        unittest.mock.patch("mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask.run") as import_run, \
             qtbot.assert_not_emitted(main_window.request_run_async_task):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
