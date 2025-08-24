@@ -31,7 +31,7 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardDatabase
 from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType, CustomCard
-from mtg_proxy_printer.model.imagedb import ImageDownloadTask
+from mtg_proxy_printer.async_tasks.image_downloader import ImageDownloadTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import  PageType, CardSize, CardSizes, unit_registry, \
