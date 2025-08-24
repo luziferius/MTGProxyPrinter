@@ -14,9 +14,8 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import abc
-from typing import List
 
-from PySide6.QtCore import QRunnable, QObject, Signal, Slot, QThread
+from PySide6.QtCore import QRunnable, QObject, Signal, Slot
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -25,7 +24,6 @@ del get_logger
 __all__ = [
     "AsyncTaskRunner",
     "AsyncTask",
-    "AsyncTaskRunner",
 ]
 
 """
@@ -89,7 +87,7 @@ class AsyncTask(QObject):
 
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
-        self.inner_tasks: List[AsyncTask] = []
+        self.inner_tasks: list[AsyncTask] = []
         self._running = False
         self._ui_hint = ""
         self.task_begins.connect(self._on_task_begins)

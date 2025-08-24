@@ -30,7 +30,7 @@ from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.card_info_downloader import DatabaseImportTask, FileStreamTask
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.runner import AsyncTaskRunner
+from mtg_proxy_printer.async_tasks.base import AsyncTaskRunner
 
 
 @dataclasses.dataclass()

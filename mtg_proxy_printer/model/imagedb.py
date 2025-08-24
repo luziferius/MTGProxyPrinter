@@ -42,7 +42,7 @@ import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from .card import Card, CheckCard, AnyCardType
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger

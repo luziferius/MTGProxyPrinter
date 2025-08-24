@@ -34,7 +34,7 @@ if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
     from mtg_proxy_printer.ui.dialogs import SavePDFDialog
 
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.units_and_sizes import RESOLUTION
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings

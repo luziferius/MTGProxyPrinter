@@ -34,7 +34,7 @@ from typing import Any, Generator, Callable, Iterable, LiteralString, TYPE_CHECK
 
 from PySide6.QtCore import QCoreApplication, Qt
 
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.model.carddb import CardDatabase, with_database_write_lock

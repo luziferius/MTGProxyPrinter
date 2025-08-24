@@ -45,7 +45,7 @@ import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID
 from mtg_proxy_printer.sqlite_helpers import open_database
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 
 logger = get_logger(__name__)
 del get_logger

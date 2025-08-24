@@ -37,7 +37,7 @@ from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import  PageType, CardSize, CardSizes, unit_registry, \
     Quantity, T, UUID, OptStr
 from mtg_proxy_printer.document_controller import DocumentAction
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.save_file_migrations import migrate_database
 
 if TYPE_CHECKING:

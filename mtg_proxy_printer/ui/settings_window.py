@@ -21,7 +21,7 @@ from PySide6.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
 from PySide6.QtGui import QIcon, QStandardItemModel, QResizeEvent
 
 import mtg_proxy_printer.app_dirs
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.units_and_sizes import ConfigParser
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller import DocumentAction

@@ -34,7 +34,7 @@ from hamcrest.core.matcher import Matcher
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.card_info_downloader import ApiStreamTask, DatabaseImportTask
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader

@@ -25,7 +25,7 @@ if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import SectionProxy
 logger = get_logger(__name__)
