@@ -32,7 +32,7 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
-from mtg_proxy_printer.model.document_loader import DocumentLoader
+from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 
 from mtg_proxy_printer.model.imagedb_files import ImageKey

@@ -28,7 +28,7 @@ sys.path.insert(0, str(root_path))
 
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.ui.page_scene
-import mtg_proxy_printer.model.document_loader
+import mtg_proxy_printer.async_tasks.document_loader
 import mtg_proxy_printer.model.page_layout
 from mtg_proxy_printer.__main__ import main
 
@@ -79,7 +79,7 @@ to_be_profiled_functions = {
         "_compute_position_for_image",
         "_has_neighbors",
     ],
-    mtg_proxy_printer.model.document_loader.DocumentLoader: [
+    mtg_proxy_printer.async_tasks.document_loader.DocumentLoader: [
         "_load_official_card",
     ],
     mtg_proxy_printer.model.page_layout.PageLayoutSettings: [

@@ -35,7 +35,7 @@ import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 from mtg_proxy_printer.card_info_downloader import FileStreamTask, DatabaseImportTask
 from mtg_proxy_printer.carddb_migrations import DatabaseMigrationTask
-from mtg_proxy_printer.model.document_loader import DocumentLoader
+from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.update_checker import UpdateChecker

@@ -25,7 +25,7 @@ from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *
 
-from mtg_proxy_printer.model.document_loader import DocumentLoader, CardType
+from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader, CardType
 from tests.helpers import quantity_close_to
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes
 from mtg_proxy_printer.model.card import CheckCard
@@ -36,7 +36,7 @@ from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 from tests.helpers import create_save_database_with
 
-OPEN_DATABASE = "mtg_proxy_printer.model.document_loader.open_database"
+OPEN_DATABASE = "mtg_proxy_printer.async_tasks.document_loader.open_database"
 MOCK_SAVE_PATH = Path("/tmp/invalid.mtgproxies")
 
 mm = unit_registry.mm
