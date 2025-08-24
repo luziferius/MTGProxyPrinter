@@ -30,7 +30,7 @@ from hamcrest import assert_that
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import CardSizes

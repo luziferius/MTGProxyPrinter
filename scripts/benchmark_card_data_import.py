@@ -26,7 +26,7 @@ from PySide6.QtCore import QCoreApplication, QThreadPool
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.async_tasks.card_info_downloader
 from mtg_proxy_printer.async_tasks.card_info_downloader import DatabaseImportTask, FileStreamTask
 from mtg_proxy_printer.model.carddb import CardDatabase

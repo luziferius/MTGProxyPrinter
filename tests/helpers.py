@@ -41,7 +41,7 @@ import mtg_proxy_printer.async_tasks.card_info_downloader
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 from mtg_proxy_printer.async_tasks.document_loader import CardType
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict, Quantity, CardSize
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings

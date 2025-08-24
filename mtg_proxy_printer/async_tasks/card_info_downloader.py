@@ -40,7 +40,7 @@ from mtg_proxy_printer.http_file import MeteredSeekableHTTPFile
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock, \
     DEFAULT_DATABASE_LOCATION
 from mtg_proxy_printer.sqlite_helpers import cached_dedent
-from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID
