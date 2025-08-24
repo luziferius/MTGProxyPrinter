@@ -35,7 +35,7 @@ from typing import Literal
 import ijson
 from PySide6.QtCore import Qt
 
-from mtg_proxy_printer.downloader_base import DownloaderBase
+from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
 from mtg_proxy_printer.http_file import MeteredSeekableHTTPFile
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock, \
     DEFAULT_DATABASE_LOCATION

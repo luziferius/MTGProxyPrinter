@@ -22,7 +22,7 @@ import urllib.error
 from PySide6.QtCore import Qt, QModelIndex, Signal
 from PySide6.QtGui import QPixmap
 
-import mtg_proxy_printer.downloader_base
+import mtg_proxy_printer.async_tasks.downloader_base
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.document_controller import DocumentAction
 
@@ -56,7 +56,7 @@ __all__ = [
 ]
 
 
-class ImageDownloadTask(mtg_proxy_printer.downloader_base.DownloaderBase):
+class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.DownloaderBase):
     image_obtained = Signal(ImageKey, QPixmap)
     request_action = Signal(DocumentAction)
 

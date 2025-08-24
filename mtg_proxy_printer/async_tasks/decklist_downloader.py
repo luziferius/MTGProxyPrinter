@@ -31,7 +31,7 @@ from typing import Type, Counter, Iterable, Any, Union
 import ijson
 from PySide6.QtGui import QValidator
 
-from mtg_proxy_printer.downloader_base import DownloaderBase
+from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser, TappedOutCSVParser
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MagicWorkstationDeckDataFormatParser, \

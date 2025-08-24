@@ -14,7 +14,6 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import typing
 import unittest.mock
 
 import pytest
@@ -23,7 +22,7 @@ from hamcrest import *
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card import Card
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser
-from mtg_proxy_printer.decklist_downloader import DecklistDownloader
+from mtg_proxy_printer.async_tasks.decklist_downloader import DecklistDownloader
 
 from tests.helpers import fill_card_database_with_json_cards, SHOULD_SKIP_NETWORK_TESTS
 

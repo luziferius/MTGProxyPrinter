@@ -26,7 +26,7 @@ from hamcrest import *
 import pytest
 
 import mtg_proxy_printer.http_file
-import mtg_proxy_printer.downloader_base
+import mtg_proxy_printer.async_tasks.downloader_base
 import mtg_proxy_printer.async_tasks.card_info_downloader
 from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase

@@ -30,7 +30,7 @@ from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import SectionProxy
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
-from mtg_proxy_printer.decklist_downloader import IsIdentifyingDeckUrlValidator, AVAILABLE_DOWNLOADERS, \
+from mtg_proxy_printer.async_tasks.decklist_downloader import IsIdentifyingDeckUrlValidator, AVAILABLE_DOWNLOADERS, \
     get_downloader_class, ParserBase
 from mtg_proxy_printer.model.card_list import CardListModel
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel

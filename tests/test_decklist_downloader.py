@@ -22,7 +22,7 @@ from hamcrest import *
 
 from .helpers import SHOULD_SKIP_NETWORK_TESTS
 
-from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
+from mtg_proxy_printer.async_tasks.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
     IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader, \
     MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader, MTGTop8Downloader, MTGAZoneDownloader, \
     CubeCobraDownloader, ManaboxDownloader
