@@ -54,8 +54,11 @@ __all__ = [
 SAVE_FILE_MAGIC_NUMBER = 41325044
 Orientation = QPageLayout.Orientation
 Millimeter = QPageSize.Unit.Millimeter
+CardTableRow = tuple[int, bool, str, OptStr, OptStr]
+CardTableContent = Iterable[CardTableRow]
 
 class CardType(str, enum.Enum):
+    value: str
     REGULAR = "r"
     CHECK_CARD = "d"
 
@@ -240,7 +243,7 @@ class DocumentLoader(AsyncTask):
                 FROM Card
                 WHERE page = ?
                 ORDER BY page ASC, slot ASC""")
-        db_data: Iterable[tuple[int, bool, str, OptStr, OptStr]] = save_db.execute(query, (page,))
+        db_data: CardTableContent = save_db.execute(query, (page,))
         valid_card_types = {v.value for v in CardType}
         is_positive_int = all_of(instance_of(int), greater_than_or_equal_to(1))
         result: CardList = []
@@ -272,7 +275,7 @@ class DocumentLoader(AsyncTask):
         return result
 
     @staticmethod
-    def _validate_save_db_card_row(is_positive_int, item, valid_card_types):
+    def _validate_save_db_card_row(is_positive_int, item: CardTableRow, valid_card_types: set[str]):
         assert_that(item, contains_exactly(
             is_positive_int,
             is_in({True, False}),
