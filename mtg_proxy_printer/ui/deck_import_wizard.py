@@ -13,10 +13,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Callable
 import itertools
 import pathlib
 import re
-import typing
 import urllib.error
 import urllib.parse
 
@@ -318,7 +318,7 @@ class SelectDeckParserPage(QWizardPage):
         self.card_db = document.card_db
         self.image_db = document.image_db
         self._selected_parser = None
-        self.parser_creator: typing.Callable[[], None] = (lambda: None)
+        self.parser_creator: Callable[[], None] = (lambda: None)
         group_names = ', '.join(sorted(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES))
         custom_re_input = self.ui.custom_re_input
         custom_re_input.setToolTip(custom_re_input.toolTip().format(group_names=group_names))
@@ -371,7 +371,7 @@ class SelectDeckParserPage(QWizardPage):
         used_downloader: str = self.field("deck-list-downloaded")
         if used_downloader:
             parser_to_use = AVAILABLE_DOWNLOADERS[used_downloader].PARSER_CLASS
-            parser_table: dict[typing.Type[ParserBase], QRadioButton] = {
+            parser_table: dict[type[ParserBase], QRadioButton] = {
                 re_parsers.MagicWorkstationDeckDataFormatParser: ui.select_parser_magic_workstation,
                 re_parsers.MTGArenaParser: ui.select_parser_mtg_arena,
                 re_parsers.MTGOnlineParser: ui.select_parser_mtg_online,

@@ -14,11 +14,11 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
+from collections.abc import Generator
 import datetime
 import itertools
 from pathlib import Path
 import textwrap
-from typing import Generator
 import unittest.mock
 from unittest.mock import MagicMock
 

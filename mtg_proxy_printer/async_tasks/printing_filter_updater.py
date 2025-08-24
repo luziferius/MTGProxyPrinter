@@ -13,15 +13,14 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+from collections.abc import Sequence
 import sqlite3
-import typing
-from typing import LiteralString
+from typing import LiteralString, TYPE_CHECKING, Any
 
 from PySide6.QtCore import Qt, QCoreApplication
 
 import mtg_proxy_printer.settings
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
@@ -324,7 +323,7 @@ class PrintingFilterUpdater(AsyncTask):
         result = {value for (value,) in values}
         return result
 
-    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
+    def _read_optional_scalar_from_db(self, query: str, parameters: Sequence[Any]):
         if result := self.db.execute(query, parameters).fetchone():
             return result[0]
         else:

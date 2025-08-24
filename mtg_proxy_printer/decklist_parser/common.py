@@ -15,7 +15,7 @@
 
 
 from abc import abstractmethod
-import typing
+from collections import Counter
 
 from PySide6.QtCore import QObject, Signal
 
@@ -43,7 +43,7 @@ except NameError:
     def profile(func):
         return func
 
-CardCounter = typing.Counter[AnyCardType]
+CardCounter = Counter[AnyCardType]
 ParsedDeck = tuple[CardCounter, list[str]]
 
 
@@ -175,7 +175,7 @@ class ParserBase(QObject):
             return already_downloaded[0]
         return possible_matches[0]
 
-    def _add_card_to_deck(self, deck: typing.Counter[Card], card: Card, count: int):
+    def _add_card_to_deck(self, deck: Counter[Card], card: Card, count: int):
         deck[card] += count
         if self.add_opposing_face and (opposing_face := self.card_db.get_opposing_face(card)) is not None:
             # Double-faced card

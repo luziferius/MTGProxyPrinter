@@ -14,7 +14,8 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import typing
+from collections.abc import Callable
+from typing import Any
 
 from PySide6.QtCore import QObject, Signal, Slot
 
@@ -45,7 +46,7 @@ class MissingImagesManager(QObject):
         self.callback = None
         logger.info(f"Created {self.__class__.__name__} instance")
 
-    def obtain_missing_images(self, callback: typing.Callable[[], typing.Any] = None):
+    def obtain_missing_images(self, callback: Callable[[], Any] = None):
         self.callback = callback
         images_to_fetch = list(self.document.get_missing_image_cards())
         logger.debug(f"About to fetch {len(images_to_fetch)} missing images")

@@ -22,6 +22,7 @@ To add a new migration, place a MigrationScript instance in the MIGRATION_SCRIPT
 using the source schema version as the dict key.
 """
 
+from collections.abc import Iterable, Generator
 import dataclasses
 import datetime
 import socket
@@ -30,7 +31,7 @@ import time
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import Any, Generator, Callable, Iterable, LiteralString, TYPE_CHECKING
+from typing import Any, Callable, LiteralString, TYPE_CHECKING
 
 from PySide6.QtCore import QCoreApplication, Qt
 

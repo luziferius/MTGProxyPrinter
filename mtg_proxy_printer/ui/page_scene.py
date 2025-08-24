@@ -14,6 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+from collections.abc import Generator
 import enum
 import functools
 import itertools
@@ -36,7 +37,7 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-PixelCache = typing.DefaultDict[PageType, list[float]]
+PixelCache = collections.defaultdict[PageType, list[float]]
 ItemDataRole = Qt.ItemDataRole
 ColorGroup = QPalette.ColorGroup
 ColorRole = QPalette.ColorRole
@@ -760,7 +761,7 @@ class PageScene(QGraphicsScene):
                 page_layout.margin_left, page_layout.column_spacing
             ))
 
-    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> typing.Generator[float, None, None]:
+    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> Generator[float, None, None]:
         spacing = distance_to_rounded_px(parameters.image_spacing)
         card_size: int = round(parameters.card_size.magnitude)
 

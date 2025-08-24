@@ -17,7 +17,6 @@
 import abc
 import collections
 import csv
-import typing
 
 from PySide6.QtCore import QObject, QCoreApplication
 
@@ -30,7 +29,7 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-LineParserResult = typing.Counter[Card]
+LineParserResult = collections.Counter[Card]
 CsvLine = tuple[str, dict[str, str]]
 
 __all__ = [

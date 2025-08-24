@@ -14,10 +14,9 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-
+from collections.abc import Iterable
 import itertools
 from functools import partial
-import typing
 from unittest.mock import patch
 from math import ceil
 
@@ -29,7 +28,7 @@ from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
 from PySide6.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QPainter
 from PySide6.QtCore import QPoint
 
-from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, Unit, unit_registry, Quantity
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene, NeighborsPresent
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
@@ -394,7 +393,7 @@ def test__compute_position_for_image_x(
     )
 
 
-def elementwise_repeat(items: typing.Iterable, times: int) -> list:
+def elementwise_repeat(items: Iterable, times: int) -> list:
     duplicates = (itertools.repeat(item, times) for item in items)
     return list(itertools.chain.from_iterable(duplicates))
 

@@ -15,8 +15,8 @@
 
 import copy
 from collections import Counter
+from collections.abc import Generator
 import re
-import typing
 
 from PySide6.QtCore import QObject, QCoreApplication
 
@@ -78,7 +78,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
 
     @profile
     def parse_deck_internal(self, deck_list: str, print_guessing: bool, language_override: str = None) -> ParsedDeck:
-        cards: typing.Counter[Card] = Counter()
+        cards: Counter[Card] = Counter()
         unmatched_lines = []
         for line in self.line_splitter(deck_list):
             # Convert the Match instance to a dict, in order to have the get() method with a default.
@@ -111,7 +111,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
                 unmatched_lines.append(line)
         return cards, unmatched_lines
 
-    def _add_matched_card(self, cards: typing.Counter[Card], matched_card: CardIdentificationData, copies: int):
+    def _add_matched_card(self, cards: Counter[Card], matched_card: CardIdentificationData, copies: int):
         card = self.card_db.get_cards_from_data(matched_card)[0]
         self._add_card_to_deck(cards, card, copies)
 
@@ -160,7 +160,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
             name = name.split("//")[0].rstrip()
         return name
 
-    def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
+    def line_splitter(self, deck_list: str) -> Generator[str, None, None]:
         """
         Split the input deck list into individual lines, omitting empty lines,
         lines that only contain

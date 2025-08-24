@@ -15,8 +15,8 @@
 
 
 from collections import Counter
+from collections.abc import Generator
 import pathlib
-import typing
 import unittest.mock
 
 from PySide6.QtCore import QStringListModel
@@ -49,7 +49,7 @@ def _create_task_receiver(main_window: MainWindow) -> AsyncTaskReceiver:
 
 
 @pytest.fixture(params=[Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, Ui_TabbedCentralWidget])
-def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> typing.Generator[MainWindow, None, None]:
+def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Generator[MainWindow, None, None]:
     fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
     with unittest.mock.patch(
             "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",
@@ -116,7 +116,7 @@ def test_action_download_card_data_is_enabled_after_network_error(qtbot: QtBot, 
 
 @pytest.mark.parametrize("task_raising_error", [ApiStreamTask, DatabaseImportTask])
 def test_action_download_card_data_is_enabled_after_other_error(
-        qtbot: QtBot, main_window: MainWindow, task_raising_error: typing.Type[AsyncTask]):
+        qtbot: QtBot, main_window: MainWindow, task_raising_error: type[AsyncTask]):
     ui = main_window.ui
     receiver = _create_task_receiver(main_window)
     ui.action_download_card_data.trigger()

@@ -15,12 +15,13 @@
 
 
 import collections
+from collections.abc import Generator, Iterable
 import enum
 import itertools
 import math
 from pathlib import Path
 import sys
-from typing import Counter, Iterable, Any, Generator
+from typing import Any, Counter
 
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
     QPersistentModelIndex, QMimeData

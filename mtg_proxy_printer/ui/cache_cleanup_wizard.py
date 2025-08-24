@@ -14,6 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
+from collections.abc import Iterable
 import dataclasses
 import datetime
 import enum
@@ -391,7 +392,7 @@ class CardFilterPage(QWizardPage):
                 index = self.unknown_image_model.index(row, UnknownCardColumns.ScryfallId)
                 selection_model.select(index, SelectRows)
 
-    def _select_rows(self, indices: typing.Iterable[int]):
+    def _select_rows(self, indices: Iterable[int]):
         selection_model = self.ui.card_image_view.selectionModel()
         for index in indices:
             selection_model.select(

@@ -13,14 +13,14 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+from collections.abc import Iterable
 import errno
 import functools
 import itertools
 import pathlib
 import shutil
 import string
-from typing import Iterable, TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable
 
 from PySide6.QtCore import QObject, Signal, Slot, QModelIndex, Qt
 from PySide6.QtGui import QPixmap, QColorConstants

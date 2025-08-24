@@ -362,14 +362,14 @@ def test_custom_re_parser_works(qtbot: QtBot, document: Document):
 
 
 def generate_test_cases_for_test_custom_re_parser_accepts_valid_re():
-    def flattened_powerset_without_empty(iterable: typing.FrozenSet[typing.FrozenSet[str]]):
+    def flattened_powerset_without_empty(iterable: frozenset[frozenset[str]]):
         """Based on the powerset recipe in the itertools documentation"""
         powerset_without_empty = itertools.chain.from_iterable(
             itertools.combinations(iterable, r)
             for r in range(1, len(iterable) + 1))
         return (frozenset.union(*groups) for groups in powerset_without_empty)
 
-    def generate_re(groups: typing.FrozenSet[str]):
+    def generate_re(groups: frozenset[str]):
         return " ".join(fr"(?P<{group_name}>.+)" for group_name in groups)
 
     for groups in flattened_powerset_without_empty(GenericRegularExpressionDeckParser.IDENTIFYING_GROUP_COMBINATIONS):

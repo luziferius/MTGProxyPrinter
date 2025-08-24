@@ -13,7 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import typing
+from collections.abc import Callable
 from functools import partial
 
 from PySide6.QtCore import QStringListModel, Signal, Qt, QItemSelectionModel, QEvent, QObject, QTimer
@@ -53,7 +53,7 @@ __all__ = [
 
 
 class HighlightDifferingSettingsHoverEventFilter(QObject):
-    parent: typing.Callable[[], "SettingsWindow"]
+    parent: Callable[[], "SettingsWindow"]
 
     def __init__(self, settings: ConfigParser, parent: "SettingsWindow"):
         super().__init__(parent)

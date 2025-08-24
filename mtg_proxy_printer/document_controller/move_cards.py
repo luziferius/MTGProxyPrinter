@@ -13,7 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+from collections.abc import Sequence
 import functools
 import itertools
 import typing
@@ -43,7 +43,7 @@ class ActionMoveCards(DocumentAction):
     COMPARISON_ATTRIBUTES = ["source_page", "target_page", "card_ranges_to_move"]
 
     def __init__(
-            self, source: int, cards_to_move: typing.Sequence[int],
+            self, source: int, cards_to_move: Sequence[int],
             target_page: int, target_row: int = None, parent: QObject = None):
         """
         :param source: The source page, as integer page number (0-indexed)
@@ -120,7 +120,7 @@ class ActionMoveCards(DocumentAction):
         return super().undo(document)
 
     @staticmethod
-    def _to_list_of_ranges(sequence: typing.Sequence[int]) -> list[tuple[int, int]]:
+    def _to_list_of_ranges(sequence: Sequence[int]) -> list[tuple[int, int]]:
         ranges: list[tuple[int, int]] = []
         sequence = itertools.chain(sequence, (sentinel := object(),))
         lower = upper = next(sequence)

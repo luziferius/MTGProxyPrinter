@@ -14,8 +14,9 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
+from collections.abc import Iterable
 import functools
-from typing import Iterable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QObject
 

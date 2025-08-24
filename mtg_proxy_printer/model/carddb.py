@@ -15,6 +15,7 @@
 
 
 import atexit
+from collections.abc import Sequence
 import dataclasses
 import datetime
 from itertools import starmap
@@ -22,7 +23,7 @@ import functools
 from pathlib import Path
 import sqlite3
 import threading
-from typing import NamedTuple, TypeVar, Literal, Sequence, Any, LiteralString
+from typing import NamedTuple, TypeVar, Literal, Any, LiteralString
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QObject, Signal, Slot

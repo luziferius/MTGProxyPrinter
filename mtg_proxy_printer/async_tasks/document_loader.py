@@ -19,7 +19,8 @@ import itertools
 import pathlib
 import sqlite3
 import textwrap
-from typing import Counter, Iterable, NamedTuple, TYPE_CHECKING
+from typing import Counter, NamedTuple, TYPE_CHECKING
+from collections.abc import Iterable
 
 from PySide6.QtGui import QPageLayout, QPageSize, QColor
 from PySide6.QtCore import Signal, Qt

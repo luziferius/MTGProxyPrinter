@@ -13,17 +13,16 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+from collections import defaultdict
+from collections.abc import Callable
 import logging
 import math
 import pathlib
 import re
 import typing
 import tokenize
-from collections import defaultdict
-from typing import Callable
 
-from pint import DimensionalityError, Quantity, Unit
+from pint import DimensionalityError, Unit
 from PySide6.QtCore import QStandardPaths, QLocale
 from PySide6.QtGui import QPageSize, QPageLayout, QColor
 from PySide6.QtPrintSupport import QPrinterInfo
@@ -258,7 +257,7 @@ DEFAULT_SETTINGS["export"] = {
 MAX_DOCUMENT_NAME_LENGTH = 200
 
 
-ALLOWED_LENGTH_UNITS: typing.Set[Quantity] = {mm}
+ALLOWED_LENGTH_UNITS: frozenset[Quantity] = frozenset({mm})
 
 
 def round_to_nearest_multiple(value: T, multiple: T) -> T:

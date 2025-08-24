@@ -15,9 +15,10 @@
 
 
 from collections import Counter
+from collections.abc import Iterable
 import itertools
 import math
-import typing
+from typing import TypeVar
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
 from mtg_proxy_printer.model.document import Document
@@ -31,10 +32,10 @@ from hamcrest import *
 
 from .helpers import append_new_card_in_page, create_card, card_container_with
 
-T = typing.TypeVar("T")
+T = TypeVar("T")
 
 
-def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.Iterable[tuple[T, ...]]:
+def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[tuple[T, ...]]:
     """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
     iterable = iter(iterable)
     return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())

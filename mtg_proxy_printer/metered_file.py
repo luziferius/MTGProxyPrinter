@@ -13,7 +13,8 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Iterable, BinaryIO
+from collections.abc import Iterable
+from typing import BinaryIO
 from io import BufferedIOBase
 
 from PySide6.QtCore import QObject, Signal
@@ -28,7 +29,6 @@ __all__ = [
 ]
 
 WrappedIoType = BufferedIOBase | BinaryIO
-
 
 @delegate(
     "file",

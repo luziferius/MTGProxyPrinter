@@ -13,6 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Sequence
 import functools
 import itertools
 import math
@@ -173,7 +174,7 @@ class ActionRemoveCards(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["card_ranges_to_remove", "page_number", "removed_cards"]
 
-    def __init__(self, cards_to_remove: typing.Sequence[int], page_number: int = None, parent: QObject = None):
+    def __init__(self, cards_to_remove: Sequence[int], page_number: int = None, parent: QObject = None):
         if not cards_to_remove:
             raise ValueError("Parameter cards_to_remove must not be empty")
         super().__init__(parent)

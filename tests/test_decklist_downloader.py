@@ -14,7 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import typing
+from collections.abc import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -28,10 +28,10 @@ from mtg_proxy_printer.async_tasks.decklist_downloader import ScryfallDownloader
     CubeCobraDownloader, ManaboxDownloader
 
 
-UrlTestData = tuple[typing.Type[DecklistDownloader], str]
+UrlTestData = tuple[type[DecklistDownloader], str]
 
 
-def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Generator[UrlTestData, None, None]:
+def generate_tests_for_test_re_matcher_matches_acceptable_url() -> Generator[UrlTestData, None, None]:
     # MTGGoldfish
     # Deck links
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5077398#paper"
@@ -158,7 +158,7 @@ def test_IsIdentifyingDeckUrlValidator_validate(downloader, url: str):
     )
 
 
-def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Generator[UrlTestData, None, None]:
+def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> Generator[UrlTestData, None, None]:
     # MTGGoldfish
     # Deck links
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck"
@@ -271,7 +271,7 @@ def test_IsIdentifyingDeckUrlValidator_validate_returns_Intermediate_or_Invalid_
 
 
 def generate_test_cases_for_test_deck_list_download() \
-        -> typing.Generator[tuple[typing.Type[DecklistDownloader], str, str], None, None]:
+        -> Generator[tuple[type[DecklistDownloader], str, str], None, None]:
     """
     Yields tuples with Parser class, deck list url and a snippet of the deck list content.
     It does not include the full deck list, because reported printings or price information may change over time,
@@ -298,7 +298,7 @@ def generate_test_cases_for_test_deck_list_download() \
 
 @pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")
 @pytest.mark.parametrize("downloader_class, url, expected", generate_test_cases_for_test_deck_list_download())
-def test_deck_list_download(downloader_class: typing.Type[DecklistDownloader], url: str, expected: str):
+def test_deck_list_download(downloader_class: type[DecklistDownloader], url: str, expected: str):
     downloader = downloader_class()
     result = downloader.download(url)
     assert_that(result, is_(str))

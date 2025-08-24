@@ -13,6 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Sequence
 import json
 import logging
 from functools import partial
@@ -77,7 +78,7 @@ class PageMetadata(typing.NamedTuple):
 class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
 
-    def display_item(self) -> typing.Sequence[QStandardItem]:
+    def display_item(self) -> Sequence[QStandardItem]:
         """Returns a list model item for this page, used to represent the page in the settings page selection UI."""
         data = self.display_metadata()
         item = QStandardItem(data.text)

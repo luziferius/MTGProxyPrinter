@@ -15,7 +15,6 @@
 
 from collections import Counter
 from pathlib import Path
-import typing
 
 from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QPixmap
@@ -122,8 +121,8 @@ class CustomCardImportDialog(QDialog):
         self.model.add_cards(cards)
         self.show()
 
-    def create_cards(self, paths: list[Path]) -> typing.Counter[CustomCard]:
-        result: typing.Counter[CustomCard] = Counter()
+    def create_cards(self, paths: list[Path]) -> Counter[CustomCard]:
+        result: Counter[CustomCard] = Counter()
         regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
         card_db = self.model.card_db
         for path in paths:

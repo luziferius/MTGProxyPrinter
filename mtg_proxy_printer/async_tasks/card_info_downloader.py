@@ -14,6 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import abc
+from collections.abc import Generator
 import enum
 import functools
 import gzip
@@ -73,7 +74,7 @@ socket.setdefaulttimeout(5)
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 IntTuples = list[tuple[int]]
-CardStream = typing.Generator[CardDataType, None, None]
+CardStream = Generator[CardDataType, None, None]
 CardOrFace = CardDataType | FaceDataType
 CardDataQueue = queue.Queue[tuple[CardDataType, ...] | None]
 
@@ -802,7 +803,7 @@ def _should_skip_card(card: CardDataType) -> bool:
     )
 
 
-def _get_card_faces(card: CardDataType) -> typing.Generator[CardFaceData, None, None]:
+def _get_card_faces(card: CardDataType) -> Generator[CardFaceData, None, None]:
     """
     Yields a CardFaceData object for each face found in the card object.
     The printed name falls back to the English name, if the card has no printed_name key.

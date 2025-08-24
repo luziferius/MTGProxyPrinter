@@ -13,12 +13,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+from collections.abc import Callable
 from pathlib import Path
 import shutil
 import sys
 import typing
-from typing import Callable
 from PySide6.QtCore import QFile, Signal, Slot, QObject, QEvent, Qt
 from PySide6.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PySide6.QtGui import QIcon
@@ -358,7 +357,7 @@ class PrintDialog(QPrintDialog):
 
 
 class ChangedSettingsHoverEventFilter(QObject):
-    parent: typing.Callable[[], "DocumentSettingsDialog"]
+    parent: Callable[[], "DocumentSettingsDialog"]
 
     def __init__(self, settings: ConfigParser, parent: "DocumentSettingsDialog"):
         super().__init__(parent)
