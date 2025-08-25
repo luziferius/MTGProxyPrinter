@@ -97,9 +97,9 @@ class PageConfigWidget(QGroupBox):
         ui.paper_orientation.currentIndexChanged.connect(self.on_page_layout_changed)
         ui.paper_orientation.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
+        ui.watermark_color_button.clicked.connect(self._on_watermark_color_button_clicked)
         ui.watermark_opacity.valueChanged.connect(self._on_watermark_color_opacity_changed)
         ui.watermark_opacity.valueChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
-        ui.watermark_color_button.clicked.connect(self._on_watermark_color_button_clicked)
 
         ui.cut_marker_color_button.clicked.connect(self._on_cut_marker_color_button_clicked)
         ui.cut_marker_opacity.valueChanged.connect(self._on_cut_marker_color_opacity_changed)
@@ -277,7 +277,9 @@ class PageConfigWidget(QGroupBox):
         for line_edit, setting in self._get_string_settings_widgets():
             line_edit.setText(documents_section[setting])
         for label, slider, setting, _ in self._get_color_settings_widgets():  # Ignore the text display label
-            self._show_color(label, slider, documents_section.get_color(setting))
+            color = documents_section.get_color(setting)
+            self._show_color(label, slider, color)
+            setattr(self.page_layout, label.objectName(), color)
 
         self._load_paper_size(documents_section["paper-size"])
         self._load_paper_orientation(documents_section["paper-orientation"])
@@ -360,6 +362,7 @@ class PageConfigWidget(QGroupBox):
         for line_edit, setting in self._get_string_settings_widgets():
             documents_section[setting] = line_edit.text()
         documents_section["watermark-color"] = self.page_layout.watermark_color.name(QColor.NameFormat.HexArgb)
+        documents_section["cut-marker-color"] = self.page_layout.cut_marker_color.name(QColor.NameFormat.HexArgb)
         documents_section["paper-size"] = PageSizeManager.PageSizeReverse[self._current_page_size()]
         documents_section["paper-orientation"] = PageSizeManager.PageOrientationReverse[self._current_page_orientation()]
         logger.debug("Saving done.")
