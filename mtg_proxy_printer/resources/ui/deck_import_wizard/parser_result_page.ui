@@ -2,19 +2,11 @@
 <ui version="4.0">
  <class>SummaryPage</class>
  <widget class="QWizardPage" name="SummaryPage">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>440</width>
-    <height>278</height>
-   </rect>
-  </property>
   <property name="title">
    <string>Import a deck list for printing</string>
   </property>
   <property name="subTitle">
-   <string>The cards shown here will be imported. Double-click the Set Collector# or Language cells to change selected printings. The text field shows all lines from the input that were not identified as cards.</string>
+   <string>The cards shown in the table will be imported. Double-click the Set, Collector# or Language cells to change selected printings. The text field shows all lines from the input that were not identified as cards.</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -35,6 +27,9 @@ If unchecked, append the cards found below to the document.</string>
     <widget class="QLabel" name="parsed_cards_label">
      <property name="text">
       <string>These cards were successfully identified:</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -64,6 +59,9 @@ If unchecked, append the cards found below to the document.</string>
     <widget class="QLabel" name="unsuccessful_lines_label">
      <property name="text">
       <string>These lines from the deck list were not identified as cards:</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
      </property>
     </widget>
    </item>

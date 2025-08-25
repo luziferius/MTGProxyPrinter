@@ -313,54 +313,54 @@ class SelectDeckParserPage(QWizardPage):
 
     def __init__(self, document: Document, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ui = Ui_SelectDeckParserPage()
-        self.ui.setupUi(self)
+        self.ui = ui = Ui_SelectDeckParserPage()
+        ui.setupUi(self)
         self.card_db = document.card_db
         self.image_db = document.image_db
         self._selected_parser = None
         self.parser_creator: typing.Callable[[], None] = (lambda: None)
         group_names = ', '.join(sorted(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES))
-        custom_re_input = self.ui.custom_re_input
+        custom_re_input = ui.custom_re_input
         custom_re_input.setToolTip(custom_re_input.toolTip().format(group_names=group_names))
         custom_re_input.setWhatsThis(markdown_to_html(custom_re_input.whatsThis()))
         custom_re_input.setValidator(IsDecklistParserRegularExpressionValidator(self))
-        self.ui.insert_copies_matcher_sample_button.clicked.connect(
+        ui.insert_copies_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<copies>\d+)"))
-        self.ui.insert_name_matcher_sample_button.clicked.connect(
+        ui.insert_name_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<name>.+)"))
-        self.ui.insert_set_code_matcher_sample_button.clicked.connect(
+        ui.insert_set_code_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<set_code>\w+)"))
-        self.ui.insert_collector_number_matcher_sample_button.clicked.connect(
+        ui.insert_collector_number_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<collector_number>.+)"))
-        self.ui.insert_language_matcher_sample_button.clicked.connect(
+        ui.insert_language_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<language>[a-zA-Z]{2})"))
-        self.ui.insert_scryfall_id_matcher_sample_button.clicked.connect(
+        ui.insert_scryfall_id_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<scryfall_id>[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12})"))
         self.complete = False
         self.registerField("custom_re", custom_re_input)
         self.registerField("selected_parser", self)
-        self.ui.select_parser_magic_workstation.clicked.connect(
+        ui.select_parser_magic_workstation.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_magic_workstation_parser)
         )
-        self.ui.select_parser_mtg_arena.clicked.connect(
+        ui.select_parser_mtg_arena.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_mtg_arena_parser)
         )
-        self.ui.select_parser_mtg_online.clicked.connect(
+        ui.select_parser_mtg_online.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_mtg_online_parser)
         )
-        self.ui.select_parser_xmage.clicked.connect(
+        ui.select_parser_xmage.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_xmage_parser)
         )
-        self.ui.select_parser_scryfall_csv.clicked.connect(
+        ui.select_parser_scryfall_csv.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_scryfall_csv_parser)
         )
-        self.ui.select_parser_tappedout_csv.clicked.connect(
+        ui.select_parser_tappedout_csv.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_tappedout_csv_parser)
         )
-        self.ui.select_parser_custom_re.clicked.connect(
+        ui.select_parser_custom_re.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_generic_re_parser)
         )
-        self.ui.select_parser_card_name_list.clicked.connect(
+        ui.select_parser_card_name_list.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_card_name_list_parser)
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
