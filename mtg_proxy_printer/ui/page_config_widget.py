@@ -312,7 +312,8 @@ class PageConfigWidget(QGroupBox):
                 line_edit.setText(value := getattr(other, name := line_edit.objectName()))
             setattr(layout, name, value)
         for label, slider, setting, _ in self._get_color_settings_widgets():  # Ignore the other widgets
-            self._show_color(label, slider, value := getattr(other, name := label.objectName()))
+            with BlockedSignals(slider):
+                self._show_color(label, slider, value := getattr(other, name := label.objectName()))
             setattr(layout, name, value)
         self._load_paper_size(other.paper_size)
         self._load_paper_orientation(other.paper_orientation)
