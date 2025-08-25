@@ -44,7 +44,7 @@ def test_add_card_works_with_art_series_card(qtbot: QtBot, card_db: CardDatabase
         "en", "Clearwater Pathway", "aznr", "25"
     )
     qtbot.add_widget(add_card_widget := widget_class())
-    add_card_widget.set_card_database(card_db)
+    add_card_widget.set_databases(card_db)
     add_card_widget.card_name_filter_updated("")  # Populate the card name list
     add_card_widget.ui.card_name_list.setSelection(QRect(1, 1, 1, 1), ClearAndSelect)
     qtbot.mouseClick(add_card_widget.ui.card_name_list, LeftButton, pos=QPoint(10, 10))

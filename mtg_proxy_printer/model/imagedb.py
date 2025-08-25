@@ -145,29 +145,11 @@ class ImageDatabase(QObject):
             if e.errno != errno.ENOTEMPTY:
                 raise e
 
-    @Slot(list)
-    def obtain_missing_images(self, card_indices: IndexList):
-        logger.info(f"Trying to obtain {len(card_indices)} missing images.")
-        task = ObtainMissingImagesTask(self, card_indices)
-        # Ensure the task lives until the Document processed it to prevent the garbage collector
-        # from collecting it mid-flight through C++ code
-        task.request_action.connect(self.request_action, BlockingQueuedConnection)
-        self.request_run_async_task.emit(ObtainMissingImagesTask(self, card_indices))
-
     @Slot(ActionReplaceCard)
     @Slot(ActionAddCard)
     def fill_document_action_image(self, action: SingleActions):
         logger.debug(f"About to obtain image for card in action")
         task = SingleDownloadTask(self, action)
-        # Ensure the task lives until the Document processed it to prevent the garbage collector
-        # from collecting it mid-flight through C++ code
-        task.request_action.connect(self.request_action, BlockingQueuedConnection)
-        self.request_run_async_task.emit(task)
-
-    @Slot(ActionImportDeckList)
-    def fill_batch_document_action_images(self, action: BatchActions):
-        logger.debug(f"About to obtain images for cards in batch action")
-        task = BatchDownloadTask(self, action)
         # Ensure the task lives until the Document processed it to prevent the garbage collector
         # from collecting it mid-flight through C++ code
         task.request_action.connect(self.request_action, BlockingQueuedConnection)

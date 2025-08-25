@@ -28,7 +28,7 @@ from PySide6.QtWidgets import QCheckBox, QWizard, QTableView, QComboBox, QLineEd
 from PySide6.QtTest import QTest
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
+from mtg_proxy_printer.async_tasks.image_downloader import BatchDownloadTask
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGOnlineParser, MTGArenaParser, \
@@ -222,8 +222,8 @@ class CardListReceiver(QObject):
         super(CardListReceiver, self).__init__(parent)
         self.deck: CardCounter = Counter()
 
-    def on_import_action_received(self, action: ActionImportDeckList):
-        self.deck = action.cards
+    def on_import_action_received(self, task: BatchDownloadTask):
+        self.deck = task.action.cards
 
 
 def test_selecting_different_printing_works(qtbot: QtBot, document: Document):
@@ -252,8 +252,8 @@ def test_selecting_different_printing_works(qtbot: QtBot, document: Document):
         QTest.keyClick(editor, Key.Key_Enter)
     # Now accept the dialog and capture the emitted deck
     deck_receiver = CardListReceiver()
-    wizard.request_action.connect(deck_receiver.on_import_action_received)
-    with qtbot.wait_signal(wizard.request_action, timeout=1000):
+    wizard.request_run_async_task.connect(deck_receiver.on_import_action_received)
+    with qtbot.wait_signal(wizard.request_run_async_task, timeout=1000):
         QTest.keyClick(wizard, Key.Key_Enter)
     assert_that(deck_receiver.deck, has_length(1))
     assert_that(

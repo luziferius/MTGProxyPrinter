@@ -21,12 +21,15 @@ from PySide6.QtWidgets import QWidget, QDialogButtonBox
 from PySide6.QtGui import QIcon
 
 import mtg_proxy_printer.model.card
+from mtg_proxy_printer.async_tasks.base import AsyncTask
+from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 import mtg_proxy_printer.model.string_list
-import mtg_proxy_printer.model.carddb
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card import MTGSet
+from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.ui.common import load_ui_from_file
 
 from mtg_proxy_printer.logger import get_logger
@@ -55,14 +58,15 @@ SelectionFlag = QItemSelectionModel.SelectionFlag
 
 class AddCardWidget(QWidget):
 
-    request_action = Signal(ActionAddCard)
+    request_run_async_task = Signal(AsyncTask)  # TODO: Test if this could use SingleDownloadTask to reduce imports
 
     def __init__(self, ui_class: UiTypes, parent: QWidget = None):
         super().__init__(parent)
         logger.debug(f"Creating {self.__class__.__name__} instance")
         self.ui = ui_class()
         self.ui.setupUi(self)
-        self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
+        self.card_database: CardDatabase = None
+        self.image_db: ImageDatabase = None
         self.language_model = self._setup_language_combo_box()
         self.card_name_model = self._setup_card_name_box()
         self.set_name_model = self._setup_set_name_box()
@@ -196,7 +200,7 @@ class AddCardWidget(QWidget):
         self.set_name_model.set_set_data([])
         self.ui.set_name_box.setEnabled(False)
 
-    def set_card_database(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
+    def set_databases(self, card_db: CardDatabase, image_db: ImageDatabase):
         logger.debug("About to set the card database")
         self.card_database = card_db
         card_db.card_data_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
@@ -208,8 +212,8 @@ class AddCardWidget(QWidget):
         self.ui.language_combo_box.setCurrentText(preferred_language)
         logger.info("Card database set.")
 
-    def _read_card_data_from_ui(self) -> mtg_proxy_printer.model.carddb.CardIdentificationData:
-        card = mtg_proxy_printer.model.carddb.CardIdentificationData(
+    def _read_card_data_from_ui(self) -> CardIdentificationData:
+        card = CardIdentificationData(
             self.current_language, self.current_card_name, self.current_set_name, self.current_collector_number
         )
         return card
@@ -229,7 +233,7 @@ class AddCardWidget(QWidget):
         card = self.card_database.get_cards_from_data(card_data)[0]
         copies = self.ui.copies_input.value()
         self._log_added_card(card, copies)
-        self.request_action.emit(ActionAddCard(card, copies))
+        self.request_run_async_task.emit(SingleDownloadTask(self.image_db, ActionAddCard(card, copies)))
         add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["cards"].getboolean(
             "automatically-add-opposing-faces"
         )
@@ -237,7 +241,7 @@ class AddCardWidget(QWidget):
             logger.info(
                 "Card is double faced and adding opposing faces is enabled, automatically adding the other face.")
             self._log_added_card(opposing_face, copies)
-            self.request_action.emit(ActionAddCard(opposing_face, copies))
+            self.request_run_async_task.emit(SingleDownloadTask(self.image_db, ActionAddCard(opposing_face, copies)))
 
     @staticmethod
     def _log_added_card(card: mtg_proxy_printer.model.card.Card, copies: int):

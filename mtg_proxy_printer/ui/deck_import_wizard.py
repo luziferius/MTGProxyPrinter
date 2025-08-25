@@ -25,7 +25,8 @@ from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL,
 from PySide6.QtGui import QValidator, QIcon, QDesktopServices
 from PySide6.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
-
+from mtg_proxy_printer.async_tasks.base import AsyncTask
+from mtg_proxy_printer.async_tasks.image_downloader import BatchDownloadTask
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import SectionProxy
 import mtg_proxy_printer.settings
@@ -593,7 +594,7 @@ class SummaryPage(QWizardPage):
 
 
 class DeckImportWizard(WizardBase):
-    request_action = Signal(ActionImportDeckList)
+    request_run_async_task = Signal(AsyncTask)  # TODO: Test if this could use BatchImportTask to reduce imports
     BUTTON_ICONS = {
         QWizard.WizardButton.FinishButton: "dialog-ok",
         QWizard.WizardButton.CancelButton: "dialog-cancel",
@@ -611,6 +612,7 @@ class DeckImportWizard(WizardBase):
         self.addPage(self.summary_page)
         self.setWindowIcon(QIcon.fromTheme("document-import"))
         self.setWindowTitle(self.tr("Import a deck list"))
+        self.image_db = document.image_db
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def accept(self):
@@ -628,7 +630,8 @@ class DeckImportWizard(WizardBase):
             replace_document
         )
         logger.info(f"User loaded a deck list with {action.card_count()} cards, adding these to the document")
-        self.request_action.emit(action)
+
+        self.request_run_async_task.emit(BatchDownloadTask(self.image_db, action))
 
     def _ask_about_oversized_cards(self) -> bool:
         oversized_count = self.summary_page.card_list.oversized_card_count
