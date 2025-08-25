@@ -46,6 +46,7 @@ class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
     card_bleed: Quantity = 0 * unit_registry.mm
     cut_marker_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Black)
+    cut_marker_draw_above_cards: bool = False
     cut_marker_style: str = ""  # TODO
     cut_marker_width: Quantity = 0 * unit_registry.point
     document_name: str = ""
@@ -107,6 +108,7 @@ class PageLayoutSettings:
         return cls(
             document_settings.get_quantity("card-bleed"),
             document_settings.get_color("cut-marker-color"),
+            document_settings.getboolean("cut-marker-draw-above-cards"),
             document_settings["cut-marker-style"],
             document_settings.get_quantity("cut-marker-width"),
             document_settings["default-document-name"],

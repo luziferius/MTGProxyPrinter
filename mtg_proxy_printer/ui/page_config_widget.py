@@ -400,6 +400,7 @@ class PageConfigWidget(QGroupBox):
         widgets_with_settings: list[tuple[QCheckBox, str]] = [
             (ui.draw_sharp_corners, "print-sharp-corners"),
             (ui.draw_page_numbers, "print-page-numbers"),
+            (ui.cut_marker_draw_above_cards, "cut-marker-draw-above-cards"),
         ]
         return widgets_with_settings
 

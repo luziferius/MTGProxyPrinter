@@ -747,8 +747,10 @@ class PageScene(QGraphicsScene):
             return
         pen = self.get_cut_marker_pen(self.render_mode)
         logger.info(f"Drawing cut markers")
-        self._draw_vertical_markers(pen, page_type)
-        self._draw_horizontal_markers(pen, page_type)
+        layer = RenderLayers.CUT_LINES_ABOVE \
+            if self.document.page_layout.cut_marker_draw_above_cards else RenderLayers.CUT_LINES_BELOW
+        self._draw_vertical_markers(pen, page_type, layer)
+        self._draw_horizontal_markers(pen, page_type, layer)
 
     def _update_cut_markers(self):
         self._update_cut_marker_positions()
@@ -801,23 +803,23 @@ class PageScene(QGraphicsScene):
             if parameters.image_spacing:
                 yield pixel_position + card_size
 
-    def _draw_vertical_markers(self, pen: QPen, page_type: PageType):
+    def _draw_vertical_markers(self, pen: QPen, page_type: PageType, layer: RenderLayers):
         offset = self.x_offset
         for column_px in self.vertical_cut_line_locations[page_type]:
-            self._draw_vertical_line(column_px + offset, pen)
+            self._draw_vertical_line(column_px + offset, pen, layer)
         logger.debug(f"Vertical cut markers drawn")
 
-    def _draw_horizontal_markers(self, pen: QPen, page_type: PageType):
+    def _draw_horizontal_markers(self, pen: QPen, page_type: PageType, layer: RenderLayers):
         for row_px in self.horizontal_cut_line_locations[page_type]:
-            self._draw_horizontal_line(row_px, pen)
+            self._draw_horizontal_line(row_px, pen, layer)
         logger.debug(f"Horizontal cut markers drawn")
 
-    def _draw_vertical_line(self, column_px: float, pen: QPen):
+    def _draw_vertical_line(self, column_px: float, pen: QPen, layer: RenderLayers):
         line = self.addLine(0, 0, 0, self.height(), pen)
         line.setX(column_px)
-        line.setZValue(RenderLayers.CUT_LINES_BELOW.value)
+        line.setZValue(layer.value)
 
-    def _draw_horizontal_line(self, row_px: float, pen: QPen):
+    def _draw_horizontal_line(self, row_px: float, pen: QPen, layer: RenderLayers):
         line = self.addLine(0, 0, self.width(), 0, pen)
         line.setY(row_px)
-        line.setZValue(RenderLayers.CUT_LINES_BELOW.value)
+        line.setZValue(layer.value)

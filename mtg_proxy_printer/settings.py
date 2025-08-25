@@ -172,6 +172,7 @@ DEFAULT_MARGINS = 5*mm
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed": "0 mm",
     "cut-marker-color": QColorConstants.Black.name(HexArgb),
+    "cut-marker-draw-above-cards": "False",
     "cut-marker-style": "Solid",
     "cut-marker-width" : "0 pixel",  # Zero pixels means infinitesimally thin. Always drawn as 1 pixel at any zoom level
     "paper-orientation": PageSizeManager.PageOrientationReverse[Orientation.Portrait],
@@ -184,7 +185,7 @@ DEFAULT_SETTINGS["documents"] = {
     "margin-right": str(DEFAULT_MARGINS),
     "row-spacing": "0 mm",
     "column-spacing": "0 mm",
-    "print-cut-marker": "False",
+    "print-cut-marker": "False",  # FIXME: Deprecated. Replaced with cut-marker-style=None/Solid/…
     "print-sharp-corners": "False",
     "print-page-numbers": "False",
     "default-document-name": "",
@@ -384,7 +385,7 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
     if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
-    boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
+    boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", "cut-marker-draw-above-cards",}
     string_settings = {"default-document-name", "paper-size", "paper-orientation", "watermark-text", "cut-marker-style",}
     color_settings = {"watermark-color", "cut-marker-color",}
     for key in section.keys():
