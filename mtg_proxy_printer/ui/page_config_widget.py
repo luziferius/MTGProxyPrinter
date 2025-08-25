@@ -47,6 +47,7 @@ degree = unit_registry.degree
 point = unit_registry.point
 ShowAlphaChannel = QColorDialog.ColorDialogOption.ShowAlphaChannel
 
+
 class ColorEditorWidgets(NamedTuple):
     display: QLabel
     select_button: QPushButton
@@ -173,7 +174,8 @@ class PageConfigWidget(QGroupBox):
     def _on_watermark_color_button_clicked(self):
         ui = self.ui
         if not (selected := QColorDialog.getColor(
-                self.page_layout.cut_marker_color, self, options=ShowAlphaChannel)).isValid():
+                self.page_layout.cut_marker_color, self,
+                self.tr("Select watermark text color"), options=ShowAlphaChannel)).isValid():
             return
         selected.setAlpha(ui.watermark_opacity.value())
         self.page_layout.watermark_color = selected
@@ -190,7 +192,8 @@ class PageConfigWidget(QGroupBox):
     def _on_cut_marker_color_button_clicked(self):
         ui = self.ui
         if not (selected := QColorDialog.getColor(
-                self.page_layout.cut_marker_color, self, options=ShowAlphaChannel)).isValid():
+                self.page_layout.cut_marker_color, self,
+                self.tr("Select cut marker color"), options=ShowAlphaChannel)).isValid():
             return
         selected.setAlpha(ui.cut_marker_opacity.value())
         self.page_layout.cut_marker_color = selected
