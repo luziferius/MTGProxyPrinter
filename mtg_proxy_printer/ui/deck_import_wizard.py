@@ -23,7 +23,7 @@ import urllib.parse
 from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, \
     QSize, QUrl
 from PySide6.QtGui import QValidator, QIcon, QDesktopServices
-from PySide6.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton, QCheckBox, QLabel
+from PySide6.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
 
 from mtg_proxy_printer.model.document import Document
