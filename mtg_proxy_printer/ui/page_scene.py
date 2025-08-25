@@ -51,11 +51,12 @@ pixel = unit_registry.pixel
 @enum.unique
 class RenderLayers(enum.IntEnum):
     BACKGROUND = -5
-    CUT_LINES = enum.auto()
+    CUT_LINES_BELOW = enum.auto()
     BLEEDS = enum.auto()
     CORNERS = enum.auto()
     TEXT = enum.auto()
     CARDS = enum.auto()
+    CUT_LINES_ABOVE = enum.auto()
     WATERMARK = enum.auto()
 
 
@@ -814,9 +815,9 @@ class PageScene(QGraphicsScene):
     def _draw_vertical_line(self, column_px: float, pen: QPen):
         line = self.addLine(0, 0, 0, self.height(), pen)
         line.setX(column_px)
-        line.setZValue(RenderLayers.CUT_LINES.value)
+        line.setZValue(RenderLayers.CUT_LINES_BELOW.value)
 
     def _draw_horizontal_line(self, row_px: float, pen: QPen):
         line = self.addLine(0, 0, self.width(), 0, pen)
         line.setY(row_px)
-        line.setZValue(RenderLayers.CUT_LINES.value)
+        line.setZValue(RenderLayers.CUT_LINES_BELOW.value)
