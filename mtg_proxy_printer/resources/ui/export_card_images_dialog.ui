@@ -119,64 +119,24 @@
    <signal>accepted()</signal>
    <receiver>ExportCardImagesDialog</receiver>
    <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>button_box</sender>
    <signal>rejected()</signal>
    <receiver>ExportCardImagesDialog</receiver>
    <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>export_custom_cards</sender>
    <signal>clicked()</signal>
    <receiver>ExportCardImagesDialog</receiver>
    <slot>update_ok_button_enabled_state()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>150</x>
-     <y>63</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>150</x>
-     <y>58</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>export_official_cards</sender>
    <signal>clicked()</signal>
    <receiver>ExportCardImagesDialog</receiver>
    <slot>update_ok_button_enabled_state()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>150</x>
-     <y>37</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>150</x>
-     <y>58</y>
-    </hint>
-   </hints>
   </connection>
  </connections>
  <slots>

@@ -197,16 +197,6 @@ Enabling this can potentially save disk space and download volume, based on the 
    <signal>toggled(bool)</signal>
    <receiver>translate_deck_list_target_language</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>128</x>
-     <y>275</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>574</x>
-     <y>280</y>
-    </hint>
-   </hints>
   </connection>
  </connections>
 </ui>
