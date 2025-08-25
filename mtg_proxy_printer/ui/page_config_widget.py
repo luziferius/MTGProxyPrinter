@@ -180,7 +180,7 @@ class PageConfigWidget(QGroupBox):
     @Slot(int)
     def _on_cut_marker_color_opacity_changed(self, value: int):
         ui = self.ui
-        self.page_layout.watermark_color.setAlpha(value)
+        self.page_layout.cut_marker_color.setAlpha(value)
         self._show_color(ui.cut_marker_color, ui.cut_marker_opacity, self.page_layout.cut_marker_color)
 
     @Slot()
@@ -310,7 +310,7 @@ class PageConfigWidget(QGroupBox):
                 line_edit.setText(value := getattr(other, name := line_edit.objectName()))
             setattr(layout, name, value)
         for label, slider, setting, _ in self._get_color_settings_widgets():  # Ignore the other widgets
-            self._show_color(label, slider, getattr(other, name := label.objectName()))
+            self._show_color(label, slider, value := getattr(other, name := label.objectName()))
             setattr(layout, name, value)
         self._load_paper_size(other.paper_size)
         self._load_paper_orientation(other.paper_orientation)
