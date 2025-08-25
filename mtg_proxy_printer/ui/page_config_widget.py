@@ -45,6 +45,7 @@ DISTANCE_UNIT = unit_registry.UnitsContainer({"[length]": 1})
 mm = unit_registry.mm
 degree = unit_registry.degree
 point = unit_registry.point
+ShowAlphaChannel = QColorDialog.ColorDialogOption.ShowAlphaChannel
 
 class ColorEditorWidgets(NamedTuple):
     display: QLabel
@@ -171,7 +172,9 @@ class PageConfigWidget(QGroupBox):
     @Slot()
     def _on_watermark_color_button_clicked(self):
         ui = self.ui
-        selected = QColorDialog.getColor(self.page_layout.watermark_color)
+        if not (selected := QColorDialog.getColor(
+                self.page_layout.cut_marker_color, self, options=ShowAlphaChannel)).isValid():
+            return
         selected.setAlpha(ui.watermark_opacity.value())
         self.page_layout.watermark_color = selected
         self._show_color(ui.watermark_color, ui.watermark_opacity, self.page_layout.watermark_color)
@@ -186,7 +189,9 @@ class PageConfigWidget(QGroupBox):
     @Slot()
     def _on_cut_marker_color_button_clicked(self):
         ui = self.ui
-        selected = QColorDialog.getColor(self.page_layout.cut_marker_color)
+        if not (selected := QColorDialog.getColor(
+                self.page_layout.cut_marker_color, self, options=ShowAlphaChannel)).isValid():
+            return
         selected.setAlpha(ui.cut_marker_opacity.value())
         self.page_layout.cut_marker_color = selected
         self._show_color(ui.cut_marker_color, ui.cut_marker_opacity, selected)
