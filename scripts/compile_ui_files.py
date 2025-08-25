@@ -27,12 +27,16 @@ It has two usage modes:
 
 import argparse
 import ast
-
+import asyncio
+import asyncio.subprocess
 import itertools
+try:
+    from os import process_cpu_count
+except AttributeError:  # Python < 3.13
+    from os import cpu_count as process_cpu_count
 import textwrap
 from pathlib import Path
 import shutil
-import subprocess
 from typing import NamedTuple, TypeVar, Iterable, Type, Any
 
 SOURCE_ROOT = Path(__file__).parent.parent  # Checkout root directory
@@ -43,6 +47,11 @@ T = TypeVar("T")
 ClassRegistry = dict[str, ast.ImportFrom]
 UsedClasses = set[str]
 Statements = list[ast.stmt]
+STDIN = asyncio.subprocess.DEVNULL
+STDOUT = asyncio.subprocess.PIPE
+STDERR = asyncio.subprocess.STDOUT
+thread_count = process_cpu_count() or 2
+TaskThrottle = asyncio.BoundedSemaphore(thread_count)
 
 
 class Assignment(NamedTuple):
@@ -88,7 +97,21 @@ def create_python_package(location: Path, /):
     (location/"__init__.py").touch(exist_ok=True)
 
 
-def compile_ui_files(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
+async def compile_ui_file(path: Path):
+    command = "pyside6-uic", "--generator", "python", str(path)
+    await TaskThrottle.acquire()
+    subprocess = await asyncio.subprocess.create_subprocess_exec(
+        *command, stdin=STDIN, stdout=STDOUT, stderr=STDERR)
+    stdout, stderr = await subprocess.communicate()
+    TaskThrottle.release()
+    return stdout, stderr, path
+
+
+async def compile_ui_files(source_path: Path = UI_SOURCE_PATH):
+    return asyncio.as_completed(map(compile_ui_file, source_path.rglob("*.ui")))
+
+
+async def write_full_modules(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
     """
     Compiles all UI files found in source_path to Python types, storing results in target_path.
 
@@ -98,14 +121,16 @@ def compile_ui_files(args: Namespace, target_path: Path = TARGET_PATH, source_pa
     if args.purge_existing and target_path.is_dir():
         shutil.rmtree(target_path)
     create_python_package(target_path)
-    for ui_file in source_path.rglob("*.ui"):
-        compiled = compile_ui_file(ui_file)
+    for task in await compile_ui_files(source_path):
+        stdout, stderr, ui_file = await task
+        if stderr:
+            raise RuntimeError(f"Error in compiler task for {ui_file}: {stderr.decode('utf-8')}")
         parent_dir = (target_path/ui_file.relative_to(source_path)).parent
         create_python_package(parent_dir)
-        (parent_dir/f"{ui_file.stem}.py").write_text(compiled, "utf-8")
+        (parent_dir / f"{ui_file.stem}.py").write_bytes(stdout)
 
 
-def create_ui_type_stubs(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
+async def create_ui_type_stubs(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
     """
     Creates type hinting stubs for all UI files found in source_path, storing results in target_path.
 
@@ -116,11 +141,13 @@ def create_ui_type_stubs(args: Namespace, target_path: Path = TARGET_PATH, sourc
         shutil.rmtree(target_path)
     class_registry = build_class_registry(MAIN_PACKAGE)
     create_python_package(target_path)
-    for ui_file in source_path.rglob("*.ui"):
-        compiled = compile_ui_file(ui_file)
-        stub = generate_stub(compiled, ui_file, class_registry)
+    for task in await compile_ui_files(source_path):
+        stdout, stderr, ui_file = await task
+        if stderr:
+            raise RuntimeError(f"Error in compiler task for {ui_file}: {stderr.decode('utf-8')}")
         parent_dir = (target_path/ui_file.relative_to(source_path)).parent
         create_python_package(parent_dir)
+        stub = generate_stub(stdout.decode('utf-8'), ui_file, class_registry)
         (parent_dir/f"{ui_file.stem}.pyi").write_text(stub, "utf-8")
 
 
@@ -129,18 +156,11 @@ def build_class_registry(package_path: Path) -> ClassRegistry:
     result: ClassRegistry = {}
     for py_file in package_path.rglob("*.py"):
         module_path = ".".join((py_file.parent.relative_to(package_path.parent) / py_file.stem).parts)
-        root_node = ast.parse(py_file.read_text("utf-8"), py_file)
+        content = py_file.read_text("utf-8")
+        root_node = ast.parse(content, py_file)
         for class_def in type_filter(root_node.body, ast.ClassDef):
             result[class_def.name] = ast.ImportFrom(module_path, [ast.alias(class_def.name)])
     return result
-
-
-def compile_ui_file(path: Path) -> str:
-    try:
-        command = ("pyside6-uic", "--generator", "python", str(path))
-    except Exception as e:
-        raise RuntimeError(f"Compilation failed for file {path}") from e
-    return subprocess.check_output(command, encoding="utf-8")
 
 
 def generate_stub(compiled_ui: str, ui_file: Path, class_registry: ClassRegistry) -> str:
@@ -232,13 +252,13 @@ def get_function_stub(function_body: ast.FunctionDef, found_class_uses: UsedClas
     return result
 
 
-def main():
+async def main():
     args = parse_args()
     if args.full:
-        compile_ui_files(args)
+        await write_full_modules(args)
     else:
-        create_ui_type_stubs(args)
+        await create_ui_type_stubs(args)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
