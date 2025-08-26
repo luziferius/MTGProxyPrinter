@@ -382,6 +382,7 @@ class PageConfigWidget(QGroupBox):
             (ui.card_bleed, "card-bleed", mm),
             (ui.custom_page_height, "custom-page-height", mm),
             (ui.custom_page_width, "custom-page-width", mm),
+            (ui.cut_marker_width, "cut-marker-width", mm),
             (ui.margin_top, "margin-top", mm),
             (ui.margin_bottom, "margin-bottom", mm),
             (ui.margin_left, "margin-left", mm),

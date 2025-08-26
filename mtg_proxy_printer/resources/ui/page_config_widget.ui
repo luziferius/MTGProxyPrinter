@@ -496,12 +496,12 @@ otherwise you need two cuts but require less precision hitting the exact middle.
         </widget>
        </item>
        <item row="3" column="0">
-        <widget class="QLabel" name="cut_marker_thickness_label">
+        <widget class="QLabel" name="cut_marker_width_label">
          <property name="text">
           <string>Line width</string>
          </property>
          <property name="buddy">
-          <cstring>cut_marker_thickness</cstring>
+          <cstring>cut_marker_width</cstring>
          </property>
         </widget>
        </item>
@@ -532,7 +532,7 @@ otherwise you need two cuts but require less precision hitting the exact middle.
         </widget>
        </item>
        <item row="3" column="1" colspan="3">
-        <widget class="QDoubleSpinBox" name="cut_marker_thickness">
+        <widget class="QDoubleSpinBox" name="cut_marker_width">
          <property name="toolTip">
           <string>The default width of 0 draws a thin line, regardless of zoom level.</string>
          </property>
@@ -774,7 +774,7 @@ otherwise you need two cuts but require less precision hitting the exact middle.
   <tabstop>row_spacing</tabstop>
   <tabstop>column_spacing</tabstop>
   <tabstop>card_bleed</tabstop>
-  <tabstop>cut_marker_thickness</tabstop>
+  <tabstop>cut_marker_width</tabstop>
   <tabstop>cut_marker_color_button</tabstop>
   <tabstop>cut_marker_opacity</tabstop>
   <tabstop>watermark_text</tabstop>

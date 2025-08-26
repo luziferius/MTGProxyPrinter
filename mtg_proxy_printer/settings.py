@@ -174,7 +174,7 @@ DEFAULT_SETTINGS["documents"] = {
     "cut-marker-color": QColorConstants.Black.name(HexArgb),
     "cut-marker-draw-above-cards": "False",
     "cut-marker-style": "Solid",
-    "cut-marker-width" : "0 pixel",  # Zero pixels means infinitesimally thin. Always drawn as 1 pixel at any zoom level
+    "cut-marker-width" : "0 mm",  # Zero width means infinitesimally thin. Always drawn as 1 pixel at any zoom level
     "paper-orientation": PageSizeManager.PageOrientationReverse[Orientation.Portrait],
     "paper-size": get_default_paper_size(),
     "custom-page-height": "297 mm",
@@ -203,7 +203,7 @@ DOCUMENT_SETTINGS_QUANTITY_LIMITS = {
     "card-bleed": DEFAULT_LENGTH_LIMIT,
     "custom-page-height": DEFAULT_LENGTH_LIMIT,
     "custom-page-width": DEFAULT_LENGTH_LIMIT,
-    "cut-marker-width" : QuantityLimits(0*pixel, 100*pixel, {pixel}, pixel),
+    "cut-marker-width" : QuantityLimits(0*mm, 10*mm, {mm}, mm),
     "margin-top": DEFAULT_LENGTH_LIMIT,
     "margin-bottom": DEFAULT_LENGTH_LIMIT,
     "margin-left": DEFAULT_LENGTH_LIMIT,

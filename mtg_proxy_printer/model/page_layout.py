@@ -48,7 +48,7 @@ class PageLayoutSettings:
     cut_marker_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Black)
     cut_marker_draw_above_cards: bool = False
     cut_marker_style: str = ""  # TODO
-    cut_marker_width: Quantity = 0 * unit_registry.point
+    cut_marker_width: Quantity = 0 * unit_registry.mm
     document_name: str = ""
     draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
