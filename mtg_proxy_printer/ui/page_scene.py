@@ -318,7 +318,7 @@ class PageScene(QGraphicsScene):
         self.background.setZValue(RenderLayers.BACKGROUND.value)
         self.horizontal_cut_line_locations: PixelCache = collections.defaultdict(list)
         self.vertical_cut_line_locations: PixelCache = collections.defaultdict(list)
-        self._update_cut_markers()
+        self._update_cut_marker_positions()
         self.document_title_text = self._create_text_item()
         self.page_number_text = self._create_text_item()
         self._update_text_items(page_layout)
@@ -470,7 +470,7 @@ class PageScene(QGraphicsScene):
             logger.debug("Page size changed. Adjusting PageScene dimensions")
             self.setSceneRect(new_page_size)
             self.background.setRect(new_page_size)
-        self._update_cut_markers()
+        self._update_cut_marker_positions()
         self.remove_cut_markers()
         if new_page_layout.draw_cut_markers:
             self.draw_cut_markers()
@@ -752,10 +752,6 @@ class PageScene(QGraphicsScene):
         self._draw_vertical_markers(pen, page_type, layer)
         self._draw_horizontal_markers(pen, page_type, layer)
 
-    def _update_cut_markers(self):
-        self._update_cut_marker_positions()
-        self._update_cut_marker_style()
-
     def _update_cut_marker_positions(self):
         logger.debug("Updating cut marker positions")
         self.vertical_cut_line_locations.clear()
@@ -773,11 +769,6 @@ class PageScene(QGraphicsScene):
                 card_size.width, page_layout.compute_page_column_count(page_type),
                 page_layout.margin_left, page_layout.column_spacing
             ))
-
-    def _update_cut_marker_style(self):
-        pen = self.get_cut_marker_pen(self.render_mode)
-        for item in self.cut_lines:
-            item.setPen(pen)
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> typing.Generator[float, None, None]:
         spacing = distance_to_rounded_px(parameters.image_spacing)
