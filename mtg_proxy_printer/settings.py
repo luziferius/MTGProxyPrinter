@@ -168,6 +168,7 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hidden-sets": "",
 }
 
+VALID_CUT_MARKER_STYLES = {"None", "Solid"}
 DEFAULT_MARGINS = 5*mm
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed": "0 mm",
@@ -400,6 +401,8 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
         else:
             raise RuntimeError(f"BUG: Unhandled key found: {key}")
 
+    if section["cut-marker-style"] not in VALID_CUT_MARKER_STYLES:
+        _restore_default(section, defaults, "cut-marker-style")
     if section["paper-size"] not in PageSizeManager.PageSize:
         _restore_default(section, defaults, "paper-size")
     if section["paper-orientation"] not in PageSizeManager.PageOrientation:

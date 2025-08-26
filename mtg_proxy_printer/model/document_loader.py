@@ -510,19 +510,23 @@ class Worker(LoaderSignals):
             instance_of(QColor),  # watermark-color key not present, inherits default value
             matches_regexp(r"#[0-9a-f]{8}"),  # watermark-color present in the save file, encoded as a hex string
         )
+        is_valid_cut_marker = is_in(("Solid",))
         assert_that(
             settings,
             has_properties(
                 card_bleed=is_distance,
                 custom_page_height=is_distance,
                 custom_page_width=is_distance,
+                cut_marker_color=is_color,
+                cut_marker_draw_above_cards=is_bool_str,
+                cut_marker_style=is_valid_cut_marker,
+                cut_marker_width=is_distance,
                 margin_top=is_distance,
                 margin_bottom=is_distance,
                 margin_left=is_distance,
                 margin_right=is_distance,
                 row_spacing=is_distance,
                 column_spacing=is_distance,
-                draw_cut_markers=is_bool_str,
                 draw_sharp_corners=is_bool_str,
                 draw_page_numbers=is_bool_str,
                 document_name=instance_of(str),

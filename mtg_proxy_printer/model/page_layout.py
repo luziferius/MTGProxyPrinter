@@ -72,7 +72,7 @@ class PageLayoutSettings:
     @property
     def draw_cut_markers(self) -> bool:
         # FIXME: Deprecated alias and temporary compatibility hack for a removed boolean attribute
-        return self.cut_marker_style == "Solid"
+        return self.cut_marker_style != "None"
 
     @property
     def page_height(self) -> Quantity:
