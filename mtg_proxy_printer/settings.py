@@ -24,7 +24,7 @@ from collections import defaultdict
 from typing import Callable
 
 from pint import DimensionalityError, Quantity, Unit
-from PySide6.QtCore import QStandardPaths, QLocale
+from PySide6.QtCore import QStandardPaths, QLocale, Qt
 from PySide6.QtGui import QPageSize, QPageLayout, QColor, QColorConstants
 from PySide6.QtPrintSupport import QPrinterInfo
 
@@ -39,6 +39,7 @@ Territory = QLocale.Country  # TODO: Adjust for PySide6
 PageSizeId = QPageSize.PageSizeId
 Orientation = QPageLayout.Orientation
 HexArgb = QColor.NameFormat.HexArgb
+PenStyle = Qt.PenStyle
 
 __all__ = [
     "settings",
@@ -49,6 +50,7 @@ __all__ = [
     "update_stored_version_string",
     "get_boolean_card_filter_keys",
     "parse_card_set_filters",
+    "VALID_CUT_MARKER_STYLES",
 ]
 
 
@@ -168,13 +170,18 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hidden-sets": "",
 }
 
-VALID_CUT_MARKER_STYLES = {"None", "Solid"}
+VALID_CUT_MARKER_STYLES: defaultdict[str, PenStyle] = defaultdict(lambda: PenStyle.NoPen, {
+    "None": PenStyle.NoPen,
+    "Solid": PenStyle.SolidLine,
+    "Dots": PenStyle.DotLine,
+    "Dashes": PenStyle.DashLine,
+})
 DEFAULT_MARGINS = 5*mm
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed": "0 mm",
     "cut-marker-color": QColorConstants.Black.name(HexArgb),
     "cut-marker-draw-above-cards": "False",
-    "cut-marker-style": "Solid",
+    "cut-marker-style": "None",
     "cut-marker-width" : "0 mm",  # Zero width means infinitesimally thin. Always drawn as 1 pixel at any zoom level
     "paper-orientation": PageSizeManager.PageOrientationReverse[Orientation.Portrait],
     "paper-size": get_default_paper_size(),
@@ -186,7 +193,6 @@ DEFAULT_SETTINGS["documents"] = {
     "margin-right": str(DEFAULT_MARGINS),
     "row-spacing": "0 mm",
     "column-spacing": "0 mm",
-    "print-cut-marker": "False",  # FIXME: Deprecated. Replaced with cut-marker-style=None/Solid/…
     "print-sharp-corners": "False",
     "print-page-numbers": "False",
     "default-document-name": "",
@@ -386,7 +392,7 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
     if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
-    boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", "cut-marker-draw-above-cards",}
+    boolean_settings = {"print-sharp-corners", "print-page-numbers", "cut-marker-draw-above-cards",}
     string_settings = {"default-document-name", "paper-size", "paper-orientation", "watermark-text", "cut-marker-style",}
     color_settings = {"watermark-color", "cut-marker-color",}
     for key in section.keys():
@@ -573,6 +579,7 @@ def migrate_settings(to_migrate: ConfigParser):
     _09_migrate_application_to_update_checks_section(to_migrate)
     _10_migrate_export_section(to_migrate)
     _11_migrate_custom_paper_size_keys(to_migrate)
+    _12_migrate_to_cut_marker_style_key(to_migrate)
 
 
 def _01_migrate_layout_setting(to_migrate: ConfigParser):
@@ -708,6 +715,14 @@ def _11_migrate_custom_paper_size_keys(to_migrate: ConfigParser):
             _, dim = key.split("-")
             section[f"custom-page-{dim}"] = section[key]
             del section[key]
+
+
+def _12_migrate_to_cut_marker_style_key(to_migrate: ConfigParser):
+    section = to_migrate["documents"]
+    if "cut-marker-style" in section:
+        return
+    section["cut-marker-style"] = "Solid" if section.getboolean("print-cut-marker") else "None"
+    del section["print-cut-marker"]
 
 
 # Read the settings from file during module import

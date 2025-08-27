@@ -84,6 +84,13 @@ class PageConfigWidget(QGroupBox):
         # attributes to the current values.
         page_layout = PageLayoutSettings.create_from_settings()
 
+        ui.cut_marker_style.addItem(self.tr("Disabled", "A cut marker style"), "None")
+        ui.cut_marker_style.addItem(self.tr("Solid lines", "A cut marker style"), "Solid")
+        ui.cut_marker_style.addItem(self.tr("Dashed lines", "A cut marker style"), "Dashes")
+        ui.cut_marker_style.addItem(self.tr("Dotted lines", "A cut marker style"), "Dots")
+        ui.cut_marker_style.currentIndexChanged.connect(self._on_cut_marker_style_changed)
+        ui.cut_marker_style.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
+
         for page_size_id in PageSizeManager.PageSize.values():
             ui.paper_size.addItem(QPageSize.name(page_size_id), page_size_id)
         for item, value in PageSizeManager.PageOrientation.items():
@@ -146,6 +153,10 @@ class PageConfigWidget(QGroupBox):
         # PySide6 maps the QCheckBox check states to proper Python enums, but the stateChanged Qt signal carries raw
         # integers. To get the integers for comparison, the lambdas below require accessing the CheckState enum values.
         setattr(page_layout, layout_key, value == CheckState.Checked.value)
+
+    @Slot(int)
+    def _on_cut_marker_style_changed(self, _: int):
+        self.page_layout.cut_marker_style = self.ui.cut_marker_style.currentData(Qt.ItemDataRole.UserRole)
 
     @Slot(int)
     def _on_paper_size_changed(self, index: int):

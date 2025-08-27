@@ -17,20 +17,23 @@ import dataclasses
 import itertools
 import math
 import typing
+from collections import defaultdict
 
 from pint import Quantity
 from PySide6.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
-from PySide6.QtCore import QMarginsF, QSizeF
+from PySide6.QtCore import QMarginsF, QSizeF, Qt
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
 from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, \
     distance_to_mm
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.page_scene import RenderMode
 logger = get_logger(__name__)
 del get_logger
+PenStyle = Qt.PenStyle
 
 __all__ = [
     "PageLayoutSettings",
@@ -71,8 +74,11 @@ class PageLayoutSettings:
 
     @property
     def draw_cut_markers(self) -> bool:
-        # FIXME: Deprecated alias and temporary compatibility hack for a removed boolean attribute
         return self.cut_marker_style != "None"
+
+
+    def cut_marker_pen_style(self) -> PenStyle:
+        return VALID_CUT_MARKER_STYLES[self.cut_marker_style]
 
     @property
     def page_height(self) -> Quantity:

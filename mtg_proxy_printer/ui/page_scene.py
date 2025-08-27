@@ -365,7 +365,7 @@ class PageScene(QGraphicsScene):
         else:
             color = layout.cut_marker_color
         return QPen(
-            color, layout.cut_marker_width.to("point", "print").magnitude, Qt.PenStyle.SolidLine
+            color, layout.cut_marker_width.to("point", "print").magnitude, layout.cut_marker_pen_style()
         )
 
     def get_text_color(self, render_mode: RenderMode) -> QColor:
