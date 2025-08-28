@@ -30,6 +30,7 @@ from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to,
 
 import mtg_proxy_printer.units_and_sizes
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardDatabase
 from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType, CustomCard
@@ -510,7 +511,7 @@ class Worker(LoaderSignals):
             instance_of(QColor),  # watermark-color key not present, inherits default value
             matches_regexp(r"#[0-9a-f]{8}"),  # watermark-color present in the save file, encoded as a hex string
         )
-        is_valid_cut_marker = is_in(("Solid",))
+        is_valid_cut_marker = is_in(VALID_CUT_MARKER_STYLES)
         assert_that(
             settings,
             has_properties(
