@@ -23,7 +23,7 @@ import pint
 from PySide6.QtCore import Slot, Qt, Signal
 from PySide6.QtGui import QPageSize, QPageLayout, QColor
 from PySide6.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QColorDialog, \
-    QLabel, QSlider, QPushButton
+    QLabel, QSlider, QPushButton, QComboBox
 
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
@@ -302,6 +302,7 @@ class PageConfigWidget(QGroupBox):
 
         self._load_paper_size(documents_section["paper-size"])
         self._load_paper_orientation(documents_section["paper-orientation"])
+        self._load_cut_marker_style(documents_section["cut-marker-style"])
         self.validate_paper_size_settings()
         self.on_page_layout_changed()
         self.page_layout_changed.emit(self.page_layout)
@@ -336,6 +337,7 @@ class PageConfigWidget(QGroupBox):
             setattr(layout, name, value)
         self._load_paper_size(other.paper_size)
         self._load_paper_orientation(other.paper_orientation)
+        self._load_cut_marker_style(other.cut_marker_style)
         self.validate_paper_size_settings()
         self.on_page_layout_changed()
         self.page_layout_changed.emit(self.page_layout)
@@ -350,22 +352,20 @@ class PageConfigWidget(QGroupBox):
 
     def _load_paper_size(self, size: str):
         page_size = PageSizeManager.PageSize[size]
-        combo_box = self.ui.paper_size
-        model = combo_box.model()
-        for row in range(model.rowCount()):
-            if model.data(model.index(row, 0), Qt.ItemDataRole.UserRole) == page_size:
-                # Blocks premature execution of validation logic triggered via change signals
-                # that should not run *right now*.
-                with BlockedSignals(combo_box):
-                    combo_box.setCurrentIndex(row)
-                break
+        self._set_combo_box_current_item_to_given_item(self.ui.paper_size, page_size)
 
     def _load_paper_orientation(self, orientation_str: str):
         orientation = PageSizeManager.PageOrientation[orientation_str]
-        combo_box = self.ui.paper_orientation
+        self._set_combo_box_current_item_to_given_item(self.ui.paper_orientation, orientation)
+
+    def _load_cut_marker_style(self, style_str: str):
+        self._set_combo_box_current_item_to_given_item(self.ui.cut_marker_style, style_str)
+
+    @staticmethod
+    def _set_combo_box_current_item_to_given_item(combo_box: QComboBox, user_data_item: Any):
         model = combo_box.model()
         for row in range(model.rowCount()):
-            if model.data(model.index(row, 0), Qt.ItemDataRole.UserRole) == orientation:
+            if model.data(model.index(row, 0), Qt.ItemDataRole.UserRole) == user_data_item:
                 # Blocks premature execution of validation logic triggered via change signals
                 # that should not run *right now*.
                 with BlockedSignals(combo_box):
