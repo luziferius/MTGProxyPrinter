@@ -97,8 +97,8 @@ class SettingsWindow(QDialog):
         ui.general_settings_page.set_language_model(language_model)
         ui.default_document_layout_page.ui.page_config_preview_area.hide()
         # Delay the resize to the next event loop iteration
-        ui.default_document_layout_page.ui.page_config_widget.ui.show_preview_button.toggled.connect(
-            partial(QTimer.singleShot, 0, lambda: self._adapt_layout_to_size(self.size()))
+        ui.default_document_layout_page.ui.page_config_widget.ui.show_preview_button.clicked.connect(
+            lambda: QTimer.singleShot(0, lambda: self._adapt_layout_to_size(self.size()))
         )
         self._setup_hide_printing_page(ui.hide_printings_page, document.card_db)
         self._setup_button_box()
