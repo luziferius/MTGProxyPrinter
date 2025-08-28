@@ -17,7 +17,7 @@ import dataclasses
 import itertools
 import math
 import typing
-from collections import defaultdict
+from typing import Literal
 
 from pint import Quantity
 from PySide6.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
@@ -50,7 +50,7 @@ class PageLayoutSettings:
     card_bleed: Quantity = 0 * unit_registry.mm
     cut_marker_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Black)
     cut_marker_draw_above_cards: bool = False
-    cut_marker_style: str = ""  # TODO
+    cut_marker_style: str = "None"  # TODO: Can this be Literal["None", "Solid", "Dots", "Dashes"] instead of str
     cut_marker_width: Quantity = 0 * unit_registry.mm
     document_name: str = ""
     draw_page_numbers: bool = False
@@ -63,7 +63,7 @@ class PageLayoutSettings:
     margin_top: Quantity = 0 * unit_registry.mm
     custom_page_height: Quantity = 0 * unit_registry.mm
     custom_page_width: Quantity = 0 * unit_registry.mm
-    paper_orientation: str = "Portrait"
+    paper_orientation: str = "Portrait"  # TODO: Here, too. Literal["Portrait", "Landscape"] instead of str
     paper_size: str = "Custom"
     watermark_angle: Quantity = 0 * unit_registry.degree
     watermark_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Transparent)
