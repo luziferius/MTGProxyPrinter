@@ -506,7 +506,7 @@ class Worker(LoaderSignals):
         is_angle = all_of(
             instance_of(Quantity),
             has_property("dimensionality", equal_to(unit_registry.degree.dimensionality)))
-        is_bool_str = is_in(("True", "False"))
+        is_bool = is_in(("True", "False", True, False))  # str: loaded from save file, bool: default value from settings
         is_color = any_of(
             instance_of(QColor),  # watermark-color key not present, inherits default value
             matches_regexp(r"#[0-9a-f]{8}"),  # watermark-color present in the save file, encoded as a hex string
@@ -519,7 +519,7 @@ class Worker(LoaderSignals):
                 custom_page_height=is_distance,
                 custom_page_width=is_distance,
                 cut_marker_color=is_color,
-                cut_marker_draw_above_cards=is_bool_str,
+                cut_marker_draw_above_cards=is_bool,
                 cut_marker_style=is_valid_cut_marker,
                 cut_marker_width=is_distance,
                 margin_top=is_distance,
@@ -528,8 +528,8 @@ class Worker(LoaderSignals):
                 margin_right=is_distance,
                 row_spacing=is_distance,
                 column_spacing=is_distance,
-                draw_sharp_corners=is_bool_str,
-                draw_page_numbers=is_bool_str,
+                draw_sharp_corners=is_bool,
+                draw_page_numbers=is_bool,
                 document_name=instance_of(str),
                 paper_orientation=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageOrientation),
                 paper_size=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize),
@@ -544,7 +544,8 @@ class Worker(LoaderSignals):
         for key, annotated_type in PageLayoutSettings.__annotations__.items():
             value = getattr(settings, key)
             if annotated_type is bool:
-                value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
+                if isinstance(value, str):
+                    value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
             elif annotated_type is Quantity:
                 # Ensure all floats are within the allowed bounds.
                 limit = mtg_proxy_printer.settings.DOCUMENT_SETTINGS_QUANTITY_LIMITS[key.replace("_", "-")]
