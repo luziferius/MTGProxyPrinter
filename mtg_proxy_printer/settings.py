@@ -722,7 +722,10 @@ def _12_migrate_to_cut_marker_style_key(to_migrate: ConfigParser):
     if "cut-marker-style" in section:
         return
     section["cut-marker-style"] = "Solid" if section.getboolean("print-cut-marker") else "None"
-    del section["print-cut-marker"]
+    try:
+        del section["print-cut-marker"]
+    except KeyError:
+        pass
 
 
 # Read the settings from file during module import
