@@ -238,9 +238,14 @@ class PageConfigWidget(QGroupBox):
         """Toggles between landscape/portrait mode by flipping the page height and page width values."""
         logger.debug("User flips paper dimensions")
         ui = self.ui
-        width = ui.custom_page_width.value()
-        ui.custom_page_width.setValue(ui.custom_page_height.value())
-        ui.custom_page_height.setValue(width)
+        layout = self.page_layout
+        width, height = ui.custom_page_width.value(), ui.custom_page_height.value()
+        with BlockedSignals(ui.custom_page_width), BlockedSignals(ui.custom_page_height):
+            ui.custom_page_width.setValue(height)
+            ui.custom_page_height.setValue(width)
+        layout.page_width, layout.page_height = layout.page_height, layout.page_width
+        self.on_page_layout_changed()
+        self.page_layout_changed.emit(self.page_layout)
 
     @Slot()
     def validate_paper_size_settings(self):
@@ -351,14 +356,17 @@ class PageConfigWidget(QGroupBox):
             opacity_slider.setValue(color.alpha())
 
     def _load_paper_size(self, size: str):
+        self.page_layout.paper_size = size
         page_size = PageSizeManager.PageSize[size]
         self._set_combo_box_current_item_to_given_item(self.ui.paper_size, page_size)
 
     def _load_paper_orientation(self, orientation_str: str):
+        self.page_layout.paper_orientation = orientation_str
         orientation = PageSizeManager.PageOrientation[orientation_str]
         self._set_combo_box_current_item_to_given_item(self.ui.paper_orientation, orientation)
 
     def _load_cut_marker_style(self, style_str: str):
+        self.page_layout.cut_marker_style = style_str
         self._set_combo_box_current_item_to_given_item(self.ui.cut_marker_style, style_str)
 
     @staticmethod
