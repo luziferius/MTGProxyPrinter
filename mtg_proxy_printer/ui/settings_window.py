@@ -16,7 +16,6 @@
 
 import pathlib
 import typing
-from functools import partial
 
 from PySide6.QtCore import QStringListModel, Signal, Qt, QItemSelectionModel, QEvent, QObject, QTimer
 from PySide6.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
