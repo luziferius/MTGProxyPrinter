@@ -21,6 +21,7 @@ from pint import Unit, Quantity
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
+import mtg_proxy_printer.model.page_layout
 from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, unit_registry, StrDict
 from mtg_proxy_printer.ui.page_scene import RenderMode
 
@@ -32,9 +33,9 @@ from hamcrest import *
 from tests.hasgetter import has_getters
 from tests.helpers import quantity_close_to, close_to_
 
-PageLayoutSettings = mtg_proxy_printer.model.document_loader.PageLayoutSettings
+PageLayoutSettings = mtg_proxy_printer.model.page_layout.PageLayoutSettings
 mm: Unit = unit_registry.mm
-
+HexArgb = QColorConstants.Red.NameFormat.HexArgb
 
 @pytest.mark.parametrize("page_type, expected", [
     (PageType.OVERSIZED, 4),
@@ -151,7 +152,7 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
     {
         "custom-page-height": "200 mm",
         "custom-page-width": "100 mm",
-        "cut-marker-color": "#00000000",
+        "cut-marker-color": QColorConstants.Black.name(HexArgb),
         "cut-marker-draw-above-cards": "True",
         "cut-marker-style": "Solid",
         "cut-marker-width" : "0.5 mm",
@@ -172,12 +173,12 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
         "watermark-pos-x": "50 mm",
         "watermark-pos-y": "49 mm",
         "watermark-angle": "42°",
-        "watermark-color": "#FF0000FF",
+        "watermark-color": QColorConstants.Red.name(HexArgb),
     },
     {
         "custom-page-height": "200 millimeter",
         "custom-page-width": "100 millimeter",
-        "cut-marker-color": "#000000FF",
+        "cut-marker-color": QColorConstants.Black.name(HexArgb),
         "cut-marker-draw-above-cards": "True",
         "cut-marker-style": "Solid",
         "cut-marker-width" : "0.5 millimeter",
@@ -198,7 +199,7 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
         "watermark-pos-x": "50 millimeter",
         "watermark-pos-y": "49 millimeter",
         "watermark-angle": "42 degree",
-        "watermark-color": "#FF0000FF",
+        "watermark-color": QColorConstants.Red.name(HexArgb),
     },
 ])
 def test_create_from_settings(values: StrDict):
