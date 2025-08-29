@@ -62,6 +62,7 @@ SingleActions = ActionAddCard | ActionReplaceCard
 IndexList = list[QModelIndex]
 OptionalPixmap = QPixmap | None
 download_semaphore = threading.BoundedSemaphore()
+BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 
 
 def _create_corner_mask(size: QSize, corner_radius: int):
@@ -315,7 +316,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.batch_process_finished.connect(image_db.batch_process_finished)
         self.batch_processing_state_changed.connect(image_db.batch_processing_state_changed)
 
-        self.request_action.connect(image_db.request_action)
+        self.request_action.connect(image_db.request_action, BlockingQueuedConnection)
         self.missing_images_obtained.connect(image_db.missing_images_obtained)
         self.network_error_occurred.connect(image_db.network_error_occurred)
 
