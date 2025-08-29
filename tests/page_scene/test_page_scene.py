@@ -28,7 +28,8 @@ from PySide6.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QP
 from PySide6.QtCore import QPoint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry
-from mtg_proxy_printer.page_scene.page_scene import RenderMode, PageScene, NeighborsPresent
+from mtg_proxy_printer.page_scene.page_scene import RenderMode, PageScene
+from mtg_proxy_printer.page_scene.items import NeighborsPresent
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 from mtg_proxy_printer.model.document import Document

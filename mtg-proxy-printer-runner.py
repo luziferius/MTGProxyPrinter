@@ -22,6 +22,8 @@ Thin wrapper to run main() from the source checkout.
 import pathlib
 import sys
 
+import mtg_proxy_printer.page_scene.items
+
 # Make sure to find this checkout, and not any system- or user-wide installed versions that may be present
 root_path = pathlib.Path(__file__).parent.absolute().resolve()
 sys.path.insert(0, str(root_path))
@@ -58,19 +60,19 @@ to_be_profiled_functions = {
     #    "_update_cached_data",
     #    "get_all_cards_from_image_cache",
     #],
-    mtg_proxy_printer.page_scene.page_scene.CardBleeds: [
+    mtg_proxy_printer.page_scene.items.CardBleeds: [
         "update_bleeds",
         "from_card",
     ],
-    mtg_proxy_printer.page_scene.page_scene.CardBleedItem: [
+    mtg_proxy_printer.page_scene.items.CardBleedItem: [
         "__init__",
         "update_bleed_size",
     ],
-    mtg_proxy_printer.page_scene.page_scene.CardBleedCornerItem: [
+    mtg_proxy_printer.page_scene.items.CardBleedCornerItem: [
         "__init__",
         "update_bleed_size",
     ],
-    mtg_proxy_printer.page_scene.page_scene.CardItem: [
+    mtg_proxy_printer.page_scene.items.CardItem: [
         "__init__",
     ],
     mtg_proxy_printer.page_scene.page_scene.PageScene: [
