@@ -5,7 +5,14 @@
 # New features
 
 - Reorder pages: It is now possible to re-order pages via drag&drop or via the two new buttons below the page list.
-- Add option to enforce rounded corners for imported custom cards. Enabled by default, but can be disabled in the settings.
+- Improved the cut helper lines with new customizations:
+  - Adjustable are the color, thickness, transparency and line style.
+  - Available line styles are solid lines, dots, and short dashes.
+  - Cut helper lines can now be drawn on top of the cards.
+- Add option to enforce rounded corners for imported custom cards. Enabled by default, but can be disabled in the
+  settings. Enabling this is generally preferred, as it allows seeing cut helper marks in the corner spaces,
+  even if the custom cards do not have transparent corners.
+  Disabling may be useful when printing borderless cards where artworks form a panorama
 
 # Changed features
 

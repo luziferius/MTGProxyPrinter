@@ -21,10 +21,11 @@ from pint import Unit, Quantity
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
+import mtg_proxy_printer.model.page_layout
 from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, unit_registry, StrDict
 from mtg_proxy_printer.ui.page_scene import RenderMode
 
-from PySide6.QtGui import QPageLayout, QPageSize
+from PySide6.QtGui import QPageLayout, QPageSize, QColorConstants
 from PySide6.QtCore import QMarginsF
 import pytest
 from hamcrest import *
@@ -32,9 +33,9 @@ from hamcrest import *
 from tests.hasgetter import has_getters
 from tests.helpers import quantity_close_to, close_to_
 
-PageLayoutSettings = mtg_proxy_printer.model.document_loader.PageLayoutSettings
+PageLayoutSettings = mtg_proxy_printer.model.page_layout.PageLayoutSettings
 mm: Unit = unit_registry.mm
-
+HexArgb = QColorConstants.Red.NameFormat.HexArgb
 
 @pytest.mark.parametrize("page_type, expected", [
     (PageType.OVERSIZED, 4),
@@ -151,6 +152,10 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
     {
         "custom-page-height": "200 mm",
         "custom-page-width": "100 mm",
+        "cut-marker-color": QColorConstants.Black.name(HexArgb),
+        "cut-marker-draw-above-cards": "True",
+        "cut-marker-style": "Solid",
+        "cut-marker-width" : "0.5 mm",
         "margin-top": "9 mm",
         "margin-bottom": "8 mm",
         "margin-left": "7 mm",
@@ -163,10 +168,20 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
         "default-document-name": "Test",
         "paper-orientation": "Portrait",
         "paper-size": "Custom",
+        "watermark-text": "Watermark",
+        "watermark-font-size": "20 point",
+        "watermark-pos-x": "50 mm",
+        "watermark-pos-y": "49 mm",
+        "watermark-angle": "42°",
+        "watermark-color": QColorConstants.Red.name(HexArgb),
     },
     {
         "custom-page-height": "200 millimeter",
         "custom-page-width": "100 millimeter",
+        "cut-marker-color": QColorConstants.Black.name(HexArgb),
+        "cut-marker-draw-above-cards": "True",
+        "cut-marker-style": "Solid",
+        "cut-marker-width" : "0.5 millimeter",
         "margin-top": "9 millimeter",
         "margin-bottom": "8 millimeter",
         "margin-left": "7 millimeter",
@@ -179,6 +194,12 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
         "default-document-name": "Test",
         "paper-orientation": "Portrait",
         "paper-size": "Custom",
+        "watermark-text": "Watermark",
+        "watermark-font-size": "20 points",
+        "watermark-pos-x": "50 millimeter",
+        "watermark-pos-y": "49 millimeter",
+        "watermark-angle": "42 degree",
+        "watermark-color": QColorConstants.Red.name(HexArgb),
     },
 ])
 def test_create_from_settings(values: StrDict):
@@ -186,8 +207,11 @@ def test_create_from_settings(values: StrDict):
         layout = PageLayoutSettings.create_from_settings()
     assert_that(
         layout, has_properties(
+            cut_marker_color=equal_to(QColorConstants.Black),
+            cut_marker_draw_above_cards=is_(True),
+            cut_marker_style=equal_to("Solid"),
+            cut_marker_width=quantity_close_to(0.5*mm),
             document_name=equal_to("Test"),
-            draw_cut_markers=is_(True),
             draw_page_numbers=is_(True),
             draw_sharp_corners=is_(True),
             row_spacing=quantity_close_to(2*mm),
@@ -200,6 +224,12 @@ def test_create_from_settings(values: StrDict):
             custom_page_width=quantity_close_to(100*mm),
             paper_orientation=equal_to("Portrait"),
             paper_size=equal_to("Custom"),
+            watermark_text=equal_to("Watermark"),
+            watermark_font_size=quantity_close_to(20*unit_registry.point),
+            watermark_pos_x=quantity_close_to(50*mm),
+            watermark_pos_y=quantity_close_to(49*mm),
+            watermark_angle=quantity_close_to(42*unit_registry.degree),
+            watermark_color=equal_to(QColorConstants.Red),
         )
     )
 

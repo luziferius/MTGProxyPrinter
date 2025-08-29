@@ -15,14 +15,13 @@
 
 
 from pint import Quantity
-from PySide6.QtWidgets import QCheckBox, QDoubleSpinBox, QLineEdit
+from PySide6.QtWidgets import QCheckBox, QDoubleSpinBox, QLineEdit, QComboBox
 
 import pytest
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import unit_registry
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
 from tests.helpers import quantity_close_to
@@ -38,7 +37,8 @@ def container(qtbot: QtBot, page_layout: PageLayoutSettings):
 
 @pytest.mark.parametrize(
     "widget_name",
-    ["draw_cut_markers", "draw_sharp_corners", "draw_page_numbers"])
+    [key for key, value in PageLayoutSettings.__annotations__.items() if value == bool]
+)
 def test_boolean_settings_change_signal_connection_from_config_widget_to_preview_area(
         qtbot: QtBot, container: PageConfigContainer, widget_name: str):
     page_config_widget = container.ui.page_config_widget
@@ -56,19 +56,16 @@ def test_boolean_settings_change_signal_connection_from_config_widget_to_preview
 
 
 @pytest.mark.parametrize(
-    "widget_name",[
-         "card_bleed",
-         "custom_page_height", "custom_page_width",
-         "margin_top", "margin_bottom", "margin_left", "margin_right",
-         "row_spacing", "column_spacing",
-     ])
+    "widget_name",
+    [key for key, value in PageLayoutSettings.__annotations__.items() if value == Quantity]
+)
 def test_decimal_settings_change_signal_connection_from_config_widget_to_preview_area(
         qtbot: QtBot, container: PageConfigContainer, widget_name: str):
     page_config_widget = container.ui.page_config_widget
     document = container.ui.page_config_preview_area.document
     widget: QDoubleSpinBox = getattr(page_config_widget.ui, widget_name)
     original_value: Quantity = getattr(document.page_layout, widget_name)
-    diff: Quantity = 1*unit_registry.mm
+    diff: Quantity = 1*original_value.units
 
     with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
         widget.setValue((original_value+diff).magnitude)
@@ -86,24 +83,24 @@ def test_decimal_settings_change_signal_connection_from_config_widget_to_preview
 
 
 @pytest.mark.parametrize(
-    "widget_name",[
-         "document_name",
-     ])
+    "widget_name",
+    [key for key, value in PageLayoutSettings.__annotations__.items() if value == str]
+)
 def test_textual_settings_change_signal_connection_from_config_widget_to_preview_area(
         qtbot: QtBot, container: PageConfigContainer, widget_name: str):
     page_config_widget = container.ui.page_config_widget
     document = container.ui.page_config_preview_area.document
-    widget: QLineEdit = getattr(page_config_widget.ui, widget_name)
+    widget: QLineEdit | QComboBox = getattr(page_config_widget.ui, widget_name)
+    if isinstance(widget, QComboBox):
+        pytest.skip("Not testing choice-based configuration items")
     original_value: str = getattr(document.page_layout, widget_name)
     new_value = "Test"
-
     with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
         widget.setText(new_value)
     assert_that(
         getattr(document.page_layout, widget_name),
         is_(new_value),
         f"Failing widget: {widget_name}")
-
     with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
         widget.setText(original_value)
     assert_that(

@@ -19,7 +19,7 @@ import unittest.mock
 
 from pint import Unit
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QColorConstants
 
 from hamcrest import *
 
@@ -347,10 +347,11 @@ def test_get_card_indices_of_type(document_light, page_type: PageType, parent_ro
 @pytest.fixture
 def document_custom_layout(document: Document) -> Document:
     custom_layout = PageLayoutSettings(
-        custom_page_height=300 * mm, custom_page_width=200 * mm,
+        cut_marker_color=QColorConstants.Yellow, cut_marker_width=0.5*mm, cut_marker_draw_above_cards=True,
+        cut_marker_style="Solid",
+        custom_page_height=300*mm, custom_page_width=200*mm,
         margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
         row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
-        draw_cut_markers=True,
         paper_size="Custom", paper_orientation="Portrait",
     )
     document.apply(ActionEditDocumentSettings(custom_layout))

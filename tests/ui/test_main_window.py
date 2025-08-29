@@ -27,21 +27,15 @@ import pytest
 
 import mtg_proxy_printer.http_file
 import mtg_proxy_printer.downloader_base
-from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
-from mtg_proxy_printer.model.document_loader import CardType
-from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.ui.central_widget import Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, \
     Ui_TabbedCentralWidget
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
-from mtg_proxy_printer.units_and_sizes import CardSizes
-from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
-from tests.helpers import fill_card_database_with_json_cards, create_save_database_with
+from tests.helpers import fill_card_database_with_json_cards
 from tests.document_controller.helpers import insert_card_in_page
 StandardButton = QMessageBox.StandardButton
 
@@ -176,7 +170,7 @@ def test_creating_new_document_with_second_page_selected_works_without_raising_e
     ui = main_window.ui
     document = main_window.document
     # Condition 1
-    document.page_layout.draw_cut_markers = True
+    document.page_layout.cut_marker_style = "Solid"
     document.page_layout_changed.emit(document.page_layout)
     ui.action_new_page.trigger()  # Condition 2
     assert_that(document.pages, has_length(2))

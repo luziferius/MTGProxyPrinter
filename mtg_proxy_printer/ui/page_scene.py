@@ -51,11 +51,12 @@ pixel = unit_registry.pixel
 @enum.unique
 class RenderLayers(enum.IntEnum):
     BACKGROUND = -5
-    CUT_LINES = enum.auto()
+    CUT_LINES_BELOW = enum.auto()
     BLEEDS = enum.auto()
     CORNERS = enum.auto()
     TEXT = enum.auto()
     CARDS = enum.auto()
+    CUT_LINES_ABOVE = enum.auto()
     WATERMARK = enum.auto()
 
 
@@ -355,10 +356,17 @@ class PageScene(QGraphicsScene):
             return QColorConstants.Transparent
         return self.palette().color(ColorGroup.Active, ColorRole.Base)
 
-    def get_cut_marker_color(self, render_mode: RenderMode) -> QColor:
-        if RenderMode.ON_PAPER in render_mode:
-            return QColorConstants.Black
-        return self.palette().color(ColorGroup.Active, ColorRole.WindowText)
+    def get_cut_marker_pen(self, render_mode: RenderMode) -> QPen:
+        layout = self.document.page_layout
+        if (RenderMode.ON_PAPER not in render_mode
+                and layout.cut_marker_color == QColorConstants.Black):
+            # Rendering on screen with the default black supports using a color scheme override for dark mode rendering
+            color = self.palette().color(ColorGroup.Active, ColorRole.WindowText)
+        else:
+            color = layout.cut_marker_color
+        return QPen(
+            color, layout.cut_marker_width.to("point", "print").magnitude, layout.cut_marker_pen_style()
+        )
 
     def get_text_color(self, render_mode: RenderMode) -> QColor:
         if RenderMode.ON_PAPER in render_mode:
@@ -371,7 +379,7 @@ class PageScene(QGraphicsScene):
         background_color = self.get_background_color(self.render_mode)
         self.background.setPen(background_color)
         self.background.setBrush(background_color)
-        cut_line_color = self.get_cut_marker_color(self.render_mode)
+        cut_line_color = self.get_cut_marker_pen(self.render_mode)
         text_color = self.get_text_color(self.render_mode)
         logger.info(f"Number of cut lines: {len(self.cut_lines)}")
         for line in self.cut_lines:
@@ -737,10 +745,12 @@ class PageScene(QGraphicsScene):
         if page_type == PageType.MIXED:
             logger.warning("Not drawing cut markers for page with mixed image sizes")
             return
-        line_color = self.get_cut_marker_color(self.render_mode)
+        pen = self.get_cut_marker_pen(self.render_mode)
         logger.info(f"Drawing cut markers")
-        self._draw_vertical_markers(line_color, page_type)
-        self._draw_horizontal_markers(line_color, page_type)
+        layer = RenderLayers.CUT_LINES_ABOVE \
+            if self.document.page_layout.cut_marker_draw_above_cards else RenderLayers.CUT_LINES_BELOW
+        self._draw_vertical_markers(pen, page_type, layer)
+        self._draw_horizontal_markers(pen, page_type, layer)
 
     def _update_cut_marker_positions(self):
         logger.debug("Updating cut marker positions")
@@ -763,7 +773,6 @@ class PageScene(QGraphicsScene):
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> typing.Generator[float, None, None]:
         spacing = distance_to_rounded_px(parameters.image_spacing)
         card_size: int = round(parameters.card_size.magnitude)
-
         # Excessively large margins may shift the page content off-center. Clamp the border to the non-negative range
         # to avoid placing marker lines out of the drawing range
         border = (
@@ -785,23 +794,23 @@ class PageScene(QGraphicsScene):
             if parameters.image_spacing:
                 yield pixel_position + card_size
 
-    def _draw_vertical_markers(self, line_color: QColor, page_type: PageType):
+    def _draw_vertical_markers(self, pen: QPen, page_type: PageType, layer: RenderLayers):
         offset = self.x_offset
         for column_px in self.vertical_cut_line_locations[page_type]:
-            self._draw_vertical_line(column_px + offset, line_color)
+            self._draw_vertical_line(column_px + offset, pen, layer)
         logger.debug(f"Vertical cut markers drawn")
 
-    def _draw_horizontal_markers(self, line_color: QColor, page_type: PageType):
+    def _draw_horizontal_markers(self, pen: QPen, page_type: PageType, layer: RenderLayers):
         for row_px in self.horizontal_cut_line_locations[page_type]:
-            self._draw_horizontal_line(row_px, line_color)
+            self._draw_horizontal_line(row_px, pen, layer)
         logger.debug(f"Horizontal cut markers drawn")
 
-    def _draw_vertical_line(self, column_px: float, line_color: QColor):
-        line = self.addLine(0, 0, 0, self.height(), line_color)
+    def _draw_vertical_line(self, column_px: float, pen: QPen, layer: RenderLayers):
+        line = self.addLine(0, 0, 0, self.height(), pen)
         line.setX(column_px)
-        line.setZValue(RenderLayers.CUT_LINES.value)
+        line.setZValue(layer.value)
 
-    def _draw_horizontal_line(self, row_px: float, line_color: QColor):
-        line = self.addLine(0, 0, self.width(), 0, line_color)
+    def _draw_horizontal_line(self, row_px: float, pen: QPen, layer: RenderLayers):
+        line = self.addLine(0, 0, self.width(), 0, pen)
         line.setY(row_px)
-        line.setZValue(RenderLayers.CUT_LINES.value)
+        line.setZValue(layer.value)

@@ -17,24 +17,28 @@ import dataclasses
 import itertools
 import math
 import typing
+from typing import Literal
 
 from pint import Quantity
 from PySide6.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
-from PySide6.QtCore import QMarginsF, QSizeF
+from PySide6.QtCore import QMarginsF, QSizeF, Qt
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
 from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, \
     distance_to_mm
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.page_scene import RenderMode
 logger = get_logger(__name__)
 del get_logger
+PenStyle = Qt.PenStyle
 
 __all__ = [
     "PageLayoutSettings",
 ]
+
 
 def _is_quantity_setting(pair: tuple[str, typing.Any]):
     return isinstance(pair[1], Quantity)
@@ -44,8 +48,11 @@ def _is_quantity_setting(pair: tuple[str, typing.Any]):
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
     card_bleed: Quantity = 0 * unit_registry.mm
+    cut_marker_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Black)
+    cut_marker_draw_above_cards: bool = False
+    cut_marker_style: str = "None"  # TODO: Can this be Literal["None", "Solid", "Dots", "Dashes"] instead of str
+    cut_marker_width: Quantity = 0 * unit_registry.mm
     document_name: str = ""
-    draw_cut_markers: bool = False
     draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
     row_spacing: Quantity = 0 * unit_registry.mm
@@ -56,7 +63,7 @@ class PageLayoutSettings:
     margin_top: Quantity = 0 * unit_registry.mm
     custom_page_height: Quantity = 0 * unit_registry.mm
     custom_page_width: Quantity = 0 * unit_registry.mm
-    paper_orientation: str = "Portrait"
+    paper_orientation: str = "Portrait"  # TODO: Here, too. Literal["Portrait", "Landscape"] instead of str
     paper_size: str = "Custom"
     watermark_angle: Quantity = 0 * unit_registry.degree
     watermark_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Transparent)
@@ -64,6 +71,14 @@ class PageLayoutSettings:
     watermark_pos_x: Quantity = 0 * unit_registry.mm
     watermark_pos_y: Quantity = 0 * unit_registry.mm
     watermark_text: str = ""
+
+    @property
+    def draw_cut_markers(self) -> bool:
+        return self.cut_marker_style != "None"
+
+
+    def cut_marker_pen_style(self) -> PenStyle:
+        return VALID_CUT_MARKER_STYLES[self.cut_marker_style]
 
     @property
     def page_height(self) -> Quantity:
@@ -98,8 +113,11 @@ class PageLayoutSettings:
         document_settings = settings["documents"]
         return cls(
             document_settings.get_quantity("card-bleed"),
+            document_settings.get_color("cut-marker-color"),
+            document_settings.getboolean("cut-marker-draw-above-cards"),
+            document_settings["cut-marker-style"],
+            document_settings.get_quantity("cut-marker-width"),
             document_settings["default-document-name"],
-            document_settings.getboolean("print-cut-marker"),
             document_settings.getboolean("print-page-numbers"),
             document_settings.getboolean("print-sharp-corners"),
             document_settings.get_quantity("row-spacing"),

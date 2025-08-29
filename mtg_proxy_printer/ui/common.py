@@ -17,6 +17,7 @@ from functools import lru_cache, cache
 from pathlib import Path
 import platform
 import re
+from typing import Sequence
 
 from PySide6.QtCore import QFile, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
 from PySide6.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit, QDialog
@@ -95,14 +96,18 @@ def show_wizard_or_dialog(wizard: QDialog | QWizard):
         wizard.show()
 
 
-def highlight_widget(widget: QWidget) -> None:
+def highlight_widget(widgets: QWidget | Sequence[QWidget]) -> None:
     """Sets a visual highlight on the given widget to make it stand out"""
-    palette = widget.palette()
-    highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
-    effect = QGraphicsColorizeEffect(widget)
-    effect.setColor(highlight_color)
-    effect.setStrength(0.75)
-    widget.setGraphicsEffect(effect)
+    if isinstance(widgets, QWidget):
+        widgets = [widgets]
+    for widget in widgets:
+        palette = widget.palette()
+        highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
+        effect = QGraphicsColorizeEffect(widget)
+        effect.setColor(highlight_color)
+        effect.setStrength(0.75)
+        widget.setGraphicsEffect(effect)
+
 
 
 class BlockedSignals:
