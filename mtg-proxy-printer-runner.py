@@ -27,9 +27,8 @@ root_path = pathlib.Path(__file__).parent.absolute().resolve()
 sys.path.insert(0, str(root_path))
 
 import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.ui.page_scene
+import mtg_proxy_printer.page_scene.page_scene
 import mtg_proxy_printer.model.document_loader
-import mtg_proxy_printer.units_and_sizes
 import mtg_proxy_printer.model.page_layout
 from mtg_proxy_printer.__main__ import main
 
@@ -59,22 +58,22 @@ to_be_profiled_functions = {
     #    "_update_cached_data",
     #    "get_all_cards_from_image_cache",
     #],
-    mtg_proxy_printer.ui.page_scene.CardBleeds: [
+    mtg_proxy_printer.page_scene.page_scene.CardBleeds: [
         "update_bleeds",
         "from_card",
     ],
-    mtg_proxy_printer.ui.page_scene.CardBleedItem: [
+    mtg_proxy_printer.page_scene.page_scene.CardBleedItem: [
         "__init__",
         "update_bleed_size",
     ],
-    mtg_proxy_printer.ui.page_scene.CardBleedCornerItem: [
+    mtg_proxy_printer.page_scene.page_scene.CardBleedCornerItem: [
         "__init__",
         "update_bleed_size",
     ],
-    mtg_proxy_printer.ui.page_scene.CardItem: [
+    mtg_proxy_printer.page_scene.page_scene.CardItem: [
         "__init__",
     ],
-    mtg_proxy_printer.ui.page_scene.PageScene: [
+    mtg_proxy_printer.page_scene.page_scene.PageScene: [
         "update_card_bleeds",
         "draw_card",
         "_compute_position_for_image",
