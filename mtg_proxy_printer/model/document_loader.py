@@ -511,7 +511,6 @@ class Worker(LoaderSignals):
             instance_of(QColor),  # watermark-color key not present, inherits default value
             matches_regexp(r"#[0-9a-f]{8}"),  # watermark-color present in the save file, encoded as a hex string
         )
-        is_valid_cut_marker = is_in(VALID_CUT_MARKER_STYLES)
         assert_that(
             settings,
             has_properties(
@@ -520,7 +519,7 @@ class Worker(LoaderSignals):
                 custom_page_width=is_distance,
                 cut_marker_color=is_color,
                 cut_marker_draw_above_cards=is_bool,
-                cut_marker_style=is_valid_cut_marker,
+                cut_marker_style=is_in(VALID_CUT_MARKER_STYLES),
                 cut_marker_width=is_distance,
                 margin_top=is_distance,
                 margin_bottom=is_distance,
@@ -533,6 +532,7 @@ class Worker(LoaderSignals):
                 document_name=instance_of(str),
                 paper_orientation=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageOrientation),
                 paper_size=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize),
+                print_registration_marks_style=is_in(mtg_proxy_printer.settings.VALID_PRINT_REGISTRATION_MARKS_STYLES),
                 watermark_angle=is_angle,
                 watermark_pos_x=is_distance,
                 watermark_pos_y=is_distance,

@@ -209,6 +209,7 @@ def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Pat
                 str(layout.draw_sharp_corners),
                 layout.paper_orientation,
                 layout.paper_size,
+                layout.print_registration_marks_style,
                 layout.watermark_color.name(HexArgb),
                 layout.watermark_text,
             ),

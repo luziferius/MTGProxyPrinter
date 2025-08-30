@@ -5,6 +5,8 @@
 # New features
 
 - Reorder pages: It is now possible to re-order pages via drag&drop or via the two new buttons below the page list.
+- Adding print registration marks. These are placed in the top left, top right and bottom left corners of
+  each page and are used for better printer alignment
 - Improved the cut helper lines with new customizations:
   - Adjustable are the color, thickness, transparency and line style.
   - Available line styles are solid lines, dots, and short dashes.
@@ -17,6 +19,11 @@
 # Changed features
 
 - DFC placeholder cards are now generated with the proper corner radius.
+
+# Fixed issues
+
+- Properly set the print resolution in exported PNG images. This should improve compatibility when working with
+  those images.
 
 # Version 0.33.2 (2025-08-05)  <a name="v0_33_2"></a>
 

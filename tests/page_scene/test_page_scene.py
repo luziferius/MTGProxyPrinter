@@ -13,8 +13,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-
 import itertools
 from functools import partial
 import typing
@@ -30,13 +28,14 @@ from PySide6.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QP
 from PySide6.QtCore import QPoint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry
-from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene, NeighborsPresent
+from mtg_proxy_printer.page_scene.page_scene import RenderMode, PageScene
+from mtg_proxy_printer.page_scene.items import NeighborsPresent
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 from mtg_proxy_printer.model.document import Document
 
-from ..document_controller.helpers import create_card
-from tests.hasgetter import has_getters, has_getter
+from tests.document_controller.helpers import create_card
+from tests.hasgetter import has_getters
 from tests.helpers import close_to_
 
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer.PageScene."

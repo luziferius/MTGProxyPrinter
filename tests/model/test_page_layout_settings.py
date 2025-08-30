@@ -23,7 +23,7 @@ import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
 import mtg_proxy_printer.model.page_layout
 from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, unit_registry, StrDict
-from mtg_proxy_printer.ui.page_scene import RenderMode
+from mtg_proxy_printer.page_scene.page_scene import RenderMode
 
 from PySide6.QtGui import QPageLayout, QPageSize, QColorConstants
 from PySide6.QtCore import QMarginsF

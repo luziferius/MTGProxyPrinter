@@ -17,7 +17,6 @@ import dataclasses
 import itertools
 import math
 import typing
-from typing import Literal
 
 from pint import Quantity
 from PySide6.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
@@ -30,7 +29,7 @@ from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
 from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, \
     distance_to_mm
 if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.ui.page_scene import RenderMode
+    from mtg_proxy_printer.page_scene.page_scene import RenderMode
 logger = get_logger(__name__)
 del get_logger
 PenStyle = Qt.PenStyle
@@ -65,6 +64,7 @@ class PageLayoutSettings:
     custom_page_width: Quantity = 0 * unit_registry.mm
     paper_orientation: str = "Portrait"  # TODO: Here, too. Literal["Portrait", "Landscape"] instead of str
     paper_size: str = "Custom"
+    print_registration_marks_style: str = "None"  # TODO: Here, too.
     watermark_angle: Quantity = 0 * unit_registry.degree
     watermark_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Transparent)
     watermark_font_size: Quantity = 0 * unit_registry.point
@@ -130,6 +130,7 @@ class PageLayoutSettings:
             document_settings.get_quantity("custom-page-width"),
             document_settings["paper-orientation"],
             document_settings["paper-size"],
+            document_settings["print-registration-marks-style"],
             document_settings.get_quantity("watermark-angle"),
             document_settings.get_color("watermark-color"),
             document_settings.get_quantity("watermark-font-size"),
