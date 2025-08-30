@@ -18,6 +18,11 @@
 
 - DFC placeholder cards are now generated with the proper corner radius.
 
+# Fixed issues
+
+- Properly set the print resolution in exported PNG images. This should improve compatibility when working with
+  those images.
+
 # Version 0.33.2 (2025-08-05)  <a name="v0_33_2"></a>
 
 ## Fixed issues

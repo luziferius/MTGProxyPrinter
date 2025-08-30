@@ -25,7 +25,7 @@ from pathlib import Path
 from threading import BoundedSemaphore
 import typing
 
-from PySide6.QtCore import QObject, QMarginsF, QSizeF, Slot, QPersistentModelIndex, QThreadPool
+from PySide6.QtCore import QObject, QMarginsF, QSizeF, QSize, Slot, QPersistentModelIndex, QThreadPool
 from PySide6.QtGui import QPainter, QPdfWriter, QPageSize, QImage, QColor
 from PySide6.QtPrintSupport import QPrinter
 
@@ -80,22 +80,31 @@ class PNGRenderer(ProgressSignalContainer):
             round(RESOLUTION.magnitude))
         pool = QThreadPool.globalInstance()
         scene = PageScene(document, RenderMode.ON_PAPER, self)
+        dots_per_meter = round(RESOLUTION.to("pixel/meter").magnitude)
+        background_color = settings["export"].get_color("png-background-color")
         number_width = len(str(page_count))
         parent = file_path.parent
         self.begin_update.emit(page_count, self.tr("Export as PNGs"))
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
             output_path = str(parent / file_name)
-            background_color = QColor(settings["export"]["png-background-color"])
-            # 255 is solid. So avoid adding the alpha channel, if it won't be used.
-            image_format = Format.Format_RGB888 if background_color.alpha() == 255 else Format.Format_RGBA8888
-            image = QImage(page_size, image_format)
-            image.fill(background_color)
+            image = self._create_image(page_size, background_color, dots_per_meter)
             painter = QPainter(image)
             page_index = QPersistentModelIndex(document.index(page_nr, 0))
             scene.on_current_page_changed(page_index)
             scene.render(painter)
+            painter.end()
             pool.start(partial(self._compress_single_image, image, output_path))
+
+    @staticmethod
+    def _create_image(page_size: QSize, background_color: QColor, dots_per_meter: int):
+        # 255 is solid. So avoid adding the alpha channel, if it won't be used.
+        image_format = Format.Format_RGB888 if background_color.alpha() == 255 else Format.Format_RGBA8888
+        image = QImage(page_size, image_format)
+        image.setDotsPerMeterX(dots_per_meter)
+        image.setDotsPerMeterY(dots_per_meter)
+        image.fill(background_color)
+        return image
 
     @with_database_write_lock(PNGEncoderThreadLimit)
     def _compress_single_image(self, image: QImage, output_path: str):
