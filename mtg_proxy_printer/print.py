@@ -60,7 +60,7 @@ PNGEncoderThreadLimit = BoundedSemaphore(max(1, process_cpu_count()-1))
 
 
 class PNGRenderer(ProgressSignalContainer):
-    def __init__(self, main_window: "MainWindow", document: Document, file_path: str):
+    def __init__(self, main_window: "MainWindow|None", document: Document, file_path: str):
         super().__init__(main_window)
         self.document = document
         self.file_path = Path(file_path)

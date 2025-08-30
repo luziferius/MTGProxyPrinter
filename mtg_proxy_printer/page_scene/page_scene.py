@@ -126,7 +126,7 @@ class PageScene(QGraphicsScene):
         return item
 
     def _create_print_marker_items(self) -> list[BullseyeMarkItem]:
-        items = [BullseyeMarkItem(), BullseyeMarkItem(), BullseyeMarkItem()]
+        items = [BullseyeMarkItem() for _ in range(3)]
         for item in items:
             self.addItem(item)
         return items
@@ -244,11 +244,13 @@ class PageScene(QGraphicsScene):
         opacity = 1
         item_size = self.print_markers[0].sceneBoundingRect()
         logger.debug(f"{item_size=}")
-        left = distance_to_rounded_px(layout.margin_left)
-        right = distance_to_rounded_px(layout.margin_right)+item_size.width()
+        page_width = distance_to_rounded_px(layout.page_width)
+        page_height = distance_to_rounded_px(layout.page_height)
+        left = distance_to_rounded_px(layout.margin_left) + self.x_offset
+        right = distance_to_rounded_px(layout.margin_right) + round(item_size.width()) + self.x_offset
         top = distance_to_rounded_px(layout.margin_top)
-        bottom = distance_to_rounded_px(layout.margin_bottom)+item_size.height()
-        positions = [QPoint(left, top), QPoint(round(self.width()-right), top), QPoint(left, round(self.height()-bottom))]
+        bottom = distance_to_rounded_px(layout.margin_bottom)+round(item_size.height())
+        positions = [QPoint(left, top), QPoint(page_width-right, top), QPoint(left, page_height-bottom)]
         for item, position in zip(self.print_markers, positions):
             item.setOpacity(opacity)
             item.setPos(position)

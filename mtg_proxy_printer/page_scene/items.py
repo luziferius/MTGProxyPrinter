@@ -52,16 +52,24 @@ class CutMarkerParameters(typing.NamedTuple):
 
 
 class BullseyeMarkItem(QGraphicsSvgItem):
-
+    """
+    Draws a Bullseye print target. The used SVG uses centered 1 pixel wide lines on a 32 pixel base.
+    Positions and scaling is tuned to not wander off and render on whole pixels
+    """
     def __init__(self, parent: QGraphicsItem = None):
         super().__init__(f"{RESOURCE_PATH_PREFIX}/Common_Registration_Mark.svg", parentItem=parent)
         self.setZValue(RenderLayers.CUT_LINES_BELOW.value)
-        self.setScale(RESOLUTION.magnitude/100)  # whole 96 pixel at 300DPI, resulting in ~8.1mm.
+        self.setScale(RESOLUTION.magnitude/100+285/256000)  # whole 96 pixel at 300DPI, resulting in ~8.1mm.
         logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
+        self.setPos(QPoint(0,0))
         # self.setOpacity(0.)
 
     def setPos(self, pos: QPoint|QPointF, /):
-        super().setPos(QPointF(pos.x()+10/255, pos.y()+10/255))
+        new = QPointF(
+            (pos.x()*256105/256000),
+            (pos.y()*256105/256000),
+        )
+        super().setPos(new)
 
 
 
