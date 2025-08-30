@@ -241,9 +241,8 @@ class PageScene(QGraphicsScene):
 
     def _update_print_markers(self):
         layout = self.document.page_layout
-        opacity = 1
+        current_style = layout.print_registration_marks_style
         item_size = self.print_markers[0].sceneBoundingRect()
-        logger.debug(f"{item_size=}")
         page_width = distance_to_rounded_px(layout.page_width)
         page_height = distance_to_rounded_px(layout.page_height)
         left = distance_to_rounded_px(layout.margin_left) + self.x_offset
@@ -252,7 +251,7 @@ class PageScene(QGraphicsScene):
         bottom = distance_to_rounded_px(layout.margin_bottom)+round(item_size.height())
         positions = [QPoint(left, top), QPoint(page_width-right, top), QPoint(left, page_height-bottom)]
         for item, position in zip(self.print_markers, positions):
-            item.setOpacity(opacity)
+            item.update_visibility(current_style)
             item.setPos(position)
 
     @Slot(PageLayoutSettings)

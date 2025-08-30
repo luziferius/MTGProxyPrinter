@@ -397,7 +397,9 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
     boolean_settings = {"print-sharp-corners", "print-page-numbers", "cut-marker-draw-above-cards",}
-    string_settings = {"default-document-name", "paper-size", "paper-orientation", "watermark-text", "cut-marker-style",}
+    string_settings = {
+        "default-document-name", "paper-size", "paper-orientation", "watermark-text",
+        "cut-marker-style", "print-registration-marks-style"}
     color_settings = {"watermark-color", "cut-marker-color",}
     for key in section.keys():
         if key in DOCUMENT_SETTINGS_QUANTITY_LIMITS:

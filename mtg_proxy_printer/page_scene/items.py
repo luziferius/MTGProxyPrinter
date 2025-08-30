@@ -71,6 +71,8 @@ class BullseyeMarkItem(QGraphicsSvgItem):
         )
         super().setPos(new)
 
+    def update_visibility(self, current_style: str):
+        self.setOpacity(current_style == "Bullseye")
 
 
 class CardBleedItem(QGraphicsPixmapItem):

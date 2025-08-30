@@ -64,6 +64,7 @@ class PageLayoutSettings:
     custom_page_width: Quantity = 0 * unit_registry.mm
     paper_orientation: str = "Portrait"  # TODO: Here, too. Literal["Portrait", "Landscape"] instead of str
     paper_size: str = "Custom"
+    print_registration_marks_style: str = "None"  # TODO: Here, too.
     watermark_angle: Quantity = 0 * unit_registry.degree
     watermark_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Transparent)
     watermark_font_size: Quantity = 0 * unit_registry.point
@@ -129,6 +130,7 @@ class PageLayoutSettings:
             document_settings.get_quantity("custom-page-width"),
             document_settings["paper-orientation"],
             document_settings["paper-size"],
+            document_settings["print-registration-marks-style"],
             document_settings.get_quantity("watermark-angle"),
             document_settings.get_color("watermark-color"),
             document_settings.get_quantity("watermark-font-size"),
