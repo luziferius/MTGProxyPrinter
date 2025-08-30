@@ -91,6 +91,11 @@ class PageConfigWidget(QGroupBox):
         ui.cut_marker_style.currentIndexChanged.connect(self._on_cut_marker_style_changed)
         ui.cut_marker_style.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
+        ui.print_registration_marks_style.addItem(self.tr("Disabled", "A print/cut registration marker style"), "None")
+        ui.print_registration_marks_style.addItem(self.tr("Bullseye", "A print/cut registration marker style"), "Bullseye")
+        ui.print_registration_marks_style.currentIndexChanged.connect(self._on_print_registration_marks_style_changed)
+        ui.print_registration_marks_style.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
+
         for page_size_id in PageSizeManager.PageSize.values():
             ui.paper_size.addItem(QPageSize.name(page_size_id), page_size_id)
         for item, value in PageSizeManager.PageOrientation.items():
@@ -157,6 +162,12 @@ class PageConfigWidget(QGroupBox):
     @Slot(int)
     def _on_cut_marker_style_changed(self, _: int):
         self.page_layout.cut_marker_style = self.ui.cut_marker_style.currentData(Qt.ItemDataRole.UserRole)
+
+    @Slot(int)
+    def _on_print_registration_marks_style_changed(self, _: int):
+        self.page_layout.print_registration_marks_style = (
+            self.ui.print_registration_marks_style.currentData(Qt.ItemDataRole.UserRole)
+        )
 
     @Slot(int)
     def _on_paper_size_changed(self, index: int):
@@ -308,6 +319,7 @@ class PageConfigWidget(QGroupBox):
         self._load_paper_size(documents_section["paper-size"])
         self._load_paper_orientation(documents_section["paper-orientation"])
         self._load_cut_marker_style(documents_section["cut-marker-style"])
+        self._load_print_registration_marks_style(documents_section["print-registration-marks-style"])
         self.validate_paper_size_settings()
         self.on_page_layout_changed()
         self.page_layout_changed.emit(self.page_layout)
@@ -343,6 +355,7 @@ class PageConfigWidget(QGroupBox):
         self._load_paper_size(other.paper_size)
         self._load_paper_orientation(other.paper_orientation)
         self._load_cut_marker_style(other.cut_marker_style)
+        self._load_print_registration_marks_style(other.print_registration_marks_style)
         self.validate_paper_size_settings()
         self.on_page_layout_changed()
         self.page_layout_changed.emit(self.page_layout)
@@ -369,6 +382,10 @@ class PageConfigWidget(QGroupBox):
         self.page_layout.cut_marker_style = style_str
         self._set_combo_box_current_item_to_given_item(self.ui.cut_marker_style, style_str)
 
+    def _load_print_registration_marks_style(self, style_str: str):
+        self.page_layout.print_registration_marks_style = style_str
+        self._set_combo_box_current_item_to_given_item(self.ui.print_registration_marks_style, style_str)
+
     @staticmethod
     def _set_combo_box_current_item_to_given_item(combo_box: QComboBox, user_data_item: Any):
         model = combo_box.model()
@@ -389,6 +406,8 @@ class PageConfigWidget(QGroupBox):
             documents_section[setting] = str(checkbox.isChecked())
         for line_edit, setting in self._get_string_settings_widgets():
             documents_section[setting] = line_edit.text()
+        documents_section["cut-marker-style"] = self.page_layout.cut_marker_style
+        documents_section["print-registration-marks-style"] = self.page_layout.print_registration_marks_style
         documents_section["watermark-color"] = self.page_layout.watermark_color.name(QColor.NameFormat.HexArgb)
         documents_section["cut-marker-color"] = self.page_layout.cut_marker_color.name(QColor.NameFormat.HexArgb)
         documents_section["paper-size"] = PageSizeManager.PageSizeReverse[self._current_page_size()]
@@ -452,6 +471,12 @@ class PageConfigWidget(QGroupBox):
     def _current_page_orientation(self) -> QPageLayout.Orientation:
         return self.ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
 
+    def _current_cut_marker_style(self) -> str:
+        return self.ui.cut_marker_style.currentData(Qt.ItemDataRole.UserRole)
+
+    def _current_print_registration_marks_style(self) -> str:
+        return self.ui.print_registration_marks_style.currentData(Qt.ItemDataRole.UserRole)
+
     @functools.singledispatchmethod
     def highlight_differing_settings(self, to_compare: ConfigParser | PageLayoutSettings):
         pass
@@ -476,6 +501,10 @@ class PageConfigWidget(QGroupBox):
             highlight_widget(self.ui.paper_size)
         if self._current_page_orientation() != PageSizeManager.PageOrientation[section["paper-orientation"]]:
             highlight_widget(self.ui.paper_orientation)
+        if self._current_cut_marker_style() != section["cut-marker-style"]:
+            highlight_widget(self.ui.cut_marker_style)
+        if self._current_print_registration_marks_style() != section["print-registration-marks-style"]:
+            highlight_widget(self.ui.print_registration_marks_style)
 
     @highlight_differing_settings.register
     def _(self, to_compare: PageLayoutSettings):
@@ -499,3 +528,7 @@ class PageConfigWidget(QGroupBox):
             highlight_widget(self.ui.paper_size)
         if self._current_page_orientation() != PageSizeManager.PageOrientation[to_compare.paper_orientation]:
             highlight_widget(self.ui.paper_orientation)
+        if self._current_cut_marker_style() != to_compare.cut_marker_style:
+            highlight_widget(self.ui.cut_marker_style)
+        if self._current_print_registration_marks_style() != to_compare.print_registration_marks_style:
+            highlight_widget(self.ui.print_registration_marks_style)
