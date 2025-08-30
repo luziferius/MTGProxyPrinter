@@ -176,6 +176,9 @@ VALID_CUT_MARKER_STYLES: defaultdict[str, PenStyle] = defaultdict(lambda: PenSty
     "Dots": PenStyle.DotLine,
     "Dashes": PenStyle.DashLine,
 })
+VALID_PRINT_REGISTRATION_MARKS_STYLES: set[str] = {
+    "None", "Bullseye",
+}
 DEFAULT_MARGINS = 5*mm
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed": "0 mm",
@@ -191,6 +194,7 @@ DEFAULT_SETTINGS["documents"] = {
     "margin-bottom": str(DEFAULT_MARGINS),
     "margin-left": str(DEFAULT_MARGINS),
     "margin-right": str(DEFAULT_MARGINS),
+    "print-registration-marks-style": "None",
     "row-spacing": "0 mm",
     "column-spacing": "0 mm",
     "print-sharp-corners": "False",
@@ -413,6 +417,8 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
         _restore_default(section, defaults, "paper-size")
     if section["paper-orientation"] not in PageSizeManager.PageOrientation:
         _restore_default(section, defaults, "paper-orientation")
+    if section["print-registration-marks-style"] not in VALID_PRINT_REGISTRATION_MARKS_STYLES:
+        _restore_default(section, defaults, "print-registration-marks-style")
     # Check some semantic properties
     available_height = section.get_quantity("custom-page-height") - \
         (section.get_quantity("margin-top") + section.get_quantity("margin-bottom"))
