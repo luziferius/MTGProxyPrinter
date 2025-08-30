@@ -19,7 +19,7 @@ import functools
 import itertools
 import typing
 
-from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, Signal, QObject, Slot, \
+from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, QPoint, Signal, QObject, Slot, \
     QPersistentModelIndex, QModelIndex
 from PySide6.QtGui import QPen, QColorConstants, QColor, QPalette, QFontMetrics
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene
@@ -27,7 +27,8 @@ from PySide6.QtWidgets import QGraphicsItem, QGraphicsLineItem, QGraphicsSimpleT
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.page_scene.items import RenderLayers, CutMarkerParameters, NeighborsPresent, CardItem
+from mtg_proxy_printer.page_scene.items import RenderLayers, CutMarkerParameters, NeighborsPresent, CardItem, \
+    BullseyeMarkItem
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, distance_to_rounded_px, CardSizes, CardSize, \
     Quantity
@@ -92,6 +93,8 @@ class PageScene(QGraphicsScene):
         self._update_cut_marker_positions()
         self.document_title_text = self._create_text_item()
         self.page_number_text = self._create_text_item()
+        self.print_markers = self._create_print_marker_items()
+        self._update_print_markers()
         self._update_text_items(page_layout)
         if page_layout.draw_cut_markers:
             self.draw_cut_markers()
@@ -121,6 +124,12 @@ class PageScene(QGraphicsScene):
         font.setPointSizeF(font_size)
         item.setFont(font)
         return item
+
+    def _create_print_marker_items(self) -> list[BullseyeMarkItem]:
+        items = [BullseyeMarkItem(), BullseyeMarkItem(), BullseyeMarkItem()]
+        for item in items:
+            self.addItem(item)
+        return items
 
     def get_background_color(self, render_mode: RenderMode) -> QColor:
         if RenderMode.ON_PAPER in render_mode:
@@ -230,6 +239,20 @@ class PageScene(QGraphicsScene):
         total_pages = self.document.rowCount()
         self.page_number_text.setText(f"{page}/{total_pages}")
 
+    def _update_print_markers(self):
+        layout = self.document.page_layout
+        opacity = 1
+        item_size = self.print_markers[0].sceneBoundingRect()
+        logger.debug(f"{item_size=}")
+        left = distance_to_rounded_px(layout.margin_left)
+        right = distance_to_rounded_px(layout.margin_right)+item_size.width()
+        top = distance_to_rounded_px(layout.margin_top)
+        bottom = distance_to_rounded_px(layout.margin_bottom)+item_size.height()
+        positions = [QPoint(left, top), QPoint(round(self.width()-right), top), QPoint(left, round(self.height()-bottom))]
+        for item, position in zip(self.print_markers, positions):
+            item.setOpacity(opacity)
+            item.setPos(position)
+
     @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
         logger.info("Applying new document settings …")
@@ -249,6 +272,7 @@ class PageScene(QGraphicsScene):
         self.update_card_positions()
         self.update_card_bleeds()
         self._update_text_items(new_page_layout)
+        self._update_print_markers()
 
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit

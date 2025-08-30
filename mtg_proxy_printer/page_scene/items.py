@@ -6,13 +6,18 @@ from PySide6.QtCore import QRect, QPoint, QPointF, QSize, QModelIndex, QPersiste
 from PySide6.QtGui import QPixmap, QPen, QColorConstants, QTransform, QPolygonF
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsItemGroup, QGraphicsItem, \
     QGraphicsSimpleTextItem, QGraphicsRectItem
+from PySide6.QtSvgWidgets import QGraphicsSvgItem
 
 from pint import Quantity
 
 from mtg_proxy_printer.model.card import AnyCardType, CardCorner
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import unit_registry
+from mtg_proxy_printer.units_and_sizes import unit_registry, RESOLUTION
+from mtg_proxy_printer.ui.common import RESOURCE_PATH_PREFIX
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 ItemDataRole = Qt.ItemDataRole
 point = unit_registry.point
@@ -44,6 +49,20 @@ class CutMarkerParameters(typing.NamedTuple):
     item_count: int
     margin: Quantity
     image_spacing: Quantity
+
+
+class BullseyeMarkItem(QGraphicsSvgItem):
+
+    def __init__(self, parent: QGraphicsItem = None):
+        super().__init__(f"{RESOURCE_PATH_PREFIX}/Common_Registration_Mark.svg", parentItem=parent)
+        self.setZValue(RenderLayers.CUT_LINES_BELOW.value)
+        self.setScale(RESOLUTION.magnitude/100)  # whole 96 pixel at 300DPI, resulting in ~8.1mm.
+        logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
+        # self.setOpacity(0.)
+
+    def setPos(self, pos: QPoint|QPointF, /):
+        super().setPos(QPointF(pos.x()+10/255, pos.y()+10/255))
+
 
 
 class CardBleedItem(QGraphicsPixmapItem):
