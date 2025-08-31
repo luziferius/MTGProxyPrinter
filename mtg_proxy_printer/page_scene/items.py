@@ -23,7 +23,7 @@ ItemDataRole = Qt.ItemDataRole
 point = unit_registry.point
 degree = unit_registry.degree
 pixel = unit_registry.pixel
-
+PenStyle=Qt.PenStyle
 
 @enum.unique
 class RenderLayers(enum.IntEnum):
@@ -62,7 +62,6 @@ class BullseyeMarkItem(QGraphicsSvgItem):
         self.setScale(RESOLUTION.magnitude/100+285/256000)  # whole 96 pixel at 300DPI, resulting in ~8.1mm.
         logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
         self.setPos(QPoint(0,0))
-        # self.setOpacity(0.)
 
     def setPos(self, pos: QPoint|QPointF, /):
         new = QPointF(
@@ -73,6 +72,39 @@ class BullseyeMarkItem(QGraphicsSvgItem):
 
     def update_visibility(self, current_style: str):
         self.setOpacity(current_style == "Bullseye")
+
+
+class CutMarkSquareItem(QGraphicsRectItem):
+    def __init__(self, parent: QGraphicsItem = None):
+        size = round((5.5*unit_registry.mm * RESOLUTION).to("pixel", "print").magnitude)
+        super().__init__(QRect(0, 0, size, size), parent)
+        self.setZValue(RenderLayers.CUT_LINES_BELOW.value)
+        self.setPen(PenStyle.NoPen)
+        self.setBrush(QColorConstants.Black)
+
+    def update_visibility(self, current_style: str):
+        self.setOpacity(current_style == "Cut marker")
+
+
+class CutMarkAngleItem(QGraphicsPolygonItem):
+
+    def __init__(self, bottom_left: bool, parent: QGraphicsItem = None):
+        length_px = round((18*unit_registry.mm*RESOLUTION).to("pixel", "print").magnitude)
+        thickness_px = round((1*unit_registry.mm*RESOLUTION).to("pixel", "print").magnitude)
+        super().__init__(QPolygonF([
+            QPointF(0, 0), QPointF(length_px, 0),
+            QPointF(length_px, length_px), QPointF(length_px-thickness_px, length_px),
+            QPointF(length_px-thickness_px, thickness_px), QPointF(0, thickness_px),
+            QPointF(0, 0)
+        ]), parent)
+        self.setTransformOriginPoint(length_px, 0)  # Use the outer 90° angle as the rotation point
+        self.setZValue(RenderLayers.CUT_LINES_BELOW.value)
+        self.setPen(PenStyle.NoPen)
+        self.setBrush(QColorConstants.Black)
+        self.setRotation(180 * bottom_left)
+
+    def update_visibility(self, current_style: str):
+        self.setOpacity(current_style == "Cut marker")
 
 
 class CardBleedItem(QGraphicsPixmapItem):
