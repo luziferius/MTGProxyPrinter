@@ -6,7 +6,9 @@
 
 - Reorder pages: It is now possible to re-order pages via drag&drop or via the two new buttons below the page list.
 - Adding print registration marks. These are placed in the top left, top right and bottom left corners of
-  each page and are used for better printer alignment
+  each page and are used for better printer alignment. Implemented 2 styles: 
+  - Bulls-eye symbols used as alignment helpers in professional printing
+  - Cut registration marks used with automatic silhouette cutters.
 - Improved the cut helper lines with new customizations:
   - Adjustable are the color, thickness, transparency and line style.
   - Available line styles are solid lines, dots, and short dashes.
