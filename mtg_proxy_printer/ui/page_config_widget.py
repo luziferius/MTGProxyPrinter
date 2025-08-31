@@ -94,7 +94,7 @@ class PageConfigWidget(QGroupBox):
         ui.print_registration_marks_style.addItem(self.tr("Disabled", "A print/cut registration marker style"), "None")
         ui.print_registration_marks_style.addItem(self.tr("Bullseye", "A print/cut registration marker style"), "Bullseye")
         ui.print_registration_marks_style.addItem(
-            self.tr("Silhouette cutter registration marks (Cameo-compatible)",
+            self.tr("Silhouette cutter (Cameo-compatible)",
                     "A print/cut registration marker style"), "Cut marker")
         "Cut marker"
         ui.print_registration_marks_style.currentIndexChanged.connect(self._on_print_registration_marks_style_changed)
