@@ -20,27 +20,17 @@ import itertools
 import pathlib
 import shutil
 import string
-from typing import TYPE_CHECKING, Callable
+from typing import Callable
 
 from PySide6.QtCore import QObject, Signal, Slot, QModelIndex, Qt
 from PySide6.QtGui import QPixmap, QColorConstants
 
-from ..async_tasks.image_downloader import BatchActions, SingleActions, IndexList, SingleDownloadTask, \
-    BatchDownloadTask, ObtainMissingImagesTask
 
-if TYPE_CHECKING:
-    pass
-
-from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
-from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
-from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
-from mtg_proxy_printer.document_controller import DocumentAction
 from .imagedb_files import ImageKey, CacheContent
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from .card import Card
-from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -55,7 +45,7 @@ PathSizeList = list[tuple[pathlib.Path, int]]
 ImageKeySet = set[ImageKey]
 
 
-class InitOnDiskDataTask(AsyncTask):
+class InitOnDiskDataTask:
     """
     Iterates the image storage directory and computes the set of ImageKey instances, placing them in the image database.
     """
@@ -77,13 +67,8 @@ class ImageDatabase(QObject):
     This class manages the on-disk PNG image cache. It can asynchronously fetch images from disk or from the Scryfall
     servers, as needed, provides an in-memory cache, and allows deletion of images on disk.
     """
-    request_run_async_task = Signal(AsyncTask)
 
-    request_action = Signal(DocumentAction)
-    missing_images_obtained = Signal()
     missing_image_obtained = Signal(QModelIndex)
-
-    network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
 
     def __init__(self, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
         super().__init__(parent)
@@ -144,16 +129,6 @@ class ImageDatabase(QObject):
         except OSError as e:
             if e.errno != errno.ENOTEMPTY:
                 raise e
-
-    @Slot(ActionReplaceCard)
-    @Slot(ActionAddCard)
-    def fill_document_action_image(self, action: SingleActions):
-        logger.debug(f"About to obtain image for card in action")
-        task = SingleDownloadTask(self, action)
-        # Ensure the task lives until the Document processed it to prevent the garbage collector
-        # from collecting it mid-flight through C++ code
-        task.request_action.connect(self.request_action, BlockingQueuedConnection)
-        self.request_run_async_task.emit(task)
 
     @Slot(ImageKey, QPixmap)
     def on_image_obtained(self, key: ImageKey, pixmap: QPixmap):

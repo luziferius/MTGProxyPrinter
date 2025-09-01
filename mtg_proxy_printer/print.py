@@ -21,7 +21,7 @@ import typing
 
 try:
     from os import process_cpu_count
-except ImportError:  # Py 3.8 compatibility
+except ImportError:  # Py <3.13 compatibility
     from os import cpu_count as process_cpu_count
 
 from PySide6.QtWidgets import QApplication
@@ -231,6 +231,7 @@ class PDFPrinter(QPdfWriter):
         """Render the given page on the internal scene"""
         index = QPersistentModelIndex(self.document.index(page_number, 0))
         self.scene.on_current_page_changed(index)
+
 
 class Renderer(QObject):
 

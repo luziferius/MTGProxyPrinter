@@ -17,6 +17,7 @@ import pathlib
 import shutil
 import socket
 import threading
+from typing import TYPE_CHECKING
 import urllib.error
 
 from PySide6.QtCore import Qt, QModelIndex, Signal
@@ -31,8 +32,9 @@ from mtg_proxy_printer.document_controller.import_deck_list import ActionImportD
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.model.card import AnyCardType, CheckCard, Card
 from mtg_proxy_printer.model.carddb import with_database_write_lock
-from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.imagedb import ImageDatabase
+if TYPE_CHECKING:
+    from mtg_proxy_printer.model.document import Document
+    from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.imagedb_files import ImageKey
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
@@ -60,7 +62,7 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
     image_obtained = Signal(ImageKey, QPixmap)
     request_action = Signal(DocumentAction)
 
-    def __init__(self, image_db: ImageDatabase):
+    def __init__(self, image_db: "ImageDatabase"):
         super().__init__()
         self.should_run = True
         self.image_database = image_db
@@ -178,7 +180,7 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
 
 
 class SingleDownloadTask(ImageDownloadTask):
-    def __init__(self, image_db: ImageDatabase, action: SingleActions):
+    def __init__(self, image_db: "ImageDatabase", action: SingleActions):
         super().__init__(image_db)
         self.action = action
 
@@ -191,7 +193,7 @@ class SingleDownloadTask(ImageDownloadTask):
 
 
 class BatchDownloadTask(ImageDownloadTask):
-    def __init__(self, image_db: ImageDatabase, action: BatchActions):
+    def __init__(self, image_db: "ImageDatabase", action: BatchActions):
         super().__init__(image_db)
         self.action = action
         self.image_download_task = AsyncTask()
@@ -220,7 +222,7 @@ class BatchDownloadTask(ImageDownloadTask):
 class ObtainMissingImagesTask(ImageDownloadTask):
     missing_image_obtained = Signal(QModelIndex)
 
-    def __init__(self, image_db: ImageDatabase, indices: IndexList):
+    def __init__(self, image_db: "ImageDatabase", indices: IndexList):
         super().__init__(image_db)
         self.indices = indices
         if indices:

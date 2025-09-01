@@ -82,7 +82,6 @@ class Application(QApplication):
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.image_db, self.document, self.language_model
         )
-        self.image_db.network_error_occurred.connect(self.main_window.on_network_error_occurred)
         self.main_window.request_run_async_task.connect(self.run_async_task)
         self.update_checker = self._create_update_checker(args)
         self.main_window.ui.action_download_card_data.setEnabled(False)
@@ -165,7 +164,6 @@ class Application(QApplication):
         mtg_proxy_printer.carddb_migrations.migrate_card_database_location()
         card_db = mtg_proxy_printer.model.carddb.CardDatabase()
         image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
-        image_db.request_run_async_task.connect(self.run_async_task)
         return card_db, image_db
 
     def _create_settings_window(
@@ -198,8 +196,6 @@ class Application(QApplication):
             card_db: mtg_proxy_printer.model.carddb.CardDatabase,
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
-        document.request_fill_image_for_action.connect(image_db.fill_document_action_image)
-        image_db.request_action.connect(document.apply)
         image_db.missing_image_obtained.connect(document.on_missing_image_obtained)
         return document
 
