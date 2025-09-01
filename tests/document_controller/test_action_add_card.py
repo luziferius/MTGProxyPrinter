@@ -204,7 +204,7 @@ def test_undo_without_internal_saved_state_raises_exception(card: Card):
     assert_that(calling(action.undo).with_args(unittest.mock.MagicMock), raises(IllegalStateError))
 
 
-def test_undo_deletes_pages_created_during_apply(qtbot: QtBot, card: Card, document_light: Document):
+def test_undo_deletes_pages_created_during_apply(card: Card, document_light: Document):
     pages = document_light.pages
     capacity = document_light.page_layout.compute_page_card_capacity()
     append_new_pages(document_light, 2)
@@ -212,6 +212,7 @@ def test_undo_deletes_pages_created_during_apply(qtbot: QtBot, card: Card, docum
         insert_card_in_page(pages[page], card, capacity)
     count = capacity * 3 - 1
     action = ActionAddCard(card, count)
+    action._already_applied = True
     action.added_new_pages = 2
     action.added_cards_to_existing_pages.append((0, capacity-1))
 

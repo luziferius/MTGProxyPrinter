@@ -179,8 +179,8 @@ def test_undo_restores_old_page_layout(qtbot: QtBot, document_light: Document):
     new_settings = copy.copy(document_light.page_layout)
 
     action = ActionEditDocumentSettings(new_settings)
+    action._already_applied = True
     action.old_settings = old_settings
-
     with patch(
             "mtg_proxy_printer.document_controller.edit_document_settings.ActionEditDocumentSettings._reflow_document"
             ) as reflow_mock, qtbot.wait_signals([document_light.page_layout_changed], timeout=1000):
@@ -199,12 +199,15 @@ def test_undo_restores_old_page_content(qtbot: QtBot, document_light: Document):
     ActionAddCard((card_2 := create_card("Moves to 0")), 3).apply(document_light)
 
     action = ActionEditDocumentSettings(document_light.page_layout)
+    action._already_applied = True
     old_settings = action.old_settings = copy.copy(document_light.page_layout)
     document_light.page_layout.page_height += 1*unit_registry.mm
     action.reflow_actions += [
         new_page,
         ActionMoveCards(0, range(7, 10), 1)
     ]
+    for sub_action in action.reflow_actions:
+        sub_action._already_applied = True
     action.new_settings = document_light.page_layout
 
     with qtbot.wait_signals([document_light.page_layout_changed]):
