@@ -177,7 +177,7 @@ VALID_CUT_MARKER_STYLES: defaultdict[str, PenStyle] = defaultdict(lambda: PenSty
     "Dashes": PenStyle.DashLine,
 })
 VALID_PRINT_REGISTRATION_MARKS_STYLES: set[str] = {
-    "None", "Bullseye",
+    "None", "Bullseye", "Cut marker"
 }
 DEFAULT_MARGINS = 5*mm
 DEFAULT_SETTINGS["documents"] = {

@@ -3,7 +3,7 @@ import itertools
 import typing
 
 from PySide6.QtCore import QRect, QPoint, QPointF, QSize, QModelIndex, QPersistentModelIndex, Qt, Slot
-from PySide6.QtGui import QPixmap, QPen, QColorConstants, QTransform, QPolygonF
+from PySide6.QtGui import QPixmap, QPen, QColorConstants, QTransform, QPolygon, QPolygonF
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsItemGroup, QGraphicsItem, \
     QGraphicsSimpleTextItem, QGraphicsRectItem
 from PySide6.QtSvgWidgets import QGraphicsSvgItem
@@ -23,7 +23,7 @@ ItemDataRole = Qt.ItemDataRole
 point = unit_registry.point
 degree = unit_registry.degree
 pixel = unit_registry.pixel
-
+PenStyle=Qt.PenStyle
 
 @enum.unique
 class RenderLayers(enum.IntEnum):
@@ -56,13 +56,14 @@ class BullseyeMarkItem(QGraphicsSvgItem):
     Draws a Bullseye print target. The used SVG uses centered 1 pixel wide lines on a 32 pixel base.
     Positions and scaling is tuned to not wander off and render on whole pixels
     """
-    def __init__(self, parent: QGraphicsItem = None):
+    def __init__(self, left_aligned: bool, bottom_aligned: bool, parent: QGraphicsItem = None):
         super().__init__(f"{RESOURCE_PATH_PREFIX}/Common_Registration_Mark.svg", parentItem=parent)
+        length = self.boundingRect().width()
+        self.setTransformOriginPoint(length*left_aligned, length*bottom_aligned)
         self.setZValue(RenderLayers.CUT_LINES_BELOW.value)
         self.setScale(RESOLUTION.magnitude/100+285/256000)  # whole 96 pixel at 300DPI, resulting in ~8.1mm.
         logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
         self.setPos(QPoint(0,0))
-        # self.setOpacity(0.)
 
     def setPos(self, pos: QPoint|QPointF, /):
         new = QPointF(
@@ -73,6 +74,49 @@ class BullseyeMarkItem(QGraphicsSvgItem):
 
     def update_visibility(self, current_style: str):
         self.setOpacity(current_style == "Bullseye")
+
+
+class CutMarkSquareItem(QGraphicsRectItem):
+    def __init__(self, parent: QGraphicsItem = None):
+        size = round((5.5*unit_registry.mm * RESOLUTION).to("pixel", "print").magnitude)
+        super().__init__(QRect(0, 0, size, size), parent)
+        self.setZValue(RenderLayers.CUT_LINES_BELOW.value)
+        self.setPen(PenStyle.NoPen)
+        self.setBrush(QColorConstants.Black)
+        logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
+
+    def update_visibility(self, current_style: str):
+        self.setOpacity(current_style == "Cut marker")
+
+
+class CutMarkAngleItem(QGraphicsPolygonItem):
+
+    def __init__(self, bottom_left: bool, parent: QGraphicsItem = None):
+        length_px = round((18*unit_registry.mm*RESOLUTION).to("pixel", "print").magnitude)
+        thickness_px = round((1*unit_registry.mm*RESOLUTION).to("pixel", "print").magnitude)
+        super().__init__([  # Forms ┓
+            QPoint(0, 0), QPoint(length_px, 0),
+            QPoint(length_px, length_px), QPoint(length_px-thickness_px, length_px),
+            QPoint(length_px-thickness_px, thickness_px), QPoint(0, thickness_px),
+            QPoint(0, 0)
+        ], parent)
+        self.bottom_left = bottom_left
+        self.setZValue(RenderLayers.CUT_LINES_BELOW.value)
+        self.setPen(PenStyle.NoPen)
+        self.setBrush(QColorConstants.Black)
+        self.setRotation(180 * bottom_left)
+        logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
+
+    def setPos(self, pos: QPoint|QPointF, /):
+        bb = self.boundingRect()
+        new = QPointF(
+            (pos.x()+bb.width()-2*bb.width()*(not self.bottom_left)),
+            (pos.y()),
+        )
+        super().setPos(new)
+
+    def update_visibility(self, current_style: str):
+        self.setOpacity(current_style == "Cut marker")
 
 
 class CardBleedItem(QGraphicsPixmapItem):

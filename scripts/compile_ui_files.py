@@ -32,7 +32,7 @@ import asyncio.subprocess
 import itertools
 try:
     from os import process_cpu_count
-except AttributeError:  # Python < 3.13
+except ImportError:  # Python < 3.13
     from os import cpu_count as process_cpu_count
 import textwrap
 from pathlib import Path

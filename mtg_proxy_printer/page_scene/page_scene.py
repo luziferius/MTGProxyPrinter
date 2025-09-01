@@ -28,7 +28,7 @@ from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.page_scene.items import RenderLayers, CutMarkerParameters, NeighborsPresent, CardItem, \
-    BullseyeMarkItem
+    BullseyeMarkItem, CutMarkSquareItem, CutMarkAngleItem
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, distance_to_rounded_px, CardSizes, CardSize, \
     Quantity
@@ -126,7 +126,10 @@ class PageScene(QGraphicsScene):
         return item
 
     def _create_print_marker_items(self) -> list[BullseyeMarkItem]:
-        items = [BullseyeMarkItem() for _ in range(3)]
+        items = [
+            BullseyeMarkItem(False, False), BullseyeMarkItem(True, False), BullseyeMarkItem(False, True),
+            CutMarkSquareItem(), CutMarkAngleItem(False), CutMarkAngleItem(True)
+        ]
         for item in items:
             self.addItem(item)
         return items
@@ -242,15 +245,15 @@ class PageScene(QGraphicsScene):
     def _update_print_markers(self):
         layout = self.document.page_layout
         current_style = layout.print_registration_marks_style
-        item_size = self.print_markers[0].sceneBoundingRect()
-        page_width = distance_to_rounded_px(layout.page_width)
-        page_height = distance_to_rounded_px(layout.page_height)
-        left = distance_to_rounded_px(layout.margin_left) + self.x_offset
-        right = distance_to_rounded_px(layout.margin_right) + round(item_size.width()) + self.x_offset
+
         top = distance_to_rounded_px(layout.margin_top)
-        bottom = distance_to_rounded_px(layout.margin_bottom)+round(item_size.height())
-        positions = [QPoint(left, top), QPoint(page_width-right, top), QPoint(left, page_height-bottom)]
-        for item, position in zip(self.print_markers, positions):
+        bottom = distance_to_rounded_px(layout.page_height)-distance_to_rounded_px(layout.margin_bottom)
+
+        left = distance_to_rounded_px(layout.margin_left) + self.x_offset
+        right = distance_to_rounded_px(layout.page_width) - distance_to_rounded_px(layout.margin_right) + self.x_offset
+
+        positions = [QPoint(left, top), QPoint(right, top), QPoint(left, bottom)]
+        for item, position in zip(self.print_markers, itertools.cycle(positions)):
             item.update_visibility(current_style)
             item.setPos(position)
 
