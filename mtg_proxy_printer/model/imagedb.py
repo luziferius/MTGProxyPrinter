@@ -25,7 +25,6 @@ from typing import Callable
 from PySide6.QtCore import QObject, Signal, Slot, QModelIndex, Qt
 from PySide6.QtGui import QPixmap, QColorConstants
 
-
 from .imagedb_files import ImageKey, CacheContent
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.http_file
@@ -35,14 +34,17 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
-DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
+
 __all__ = [
     "ImageDatabase",
 ]
 
+DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
 PathSizeList = list[tuple[pathlib.Path, int]]
 ImageKeySet = set[ImageKey]
+IndexList = list[QModelIndex]
+OptionalPixmap = QPixmap | None
+BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 
 
 class InitOnDiskDataTask:
@@ -132,7 +134,6 @@ class ImageDatabase(QObject):
 
     @Slot(ImageKey, QPixmap)
     def on_image_obtained(self, key: ImageKey, pixmap: QPixmap):
-        """Registers downloaded images for direct use in other card instances"""
         self.loaded_images[key] = pixmap
         self.images_on_disk.add(key)
 

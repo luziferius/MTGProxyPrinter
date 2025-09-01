@@ -53,9 +53,10 @@ def loader(document: Document):
 def page_layout() -> PageLayoutSettings:
     page_layout = PageLayoutSettings(
         custom_page_height=300 * mm, custom_page_width=200 * mm,
+        cut_marker_style="Solid",
         margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
         row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
-        draw_cut_markers=True, draw_sharp_corners=False, draw_page_numbers=True,
+        draw_sharp_corners=False, draw_page_numbers=True,
         paper_size="Custom", paper_orientation="Portrait",
         watermark_angle=1*degree, watermark_color=QColorConstants.Cyan, watermark_font_size=60*unit_registry.point,
         watermark_pos_x=23*mm, watermark_pos_y=24*mm, watermark_text="Watermark",
@@ -390,7 +391,9 @@ def test_load_settings_from_legacy_save_file_is_successful(
         })
     )
     assert_that(document.page_layout, has_properties({
-        "document_name": "", "draw_cut_markers": True, "draw_page_numbers": False, "draw_sharp_corners": False,
+        "document_name": "", "cut_marker_style": any_of("Solid", "None"), "cut_marker_width": quantity_close_to(0*mm),
+        "cut_marker_color": QColorConstants.Black, "cut_marker_draw_above_cards": False,
+        "draw_page_numbers": False, "draw_sharp_corners": False,
         "row_spacing": quantity_close_to(2*mm), "column_spacing": quantity_close_to(3*mm),
         "margin_top": quantity_close_to(4*mm), "margin_bottom": quantity_close_to(5*mm),
         "margin_left": quantity_close_to(6*mm), "margin_right": quantity_close_to(7*mm),

@@ -6,6 +6,7 @@
     cx_Freeze, because this bundles everything in one package. -->
     <file alias="ThirdPartyLicenses.md">../../doc/ThirdPartyLicenses.md</file>
     <file alias="License.md">../../LICENSE.md</file>
+    <file>Common_Registration_Mark.svg</file>
 
     <!-- Localisations -->
     <file>translations/progress.json</file>

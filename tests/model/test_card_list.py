@@ -20,8 +20,8 @@ import typing
 from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
-from PySide6.QtCore import QItemSelectionModel, Qt, QBuffer
-from PySide6.QtGui import QImage, QColorConstants
+from PySide6.QtCore import QItemSelectionModel, Qt, QBuffer, QIODevice
+from PySide6.QtGui import QPixmap, QImage, QColorConstants
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.model.card import CustomCard, MTGSet
@@ -41,7 +41,6 @@ WASTES_ID = "9cc070d3-4b83-4684-9caf-063e5c473a77"
 SNOW_FOREST_ID = "ca17acea-f079-4e53-8176-a2f5c5c408a1"
 
 
-
 def _create_custom_card(size: CardSizes) -> bytes:
     image = QImage(size.as_qsize_px(), QImage.Format.Format_RGB888)
     image.fill(QColorConstants.Black)
@@ -49,6 +48,7 @@ def _create_custom_card(size: CardSizes) -> bytes:
     buffer.open(QBuffer.OpenModeFlag.WriteOnly)
     image.save(buffer, "PNG")
     return buffer.data().data()
+
 
 REGULAR_CUSTOM_CARD = _create_custom_card(CardSizes.REGULAR)
 
@@ -59,6 +59,17 @@ def _populate_card_db_and_create_model(qtbot, document: Document) -> CardListMod
         ["oversized_card", "regular_english_card", "english_basic_Forest", "english_basic_Wastes", "english_basic_Snow_Forest"])
     model = CardListModel(document)
     return model
+
+
+def _create_card_image(size: CardSizes) -> bytes:
+    pixmap = QPixmap(size.as_qsize_px())
+    pixmap.fill(QColorConstants.Black)
+    buffer = QBuffer()
+    buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+    pixmap.save(buffer, "PNG", quality=100)
+    data = buffer.data().data()
+    buffer.close()
+    return data
 
 
 @pytest.mark.parametrize("count", [1, 2, 10])
@@ -292,7 +303,8 @@ def test_remove_all_basic_lands(
 def test_editing_custom_card_sets_data(
         qtbot: QtBot, document: Document, column: CardListColumns, value: typing.Any):
     model = _populate_card_db_and_create_model(qtbot, document)
-    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, CardSizes.REGULAR, 1, False, REGULAR_CUSTOM_CARD)
+    size = CardSizes.REGULAR
+    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, size, 1, False, REGULAR_CUSTOM_CARD)
     model.add_cards(Counter([card]))
     ActionAddCard(card, 1).apply(document)
     card_list_index = model.index(0, column)
@@ -312,7 +324,8 @@ def test_editing_custom_card_sets_data(
 def test_editing_custom_card_propagates_to_instances_in_the_document(
         qtbot: QtBot, document: Document, column: CardListColumns, value: typing.Any):
     model = _populate_card_db_and_create_model(qtbot, document)
-    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, CardSizes.REGULAR, 1, False, REGULAR_CUSTOM_CARD)
+    size = CardSizes.REGULAR
+    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, size, 1, False, REGULAR_CUSTOM_CARD)
     model.add_cards(Counter([card]))
     ActionAddCard(card, 1).apply(document)
     model.setData(model.index(0, column), value)

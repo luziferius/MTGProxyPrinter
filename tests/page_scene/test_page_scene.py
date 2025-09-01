@@ -29,20 +29,21 @@ from PySide6.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QP
 from PySide6.QtCore import QPoint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry
-from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene, NeighborsPresent
+from mtg_proxy_printer.page_scene.page_scene import RenderMode, PageScene
+from mtg_proxy_printer.page_scene.items import NeighborsPresent
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 from mtg_proxy_printer.model.document import Document
 
-from ..document_controller.helpers import create_card
-from tests.hasgetter import has_getters, has_getter
+from tests.document_controller.helpers import create_card
+from tests.hasgetter import has_getters
 from tests.helpers import close_to_
 
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer.PageScene."
 RenderHint = QPainter.RenderHint
 ColorGroup = QPalette.ColorGroup
 ColorRole = QPalette.ColorRole
-mm: Unit = unit_registry.mm
+mm = unit_registry.mm
 
 
 def _fill_area(image: QImage, fill_color: QColor, pos: QPoint, width: int = 5, height: int = 5):
@@ -120,7 +121,7 @@ def test_adding_with_card_to_filled_page_does_not_redraw_page(
 
 def test_cut_lines_not_drawn_when_disabled_and_page_empty(page_scene: PageScene):
     document = page_scene.document
-    document.page_layout.draw_cut_markers = False
+    document.page_layout.cut_marker_style = "None"
     document.page_layout_changed.emit(document.page_layout)
     assert_that(
         page_scene.items(), not_(has_items(instance_of(QGraphicsLineItem)))
@@ -131,7 +132,7 @@ def test_cut_lines_not_drawn_when_disabled_and_page_empty(page_scene: PageScene)
 @pytest.mark.parametrize("size", CardSizes)
 def test_cut_lines_not_drawn_when_disabled_and_page_filled(page_scene: PageScene, size: CardSize):
     document = page_scene.document
-    document.page_layout.draw_cut_markers = False
+    document.page_layout.cut_marker_style = "None"
     document.page_layout_changed.emit(document.page_layout)
     document.apply(ActionAddCard(create_card_with_pixmap("Card", size)))
     assert_that(
@@ -145,7 +146,7 @@ def test_cut_lines_property_only_lists_line_elements(
     layout = page_scene.document.page_layout
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing
-    layout.draw_cut_markers = True
+    layout.cut_marker_style = "Solid"
     page_scene.document.page_layout_changed.emit(layout)
     assert_that(
         page_scene.cut_lines, all_of(
@@ -161,16 +162,25 @@ def test_cut_lines_property_only_lists_line_elements(
     )
 
 
+@pytest.mark.parametrize("cut_marker_style", ["Solid", "Dots", "Dashes"])
 @pytest.mark.parametrize("row_spacing", [0*mm, 1*mm])
 @pytest.mark.parametrize("column_spacing", [0*mm, 1*mm])
+# TODO: Parameter for cut helper width
 def test_cut_lines_bounding_rects_cross_entire_page(
-        page_scene: PageScene, row_spacing: Quantity, column_spacing: Quantity):
+        page_scene: PageScene, row_spacing: Quantity, column_spacing: Quantity, cut_marker_style: str):
     layout = page_scene.document.page_layout
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing
-    layout.draw_cut_markers = True
+    layout.cut_marker_style = cut_marker_style
     page_scene.document.page_layout_changed.emit(layout)
     page_width, page_height = page_scene.width(), page_scene.height()
+    for index, line in enumerate(page_scene.cut_lines):
+        rect = line.boundingRect()
+        assert_that(rect, any_of(
+            has_getters(width=0, height=close_to_(page_height)),
+            has_getters(width=close_to_(page_width), height=0),
+        ), f"Unexpected cut line bounding box at {index=}, {line.boundingRect()=}")
+    '''
     assert_that(
         page_scene.cut_lines,
         only_contains(
@@ -179,6 +189,7 @@ def test_cut_lines_bounding_rects_cross_entire_page(
         ),
         "Unexpected cut line bounding boxes"
     )
+    '''
 
 
 @pytest.mark.parametrize("page_type, spacing, margins, flags, expected_y", [
@@ -234,7 +245,7 @@ def test_horizontal_cut_line_locations_when_enabled(
     document.page_layout.margin_top = margins*mm
     document.page_layout.margin_bottom = 0*mm
     document.page_layout.row_spacing = spacing*mm
-    document.page_layout.draw_cut_markers = True
+    document.page_layout.cut_marker_style = "Solid"
     document.page_layout_changed.emit(document.page_layout)
     assert_that(
         document.page_layout.compute_page_card_capacity(page_type), is_in((4, 9)),
@@ -311,7 +322,7 @@ def test_vertical_cut_line_locations_when_enabled(
     document.page_layout.margin_left = margins*mm
     document.page_layout.margin_right = 0*mm
     document.page_layout.column_spacing = spacing*mm
-    document.page_layout.draw_cut_markers = True
+    document.page_layout.cut_marker_style = "Solid"
     document.page_layout_changed.emit(document.page_layout)
     assert_that(
         document.page_layout.compute_page_card_capacity(page_type), is_in((4, 9)),

@@ -30,7 +30,7 @@
      </property>
      <widget class="QWidget" name="tab_document_page">
       <attribute name="title">
-       <string/>
+       <string>All pages</string>
       </attribute>
       <layout class="QGridLayout" name="tab_document_page_layout">
        <property name="leftMargin">

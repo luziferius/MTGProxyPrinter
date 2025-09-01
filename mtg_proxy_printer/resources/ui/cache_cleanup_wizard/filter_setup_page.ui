@@ -128,48 +128,18 @@ all these images become hidden and will be removed.</string>
    <signal>toggled(bool)</signal>
    <receiver>time_filter_value_spinbox</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>156</x>
-     <y>55</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>514</x>
-     <y>59</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>count_filter_enabled_checkbox</sender>
    <signal>toggled(bool)</signal>
    <receiver>count_filter_value_spinbox</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>155</x>
-     <y>98</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>384</x>
-     <y>98</y>
-    </hint>
-   </hints>
   </connection>
   <connection>
    <sender>delete_everything_checkbox</sender>
    <signal>toggled(bool)</signal>
    <receiver>individual_filter_group</receiver>
    <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>256</x>
-     <y>25</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>268</x>
-     <y>40</y>
-    </hint>
-   </hints>
   </connection>
  </connections>
 </ui>

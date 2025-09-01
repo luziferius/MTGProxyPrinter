@@ -5,6 +5,15 @@ by this program.
 
 &nbsp;
 
+# Printing registration mark
+
+The included registration mark image created by [Jazzjohnn](https://commons.wikimedia.org/wiki/User:Jazzjohnn)
+is sourced as-is from 
+https://commons.wikimedia.org/wiki/File:Common_Registration_Mark.svg
+and is licensed under the 
+[Creative Commons Attribution-Share Alike 3.0 Unported](https://creativecommons.org/licenses/by-sa/3.0/deed.en) 
+license.
+
 # platformdirs
 
 MIT License
