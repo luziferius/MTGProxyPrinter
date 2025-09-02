@@ -64,6 +64,7 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
 
     def __init__(self, image_db: "ImageDatabase"):
         super().__init__()
+        self.image_obtained.connect(image_db.on_image_obtained, QueuedConnection)
         self.should_run = True
         self.image_database = image_db
 
