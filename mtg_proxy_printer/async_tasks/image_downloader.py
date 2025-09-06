@@ -137,10 +137,6 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
         self.currently_opened_file_monitor.total_bytes_processed.disconnect(self.set_progress)
         self.currently_opened_file_monitor.io_begin.connect(progress_container.task_begins)
         self.currently_opened_file_monitor.total_bytes_processed.connect(progress_container.set_progress)
-        # Download to the root of the cache first. Move to the target only after downloading finished.
-        # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
-        # getting terminated by the user, a mid-transfer network outage, a full disk or any other failure condition.
-        pixmap = None
         try:
             with self.currently_opened_file, download_path.open("wb") as file_in_cache:
                 shutil.copyfileobj(self.currently_opened_file, file_in_cache)
