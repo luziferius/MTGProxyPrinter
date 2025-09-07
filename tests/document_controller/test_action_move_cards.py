@@ -371,16 +371,33 @@ def test___total_moved_cards(indices: IntList):
     assert_that(action._total_moved_cards(), is_(equal_to(expected_result)))
 
 
+def _create_applied_action(
+        source: int, cards_to_move: list[int], target_page: int, target_row: int = None) -> ActionMoveCards:
+    action = ActionMoveCards(source, cards_to_move, target_page, target_row)
+    action._already_applied = True
+    return action
+
+
+def test_undo_resets_already_applied(document_light: Document):
+    pages = document_light.pages
+    ActionNewPage().apply(document_light)
+    append_new_card_in_page(pages[1], "Move")
+    action = _create_applied_action(0, [0], 1)
+    action.undo(document_light)
+    assert_that(action._already_applied, is_(False))
+
+
 def test_undo_move_all_cards_onto_empty_page(qtbot: QtBot, document_light: Document):
     pages = document_light.pages
     ActionNewPage().apply(document_light)
     to_move = append_new_card_in_page(pages[1], "Move")
     row_move_validator = partial(validate_qt_model_move_signal_parameter, 1, 0, 0, 0, 0)
+    action = _create_applied_action(0, [0], 1)
     with qtbot.wait_signals(
             [document_light.page_type_changed] * 2 + [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
             timeout=1000, check_params_cbs=[lambda index: index.row() == 0, lambda index: index.row() == 1] +
                                            [row_move_validator] * 2):
-        ActionMoveCards(0, [0], 1).undo(document_light)
+        action.undo(document_light)
 
     assert_that(
         pages,
@@ -399,11 +416,12 @@ def test_undo_move_all_cards_onto_partially_filled_page(qtbot: QtBot, document_l
     on_page_1 = append_new_card_in_page(pages[1], "Stay on 1")
     to_move = append_new_card_in_page(pages[1], "Move")
     row_move_validator = partial(validate_qt_model_move_signal_parameter, 1, 1, 1, 0, 0)
+    action = _create_applied_action(0, [0], 1)
     with qtbot.wait_signals(
             [document_light.page_type_changed, document_light.rowsAboutToBeMoved, document_light.rowsMoved],
             timeout=1000, check_params_cbs=[lambda index: index.row() == 0] +
                                            [row_move_validator] * 2):
-        ActionMoveCards(0, [0], 1).undo(document_light)
+        action.undo(document_light)
 
     assert_that(
         pages,
@@ -438,11 +456,12 @@ def test_undo_separates_two_source_ranges(qtbot: QtBot, document_light: Document
     )
     row_move_validator_1 = partial(validate_qt_model_move_signal_parameter, 1, 1, 1, 0, 0)
     row_move_validator_2 = partial(validate_qt_model_move_signal_parameter, 1, 1, 1, 0, 2)
+    action = _create_applied_action(0, [0, 2], 1)
     with qtbot.assert_not_emitted(document_light.page_type_changed), \
             qtbot.wait_signals(
                 [document_light.rowsAboutToBeMoved, document_light.rowsMoved]*2,
                 timeout=1000, check_params_cbs=[row_move_validator_1] * 2 + [row_move_validator_2] * 2):
-        ActionMoveCards(0, [0, 2], 1).undo(document_light)
+        action.undo(document_light)
 
     assert_that(
         pages,
@@ -468,8 +487,8 @@ def test_undo_with_target_at_front_from_front(qtbot: QtBot, document_light: Docu
     c2 = append_new_card_in_page(pages[0], "C2")
     c1 = append_new_card_in_page(pages[1], "C1")
     c3 = append_new_card_in_page(pages[1], "C3")
-    action = ActionMoveCards(0, [0], 1, 0)
     row_move_validator = partial(validate_qt_model_move_signal_parameter, 1, 0, 0, 0, 0)
+    action = _create_applied_action(0, [0], 1, 0)
     with qtbot.assert_not_emitted(document_light.page_type_changed), \
             qtbot.wait_signals(
                 [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
@@ -500,8 +519,8 @@ def test_undo_with_target_within_page(qtbot: QtBot, document_light: Document):
     c3 = append_new_card_in_page(pages[1], "C3")
     c1 = append_new_card_in_page(pages[1], "C1")
     c4 = append_new_card_in_page(pages[1], "C4")
-    action = ActionMoveCards(0, [0], 1, 1)
     row_move_validator = partial(validate_qt_model_move_signal_parameter, 1, 1, 1, 0, 0)
+    action = _create_applied_action(0, [0], 1, 1)
     with qtbot.assert_not_emitted(document_light.page_type_changed), \
             qtbot.wait_signals(
                 [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
@@ -533,8 +552,8 @@ def test_undo_with_target_at_end_from_begin(qtbot: QtBot, document_light: Docume
     c2 = append_new_card_in_page(pages[0], "C2")
     c3 = append_new_card_in_page(pages[1], "C3")
     c1 = append_new_card_in_page(pages[1], "C1")
-    action = ActionMoveCards(0, [0], 1, target_row)
     row_move_validator = partial(validate_qt_model_move_signal_parameter, 1, 1, 1, 0, 0)
+    action = _create_applied_action(0, [0], 1, target_row)
     with qtbot.assert_not_emitted(document_light.page_type_changed), \
             qtbot.wait_signals(
                 [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
@@ -565,8 +584,8 @@ def test_undo_with_target_at_end_from_end(qtbot: QtBot, document_light: Document
     c1 = append_new_card_in_page(pages[0], "C1")
     c3 = append_new_card_in_page(pages[1], "C3")
     c2 = append_new_card_in_page(pages[1], "C2")
-    action = ActionMoveCards(0, [1], 1, target_row)
     row_move_validator = partial(validate_qt_model_move_signal_parameter, 1, 1, 1, 0, 1)
+    action = _create_applied_action(0, [1], 1, target_row)
     with qtbot.assert_not_emitted(document_light.page_type_changed), \
             qtbot.wait_signals(
                 [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
