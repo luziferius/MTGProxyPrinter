@@ -35,9 +35,8 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, Ac
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 from mtg_proxy_printer.model.document import Document
 
-from tests.document_controller.helpers import create_card
 from tests.hasgetter import has_getters
-from tests.helpers import close_to_
+from tests.helpers import close_to_, create_card_with_pixmap
 
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer.PageScene."
 RenderHint = QPainter.RenderHint
@@ -45,28 +44,6 @@ ColorGroup = QPalette.ColorGroup
 ColorRole = QPalette.ColorRole
 mm = unit_registry.mm
 
-
-def _fill_area(image: QImage, fill_color: QColor, pos: QPoint, width: int = 5, height: int = 5):
-    for x, y in itertools.product(range(width), range(height)):  # type: int, int
-        image.setPixelColor(pos+QPoint(x, y), fill_color)
-
-
-def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *, color = QColorConstants.Transparent):
-    """
-    Create a Card with the given size, and fill the pixmap with the given color.
-    Each corner has a square transparent area, as a crude emulation of rounded corners.
-    """
-    card = create_card(name, size)
-    image_size = size.as_qsize_px()
-    image = QImage(image_size, QImage.Format.Format_ARGB32)
-    image.fill(color)
-    fill_transparent = partial(_fill_area, image, QColorConstants.Transparent)
-    fill_transparent(QPoint(0, 0))
-    fill_transparent(QPoint(0, image_size.height()-5))
-    fill_transparent(QPoint(image_size.width()-5, 0))
-    fill_transparent(QPoint(image_size.width()-5, image_size.height()-5))
-    card.set_image_file(QPixmap.fromImage(image))
-    return card
 
 @pytest.fixture(params=itertools.product(
     [RenderMode.ON_PAPER, RenderMode.ON_SCREEN],

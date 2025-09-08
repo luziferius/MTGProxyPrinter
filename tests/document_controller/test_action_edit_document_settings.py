@@ -30,7 +30,8 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
-from .helpers import create_card, card_container_with, append_new_card_in_page
+from tests.helpers import create_card
+from .helpers import card_container_with, append_new_card_in_page
 
 
 def test_create_action_raises_value_error_on_zero_page_capacity():

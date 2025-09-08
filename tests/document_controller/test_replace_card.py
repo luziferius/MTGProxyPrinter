@@ -19,11 +19,13 @@ from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
+from mtg_proxy_printer.model.card import Card
 from mtg_proxy_printer.model.document_page import CardContainer
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
 
-from .helpers import card_container_with, create_card, append_new_card_in_page, append_new_pages
+from tests.helpers import create_card
+from .helpers import card_container_with, append_new_card_in_page, append_new_pages
 
 
 REGULAR = CardSizes.REGULAR
@@ -110,6 +112,13 @@ def test_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_card_on_
     assert_that(pages[1].page_type(), is_(PageType.OVERSIZED))
 
 
+def _create_applied_action(new_card: Card, page: int, slot: int, original: Card) -> ActionReplaceCard:
+    action = ActionReplaceCard(new_card, page, slot)
+    action.old_card = original
+    action._already_applied = True
+    return action
+
+
 def test_undo_replacing_regular_with_oversized_on_otherwise_filled_card_moves_card_back_to_original_page(
         qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
@@ -118,14 +127,14 @@ def test_undo_replacing_regular_with_oversized_on_otherwise_filled_card_moves_ca
     stay_on_0 = append_new_card_in_page(pages[0], "Normal 2", REGULAR)
     stay_on_1 = append_new_card_in_page(pages[1], "Oversized", OVERSIZED)
     replacement = append_new_card_in_page(pages[1], "Replacement", OVERSIZED)
-    action = ActionReplaceCard(replacement, 0, 0)
-    action.old_card = original
+    action = _create_applied_action(replacement, 0, 0, original)
     remove_action = ActionRemoveCards([0], 0)
     remove_action.removed_cards[:] = [[CardContainer(pages[0], original)]]
     add_action = ActionAddCard(replacement, 1)
     add_action.added_cards_to_existing_pages[:] = [(1, 1)]
     action.size_change_actions[:] = [remove_action, add_action]
-
+    remove_action._already_applied = add_action._already_applied = True
+    
     with qtbot.assert_not_emitted(document_light.page_type_changed):
         assert_that(action.undo(document_light), is_(same_instance(action)))
 
@@ -153,8 +162,7 @@ def test_undo_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_car
     assert_that(pages[0].page_type(), is_(PageType.OVERSIZED), "Setup failed")
     assert_that(pages[1].page_type(), is_(PageType.OVERSIZED), "Setup failed")
 
-    action = ActionReplaceCard(replacement, 0, 0)
-    action.old_card = original
+    action = _create_applied_action(replacement, 0, 0, original)
 
     with qtbot.wait_signal(document_light.page_type_changed, timeout=1000,
                            check_params_cb=lambda index: index.row() == 0 and not index.parent().isValid()):

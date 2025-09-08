@@ -39,8 +39,8 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
-from tests.document_controller.helpers import append_new_card_in_page
-from ..document_controller.helpers import insert_card_in_page, create_card
+from tests.helpers import create_card
+from tests.document_controller.helpers import append_new_card_in_page, insert_card_in_page
 
 ItemDataRole = Qt.ItemDataRole
 mm: Unit = unit_registry.mm

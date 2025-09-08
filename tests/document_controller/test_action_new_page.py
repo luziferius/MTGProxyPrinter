@@ -27,8 +27,8 @@ from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
-from .helpers import append_new_card_in_page, card_container_with, append_new_pages, verify_page_index_cache_is_valid, \
-    create_card
+from tests.helpers import create_card
+from .helpers import append_new_card_in_page, card_container_with, append_new_pages, verify_page_index_cache_is_valid
 
 OVERSIZED = CardSizes.OVERSIZED
 

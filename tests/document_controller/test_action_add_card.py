@@ -29,6 +29,7 @@ from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.units_and_sizes import CardSizes
+from page_scene.test_page_scene import create_card_with_pixmap
 
 from .test_action_new_page import append_new_pages
 from .helpers import insert_card_in_page, card_container_with
@@ -36,12 +37,12 @@ from .helpers import insert_card_in_page, card_container_with
 
 @pytest.fixture()
 def card() -> Card:
-    return Card("", MTGSet("", ""), "", "", "", True, "", "", True, CardSizes.REGULAR, 0, False, None)
+    return create_card_with_pixmap("", CardSizes.REGULAR)
 
 
 @pytest.fixture()
 def oversized_card() -> Card:
-    return Card("", MTGSet("", ""), "", "", "", True, "", "", True, CardSizes.OVERSIZED, 0, False, None)
+    return create_card_with_pixmap("", CardSizes.OVERSIZED)
 
 
 @pytest.fixture()
@@ -108,9 +109,11 @@ def test_apply_with_check_card_adds_card_to_current_page(
 
 @pytest.mark.parametrize("count", [1, 3, 9])
 def test_apply_with_count_adds_that_many_copies(qtbot: QtBot, card: Card, document_light: Document, count: int):
+    assert_that(document_light.page_layout.compute_page_card_capacity(PageType.REGULAR), is_(greater_than_or_equal_to(count)), "Setup failed")
     action = ActionAddCard(card, count)
     page = document_light.pages[0]
     assert_that(action.apply(document_light), is_(same_instance(action)))
+    assert_that(page, has_length(count))
     assert_that(
         page,
         contains_exactly(

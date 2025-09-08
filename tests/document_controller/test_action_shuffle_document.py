@@ -120,12 +120,18 @@ def test_apply_with_existing_state_raises_exception(document_light: Document):
     assert_that(calling(action.apply).with_args(document_light), raises(IllegalStateError))
 
 
+def _create_applied_action() -> ActionShuffleDocument:
+    action = ActionShuffleDocument()
+    action._already_applied = True
+    return action
+
+
 def test_undo_reorders_cards(document_light: Document):
     page = document_light.pages[0]
     append_new_card_in_page(page, "Card 3")
     append_new_card_in_page(page, "Card 2")
     append_new_card_in_page(page, "Card 1")
-    action = ActionShuffleDocument()
+    action = _create_applied_action()
     action.shuffle_order[PageType.REGULAR] = [2, 1, 0]
     action.undo(document_light)
     assert_that(action.shuffle_order, is_(empty()))
