@@ -29,8 +29,8 @@ from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.units_and_sizes import CardSizes
-from page_scene.test_page_scene import create_card_with_pixmap
 
+from tests.helpers import create_card_with_pixmap
 from .test_action_new_page import append_new_pages
 from .helpers import insert_card_in_page, card_container_with
 

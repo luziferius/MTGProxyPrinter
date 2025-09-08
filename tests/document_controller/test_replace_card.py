@@ -134,7 +134,7 @@ def test_undo_replacing_regular_with_oversized_on_otherwise_filled_card_moves_ca
     add_action.added_cards_to_existing_pages[:] = [(1, 1)]
     action.size_change_actions[:] = [remove_action, add_action]
     remove_action._already_applied = add_action._already_applied = True
-    
+
     with qtbot.assert_not_emitted(document_light.page_type_changed):
         assert_that(action.undo(document_light), is_(same_instance(action)))
 
