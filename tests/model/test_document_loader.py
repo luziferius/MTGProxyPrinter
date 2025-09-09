@@ -20,6 +20,7 @@ import sqlite3
 import unittest.mock
 import textwrap
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColorConstants
 from pytestqt.qtbot import QtBot
 import pytest
@@ -45,7 +46,8 @@ degree = unit_registry.degree
 
 @pytest.fixture()
 def loader(document: Document):
-    loader = DocumentLoader(document, MOCK_SAVE_PATH)
+    with unittest.mock.patch.object(DocumentLoader, "LOAD_REQUESTED_CONNECTION_TYPE", Qt.ConnectionType.AutoConnection):
+        loader = DocumentLoader(document, MOCK_SAVE_PATH)
     return loader
 
 
@@ -317,8 +319,7 @@ def test_cancelling_loading_does_not_crash(
     open_database.assert_called_once()
 
 
-def test_loads_check_card(
-        qtbot: QtBot, loader: DocumentLoader, empty_save_database: sqlite3.Connection):
+def test_loads_check_card(qtbot: QtBot, loader: DocumentLoader, empty_save_database: sqlite3.Connection):
     document = loader.document
     create_save_database_with(
         empty_save_database,

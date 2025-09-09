@@ -105,13 +105,15 @@ class DocumentLoader(AsyncTask):
     load_requested = Signal(DocumentAction)
     unknown_scryfall_ids_found = Signal(int, int)
     loading_file_failed = Signal(pathlib.Path, str)
+    LOAD_REQUESTED_CONNECTION_TYPE = Qt.ConnectionType.BlockingQueuedConnection
 
     def __init__(self, document: "Document", path: pathlib.Path):
         super().__init__(None)
         self.document = document
         # BlockingQueuedConnection keeps the task alive until the action is processed by the Document instance.
         # This prevents the garbage collector from collecting it in-flight, resulting in SegmentationFaults
-        self.load_requested.connect(document.apply, Qt.ConnectionType.BlockingQueuedConnection)
+        # Unit tests replace this with a regular connection to avoid deadlocks
+        self.load_requested.connect(document.apply, self.LOAD_REQUESTED_CONNECTION_TYPE)
         self.save_path = path
         self.card_db: CardDatabase | None = None
         # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
