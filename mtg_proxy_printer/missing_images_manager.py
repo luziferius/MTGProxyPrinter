@@ -59,13 +59,13 @@ class MissingImagesManager(QObject):
     @Slot()
     def on_missing_images_obtained(self):
         logger.info("Obtained missing images")
-        missing_count = self.document.missing_image_count()
-        if missing_count:
-            logger.warning(f"Failed to download all missing images. Still missing: {missing_count}.")
-            plural = 's' if missing_count > 1 else ''
-            self.obtaining_missing_images_failed.emit(
-                f"Unable to obtain missing image{plural} for {missing_count} card{plural}.\n"
-                f"These will be missing in exported or printed documents.")
+        if n := self.document.missing_image_count():
+            logger.warning(f"Failed to download all missing images. Still missing: {n}.")
+            self.obtaining_missing_images_failed.emit(self.tr(
+                "Unable to obtain missing image(s) for %n card(s).\n"
+                "These will be missing in exported or printed documents.",
+                "Warning message. A last attempt at trying to download images of cards with missing images failed.",
+                n))
         if self.callback is not None:
             self.callback()
             self.callback = None
