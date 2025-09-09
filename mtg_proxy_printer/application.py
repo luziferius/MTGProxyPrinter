@@ -23,7 +23,7 @@ import shutil
 import sys
 from tempfile import mkdtemp
 
-from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo
+from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo, Qt
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QIcon
 
@@ -49,6 +49,7 @@ from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
+BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 
 __all__ = [
     "Application",
@@ -182,13 +183,17 @@ class Application(QApplication):
 
     @Slot(AsyncTask)
     def run_async_task(self, task: AsyncTask):
+        logger.debug(f"Received task to schedule: {task}")
         main_window = self.main_window
         task.ui_lock_acquire.connect(main_window.ui_lock_acquire)
         task.ui_lock_release.connect(main_window.ui_lock_release)
         task.error_occurred.connect(main_window.on_error_occurred)
         task.network_error_occurred.connect(main_window.on_network_error_occurred)
+        if hasattr(task, "request_action"):
+            task.request_action.connect(self.document.apply, BlockingQueuedConnection)
         if task.report_progress:
             main_window.progress_bar_manager.add_task(task)
+        logger.debug(f"Starting task {task}")
         QThreadPool.globalInstance().start(AsyncTaskRunner(task))
 
     def _create_document_instance(

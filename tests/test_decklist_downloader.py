@@ -319,7 +319,7 @@ def test_decklists_net_post_process(deck_list: bytes, expected: str):
     downloader = MtgDecksNetDownloader()
     stream = MagicMock()
     stream.read.return_value = deck_list
-    with patch("mtg_proxy_printer.decklist_downloader.MtgDecksNetDownloader.read_from_url") as reader:
+    with patch("mtg_proxy_printer.async_tasks.decklist_downloader.MtgDecksNetDownloader.read_from_url") as reader:
         reader.return_value = stream, MagicMock()
         result = downloader.download("")
     assert_that(result, is_(equal_to(expected)))

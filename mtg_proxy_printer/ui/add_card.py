@@ -234,7 +234,8 @@ class AddCardWidget(QWidget):
         card = self.card_database.get_cards_from_data(card_data)[0]
         copies = self.ui.copies_input.value()
         self._log_added_card(card, copies)
-        self.request_run_async_task.emit(SingleDownloadTask(self.image_db, ActionAddCard(card, copies)))
+        action = ActionAddCard(card, copies)
+        self.request_run_async_task.emit(SingleDownloadTask(self.image_db, action))
         add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["cards"].getboolean(
             "automatically-add-opposing-faces"
         )

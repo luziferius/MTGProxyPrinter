@@ -147,6 +147,7 @@ class MainWindow(QMainWindow):
 
     def _setup_central_widget(self):
         self.ui.central_widget.set_data(self.document, self.card_database, self.image_db)
+        self.ui.central_widget.request_run_async_task.connect(self.request_run_async_task)
 
     def _setup_undo_redo_actions(self, document: Document):
         ui = self.ui
