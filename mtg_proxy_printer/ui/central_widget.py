@@ -84,7 +84,6 @@ class CentralWidget(QWidget):
         view.changed_selection_is_empty.connect(ui.delete_selected_images_button.setDisabled)
         ui.delete_selected_images_button.clicked.connect(ui.page_card_table_view.delete_selected_images)
         view.request_run_async_task.connect(self.request_run_async_task)
-        view.request_action.connect(document.apply)
 
     def _setup_add_card_widget(self, card_db: CardDatabase, image_db: ImageDatabase):
         self.ui.add_card_widget.set_databases(card_db, image_db)
