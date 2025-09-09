@@ -28,7 +28,7 @@ from mtg_proxy_printer.sqlite_helpers import open_database, cached_dedent
 from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.model.card import AnyCardType
-from mtg_proxy_printer.model.document_loader import CardType
+from mtg_proxy_printer.async_tasks.document_loader import CardType
 from mtg_proxy_printer.save_file_migrations import migrate_database
 
 from mtg_proxy_printer.logger import get_logger

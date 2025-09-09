@@ -19,7 +19,7 @@ from typing import Callable
 from PySide6.QtCore import Slot, Qt
 from PySide6.QtWidgets import QWidget,QHBoxLayout
 
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 
 try:
     from mtg_proxy_printer.ui.generated.progress_bar import Ui_ProgressBar

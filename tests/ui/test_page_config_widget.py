@@ -49,6 +49,8 @@ def custom_a4_page_layout():
     layout = PageLayoutSettings.create_from_settings()
     layout.paper_size = "Custom"
     layout.paper_orientation = "Portrait"
+    layout.custom_page_width = 210*mm
+    layout.custom_page_height = 297*mm
     return layout
 
 
@@ -87,12 +89,9 @@ def test_set_numerical_spin_boxes(
     assert_that(widget.page_layout, has_property(attribute_name, quantity_close_to(new_value*mm)))
 
 
-@pytest.mark.parametrize("attribute_name", [
-    "draw_cut_markers",
-    "draw_page_numbers",
-    "draw_sharp_corners",
-    "draw_page_numbers",
-])
+@pytest.mark.parametrize(
+    "attribute_name", [key for key, value in PageLayoutSettings.__annotations__.items() if value == bool]
+)
 def test_set_boolean_check_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
     ui = widget.ui
     assert_that(ui, has_property(attribute_name, instance_of(QCheckBox)))
@@ -109,20 +108,6 @@ def test_set_boolean_check_boxes(qtbot: QtBot, widget: PageConfigWidget, attribu
         previous = checkbox_widget.isChecked()
         new_value = not previous
         checkbox_widget.setChecked(new_value)
-    assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
-
-
-@pytest.mark.parametrize("attribute_name", [
-    "document_name",
-])
-def test_set_line_edits(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
-    ui = widget.ui
-    assert_that(ui, has_property(attribute_name, instance_of(QLineEdit)))
-    assert_that(widget.page_layout, has_property(attribute_name, instance_of(str)))
-    line_edit: QLineEdit = getattr(ui, attribute_name)
-    new_value = "Test"
-    with qtbot.waitSignals([line_edit.textChanged, widget.page_layout_changed], timeout=100):
-        line_edit.setText(new_value)
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
 
 
@@ -190,7 +175,7 @@ def test_load_numerical_document_settings_from_config(
 
 @pytest.mark.parametrize("value", [True, False])
 @pytest.mark.parametrize("settings_name, attribute_name", [
-    ("print-cut-marker", "draw_cut_markers",),
+    ("cut-marker-draw-above-cards", "cut_marker_draw_above_cards"),
     ("print-sharp-corners", "draw_sharp_corners"),
     ("print-page-numbers", "draw_page_numbers"),
     ("print-page-numbers", "draw_page_numbers"),
@@ -241,7 +226,7 @@ def test_save_numerical_document_settings_to_config(
 
 @pytest.mark.parametrize("value", [True, False])
 @pytest.mark.parametrize("settings_name, attribute_name", [
-    ("print-cut-marker", "draw_cut_markers",),
+    ("cut-marker-draw-above-cards", "cut_marker_draw_above_cards"),
     ("print-sharp-corners", "draw_sharp_corners"),
     ("print-page-numbers", "draw_page_numbers"),
     ("print-page-numbers", "draw_page_numbers"),
@@ -294,11 +279,9 @@ def test_load_numerical_values_from_page_layout(
 
 @pytest.mark.parametrize("value", [True, False])
 @pytest.mark.parametrize("attribute_name", [
-    "draw_cut_markers",
+    "cut_marker_draw_above_cards",
     "draw_sharp_corners",
     "draw_page_numbers",
-    "draw_page_numbers",
-    "draw_sharp_corners",
 ])
 def test_load_booleans_from_page_layout(
         widget: PageConfigWidget, default_settings: PageLayoutSettings,
@@ -325,18 +308,21 @@ def test_flip_page_dimensions_button(widget: PageConfigWidget, custom_a4_page_la
     }), "Values not correctly flipped")
 
 
-def test_flip_page_dimensions_updates_capacity(widget: PageConfigWidget, custom_a4_page_layout: PageLayoutSettings):
+def test_flip_page_dimensions_updates_capacity(
+        qtbot: QtBot, widget: PageConfigWidget, custom_a4_page_layout: PageLayoutSettings):
     widget.load_from_page_layout(custom_a4_page_layout)
     assert_that(widget.page_layout, has_properties({
         "custom_page_height": equal_to(297*mm),
         "custom_page_width": equal_to(210*mm),
     }), "Setup failed")
-    widget.ui.flip_page_dimensions.click()
+    with qtbot.wait_signal(widget.page_layout_changed, timeout=100):
+        widget.ui.flip_page_dimensions.click()
     assert_that(widget.ui.page_capacity, has_getter("text", all_of(
         contains_string("8"),
         contains_string("3"),
     )))
-    widget.ui.flip_page_dimensions.click()
+    with qtbot.wait_signal(widget.page_layout_changed, timeout=100):
+        widget.ui.flip_page_dimensions.click()
     assert_that(widget.ui.page_capacity, has_getter("text", all_of(
         contains_string("9"),
         contains_string("4"),

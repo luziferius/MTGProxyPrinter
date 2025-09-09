@@ -13,12 +13,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+from collections.abc import Callable
 from pathlib import Path
 import shutil
 import sys
 import typing
-from typing import Callable
 from PySide6.QtCore import QFile, Signal, Slot, QObject, QEvent, Qt
 from PySide6.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PySide6.QtGui import QIcon
@@ -32,8 +31,8 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
-from mtg_proxy_printer.model.document_loader import DocumentLoader
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 
 from mtg_proxy_printer.model.imagedb_files import ImageKey
 
@@ -42,7 +41,7 @@ if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, ConfigParser
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
-from mtg_proxy_printer.print_count_updater import PrintCountUpdater
+from mtg_proxy_printer.async_tasks.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.logger import get_logger
 
 try:
@@ -358,7 +357,7 @@ class PrintDialog(QPrintDialog):
 
 
 class ChangedSettingsHoverEventFilter(QObject):
-    parent: typing.Callable[[], "DocumentSettingsDialog"]
+    parent: Callable[[], "DocumentSettingsDialog"]
 
     def __init__(self, settings: ConfigParser, parent: "DocumentSettingsDialog"):
         super().__init__(parent)

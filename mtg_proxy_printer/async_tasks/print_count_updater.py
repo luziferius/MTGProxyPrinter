@@ -19,7 +19,7 @@ import typing
 
 from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import open_database
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.logger import get_logger
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document

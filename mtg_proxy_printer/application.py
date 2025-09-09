@@ -23,7 +23,7 @@ import shutil
 import sys
 from tempfile import mkdtemp
 
-from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo
+from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo, Qt
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QIcon
 
@@ -33,22 +33,23 @@ import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.carddb_migrations
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
-from mtg_proxy_printer.card_info_downloader import FileStreamTask, DatabaseImportTask
+from mtg_proxy_printer.async_tasks.card_info_downloader import FileStreamTask, DatabaseImportTask
 from mtg_proxy_printer.carddb_migrations import DatabaseMigrationTask
-from mtg_proxy_printer.model.document_loader import DocumentLoader
-from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer import settings
-from mtg_proxy_printer.update_checker import UpdateChecker
-import mtg_proxy_printer.card_info_downloader
+from mtg_proxy_printer.async_tasks.update_checker import UpdateChecker
+import mtg_proxy_printer.async_tasks.card_info_downloader
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
 import mtg_proxy_printer.progress_meter
-from mtg_proxy_printer.runner import AsyncTask, AsyncTaskRunner
+from mtg_proxy_printer.async_tasks.base import AsyncTask, AsyncTaskRunner
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
+BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 
 __all__ = [
     "Application",
@@ -82,7 +83,6 @@ class Application(QApplication):
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.image_db, self.document, self.language_model
         )
-        self.image_db.network_error_occurred.connect(self.main_window.on_network_error_occurred)
         self.main_window.request_run_async_task.connect(self.run_async_task)
         self.update_checker = self._create_update_checker(args)
         self.main_window.ui.action_download_card_data.setEnabled(False)
@@ -165,7 +165,6 @@ class Application(QApplication):
         mtg_proxy_printer.carddb_migrations.migrate_card_database_location()
         card_db = mtg_proxy_printer.model.carddb.CardDatabase()
         image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
-        image_db.request_run_async_task.connect(self.run_async_task)
         return card_db, image_db
 
     def _create_settings_window(
@@ -184,13 +183,17 @@ class Application(QApplication):
 
     @Slot(AsyncTask)
     def run_async_task(self, task: AsyncTask):
+        logger.debug(f"Received task to schedule: {task}")
         main_window = self.main_window
         task.ui_lock_acquire.connect(main_window.ui_lock_acquire)
         task.ui_lock_release.connect(main_window.ui_lock_release)
         task.error_occurred.connect(main_window.on_error_occurred)
         task.network_error_occurred.connect(main_window.on_network_error_occurred)
+        if hasattr(task, "request_action"):
+            task.request_action.connect(self.document.apply, BlockingQueuedConnection)
         if task.report_progress:
             main_window.progress_bar_manager.add_task(task)
+        logger.debug(f"Starting task {task}")
         QThreadPool.globalInstance().start(AsyncTaskRunner(task))
 
     def _create_document_instance(
@@ -198,8 +201,6 @@ class Application(QApplication):
             card_db: mtg_proxy_printer.model.carddb.CardDatabase,
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
-        document.request_fill_image_for_action.connect(image_db.fill_document_action_image)
-        image_db.request_action.connect(document.apply)
         image_db.missing_image_obtained.connect(document.on_missing_image_obtained)
         return document
 

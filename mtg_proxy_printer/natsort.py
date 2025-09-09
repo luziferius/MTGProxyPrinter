@@ -18,9 +18,9 @@
 Natural sorting for lists or other iterables of strings.
 """
 
+from collections.abc import Iterable
 import itertools
 import re
-import typing
 
 from PySide6.QtCore import QSortFilterProxyModel, QModelIndex
 
@@ -49,7 +49,7 @@ def alphanum_key(s: str):
     return [try_convert_int(c) for c in _NUMBER_GROUP_REG_EXP.split(s)]
 
 
-def natural_sorted(unsorted: typing.Iterable[str], reverse: bool = False):
+def natural_sorted(unsorted: Iterable[str], reverse: bool = False):
     """
     Sort the given iterable in the way that humans expect.
     """
@@ -83,7 +83,7 @@ class NaturallySortedSortFilterProxyModel(QSortFilterProxyModel):
         ]
 
 
-def to_list_of_ranges(sequence: typing.Iterable[int]) -> list[tuple[int, int]]:
+def to_list_of_ranges(sequence: Iterable[int]) -> list[tuple[int, int]]:
     sequence = sorted(sequence)
     ranges: list[tuple[int, int]] = []
     sequence = itertools.chain(sequence, (sentinel := object(),))

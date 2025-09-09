@@ -19,7 +19,8 @@ import itertools
 import pathlib
 import sqlite3
 import textwrap
-from typing import Counter, Iterable, NamedTuple, TYPE_CHECKING
+from typing import Counter, NamedTuple, TYPE_CHECKING
+from collections.abc import Iterable
 
 from PySide6.QtGui import QPageLayout, QPageSize, QColor
 from PySide6.QtCore import Signal, Qt
@@ -28,16 +29,17 @@ from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to,
 
 import mtg_proxy_printer.units_and_sizes
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardDatabase
 from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType, CustomCard
-from mtg_proxy_printer.model.imagedb import ImageDownloadTask
+from mtg_proxy_printer.async_tasks.image_downloader import ImageDownloadTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import  PageType, CardSize, CardSizes, unit_registry, \
     Quantity, T, UUID, OptStr
 from mtg_proxy_printer.document_controller import DocumentAction
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.save_file_migrations import migrate_database
 
 if TYPE_CHECKING:
@@ -103,13 +105,15 @@ class DocumentLoader(AsyncTask):
     load_requested = Signal(DocumentAction)
     unknown_scryfall_ids_found = Signal(int, int)
     loading_file_failed = Signal(pathlib.Path, str)
+    LOAD_REQUESTED_CONNECTION_TYPE = Qt.ConnectionType.BlockingQueuedConnection
 
     def __init__(self, document: "Document", path: pathlib.Path):
         super().__init__(None)
         self.document = document
         # BlockingQueuedConnection keeps the task alive until the action is processed by the Document instance.
         # This prevents the garbage collector from collecting it in-flight, resulting in SegmentationFaults
-        self.load_requested.connect(document.apply, Qt.ConnectionType.BlockingQueuedConnection)
+        # Unit tests replace this with a regular connection to avoid deadlocks
+        self.load_requested.connect(document.apply, self.LOAD_REQUESTED_CONNECTION_TYPE)
         self.save_path = path
         self.card_db: CardDatabase | None = None
         # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
@@ -434,7 +438,7 @@ class DocumentLoader(AsyncTask):
         is_angle = all_of(
             instance_of(Quantity),
             has_property("dimensionality", equal_to(unit_registry.degree.dimensionality)))
-        is_bool_str = is_in(("True", "False"))
+        is_bool = is_in(("True", "False", True, False))  # str: loaded from save file, bool: default value from settings
         is_color = any_of(
             instance_of(QColor),  # watermark-color key not present, inherits default value
             matches_regexp(r"#[0-9a-f]{8}"),  # watermark-color present in the save file, encoded as a hex string
@@ -445,18 +449,22 @@ class DocumentLoader(AsyncTask):
                 card_bleed=is_distance,
                 custom_page_height=is_distance,
                 custom_page_width=is_distance,
+                cut_marker_color=is_color,
+                cut_marker_draw_above_cards=is_bool,
+                cut_marker_style=is_in(VALID_CUT_MARKER_STYLES),
+                cut_marker_width=is_distance,
                 margin_top=is_distance,
                 margin_bottom=is_distance,
                 margin_left=is_distance,
                 margin_right=is_distance,
                 row_spacing=is_distance,
                 column_spacing=is_distance,
-                draw_cut_markers=is_bool_str,
-                draw_sharp_corners=is_bool_str,
-                draw_page_numbers=is_bool_str,
+                draw_sharp_corners=is_bool,
+                draw_page_numbers=is_bool,
                 document_name=instance_of(str),
                 paper_orientation=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageOrientation),
                 paper_size=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize),
+                print_registration_marks_style=is_in(mtg_proxy_printer.settings.VALID_PRINT_REGISTRATION_MARKS_STYLES),
                 watermark_angle=is_angle,
                 watermark_pos_x=is_distance,
                 watermark_pos_y=is_distance,
@@ -468,7 +476,8 @@ class DocumentLoader(AsyncTask):
         for key, annotated_type in PageLayoutSettings.__annotations__.items():
             value = getattr(settings, key)
             if annotated_type is bool:
-                value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
+                if isinstance(value, str):
+                    value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
             elif annotated_type is Quantity:
                 # Ensure all floats are within the allowed bounds.
                 limit = mtg_proxy_printer.settings.DOCUMENT_SETTINGS_QUANTITY_LIMITS[key.replace("_", "-")]

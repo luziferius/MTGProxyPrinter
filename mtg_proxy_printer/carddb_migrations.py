@@ -22,6 +22,7 @@ To add a new migration, place a MigrationScript instance in the MIGRATION_SCRIPT
 using the source schema version as the dict key.
 """
 
+from collections.abc import Iterable, Generator
 import dataclasses
 import datetime
 import socket
@@ -30,11 +31,11 @@ import time
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import Any, Generator, Callable, Iterable, LiteralString, TYPE_CHECKING
+from typing import Any, Callable, LiteralString, TYPE_CHECKING
 
 from PySide6.QtCore import QCoreApplication, Qt
 
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.model.carddb import CardDatabase, with_database_write_lock
@@ -88,8 +89,8 @@ class Migrate_21_to_22(MigrationScript):
     ) -> Generator[Statement, None, None]:
         # Full edit procedure not needed here, because the table has no indices or foreign keys associated
         # Import locally to break a cyclic dependency
-        import mtg_proxy_printer.card_info_downloader
-        aw = mtg_proxy_printer.card_info_downloader.ApiStreamTask()
+        import mtg_proxy_printer.async_tasks.card_info_downloader
+        aw = mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask()
         updates: Iterable[tuple[int, datetime.datetime]] = db.execute(
             "SELECT update_id, update_timestamp FROM LastDatabaseUpdate"+suffix)
         data = []

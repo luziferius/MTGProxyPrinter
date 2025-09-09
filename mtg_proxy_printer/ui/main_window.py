@@ -16,7 +16,6 @@
 
 from pathlib import Path
 from functools import partial
-from threading import BoundedSemaphore
 
 from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl, Qt
 from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, QDragEnterEvent, QDropEvent
@@ -24,7 +23,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, Q
 from PySide6.QtPrintSupport import QPrintDialog
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
-from mtg_proxy_printer.card_info_downloader import ApiStreamTask, DatabaseImportTask
+from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
@@ -33,7 +32,7 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, Ac
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.ui.custom_card_import_dialog import CustomCardImportDialog
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 import mtg_proxy_printer.settings
@@ -62,7 +61,9 @@ TransformationMode = Qt.TransformationMode
 StandardButton = QMessageBox.StandardButton
 StandardKey = QKeySequence.StandardKey
 UiElements = list[QWidget | QAction]
-UI_LOCK_SEMAPHORE = 0  # Counts
+# Counts the number of async tasks currently working on the document. Disable the UI while this is non-zero to ensure
+# that data doesn't change while those work.
+UI_LOCK_SEMAPHORE = 0
 
 class MainWindow(QMainWindow):
 
@@ -82,9 +83,7 @@ class MainWindow(QMainWindow):
         self.setAcceptDrops(True)
         self.default_undo_tooltip = ui.action_undo.toolTip()
         self.default_redo_tooltip = ui.action_redo.toolTip()
-        self.missing_images_manager = MissingImagesManager(document, self)
-        self.missing_images_manager.request_obtaining_images.connect(image_db.obtain_missing_images)
-        self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
+        self.missing_images_manager = self._create_missing_images_manager(document)
         self.about_dialog = self._create_about_dialog(card_db)
         self.progress_bar_manager = self._create_progress_bar_manager()
         self.card_database = card_db
@@ -111,6 +110,12 @@ class MainWindow(QMainWindow):
         self.ui.action_show_about_dialog.triggered.connect(about_dialog.show_about)
         self.ui.action_show_changelog.triggered.connect(about_dialog.show_changelog)
         return about_dialog
+
+    def _create_missing_images_manager(self, document: Document) -> MissingImagesManager:
+        manager = MissingImagesManager(document, self)
+        manager.request_run_async_task.connect(self.request_run_async_task)
+        manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
+        return manager
 
     @staticmethod
     def _setup_web_action_signals(ui: Ui_MainWindow):
@@ -142,6 +147,7 @@ class MainWindow(QMainWindow):
 
     def _setup_central_widget(self):
         self.ui.central_widget.set_data(self.document, self.card_database, self.image_db)
+        self.ui.central_widget.request_run_async_task.connect(self.request_run_async_task)
 
     def _setup_undo_redo_actions(self, document: Document):
         ui = self.ui
@@ -259,7 +265,7 @@ class MainWindow(QMainWindow):
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.document, self.language_model, self)
-        wizard.request_action.connect(self.image_db.fill_batch_document_action_images)
+        wizard.request_run_async_task.connect(self.request_run_async_task)
         show_wizard_or_dialog(wizard)
 
     @Slot()

@@ -19,7 +19,7 @@ from pytestqt.qtbot import QtBot
 from hamcrest import *
 
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.update_checker import ApplicationUpdateCheckTask, CardDataUpdateCheckTask
+from mtg_proxy_printer.async_tasks.update_checker import ApplicationUpdateCheckTask, CardDataUpdateCheckTask
 
 from tests.helpers import fill_card_database_with_json_cards, fill_card_database_with_json_card
 

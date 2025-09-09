@@ -15,7 +15,6 @@
 
 
 import enum
-import typing
 from functools import partial
 
 from PySide6.QtCore import Qt, QEvent
@@ -25,7 +24,7 @@ from PySide6.QtGui import QWheelEvent, QKeySequence, QPalette, QResizeEvent, QAc
 
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
+from mtg_proxy_printer.page_scene.page_scene import RenderMode, PageScene
 
 logger = get_logger(__name__)
 del get_logger

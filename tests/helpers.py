@@ -16,6 +16,7 @@
 
 import dataclasses
 import functools
+import itertools
 import json
 import os
 import sqlite3
@@ -25,7 +26,8 @@ from pathlib import Path
 from typing import Literal, Any, Callable
 from unittest.mock import patch, MagicMock
 
-from PySide6.QtCore import QObject, Slot
+from PySide6.QtCore import QObject, Slot, QPoint
+from PySide6.QtGui import QColorConstants, QPixmap, QImage, QColor
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest import assert_that, is_, empty, contains_inanyorder, has_properties, equal_to, any_of, instance_of, \
     close_to, all_of, greater_than_or_equal_to, less_than_or_equal_to
@@ -33,16 +35,17 @@ from hamcrest.core.description import Description
 from hamcrest.core.matcher import Matcher
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.card_info_downloader import ApiStreamTask, DatabaseImportTask
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.card_info_downloader
+import mtg_proxy_printer.async_tasks.card_info_downloader
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
-from mtg_proxy_printer.model.document_loader import CardType
+from mtg_proxy_printer.async_tasks.document_loader import CardType
+from mtg_proxy_printer.model.card import Card, MTGSet
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
-from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict, Quantity, CardSize
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict, Quantity, CardSize, CardSizes
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import read_resource_text, open_database
@@ -113,7 +116,7 @@ def setup_settings_for_testing():
 
 def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict):
     # Explicitly share the in-memory database connection
-    dw = mtg_proxy_printer.card_info_downloader.DatabaseImportTask(card_db, card_db.db)
+    dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(card_db, card_db.db)
     section = mtg_proxy_printer.settings.settings["card-filter"]
     with qtbot.assertNotEmitted(dw.error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
         settings_to_use = update_database_printing_filters(card_db, filter_settings)
@@ -298,3 +301,30 @@ def quantity_between(lower: Quantity, upper: Quantity):
             less_than_or_equal_to(upper.magnitude)
         )
     )
+
+
+def create_card(name: str, size: CardSize = CardSizes.REGULAR, image_uri: str = "", pixmap: QPixmap = None) -> Card:
+    """Creates a Card with given name and size. Most properties are empty."""
+    return Card(name, MTGSet("", ""), "", "", "", True, "", image_uri, True, size, 0, False, pixmap)
+
+
+def _fill_area(image: QImage, fill_color: QColor, pos: QPoint, width: int = 5, height: int = 5):
+    for x, y in itertools.product(range(width), range(height)):  # type: int, int
+        image.setPixelColor(pos+QPoint(x, y), fill_color)
+
+def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *, color = QColorConstants.Transparent):
+    """
+    Create a Card with the given size, and fill the pixmap with the given color.
+    Each corner has a square transparent area, as a crude emulation of rounded corners.
+    """
+    card = create_card(name, size)
+    image_size = size.as_qsize_px()
+    image = QImage(image_size, QImage.Format.Format_ARGB32)
+    image.fill(color)
+    fill_transparent = functools.partial(_fill_area, image, QColorConstants.Transparent)
+    fill_transparent(QPoint(0, 0))
+    fill_transparent(QPoint(0, image_size.height()-5))
+    fill_transparent(QPoint(image_size.width()-5, 0))
+    fill_transparent(QPoint(image_size.width()-5, image_size.height()-5))
+    card.set_image_file(QPixmap.fromImage(image))
+    return card

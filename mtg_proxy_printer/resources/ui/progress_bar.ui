@@ -52,16 +52,6 @@
    <signal>clicked(bool)</signal>
    <receiver>cancel_button</receiver>
    <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>29</x>
-     <y>90</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>29</x>
-     <y>90</y>
-    </hint>
-   </hints>
   </connection>
  </connections>
 </ui>

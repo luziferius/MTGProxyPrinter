@@ -5,7 +5,18 @@
 # New features
 
 - Reorder pages: It is now possible to re-order pages via drag&drop or via the two new buttons below the page list.
-- Add option to enforce rounded corners for imported custom cards. Enabled by default, but can be disabled in the settings.
+- Adding print registration marks. These are placed in the top left, top right and bottom left corners of
+  each page and are used for better printer alignment. Implemented 2 styles: 
+  - Bulls-eye symbols used as alignment helpers in professional printing
+  - Cut registration marks used with automatic silhouette cutters.
+- Improved the cut helper lines with new customizations:
+  - Adjustable are the color, thickness, transparency and line style.
+  - Available line styles are solid lines, dots, and short dashes.
+  - Cut helper lines can now be drawn on top of the cards.
+- Add option to enforce rounded corners for imported custom cards. Enabled by default, but can be disabled in the
+  settings. Enabling this is generally preferred, as it allows seeing cut helper marks in the corner spaces,
+  even if the custom cards do not have transparent corners.
+  Disabling may be useful when printing borderless cards where artworks form a panorama
 
 # Changed features
 
@@ -15,6 +26,11 @@
   - Some tasks, like the card data update, can be canceled. These show a cancel button next to the progress bar 
 
 
+
+# Fixed issues
+
+- Properly set the print resolution in exported PNG images. This should improve compatibility when working with
+  those images.
 
 # Version 0.33.2 (2025-08-05)  <a name="v0_33_2"></a>
 

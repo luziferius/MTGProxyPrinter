@@ -14,10 +14,10 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
+from collections.abc import Iterable
 import dataclasses
 import enum
 from functools import partial
-from typing import Iterable
 
 from mtg_proxy_printer.model.card import AnyCardType
 from mtg_proxy_printer.units_and_sizes import PageType

@@ -195,9 +195,15 @@ def test_apply_without_position_deletes_currently_edited_page(qtbot: QtBot, docu
     verify_page_index_cache_is_valid(document_light)
 
 
+def _create_applied_action(position: int, count: int = 1) -> ActionRemovePage:
+    action = ActionRemovePage(position, count)
+    action._already_applied = True
+    return action
+
+
 def test_undo_with_position_restores_page_at_given_middle_position(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
-    action = ActionRemovePage(1)
+    action = _create_applied_action(1)
     action.removed_pages.append(removed_page := Page())
 
     validator = partial(validate_qt_model_signal_parameter, 1, 1)
@@ -222,7 +228,7 @@ def test_undo_with_position_restores_page_at_given_middle_position(qtbot: QtBot,
 
 def test_undo_with_position_restores_multiple_pages_at_given_middle_position(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
-    action = ActionRemovePage(1, 2)
+    action = _create_applied_action(1, 2)
     action.removed_pages.append(removed_page_1 := Page())
     action.removed_pages.append(removed_page_2 := Page())
     validator = partial(validate_qt_model_signal_parameter, 1, 2)
@@ -248,7 +254,7 @@ def test_undo_with_position_restores_multiple_pages_at_given_middle_position(qtb
 
 def test_undo_restores_currently_edited_page(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 1)
-    action = ActionRemovePage(2)
+    action = _create_applied_action(2)
     action.removed_pages.append(removed_page := Page())
     action.currently_edited_page = removed_page
     validator = partial(validate_qt_model_signal_parameter, 2, 2)
@@ -274,7 +280,7 @@ def test_undo_restores_currently_edited_page(qtbot: QtBot, document_light: Docum
 def test_undo_with_one_page_correctly_replaces_the_old_automatically_inserted_page(
         qtbot: QtBot, document_light: Document):
     removed_page = Page()
-    action = ActionRemovePage(0)
+    action = _create_applied_action(0)
     action.removed_pages.append(removed_page)
     action.data = {"to-remove": id(document_light.pages[0]), "to-insert": id(removed_page)}
     action.currently_edited_page = removed_page

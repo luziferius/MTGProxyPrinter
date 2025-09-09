@@ -15,8 +15,8 @@
 
 
 from collections import Counter
+from collections.abc import Generator
 import pathlib
-import typing
 import unittest.mock
 
 from PySide6.QtCore import QStringListModel
@@ -26,16 +26,16 @@ from hamcrest import *
 import pytest
 
 import mtg_proxy_printer.http_file
-import mtg_proxy_printer.downloader_base
-import mtg_proxy_printer.card_info_downloader
-from mtg_proxy_printer.card_info_downloader import ApiStreamTask, DatabaseImportTask
+import mtg_proxy_printer.async_tasks.downloader_base
+import mtg_proxy_printer.async_tasks.card_info_downloader
+from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.ui.central_widget import Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, \
     Ui_TabbedCentralWidget
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 
 from tests.helpers import fill_card_database_with_json_cards, AsyncTaskReceiver
 from tests.document_controller.helpers import insert_card_in_page
@@ -49,17 +49,17 @@ def _create_task_receiver(main_window: MainWindow) -> AsyncTaskReceiver:
 
 
 @pytest.fixture(params=[Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, Ui_TabbedCentralWidget])
-def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> typing.Generator[MainWindow, None, None]:
+def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Generator[MainWindow, None, None]:
     fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
     with unittest.mock.patch(
             "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",
             return_value=request.param), \
             unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.ApiStreamTask, "get_scryfall_bulk_card_data_url",
+                mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask, "get_scryfall_bulk_card_data_url",
                 return_value=(unittest.mock.MagicMock(), 10)), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.ApiStreamTask, "read_json_card_data_from",
+                mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask, "read_json_card_data_from",
                 return_value=iter([10])):
         main_window = MainWindow(card_db, document.image_db, document, QStringListModel(["en"]))
         qtbot.add_widget(main_window)
@@ -116,7 +116,7 @@ def test_action_download_card_data_is_enabled_after_network_error(qtbot: QtBot, 
 
 @pytest.mark.parametrize("task_raising_error", [ApiStreamTask, DatabaseImportTask])
 def test_action_download_card_data_is_enabled_after_other_error(
-        qtbot: QtBot, main_window: MainWindow, task_raising_error: typing.Type[AsyncTask]):
+        qtbot: QtBot, main_window: MainWindow, task_raising_error: type[AsyncTask]):
     ui = main_window.ui
     receiver = _create_task_receiver(main_window)
     ui.action_download_card_data.trigger()
@@ -138,8 +138,8 @@ def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtB
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No) as message_box, \
-        unittest.mock.patch("mtg_proxy_printer.card_info_downloader.ApiStreamTask.run") as stream_run, \
-        unittest.mock.patch("mtg_proxy_printer.card_info_downloader.DatabaseImportTask.run") as import_run, \
+        unittest.mock.patch("mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask.run") as stream_run, \
+        unittest.mock.patch("mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask.run") as import_run, \
             qtbot.assert_not_emitted(main_window.request_run_async_task):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
@@ -194,7 +194,7 @@ def test_creating_new_document_with_second_page_selected_works_without_raising_e
     ui = main_window.ui
     document = main_window.document
     # Condition 1
-    document.page_layout.draw_cut_markers = True
+    document.page_layout.cut_marker_style = "Solid"
     document.page_layout_changed.emit(document.page_layout)
     ui.action_new_page.trigger()  # Condition 2
     assert_that(document.pages, has_length(2))

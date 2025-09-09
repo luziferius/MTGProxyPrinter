@@ -27,8 +27,8 @@ from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
-from .helpers import append_new_card_in_page, card_container_with, append_new_pages, verify_page_index_cache_is_valid, \
-    create_card
+from tests.helpers import create_card
+from .helpers import append_new_card_in_page, card_container_with, append_new_pages, verify_page_index_cache_is_valid
 
 OVERSIZED = CardSizes.OVERSIZED
 
@@ -175,6 +175,10 @@ def test_apply_with_content_populates_created_pages(qtbot: QtBot, document_light
         )
     )
 
+def _create_applied_action(position: int | None, count: int=1, content: list[CardList] = None) -> ActionNewPage:
+    action = ActionNewPage(position, count=count, content=content)
+    action._already_applied = True
+    return action
 
 def test_undo_without_position_raises_exception(document_light):
     document_light.pages.append(Page())
@@ -187,7 +191,7 @@ def test_undo_with_position_removes_inserted_page(qtbot: QtBot, document_light: 
     append_new_pages(document_light, 2)
     insert_mock_in_page(document_light.pages[0])
     insert_mock_in_page(document_light.pages[2])
-    action = ActionNewPage(1)
+    action = _create_applied_action(1)
     with qtbot.wait_signal(document_light.rowsAboutToBeRemoved), qtbot.wait_signal(document_light.rowsRemoved):
         assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(
@@ -204,7 +208,7 @@ def test_undo_removes_count_pages(qtbot: QtBot, document_light: Document):
     append_new_pages(document_light, 3)
     insert_mock_in_page(document_light.pages[0])
     insert_mock_in_page(document_light.pages[3])
-    action = ActionNewPage(1, count=2)
+    action = _create_applied_action(1, 2)
     with qtbot.wait_signal(document_light.rowsAboutToBeRemoved), qtbot.wait_signal(document_light.rowsRemoved):
         assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(

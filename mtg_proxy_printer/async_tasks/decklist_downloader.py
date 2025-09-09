@@ -19,6 +19,7 @@ This module is responsible for downloading deck lists from a known list of deckb
 """
 import abc
 import collections
+from collections.abc import Iterable
 import csv
 import html.parser
 import io
@@ -26,12 +27,12 @@ import urllib.parse
 from io import StringIO
 import platform
 import re
-from typing import Type, Counter, Iterable, Any, Union
+from typing import Type, Counter, Any, Union
 
 import ijson
 from PySide6.QtGui import QValidator
 
-from mtg_proxy_printer.downloader_base import DownloaderBase
+from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser, TappedOutCSVParser
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MagicWorkstationDeckDataFormatParser, \

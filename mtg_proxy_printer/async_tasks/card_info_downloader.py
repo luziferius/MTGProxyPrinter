@@ -14,6 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import abc
+from collections.abc import Generator
 import enum
 import functools
 import gzip
@@ -35,17 +36,17 @@ from typing import Literal
 import ijson
 from PySide6.QtCore import Qt
 
-from mtg_proxy_printer.downloader_base import DownloaderBase
+from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
 from mtg_proxy_printer.http_file import MeteredSeekableHTTPFile
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock, \
     DEFAULT_DATABASE_LOCATION
 from mtg_proxy_printer.sqlite_helpers import cached_dedent
-from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID
 from mtg_proxy_printer.sqlite_helpers import open_database
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 
 logger = get_logger(__name__)
 del get_logger
@@ -73,7 +74,7 @@ socket.setdefaulttimeout(5)
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 IntTuples = list[tuple[int]]
-CardStream = typing.Generator[CardDataType, None, None]
+CardStream = Generator[CardDataType, None, None]
 CardOrFace = CardDataType | FaceDataType
 CardDataQueue = queue.Queue[tuple[CardDataType, ...] | None]
 
@@ -802,7 +803,7 @@ def _should_skip_card(card: CardDataType) -> bool:
     )
 
 
-def _get_card_faces(card: CardDataType) -> typing.Generator[CardFaceData, None, None]:
+def _get_card_faces(card: CardDataType) -> Generator[CardFaceData, None, None]:
     """
     Yields a CardFaceData object for each face found in the card object.
     The printed name falls back to the English name, if the card has no printed_name key.

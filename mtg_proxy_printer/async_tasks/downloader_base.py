@@ -18,7 +18,7 @@ import gzip
 
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 
 logger = get_logger(__name__)
 del get_logger

@@ -14,11 +14,11 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
+from collections.abc import Generator
 import datetime
 import itertools
 from pathlib import Path
 import textwrap
-from typing import Generator
 import unittest.mock
 from unittest.mock import MagicMock
 
@@ -30,7 +30,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData,
 from mtg_proxy_printer.model.card import MTGSet, Card, CardList
 from mtg_proxy_printer.model.imagedb_files import CacheContent
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.print_count_updater import PrintCountUpdater
+from mtg_proxy_printer.async_tasks.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.units_and_sizes import UUID
 

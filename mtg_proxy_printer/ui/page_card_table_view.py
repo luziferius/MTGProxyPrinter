@@ -24,12 +24,15 @@ from PySide6.QtGui import QIcon, QAction
 from PySide6.QtWidgets import QTableView, QWidget, QMenu, QInputDialog, QFileDialog
 
 from mtg_proxy_printer.app_dirs import data_directories
+from mtg_proxy_printer.async_tasks.base import AsyncTask
+from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
+from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.ui.item_delegates import CollectorNumberEditorDelegate, SetEditorDelegate, LanguageEditorDelegate
 
 from mtg_proxy_printer.logger import get_logger
@@ -41,7 +44,7 @@ ItemDataRole = Qt.ItemDataRole
 class PageCardTableView(QTableView):
 
     request_action = Signal(DocumentAction)
-    obtain_card_image = Signal(ActionAddCard)
+    request_run_async_task = Signal(AsyncTask)
     changed_selection_is_empty = Signal(bool)
 
     def __init__(self, parent: QWidget = None):
@@ -53,9 +56,11 @@ class PageCardTableView(QTableView):
             self._setup_set_delegate(),
         )
         self.card_db: CardDatabase = None
+        self.image_db: ImageDatabase = None
 
     def set_data(self, document: Document, card_db: CardDatabase):
         self.card_db = card_db
+        self.image_db = document.image_db
         self.setModel(document)
         self.request_action.connect(document.apply)
         document.current_page_changed.connect(self.on_current_page_changed)
@@ -174,7 +179,8 @@ class PageCardTableView(QTableView):
         # at this point are CheckCards or related cards.
         action = ActionAddCard(card, count)
         if card.image_file is None:
-            self.obtain_card_image.emit(action)
+            task = SingleDownloadTask(self.image_db, action)
+            self.request_run_async_task.emit(task)
         else:
             self.request_action.emit(action)
 

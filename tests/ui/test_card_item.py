@@ -22,7 +22,7 @@ from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene
 
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.units_and_sizes import CardSizes
-from mtg_proxy_printer.ui.page_scene import CardItem
+from mtg_proxy_printer.page_scene.items import CardItem
 
 from tests.document_controller.helpers import append_new_card_in_page
 from tests.hasgetter import has_getter

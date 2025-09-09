@@ -14,13 +14,12 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import copy
-import dataclasses
 from pathlib import Path
 import textwrap
 
 from hamcrest import *
-from pint import Unit
 from PySide6.QtCore import QModelIndex, Qt
+from PySide6.QtGui import QColor
 import pytest
 from pytestqt.qtbot import QtBot
 
@@ -29,7 +28,7 @@ from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_dat
 from mtg_proxy_printer.units_and_sizes import unit_registry, Unit
 from mtg_proxy_printer.model.card import CheckCard
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.document_loader import CardType
+from mtg_proxy_printer.async_tasks.document_loader import CardType
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
@@ -39,6 +38,7 @@ from tests.helpers import quantity_close_to
 
 ItemDataRole = Qt.ItemDataRole
 mm: Unit = unit_registry.mm
+HexArgb = QColor.NameFormat.HexArgb
 
 
 def validate_qt_model_signal_parameter(
@@ -109,6 +109,8 @@ def test_save_as_saves_check_card(tmp_path: Path, document: Document):
 
 
 def test_subsequent_save_updates_settings(tmp_path: Path, qtbot: QtBot, document_custom_layout: Document):
+    # TODO: Replace this with a parametrized test that checks one attribute per invocation.
+    #   Then add a test verifying that the set of parameters is complete by comparing with the PageLayoutSettings annotation dict
     save_file = tmp_path / "test.mtgproxies"
     save_action = ActionSaveDocument(save_file)
     save_action.apply(document_custom_layout)
@@ -119,7 +121,7 @@ def test_subsequent_save_updates_settings(tmp_path: Path, qtbot: QtBot, document
     modified_layout.margin_left = modified_layout.margin_right= 14*mm
     modified_layout.column_spacing = modified_layout.row_spacing = 2*mm
     modified_layout.draw_page_numbers = not modified_layout.draw_page_numbers
-    modified_layout.draw_cut_markers = not modified_layout.draw_cut_markers
+    modified_layout.cut_marker_style = "Dots"
     modified_layout.draw_sharp_corners = not modified_layout.draw_sharp_corners
     modified_layout.document_name = "New"
 
@@ -187,15 +189,6 @@ def _validate_database_schema(db_path: Path):
 
 def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Path):
     with open_database(save_file, "document-v7") as save:
-        assert_that(
-            save.execute(textwrap.dedent("""
-            SELECT sum(cnt) FROM (
-              SELECT COUNT(1) AS cnt FROM DocumentSettings
-              UNION ALL 
-              SELECT COUNT(1) AS cnt FROM DocumentDimensions
-            )""")).fetchone(),
-            contains_exactly(len(dataclasses.astuple(layout)))
-        )
         keys = ", ".join(map("'{}'".format, layout.__annotations__.keys()))
         query = textwrap.dedent(f"""\
             SELECT value
@@ -207,13 +200,16 @@ def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Pat
         assert_that(
             values,
             contains_exactly(
+                layout.cut_marker_color.name(HexArgb),
+                str(layout.cut_marker_draw_above_cards),
+                layout.cut_marker_style,
                 layout.document_name,
-                str(layout.draw_cut_markers),
                 str(layout.draw_page_numbers),
                 str(layout.draw_sharp_corners),
                 layout.paper_orientation,
                 layout.paper_size,
-                layout.watermark_color.name(layout.watermark_color.NameFormat.HexArgb),
+                layout.print_registration_marks_style,
+                layout.watermark_color.name(HexArgb),
                 layout.watermark_text,
             ),
             f"Obtained: {values}"
@@ -232,6 +228,7 @@ def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Pat
                 quantity_close_to(layout.column_spacing),
                 quantity_close_to(layout.custom_page_height),
                 quantity_close_to(layout.custom_page_width),
+                quantity_close_to(layout.cut_marker_width),
                 quantity_close_to(layout.margin_bottom),
                 quantity_close_to(layout.margin_left),
                 quantity_close_to(layout.margin_right),

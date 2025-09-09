@@ -21,11 +21,11 @@ import typing
 
 try:
     from os import process_cpu_count
-except ImportError:  # Py 3.8 compatibility
+except ImportError:  # Py <3.13 compatibility
     from os import cpu_count as process_cpu_count
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QObject, QMarginsF, QSizeF, Signal, Slot, QPersistentModelIndex, QThreadPool
+from PySide6.QtCore import QObject, QMarginsF, QSizeF, Signal, QSize, Slot, QPersistentModelIndex, QThreadPool
 from PySide6.QtGui import QPainter, QPdfWriter, QPageSize, QImage, QColor
 from PySide6.QtPrintSupport import QPrinter
 
@@ -34,13 +34,13 @@ if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
     from mtg_proxy_printer.ui.dialogs import SavePDFDialog
 
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.units_and_sizes import RESOLUTION
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
+from mtg_proxy_printer.page_scene.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.units_and_sizes
 logger = get_logger(__name__)
@@ -60,7 +60,7 @@ PNGEncoderThreadLimit = max(1, process_cpu_count()-1)
 
 
 class PNGRenderer(AsyncTask):
-    def __init__(self, main_window: "MainWindow", document: Document, file_path: str):
+    def __init__(self, main_window: "MainWindow|None", document: Document, file_path: str):
         super().__init__(main_window)
         self.document = document
         self.file_path = Path(file_path)
@@ -80,6 +80,8 @@ class PNGRenderer(AsyncTask):
             round(RESOLUTION.magnitude))
         pool = QThreadPool(self, maxThreadCount=PNGEncoderThreadLimit)
         scene = PageScene(document, RenderMode.ON_PAPER, self)
+        dots_per_meter = round(RESOLUTION.to("pixel/meter").magnitude)
+        background_color = settings["export"].get_color("png-background-color")
         number_width = len(str(page_count))
         parent = file_path.parent
         self.task_begins.emit(page_count, self.tr("Export as PNGs"))
@@ -87,16 +89,23 @@ class PNGRenderer(AsyncTask):
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
             output_path = str(parent / file_name)
-            background_color = QColor(settings["export"]["png-background-color"])
-            # 255 is solid. So avoid adding the alpha channel, if it won't be used.
-            image_format = Format.Format_RGB888 if background_color.alpha() == 255 else Format.Format_RGBA8888
-            image = QImage(page_size, image_format)
-            image.fill(background_color)
+            image = self._create_image(page_size, background_color, dots_per_meter)
             painter = QPainter(image)
             page_index = QPersistentModelIndex(document.index(page_nr, 0))
             scene.on_current_page_changed(page_index)
             scene.render(painter)
+            painter.end()
             pool.start(partial(self._compress_single_image, image, output_path))
+
+    @staticmethod
+    def _create_image(page_size: QSize, background_color: QColor, dots_per_meter: int):
+        # 255 is solid. So avoid adding the alpha channel, if it won't be used.
+        image_format = Format.Format_RGB888 if background_color.alpha() == 255 else Format.Format_RGBA8888
+        image = QImage(page_size, image_format)
+        image.setDotsPerMeterX(dots_per_meter)
+        image.setDotsPerMeterY(dots_per_meter)
+        image.fill(background_color)
+        return image
         self.ui_lock_release.emit()
         pool.waitForDone()
         self.task_completed.emit()
@@ -231,6 +240,7 @@ class PDFPrinter(QPdfWriter):
         """Render the given page on the internal scene"""
         index = QPersistentModelIndex(self.document.index(page_number, 0))
         self.scene.on_current_page_changed(index)
+
 
 class Renderer(QObject):
 

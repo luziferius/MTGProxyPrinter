@@ -13,10 +13,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Iterable
 from itertools import chain
 from numbers import Real
 from pathlib import Path
-from typing import Iterable, Union
 from unittest.mock import patch
 
 import pint

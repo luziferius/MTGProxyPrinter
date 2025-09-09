@@ -13,6 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Sequence
 import json
 import logging
 from functools import partial
@@ -27,10 +28,10 @@ from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QLin
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.card_info_downloader import FileDownloadTask, FileStreamTask, DatabaseImportTask
-from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.card_info_downloader import FileDownloadTask, FileStreamTask, DatabaseImportTask
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
@@ -77,7 +78,7 @@ class PageMetadata(typing.NamedTuple):
 class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
 
-    def display_item(self) -> typing.Sequence[QStandardItem]:
+    def display_item(self) -> Sequence[QStandardItem]:
         """Returns a list model item for this page, used to represent the page in the settings page selection UI."""
         data = self.display_metadata()
         item = QStandardItem(data.text)

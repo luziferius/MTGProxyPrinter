@@ -15,10 +15,11 @@
 
 
 from abc import abstractmethod
+from collections.abc import Iterable
 from functools import partial
 import itertools
 import operator
-from typing import Self, TypeVar, TYPE_CHECKING, Iterable
+from typing import Self, TypeVar, TYPE_CHECKING
 
 from PySide6.QtCore import QObject
 

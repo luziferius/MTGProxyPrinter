@@ -13,15 +13,14 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import typing
-from functools import partial
+from collections.abc import Callable
 
 from PySide6.QtCore import QStringListModel, Signal, Qt, QItemSelectionModel, QEvent, QObject, QTimer
 from PySide6.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
 from PySide6.QtGui import QIcon, QStandardItemModel, QResizeEvent
 
 import mtg_proxy_printer.app_dirs
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.units_and_sizes import ConfigParser
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller import DocumentAction
@@ -53,7 +52,7 @@ __all__ = [
 
 
 class HighlightDifferingSettingsHoverEventFilter(QObject):
-    parent: typing.Callable[[], "SettingsWindow"]
+    parent: Callable[[], "SettingsWindow"]
 
     def __init__(self, settings: ConfigParser, parent: "SettingsWindow"):
         super().__init__(parent)
@@ -91,8 +90,8 @@ class SettingsWindow(QDialog):
         ui.general_settings_page.set_language_model(language_model)
         ui.default_document_layout_page.ui.page_config_preview_area.hide()
         # Delay the resize to the next event loop iteration
-        ui.default_document_layout_page.ui.page_config_widget.ui.show_preview_button.toggled.connect(
-            partial(QTimer.singleShot, 0, lambda: self._adapt_layout_to_size(self.size()))
+        ui.default_document_layout_page.ui.page_config_widget.ui.show_preview_button.clicked.connect(
+            lambda: QTimer.singleShot(0, lambda: self._adapt_layout_to_size(self.size()))
         )
         self._setup_hide_printing_page(ui.hide_printings_page, document.card_db)
         ui.debug_settings_page.request_run_async_task.connect(self.request_run_async_task)

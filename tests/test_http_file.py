@@ -91,7 +91,7 @@ def test___exit___emits_signals_on_regular_closure(
 @pytest.mark.parametrize("error_on_exit", [AssertionError, IOError, urllib.error.URLError])
 @pytest.mark.parametrize("expected_size", [123, 1])
 def test___exit___emits_signals_on_exception_during_closure(
-        http_file: MeteredSeekableHTTPFile, qtbot: QtBot, expected_size: int, error_on_exit: typing.Type[Exception]):
+        http_file: MeteredSeekableHTTPFile, qtbot: QtBot, expected_size: int, error_on_exit: type[Exception]):
     set_file_size(http_file, expected_size)
     http_file.file.__exit__.side_effect = error_on_exit("")
     http_file.read_bytes = expected_size

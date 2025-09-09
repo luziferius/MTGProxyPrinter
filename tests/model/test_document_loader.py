@@ -20,12 +20,13 @@ import sqlite3
 import unittest.mock
 import textwrap
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColorConstants
 from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *
 
-from mtg_proxy_printer.model.document_loader import DocumentLoader, CardType
+from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader, CardType
 from tests.helpers import quantity_close_to
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes
 from mtg_proxy_printer.model.card import CheckCard
@@ -36,7 +37,7 @@ from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 
 from tests.helpers import create_save_database_with
 
-OPEN_DATABASE = "mtg_proxy_printer.model.document_loader.open_database"
+OPEN_DATABASE = "mtg_proxy_printer.async_tasks.document_loader.open_database"
 MOCK_SAVE_PATH = Path("/tmp/invalid.mtgproxies")
 
 mm = unit_registry.mm
@@ -45,7 +46,8 @@ degree = unit_registry.degree
 
 @pytest.fixture()
 def loader(document: Document):
-    loader = DocumentLoader(document, MOCK_SAVE_PATH)
+    with unittest.mock.patch.object(DocumentLoader, "LOAD_REQUESTED_CONNECTION_TYPE", Qt.ConnectionType.AutoConnection):
+        loader = DocumentLoader(document, MOCK_SAVE_PATH)
     return loader
 
 
@@ -53,9 +55,10 @@ def loader(document: Document):
 def page_layout() -> PageLayoutSettings:
     page_layout = PageLayoutSettings(
         custom_page_height=300 * mm, custom_page_width=200 * mm,
+        cut_marker_style="Solid",
         margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
         row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
-        draw_cut_markers=True, draw_sharp_corners=False, draw_page_numbers=True,
+        draw_sharp_corners=False, draw_page_numbers=True,
         paper_size="Custom", paper_orientation="Portrait",
         watermark_angle=1*degree, watermark_color=QColorConstants.Cyan, watermark_font_size=60*unit_registry.point,
         watermark_pos_x=23*mm, watermark_pos_y=24*mm, watermark_text="Watermark",
@@ -316,8 +319,7 @@ def test_cancelling_loading_does_not_crash(
     open_database.assert_called_once()
 
 
-def test_loads_check_card(
-        qtbot: QtBot, loader: DocumentLoader, empty_save_database: sqlite3.Connection):
+def test_loads_check_card(qtbot: QtBot, loader: DocumentLoader, empty_save_database: sqlite3.Connection):
     document = loader.document
     create_save_database_with(
         empty_save_database,
@@ -390,7 +392,9 @@ def test_load_settings_from_legacy_save_file_is_successful(
         })
     )
     assert_that(document.page_layout, has_properties({
-        "document_name": "", "draw_cut_markers": True, "draw_page_numbers": False, "draw_sharp_corners": False,
+        "document_name": "", "cut_marker_style": any_of("Solid", "None"), "cut_marker_width": quantity_close_to(0*mm),
+        "cut_marker_color": QColorConstants.Black, "cut_marker_draw_above_cards": False,
+        "draw_page_numbers": False, "draw_sharp_corners": False,
         "row_spacing": quantity_close_to(2*mm), "column_spacing": quantity_close_to(3*mm),
         "margin_top": quantity_close_to(4*mm), "margin_bottom": quantity_close_to(5*mm),
         "margin_left": quantity_close_to(6*mm), "margin_right": quantity_close_to(7*mm),

@@ -19,7 +19,7 @@ import unittest.mock
 
 from pint import Unit
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QColorConstants
 
 from hamcrest import *
 
@@ -39,8 +39,8 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
-from tests.document_controller.helpers import append_new_card_in_page
-from ..document_controller.helpers import insert_card_in_page, create_card
+from tests.helpers import create_card
+from tests.document_controller.helpers import append_new_card_in_page, insert_card_in_page
 
 ItemDataRole = Qt.ItemDataRole
 mm: Unit = unit_registry.mm
@@ -347,10 +347,11 @@ def test_get_card_indices_of_type(document_light, page_type: PageType, parent_ro
 @pytest.fixture
 def document_custom_layout(document: Document) -> Document:
     custom_layout = PageLayoutSettings(
-        custom_page_height=300 * mm, custom_page_width=200 * mm,
+        cut_marker_color=QColorConstants.Yellow, cut_marker_width=0.5*mm, cut_marker_draw_above_cards=True,
+        cut_marker_style="Solid",
+        custom_page_height=300*mm, custom_page_width=200*mm,
         margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
         row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
-        draw_cut_markers=True,
         paper_size="Custom", paper_orientation="Portrait",
     )
     document.apply(ActionEditDocumentSettings(custom_layout))

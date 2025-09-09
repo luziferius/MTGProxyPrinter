@@ -15,38 +15,27 @@
 
 """Contains some constants, type definitions and the unit parsing support code"""
 
+from collections.abc import Callable
 import configparser
 import enum
 import functools
 import re
 import sqlite3
-import typing
-from typing import Type, NamedTuple, TypedDict, NotRequired
+from typing import Type, NamedTuple, TypedDict, NotRequired, TypeVar, Any
 
 from pint import UnitRegistry, Quantity, Context, Unit
 from PySide6.QtCore import QSize, QObject
 from PySide6.QtGui import QPageSize, QPageLayout, QColor
-
-try:
-    from pint import Quantity, Unit
-except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
-    Quantity = Unit = typing.Any
-try:
-    from pint.registry import Unit, Quantity
-except ImportError:  # Compatibility with Pint 0.21 for Python 3.8 support
-    Quantity = Unit = typing.Any
-
-import pint
 import pint.facets.context.objects
 
 import mtg_proxy_printer.natsort
 
 class ToDots(pint.facets.context.objects.Transformation):
-    def __call__(self, _: pint.UnitRegistry, value: Quantity, **kwargs: typing.Any) -> Quantity:
+    def __call__(self, _: pint.UnitRegistry, value: Quantity, **kwargs: Any) -> Quantity:
         return value*RESOLUTION
 
 class ToLength(pint.facets.context.objects.Transformation):
-    def __call__(self, _: pint.UnitRegistry, value: Quantity, **kwargs: typing.Any) -> Quantity:
+    def __call__(self, _: pint.UnitRegistry, value: Quantity, **kwargs: Any) -> Quantity:
         return value/RESOLUTION
 
 
@@ -85,7 +74,7 @@ StringSet = set[str]
 OptStr = str | None
 IntList = list[int]
 StrDict = dict[str, str]
-T = typing.TypeVar("T")
+T = TypeVar("T")
 PageSizeId = QPageSize.PageSizeId
 mm: Unit = unit_registry.mm
 
@@ -102,7 +91,7 @@ class SectionProxy(configparser.SectionProxy):
 
 class ConfigParser(configparser.ConfigParser):
 
-    __getitem__: typing.Callable[[str], SectionProxy]  # Type hint that [] returns a SectionProxy having get_quantity()
+    __getitem__: Callable[[str], SectionProxy]  # Type hint that [] returns a SectionProxy having get_quantity()
 
     def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> Quantity:
         raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)

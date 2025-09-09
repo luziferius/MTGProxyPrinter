@@ -17,7 +17,7 @@ from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.runner import AsyncTask
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.ui.progress_bar import ProgressBar, ProgressBarManager
 
 from tests.hasgetter import has_getter, has_getters

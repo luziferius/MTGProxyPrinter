@@ -19,12 +19,12 @@ from pathlib import Path
 import pytest
 from hamcrest import *
 
-import mtg_proxy_printer.model.document_loader
+import mtg_proxy_printer.model.document
 
 
 @pytest.mark.parametrize(
     "document_schema",
-    Path(mtg_proxy_printer.model.document_loader.__file__).parent.glob("document-v*.sql")
+    Path(mtg_proxy_printer.model.document.__file__).parent.glob("document-v*.sql")
 )
 def test_user_version_in_schema_matches_version_in_file_name(document_schema: Path):
     schema_version = document_schema.name.split("-v")[1].split(".")[0]

@@ -14,10 +14,13 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import typing
+from collections.abc import Callable
+from typing import Any
 
 from PySide6.QtCore import QObject, Signal, Slot
 
+from mtg_proxy_printer.async_tasks.base import AsyncTask
+from mtg_proxy_printer.async_tasks.image_downloader import ObtainMissingImagesTask
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -36,20 +39,22 @@ class MissingImagesManager(QObject):
     or printer.
     """
     obtaining_missing_images_failed = Signal(str)
-    request_obtaining_images = Signal(list)
+    request_run_async_task = Signal(AsyncTask)  # TODO: Test if this could use ObtainMissingImagesTask to reduce imports
 
     def __init__(self, document: Document, parent: QObject = None):
         super().__init__(parent)
         self.document = document
-        self.document.image_db.missing_images_obtained.connect(self.on_missing_images_obtained)
+        self.image_db = document.image_db
         self.callback = None
         logger.info(f"Created {self.__class__.__name__} instance")
 
-    def obtain_missing_images(self, callback: typing.Callable[[], typing.Any] = None):
+    def obtain_missing_images(self, callback: Callable[[], Any] = None):
         self.callback = callback
         images_to_fetch = list(self.document.get_missing_image_cards())
         logger.debug(f"About to fetch {len(images_to_fetch)} missing images")
-        self.request_obtaining_images.emit(images_to_fetch)
+        task = ObtainMissingImagesTask(self.image_db, images_to_fetch)
+        task.task_completed.connect(self.on_missing_images_obtained)
+        self.request_run_async_task.emit(task)
 
     @Slot()
     def on_missing_images_obtained(self):
