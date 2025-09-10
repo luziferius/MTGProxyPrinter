@@ -62,7 +62,6 @@ class BullseyeMarkItem(QGraphicsSvgItem):
         self.setTransformOriginPoint(length*left_aligned, length*bottom_aligned)
         self.setZValue(RenderLayers.CUT_LINES_BELOW.value)
         self.setScale(RESOLUTION.magnitude/100+285/256000)  # whole 96 pixel at 300DPI, resulting in ~8.1mm.
-        logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
         self.setPos(QPoint(0,0))
 
     def setPos(self, pos: QPoint|QPointF, /):

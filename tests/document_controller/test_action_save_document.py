@@ -18,7 +18,6 @@ from pathlib import Path
 import textwrap
 
 from hamcrest import *
-from pint import Unit
 from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtGui import QColor
 import pytest
@@ -26,10 +25,10 @@ from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
-from mtg_proxy_printer.units_and_sizes import unit_registry
+from mtg_proxy_printer.units_and_sizes import unit_registry, Unit
 from mtg_proxy_printer.model.card import CheckCard
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.document_loader import CardType
+from mtg_proxy_printer.async_tasks.document_loader import CardType
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument

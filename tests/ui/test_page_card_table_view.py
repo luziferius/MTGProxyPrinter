@@ -30,6 +30,7 @@ from mtg_proxy_printer.ui.page_card_table_view import PageCardTableView
 # Import dynamically used by pytest. Without this, the main_window fixture won’t be found by pytest.
 from .test_main_window import main_window  # noqa
 
+
 @pytest.fixture()
 def table_view(document_light: Document, card_db: CardDatabase) -> PageCardTableView:
     view = PageCardTableView()
@@ -65,17 +66,14 @@ def test__get_default_image_save_path(table_view: PageCardTableView, name: str, 
 ])
 @pytest.mark.parametrize("count", [1, 3])
 def test__add_copies_directly_adds_card_with_image(
-        table_view: PageCardTableView, image_db, card: AnyCardType, count: int):
+       qtbot: QtBot, table_view: PageCardTableView, image_db, card: AnyCardType, count: int):
     if isinstance(card, Card):
         card.image_file = image_db.get_blank()
     else:
         card.front.image_file = card.back.image_file = image_db.get_blank()
     assert_that(card.image_file, is_(not_none()), "Test setup failed. Card image is None")
-    with patch.object(table_view, "request_action", spec=True) as request_action, \
-            patch.object(table_view, "obtain_card_image", spec=True) as obtain_card_image:
+    with qtbot.wait_signal(table_view.request_action), qtbot.assert_not_emitted(table_view.request_run_async_task):
         table_view._add_copies(card, count)
-    request_action.emit.assert_called_once()
-    obtain_card_image.emit.assert_not_called()
 
 
 @pytest.mark.parametrize("card", [
@@ -83,9 +81,6 @@ def test__add_copies_directly_adds_card_with_image(
 ])
 @pytest.mark.parametrize("count", [1, 3])
 def test__add_copies_uses_image_db_for_card_without_image(
-        table_view: PageCardTableView, card: AnyCardType, count: int):
-    with patch.object(table_view, "request_action", spec=True) as request_action, \
-            patch.object(table_view, "obtain_card_image", spec=True) as obtain_card_image:
+        qtbot: QtBot, table_view: PageCardTableView, card: AnyCardType, count: int):
+    with qtbot.assert_not_emitted(table_view.request_action), qtbot.wait_signal(table_view.request_run_async_task):
         table_view._add_copies(card, count)
-    request_action.emit.assert_not_called()
-    obtain_card_image.emit.assert_called_once()

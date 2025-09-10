@@ -12,12 +12,12 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-
+import collections
 from collections import Counter
+from collections.abc import Iterable
 import itertools
 import math
-import typing
+from typing import TypeVar
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
 from mtg_proxy_printer.model.document import Document
@@ -29,12 +29,13 @@ from mtg_proxy_printer.document_controller.import_deck_list import ActionImportD
 import pytest
 from hamcrest import *
 
-from .helpers import append_new_card_in_page, create_card, card_container_with
+from tests.helpers import create_card
+from .helpers import append_new_card_in_page, card_container_with
 
-T = typing.TypeVar("T")
+T = TypeVar("T")
 
 
-def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.Iterable[tuple[T, ...]]:
+def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[tuple[T, ...]]:
     """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
     iterable = iter(iterable)
     return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())
@@ -112,12 +113,16 @@ def test_apply_clears_document_if_enabled(qtbot, document_light, new_card_is_ove
 
     )
 
+def _create_applied_action(cards: Counter, clear_document: bool) -> ActionImportDeckList:
+    action = ActionImportDeckList(cards, clear_document)
+    action._already_applied = True
+    return action
 
 @pytest.mark.parametrize("card_count", [1, 9, 10, 11, 100])
 def test_undo_removes_created_pages(document_light: Document, card_count: int):
     pages = document_light.pages
-    cards = [create_card(f"Card {number}") for number in range(1, card_count+1)]
-    action = ActionImportDeckList(cards, False)
+    cards = Counter((create_card(f"Card {number}") for number in range(1, card_count+1)))
+    action = _create_applied_action(cards, False)
     action.actions += [ActionAddCard(card).apply(document_light) for card in cards]
     page_capacity = document_light.page_layout.compute_page_card_capacity(PageType.REGULAR)
     expected_pages = math.ceil(card_count/page_capacity)

@@ -19,7 +19,7 @@ import unittest.mock
 import pytest
 from hamcrest import *
 
-from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase
 

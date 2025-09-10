@@ -15,6 +15,7 @@
 
 
 import atexit
+from collections.abc import Sequence
 import dataclasses
 import datetime
 from itertools import starmap
@@ -22,7 +23,7 @@ import functools
 from pathlib import Path
 import sqlite3
 import threading
-from typing import NamedTuple, TypeVar, Literal, Sequence, Any, LiteralString
+from typing import NamedTuple, TypeVar, Literal, Any, LiteralString
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QObject, Signal, Slot
@@ -235,7 +236,7 @@ class CardDatabase(QObject):
             SELECT DISTINCT oracle_id -- get_basic_land_oracle_ids()
               FROM AllPrintings
               WHERE language = 'en'
-              AND card_name IN 
+              AND card_name IN
                 ({", ".join("?"*len(names))})
         ''')
         return {item for item, in self.db.execute(query, names)}
@@ -332,7 +333,7 @@ class CardDatabase(QObject):
             LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)
             WHERE RemovedPrintings.scryfall_id = ?
             AND is_front = ?
-            ORDER BY 
+            ORDER BY
                 -- Match with original language first, fall back to preferred language, then fall back to English
                (4*(VisiblePrintings.language == RemovedPrintings.language) +
                 2*(VisiblePrintings.language == ?) +
@@ -355,7 +356,7 @@ class CardDatabase(QObject):
                 bool(highres_image), CardSizes.from_bool(is_oversized), face_number, bool(is_dfc),
             )
             for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
-                is_oversized, face_number, language, is_dfc in cursor
+            is_oversized, face_number, language, is_dfc in cursor
         ]
 
     def find_related_cards(self, card: Card) -> CardList:
@@ -693,7 +694,7 @@ class CardDatabase(QObject):
           JOIN PrintLanguage USING (language_id)
           WHERE Printing.is_hidden IS FALSE
             AND FaceName.is_hidden IS FALSE
-            AND oracle_id = ? 
+            AND oracle_id = ?
             AND language = ?
           UNION ALL
           SELECT set_code, set_name, release_date

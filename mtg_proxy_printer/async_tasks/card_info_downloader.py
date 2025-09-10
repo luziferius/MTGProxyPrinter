@@ -13,59 +13,70 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import collections
+import abc
+from collections.abc import Generator
 import enum
 import functools
 import gzip
 import itertools
 import math
 import shutil
+from gzip import GzipFile
 from pathlib import Path
 import re
+import queue
 import sqlite3
 import socket
 import typing
 import urllib.error
 import urllib.parse
 import urllib.request
+from typing import Literal
 
 import ijson
-from PySide6.QtCore import Signal, QObject, Qt, QThreadPool
+from PySide6.QtCore import Qt
 
-from mtg_proxy_printer.downloader_base import DownloaderBase
-from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock
+from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
+from mtg_proxy_printer.http_file import MeteredSeekableHTTPFile
+from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock, \
+    DEFAULT_DATABASE_LOCATION
 from mtg_proxy_printer.sqlite_helpers import cached_dedent
-from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID
-from mtg_proxy_printer.progress_meter import ProgressMeter
 from mtg_proxy_printer.sqlite_helpers import open_database
-from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 
 logger = get_logger(__name__)
 del get_logger
 
 __all__ = [
-    "CardInfoDownloader",
-    "CardInfoWorkerBase",
-    "DatabaseImportWorker",
-    "ApiStreamWorker",
+    "CardInfoDownloadTaskBase",
+    "DatabaseImportTask",
+    "ApiStreamTask",
     "SetWackinessScore",
+    "FileDownloadTask",
 ]
 
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
 # from file system paths.
 looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
 BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data/all-cards"
+
+# Constants determined empirically. These fluctuate a bit over time, but give reasonable estimates.
+AVERAGE_SIZE_PER_UNCOMPRESSED_JSON_ENTRY_IN_BYTES = 4706
+GZIP_COMPRESSION_FACTOR = 7.09
+
 # Set a default socket timeout to prevent hanging indefinitely, if the network connection breaks while a download
 # is in progress
 socket.setdefaulttimeout(5)
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 IntTuples = list[tuple[int]]
-CardStream = typing.Generator[CardDataType, None, None]
+CardStream = Generator[CardDataType, None, None]
 CardOrFace = CardDataType | FaceDataType
+CardDataQueue = queue.Queue[tuple[CardDataType, ...] | None]
 
 
 class CardFaceData(typing.NamedTuple):
@@ -107,54 +118,8 @@ class SetWackinessScore(int, enum.Enum):
     OVERSIZED = 10  # Not playable
 
 
-class DownloadProgressSignalContainer(QObject):
-    download_progress = Signal(int)  # Emits the total number of processed data after processing each item
-    download_begins = Signal(int, str)  # Emitted when the download starts. Carries size (bytes) and description
-    download_finished = Signal()  # Emitted when the input data is exhausted and processing finished
-    working_state_changed = Signal(bool)
-    network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
-    other_error_occurred = Signal(str)  # Emitted when database population failed due to non-network issues.
-
-
-class CardInfoDownloader(DownloadProgressSignalContainer):
-    """
-    Handles fetching the bulk card data from Scryfall and populates/updates the local card database.
-    Also supports importing cards via a locally stored bulk card data file, mostly useful for debugging and testing
-    purposes.
-
-    This is the public interface. The actual implementation resides in the CardInfoDownloadWorker class, which
-    is run asynchronously in another thread.
-    """
-
-    card_data_updated = Signal()
-
-    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
-        super().__init__(parent)
-        logger.info(f"Creating {self.__class__.__name__} instance.")
-        logger.info(f"Using ijson backend: {ijson.backend}")
-        self.model = model
-        logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def download_to_file(self, download_path: Path):
-        logger.debug(f"Called download_to_file({download_path}). About to fetch the card data")
-        runner = FileDownloadRunner(download_path, self)
-        signals = runner.signals
-        signals.download_begins.connect(self.download_begins, QueuedConnection)
-        signals.download_progress.connect(self.download_progress, QueuedConnection)
-        signals.download_finished.connect(self.download_finished, QueuedConnection)
-        signals.network_error_occurred.connect(self.network_error_occurred, QueuedConnection)
-        signals.other_error_occurred.connect(self.other_error_occurred, QueuedConnection)
-        QThreadPool.globalInstance().start(runner)
-
-    def import_from_file(self, file_path: Path):
-        QThreadPool.globalInstance().start(FileImportRunner(file_path, self))
-
-    def import_from_api(self):
-        QThreadPool.globalInstance().start(ApiImportRunner(self))
-
-
-class CardInfoWorkerBase(DownloaderBase):
-
+class CardInfoDownloadTaskBase(DownloaderBase):
+    """Base class for tasks that fetch card data from the Scryfall bulk-data API."""
     def get_scryfall_bulk_card_data_url(self) -> tuple[str, int]:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
@@ -167,14 +132,18 @@ class CardInfoWorkerBase(DownloaderBase):
         return uri, size
 
 
-class FileDownloadWorker(CardInfoWorkerBase):
-    """
-    This class implements downloading the raw card data to a file stored in the file system.
-    """
-    def __init__(self, download_path: Path, parent: QObject = None):
-        super().__init__(parent=parent)
+class FileDownloadTask(CardInfoDownloadTaskBase):
+    """Downloading the raw card data to a file stored in the file system."""
+    def __init__(self, download_path: Path):
+        super().__init__()
         self.download_path = download_path
         self.connection = None
+
+    def run(self):
+        try:
+            self.run_download()
+        except (urllib.error.HTTPError, urllib.error.URLError, socket.timeout) as e:
+            self.error_occurred.emit(e.reason)
 
     def run_download(self):
         """
@@ -194,7 +163,7 @@ class FileDownloadWorker(CardInfoWorkerBase):
         # determined compression factor to estimate the download size. Only do so, if the CDN does not offer the size.
         if monitor.content_encoding() == "gzip":
             file_name += ".gz"
-            size = math.floor(size / 7.09)
+            size = math.floor(size / GZIP_COMPRESSION_FACTOR)
             logger.info(f"Content length estimated as {size} bytes")
         if monitor.content_length <= 0:
             monitor.content_length = size
@@ -211,7 +180,7 @@ class FileDownloadWorker(CardInfoWorkerBase):
             finally:
                 self.connection.close()
                 self.connection = None
-                self.download_finished.emit()
+                self.task_completed.emit()
         if failure:
             logger.error("Download failed! Deleting incomplete download.")
             download_file_path.unlink(missing_ok=True)
@@ -225,126 +194,97 @@ class FileDownloadWorker(CardInfoWorkerBase):
             pass
 
 
-class FileDownloadRunner(Runnable):
-    """This runner asynchronously downloads the card data and stores it in the given location"""
-    def __init__(self, download_path: Path, parent: CardInfoDownloader):
-        super().__init__()
-        self.parent = parent
-        self.signals = DownloadProgressSignalContainer()
-        self.download_path = download_path
-        self.worker: FileDownloadWorker | None = None
+class StreamTask(CardInfoDownloadTaskBase):
+    """Base class for tasks that stream data via a queue."""
+    _queue_depth = 5
+    _batch_size = 5000
 
-    @with_database_write_lock()  # While it technically does not access the card db, it still shares the progress meter
-    def run(self):
-        signals = self.signals
-        # Implementation note: The actual download worker uses Qt signals, and thus is encapsulated in a class
-        # derived from QObject, and not this QRunnable.
-        self.worker = worker = FileDownloadWorker(self.download_path)
-        worker.download_begins.connect(signals.download_begins)
-        worker.download_progress.connect(signals.download_progress)
-        worker.download_finished.connect(signals.download_finished)
-        worker.network_error_occurred.connect(signals.network_error_occurred)
-        worker.other_error_occurred.connect(signals.other_error_occurred)
+    def __init__(self, source: str | Path = None, json_path: str = "item"):
+        super().__init__()
+        self.open_file: GzipFile | MeteredSeekableHTTPFile | None = None
+        self.source = source
+        self.json_path = json_path
+        self.queue: CardDataQueue = queue.Queue(self._queue_depth)
+
+    def _enqueue_stream(self, data: CardStream):
+        """Put the CardStream into the queue for downstream consumption"""
         try:
-            worker.run_download()
-        except (urllib.error.HTTPError, urllib.error.URLError, socket.timeout):
-            pass
+            for batch in itertools.batched(data, self._batch_size):
+                self.queue.put(batch)
+        except AttributeError:  # Cancelling closes and deletes the underlying file, causing an AttributeError in run()
+            logger.info(f"{self.__class__.__name__}: Read operation cancelled")
+        else:
+            logger.debug(f"{self.__class__.__name__}: Card data exhausted.")
         finally:
-            self.release_instance()
+            self.queue.put(None)
+
+    @property
+    def report_progress(self):
+        return False
+
+    @property
+    @abc.abstractmethod
+    def item_count(self) -> int:
+        return 0
+
+    @property
+    def can_cancel(self) -> bool:
+        return True
 
     def cancel(self):
-        try:
-            self.worker.connection.close()
-        except AttributeError:
-            pass
+        if self.open_file is not None:
+            self.open_file.close()
+            self.open_file = None
 
 
-class FileImportRunner(Runnable):
-
-    def __init__(self, path: Path, parent: CardInfoDownloader):
-        super().__init__()
-        self.path = path
-        self.parent = parent
-        self.worker = None
+class FileStreamTask(StreamTask):
+    """Reads card data from a local file and streams the content"""
 
     def run(self):
-        parent = self.parent
-        self.worker = worker = DatabaseImportWorker(parent.model)
-        worker.card_data_updated.connect(parent.card_data_updated, QueuedConnection)
-        worker.download_begins.connect(parent.download_begins, QueuedConnection)
-        worker.download_begins.connect(lambda: parent.working_state_changed.emit(True), QueuedConnection)
-        worker.download_progress.connect(parent.download_progress, QueuedConnection)
-        worker.download_finished.connect(parent.download_finished, QueuedConnection)
-        worker.download_finished.connect(lambda: parent.working_state_changed.emit(False), QueuedConnection)
-        worker.network_error_occurred.connect(parent.network_error_occurred, QueuedConnection)
-        worker.other_error_occurred.connect(parent.other_error_occurred, QueuedConnection)
-        try:
-            worker.import_card_data_from_local_file(self.path)
-        finally:
-            self.release_instance()
+        data = self.read_json_card_data_from(self.source, self.json_path)
+        self._enqueue_stream(data)
 
-    def cancel(self):
-        self.worker.should_run = False
+    def read_json_card_data_from(self, file_path: Path, json_path: str = "item") -> CardStream:
+        file_size = file_path.stat().st_size
+        raw_file = file_path.open("rb")
+        with self._wrap_in_metered_file(raw_file, file_size) as file:
+            if file_path.suffix.casefold() == ".gz":
+                self.open_file = file = gzip.open(file, "rb")
+            yield from ijson.items(file, json_path, use_float=True)
 
+    def _wrap_in_metered_file(self, raw_file, file_size: int):
+        monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size)
+        monitor.total_bytes_processed.connect(self.set_progress)
+        monitor.io_begin.connect(lambda size: self.task_begins.emit(
+            size,
+            self.tr("Importing card data from disk:", "Progress bar label text")))
+        return monitor
 
-class ApiImportRunner(Runnable):
-
-    def __init__(self, parent: CardInfoDownloader):
-        super().__init__()
-        self.parent = parent
-        self.worker = None
-
-    def run(self):
-        parent = self.parent
-        self.worker = worker = DatabaseImportWorker(parent.model)
-        worker.card_data_updated.connect(parent.card_data_updated, QueuedConnection)
-        worker.download_begins.connect(parent.download_begins, QueuedConnection)
-        worker.download_begins.connect(lambda: parent.working_state_changed.emit(True), QueuedConnection)
-        worker.download_progress.connect(parent.download_progress, QueuedConnection)
-        worker.download_finished.connect(parent.download_finished, QueuedConnection)
-        worker.download_finished.connect(lambda: parent.working_state_changed.emit(False), QueuedConnection)
-        worker.network_error_occurred.connect(parent.network_error_occurred, QueuedConnection)
-        worker.other_error_occurred.connect(parent.other_error_occurred, QueuedConnection)
-        try:
-            worker.import_card_data_from_online_api()
-        finally:
-            self.release_instance()
-
-    def cancel(self):
-        self.worker.should_run = False
+    @property
+    def item_count(self):
+        estimated_total_card_count = round(
+            (GZIP_COMPRESSION_FACTOR if self.source.suffix.casefold() == ".gz" else 1)
+            * self.source.stat().st_size
+            / AVERAGE_SIZE_PER_UNCOMPRESSED_JSON_ENTRY_IN_BYTES
+        )
+        return estimated_total_card_count
 
 
-class ApiStreamRunner(Runnable):
+class ApiStreamTask(StreamTask):
     """
-    A runner that streams the decoded card data from the API and batches the result.
+    This class implements reading the card data from the Scryfall API as a CardStream.
+
+    When used as a Task, it streams the decoded card data from the API and batches the result.
     This encapsulates requesting data via HTTPS, decryption, gzip stream decompression and parsing into dicts via ijson.
     It enqueues a single None as the last value after finishing the last batch.
     """
-    _queue_depth = 3
-    _batch_size = 1000
-
-    def __init__(self):
-        # TODO: Implement a FileStreamWorker, similar to ApiStreamWorker. Then introduce a parameter to pass in the
-        #  class to use, instead of hard-coding the ApiStreamWorker in run().
-        #  Then rename this class to StreamRunner or similar. The top-level API can then put together the logic
-        #  from modular blocks.
-        super().__init__()
-        self.queue: collections.deque[tuple[CardDataType, ...] | None] = collections.deque(maxlen=self._queue_depth)
 
     def run(self):
-        stream = ApiStreamWorker()
-        data = stream.read_json_card_data_from_url()
-        for batch in itertools.batched(data, self._batch_size):
-            self.queue.append(batch)
-        self.queue.append(None)
+        logger.info(f"{self.__class__.__name__}: About to stream card data in batches of {self._batch_size}")
+        data = self.read_json_card_data_from(self.source, self.json_path)
+        self._enqueue_stream(data)
 
-
-class ApiStreamWorker(CardInfoWorkerBase):
-    """
-    This class implements reading the card data from the API as a CardStream.
-    """
-
-    def read_json_card_data_from_url(self, url: str = None, json_path: str = "item") -> CardStream:
+    def read_json_card_data_from(self, url: str = None, json_path: str = "item") -> CardStream:
         """
         Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function takes a URL pointing to the card data json array in the Scryfall API.
@@ -360,7 +300,7 @@ class ApiStreamWorker(CardInfoWorkerBase):
         else:
             logger.debug(f"Reading from given URL {url}")
         # Ignore the monitor, because progress reporting is done in the main import loop.
-        source, _ = self.read_from_url(url)
+        self.open_file, _ = source, _ = self.read_from_url(url)
         with source:
             yield from ijson.items(source, json_path, use_float=True)
 
@@ -376,32 +316,43 @@ class ApiStreamWorker(CardInfoWorkerBase):
         url = f"https://api.scryfall.com/cards/search?{url_parameters}"
         logger.debug(f"Card data update query URL: {url}")
         try:
-            total_cards_available = next(self.read_json_card_data_from_url(url, "total_cards"))
-        except (urllib.error.URLError, socket.timeout, StopIteration):
-            logger.warning("Reading total cards failed with a network error. Report zero available cards.")
-            # TODO: Perform better notification in any error case
+            total_cards_available = next(self.read_json_card_data_from(url, "total_cards"))
+        except (urllib.error.URLError, socket.timeout, StopIteration) as e:
+            logger.warning(
+                "Requesting the number of available cards on Scryfall failed with a network error. "
+                "Report zero available cards.")
+            self.network_error_occurred.emit(
+                self.tr("Requesting the number of available cards on Scryfall failed: \n{error}").format(error=e))
             total_cards_available = 0
         logger.debug(f"Total cards currently available: {total_cards_available}")
         return total_cards_available
 
+    @property
+    def item_count(self):
+        return self.get_available_card_count()
 
 
-class DatabaseImportWorker(DownloaderBase):
-    """
-    This class implements importing a CardStream into the given CardDatabase instance
-    """
-    card_data_updated = Signal()
+class DatabaseImportTask(AsyncTask):
+    """This class implements importing a CardStream into the given CardDatabase instance"""
 
-    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
-                 db: sqlite3.Connection = None, parent: QObject = None):
+    def __init__(self, source: StreamTask, db: sqlite3.Connection = None,
+                 carddb_path: Path | Literal[":memory:"] = DEFAULT_DATABASE_LOCATION):
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        super().__init__(parent)
-        self.model = model
-        self.card_data_updated.connect(model.card_data_updated, QueuedConnection)
+        super().__init__()
+        self.carddb_path = carddb_path
+        self.source = source
         self._db = db
         self.should_run = True
         self.set_code_cache: dict[str, int] = {}
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @property
+    def can_cancel(self) -> bool:
+        return True
+
+    def cancel(self):
+        self.should_run = False
+        self.source.cancel()
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -410,58 +361,45 @@ class DatabaseImportWorker(DownloaderBase):
         # in the thread that actually uses it.
         if self._db is None:
             logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
-            self._db = open_database(self.model.db_path, SCHEMA_NAME)
+            self._db = open_database(self.carddb_path, SCHEMA_NAME)
         return self._db
 
-    @with_database_write_lock()
-    def import_card_data_from_local_file(self, path: Path):
-        try:
-            data = self.read_json_card_data_from_file(path)
-            self.populate_database(data)
-        except Exception:
-            self.db.rollback()
-            logger.exception(f"Error during import from file: {path}")
-            self.other_error_occurred.emit(self.tr("Error during import from file:\n{path}").format(path=path))
-        finally:
-            self.download_finished.emit()
+    @staticmethod
+    def _consume_from_queue(queue: CardDataQueue) -> CardStream:
+        while (batch := queue.get()) is not None:
+            yield from batch
 
     @with_database_write_lock()
-    def import_card_data_from_online_api(self):
-        logger.info("About to import card data from Scryfall")
-        aw = ApiStreamWorker()
+    def run(self):
+        item_count = self.source.item_count
+        file_task = isinstance(self.source, FileStreamTask)
+        if file_task:
+            logger.info("About to import card data from a local file on disk")
+            self.task_begins.emit(
+                item_count,
+                self.tr("Import card data from File:", "Progress bar label text"))
+        else:
+            logger.info("About to import card data from Scryfall")
+            self.task_begins.emit(
+                item_count,
+                self.tr("Update card data from Scryfall:", "Progress bar label text"))
         try:
-            estimated_total_card_count = aw.get_available_card_count()
-            data = aw.read_json_card_data_from_url()
-            self.download_begins.emit(
-                estimated_total_card_count,
-                self.tr("Updating card data from Scryfall:", "Progress bar label text"))
-            self.populate_database(data, total_count=estimated_total_card_count)
-        except urllib.error.URLError as e:
-            logger.exception("Handling URLError during card data download.")
-            self.network_error_occurred.emit(str(e.reason))
+            items = self._consume_from_queue(self.source.queue)
+            self.populate_database(items, total_count=item_count)
+        except Exception as e:
             self.db.rollback()
-        except socket.timeout as e:
-            logger.exception("Handling socket timeout error during card data download.")
-            self.network_error_occurred.emit(self.tr("Reading from socket failed: {error}").format(error=e))
-            self.db.rollback()
+            if file_task:
+                logger.exception(
+                    f"Error during import from file: {self.source.source}")
+                self.error_occurred.emit(self.tr(
+                    "Error during import from file:\n{path}").format(path=self.source.source))
+            else:
+                logger.exception(
+                    f"Error during import from Scryfall: {e}")
+                self.error_occurred.emit(self.tr(
+                    "Error during update from Scryfall"))
         finally:
-            self.download_finished.emit()
-
-    def read_json_card_data_from_file(self, file_path: Path, json_path: str = "item") -> CardStream:
-        file_size = file_path.stat().st_size
-        raw_file = file_path.open("rb")
-        with self._wrap_in_metered_file(raw_file, file_size) as file:
-            if file_path.suffix.casefold() == ".gz":
-                file = gzip.open(file, "rb")
-            yield from ijson.items(file, json_path, use_float=True)
-
-    def _wrap_in_metered_file(self, raw_file, file_size):
-        monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
-        monitor.total_bytes_processed.connect(self.download_progress)
-        monitor.io_begin.connect(lambda size: self.download_begins.emit(
-            size,
-            self.tr("Importing card data from disk:", "Progress bar label text")))
-        return monitor
+            self.task_completed.emit()
 
     def populate_database(self, card_data: CardStream, *, total_count: int = 0):
         """
@@ -471,14 +409,15 @@ class DatabaseImportWorker(DownloaderBase):
         card_count = 0
         try:
             card_count = self._populate_database(card_data, total_count=total_count)
+            self.task_completed.emit()
         except sqlite3.Error as e:
             self.db.rollback()
             logger.exception(f"Database error occurred: {e}")
-            self.other_error_occurred.emit(str(e))
+            self.error_occurred.emit(str(e))
         except Exception as e:
             self.db.rollback()
             logger.exception(f"Error in parsing step")
-            self.other_error_occurred.emit(
+            self.error_occurred.emit(
                 self.tr("Failed to parse data from Scryfall. Reported error: {error}").format(error=e))
         finally:
             self._clear_lru_caches()
@@ -496,7 +435,7 @@ class DatabaseImportWorker(DownloaderBase):
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
-                self.download_finished.emit()
+                db.rollback()
                 return index
             if _should_skip_card(card):
                 skipped_cards += 1
@@ -519,29 +458,27 @@ class DatabaseImportWorker(DownloaderBase):
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
             if progress_report_step and not index % progress_report_step:
-                self.download_progress.emit(index)
+                self.set_progress.emit(index)
         logger.info(f"Skipped {skipped_cards} cards during the import")
         logger.info("Post-processing card data")
-        progress_meter = ProgressMeter(
-            9, self.tr("Post-processing card data:"),
-            self.download_begins.emit, self.download_progress.emit, self.download_finished.emit)
+        self.task_begins.emit(4 + PrintingFilterUpdater.PROGRESS_STEP_COUNT, self.tr("Post-processing card data:"))
         self._insert_related_printings(related_printings)
-        progress_meter.advance()
+        self.advance_progress.emit()
         self._clean_unused_data(face_ids)
-        progress_meter.advance()
+        self.advance_progress.emit()
         updater = PrintingFilterUpdater(
-            self.model, self.db, force_update_hidden_column=True)
-        updater.signals.advance_progress.connect(progress_meter.advance)
-        updater.store_current_printing_filters()
+            CardDatabase(self.carddb_path, check_same_thread=True, register_exit_hooks=False),
+            self.db, force_update_hidden_column=True)
+        updater.advance_progress.connect(self.advance_progress)
+        updater.store_current_printing_filters()  # Don't call run() to not deadlock via the db semaphore
         # Store the timestamp of this import.
         db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n", (index,))
-        progress_meter.advance()
+        self.advance_progress.emit()
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
+        self.advance_progress.emit()
         db.commit()
-        progress_meter.advance()
-        progress_meter.finish()
-        self.card_data_updated.emit()
+        self.task_completed.emit()
         return index
 
     @functools.lru_cache(maxsize=1)
@@ -759,8 +696,7 @@ class DatabaseImportWorker(DownloaderBase):
                 face_ids.append(card_face_id)
         return face_ids
 
-    def _update_card_filters(
-            self, printing_id: int, filter_data: dict[str, bool]):
+    def _update_card_filters(self, printing_id: int, filter_data: dict[str, bool]):
         printing_filter_ids = self._read_printing_filters_from_db()
         db = self.db
         active_printing_filters = set(
@@ -860,13 +796,14 @@ def _should_skip_card(card: CardDataType) -> bool:
     # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
     # Also skip double faced cards that have at least one face without images
     return card["image_status"] == "missing" or (
-            "card_faces" in card
-            and "image_uris" not in card
+            # Has faces, but no image_uris, therefore is a DFC
+            "card_faces" in card and "image_uris" not in card
+            # And at least one face has no images
             and any("image_uris" not in face for face in card["card_faces"])
     )
 
 
-def _get_card_faces(card: CardDataType) -> typing.Generator[CardFaceData, None, None]:
+def _get_card_faces(card: CardDataType) -> Generator[CardFaceData, None, None]:
     """
     Yields a CardFaceData object for each face found in the card object.
     The printed name falls back to the English name, if the card has no printed_name key.

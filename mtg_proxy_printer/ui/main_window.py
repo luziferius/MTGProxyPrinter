@@ -17,14 +17,14 @@
 from pathlib import Path
 from functools import partial
 
-
 from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl, Qt
 from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, QDialog
 from PySide6.QtPrintSupport import QPrintDialog
 
+from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
-from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
+from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
@@ -33,6 +33,7 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, Ac
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.ui.custom_card_import_dialog import CustomCardImportDialog
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 import mtg_proxy_printer.settings
@@ -42,7 +43,7 @@ from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, Lo
 from mtg_proxy_printer.ui.common import show_wizard_or_dialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
-from mtg_proxy_printer.ui.progress_bar import ProgressBar
+from mtg_proxy_printer.ui.progress_bar import ProgressBarManager
 
 try:
     from mtg_proxy_printer.ui.generated.main_window import Ui_MainWindow
@@ -61,15 +62,16 @@ TransformationMode = Qt.TransformationMode
 StandardButton = QMessageBox.StandardButton
 StandardKey = QKeySequence.StandardKey
 UiElements = list[QWidget | QAction]
-
+# Counts the number of async tasks currently working on the document. Disable the UI while this is non-zero to ensure
+# that data doesn't change while those work.
+UI_LOCK_SEMAPHORE = 0
 
 class MainWindow(QMainWindow):
 
-    loading_state_changed = Signal(bool)
+    request_run_async_task = Signal(AsyncTask)
 
     def __init__(self,
                  card_db: CardDatabase,
-                 card_info_downloader: CardInfoDownloader,
                  image_db: ImageDatabase,
                  document: Document,
                  language_model: QStringListModel,
@@ -82,22 +84,17 @@ class MainWindow(QMainWindow):
         self.setAcceptDrops(True)
         self.default_undo_tooltip = ui.action_undo.toolTip()
         self.default_redo_tooltip = ui.action_redo.toolTip()
-        self.missing_images_manager = MissingImagesManager(document, self)
-        self.missing_images_manager.request_obtaining_images.connect(image_db.obtain_missing_images)
-        self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
+        self.missing_images_manager = self._create_missing_images_manager(document)
         self.about_dialog = self._create_about_dialog(card_db)
-        self.progress_bars = self._create_progress_bar()
+        self.progress_bar_manager = self._create_progress_bar_manager()
         self.card_database = card_db
         self.image_db = image_db
-        self._connect_image_database_signals(image_db)
         self.document = document
         self._connect_document_signals(document)
         self._setup_web_action_signals(ui)
         self.language_model = language_model
-        self.card_data_downloader = card_info_downloader
-        self._connect_card_info_downloader_signals(card_info_downloader)
+        self._setup_card_data_download_actions()
         self._setup_central_widget()
-        self._setup_loading_state_connections()
         self._setup_undo_redo_actions(document)
         self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
@@ -114,6 +111,12 @@ class MainWindow(QMainWindow):
         self.ui.action_show_about_dialog.triggered.connect(about_dialog.show_about)
         self.ui.action_show_changelog.triggered.connect(about_dialog.show_changelog)
         return about_dialog
+
+    def _create_missing_images_manager(self, document: Document) -> MissingImagesManager:
+        manager = MissingImagesManager(document, self)
+        manager.request_run_async_task.connect(self.request_run_async_task)
+        manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
+        return manager
 
     @staticmethod
     def _setup_web_action_signals(ui: Ui_MainWindow):
@@ -145,49 +148,46 @@ class MainWindow(QMainWindow):
 
     def _setup_central_widget(self):
         self.ui.central_widget.set_data(self.document, self.card_database, self.image_db)
-
-    def _setup_loading_state_connections(self):
-        for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
-            self.loading_state_changed.connect(widget_or_action.setDisabled)
+        self.ui.central_widget.request_run_async_task.connect(self.request_run_async_task)
 
     def _setup_undo_redo_actions(self, document: Document):
-        self.ui.action_undo.triggered.connect(document.undo)
-        self.ui.action_redo.triggered.connect(document.redo)
+        ui = self.ui
+        ui.action_undo.triggered.connect(document.undo)
+        ui.action_redo.triggered.connect(document.redo)
         document.action_applied.connect(self.on_document_action_applied_or_undone)
         document.action_undone.connect(self.on_document_action_applied_or_undone)
-        document.undo_available_changed.connect(self.ui.action_undo.setEnabled)
-        document.redo_available_changed.connect(self.ui.action_redo.setEnabled)
+        document.undo_available_changed.connect(ui.action_undo.setEnabled)
+        document.redo_available_changed.connect(ui.action_redo.setEnabled)
 
     def _connect_document_signals(self, document: Document):
-        document.loading_state_changed.connect(self.loading_state_changed)
-        loader = document.loader
-        loader.loading_file_failed.connect(self.on_document_loading_failed)
-        loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
-        loader.network_error_occurred.connect(self.on_network_error_occurred)
-        loader.begin_loading_loop.connect(self.progress_bars.begin_outer_progress)
-        loader.progress_loading_loop.connect(self.progress_bars.set_outer_progress)
-        loader.finished.connect(self.progress_bars.end_outer_progress)
-        self.ui.action_new_page.triggered.connect(lambda: document.apply(ActionNewPage()))
-        self.ui.action_discard_page.triggered.connect(lambda: document.apply(ActionRemovePage()))
-        self.ui.action_new_document.triggered.connect(lambda: document.apply(ActionNewDocument()))
-        self.ui.action_compact_document.triggered.connect(lambda: document.apply(ActionCompactDocument()))
-        self.ui.action_shuffle_document.triggered.connect(lambda: document.apply(ActionShuffleDocument()))
-
-    def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
-        # Do not connect the card_info_downloader.working_state_changed
-        # signal to not re-enable the action when completed. This action in particular should remain disabled.
         ui = self.ui
-        ui.action_download_card_data.triggered.connect(lambda: ui.action_download_card_data.setDisabled(True))
-        downloader.download_begins.connect(lambda: ui.action_download_card_data.setDisabled(True))
-        ui.action_download_card_data.triggered.connect(downloader.import_from_api)
-        downloader.card_data_updated.connect(self.update_language_model)
-        downloader.download_begins.connect(self.progress_bars.begin_independent_progress)
-        downloader.download_progress.connect(self.progress_bars.set_independent_progress)
-        downloader.download_finished.connect(self.progress_bars.end_independent_progress)
-        downloader.network_error_occurred.connect(self.on_network_error_occurred)
-        downloader.network_error_occurred.connect(lambda _: ui.action_download_card_data.setEnabled(True))
-        downloader.other_error_occurred.connect(self.on_error_occurred)
-        downloader.other_error_occurred.connect(lambda _: ui.action_download_card_data.setEnabled(True))
+        ui.action_new_page.triggered.connect(lambda: document.apply(ActionNewPage()))
+        ui.action_discard_page.triggered.connect(lambda: document.apply(ActionRemovePage()))
+        ui.action_new_document.triggered.connect(lambda: document.apply(ActionNewDocument()))
+        ui.action_compact_document.triggered.connect(lambda: document.apply(ActionCompactDocument()))
+        ui.action_shuffle_document.triggered.connect(lambda: document.apply(ActionShuffleDocument()))
+
+    def _setup_card_data_download_actions(self):
+        self.ui.action_download_card_data.triggered.connect(self._update_card_data_from_scryfall)
+
+    @Slot()
+    def _update_card_data_from_scryfall(self):
+        logger.info("About to update the card data from Scryfall")
+        ui = self.ui
+        ui.action_download_card_data.setDisabled(True)
+        data_source = ApiStreamTask()
+        data_source.network_error_occurred.connect(self.on_network_error_occurred)
+        data_source.network_error_occurred.connect(lambda: ui.action_download_card_data.setEnabled(True))
+        data_source.error_occurred.connect(self.on_error_occurred)
+        data_source.error_occurred.connect(lambda: ui.action_download_card_data.setEnabled(True))
+
+        import_task = DatabaseImportTask(data_source, carddb_path=self.card_database.db_path)
+        import_task.error_occurred.connect(self.on_error_occurred)
+        import_task.error_occurred.connect(lambda: ui.action_download_card_data.setEnabled(True))
+
+        import_task.task_completed.connect(self.card_database.card_data_updated, Qt.ConnectionType.QueuedConnection)
+        self.request_run_async_task.emit(data_source)
+        self.request_run_async_task.emit(import_task)
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> UiElements:
         ui = self.ui
@@ -213,22 +213,14 @@ class MainWindow(QMainWindow):
             ui.action_add_custom_cards,
             ui.action_download_missing_card_images,
             ui.action_export_card_images,
+            ui.action_undo,
+            ui.action_redo,
         ]
 
-    def _connect_image_database_signals(self, image_db: ImageDatabase):
-        image_db.card_download_starting.connect(self.progress_bars.begin_inner_progress)
-        image_db.card_download_finished.connect(self.progress_bars.end_inner_progress)
-        image_db.card_download_progress.connect(self.progress_bars.set_inner_progress)
-        image_db.batch_process_starting.connect(self.progress_bars.begin_outer_progress)
-        image_db.batch_process_progress.connect(self.progress_bars.set_outer_progress)
-        image_db.batch_process_finished.connect(self.progress_bars.end_outer_progress)
-        image_db.batch_processing_state_changed.connect(self.loading_state_changed)
-        image_db.network_error_occurred.connect(self.on_network_error_occurred)
-
-    def _create_progress_bar(self):
-        progress_bar = ProgressBar(self)
-        self.statusBar().addPermanentWidget(progress_bar)
-        return progress_bar
+    def _create_progress_bar_manager(self):
+        manager = ProgressBarManager(self)
+        self.statusBar().addPermanentWidget(manager)
+        return manager
 
     @Slot()
     def on_dialog_finished(self):
@@ -276,7 +268,7 @@ class MainWindow(QMainWindow):
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.document, self.language_model, self)
-        wizard.request_action.connect(self.image_db.fill_batch_document_action_images)
+        wizard.request_run_async_task.connect(self.request_run_async_task)
         show_wizard_or_dialog(wizard)
 
     @Slot()
@@ -296,6 +288,7 @@ class MainWindow(QMainWindow):
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = dialog = PrintDialog(self.document, self)
+        dialog.request_run_async_task.connect(self.request_run_async_task)
         dialog.finished.connect(self.on_dialog_finished)
         # Use the QDialog base class open() method, because QPrintDialog.open() performs additional, unwanted actions.
         self.missing_images_manager.obtain_missing_images(super(QPrintDialog, dialog).open)
@@ -321,6 +314,7 @@ class MainWindow(QMainWindow):
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = dialog = SavePDFDialog(self, self.document)
+        dialog.request_run_async_task.connect(self.request_run_async_task)
         dialog.finished.connect(self.on_dialog_finished)
         self.missing_images_manager.obtain_missing_images(dialog.open)
 
@@ -333,6 +327,7 @@ class MainWindow(QMainWindow):
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = dialog = SavePNGDialog(self, self.document)
+        dialog.request_run_async_task.connect(self.request_run_async_task)
         dialog.finished.connect(self.on_dialog_finished)
         self.missing_images_manager.obtain_missing_images(dialog.open)
 
@@ -349,21 +344,21 @@ class MainWindow(QMainWindow):
         empty_card = self.document.get_empty_card_for_current_page()
         self.document.apply(ActionAddCard(empty_card))
 
+    @Slot(str)
     def on_network_error_occurred(self, message: str):
         QMessageBox.warning(
             self, self.tr("Network error"),
             self.tr("Operation failed, because a network error occurred.\n"
             "Check your internet connection. Reported error message:\n\n{message}").format(message=message),
             StandardButton.Ok, StandardButton.Ok)
-        self.loading_state_changed.emit(False)
 
+    @Slot(str)
     def on_error_occurred(self, message: str):
         QMessageBox.critical(
             self, self.tr("Error"),
             self.tr("Operation failed, because an internal error occurred.\n"
             "Reported error message:\n\n{message}").format(message=message),
             StandardButton.Ok, StandardButton.Ok)
-        self.loading_state_changed.emit(False)
 
     def _ask_user_about_compacting_document(self, action: str) -> StandardButton:
         if savable_pages := self.document.compute_pages_saved_by_compacting():
@@ -391,7 +386,7 @@ class MainWindow(QMainWindow):
                     "Without the data, you can only print custom cards by drag&dropping "
                     "the image files onto the main window."),
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes) == StandardButton.Yes:
-            self.card_data_downloader.import_from_api()
+            self._update_card_data_from_scryfall()
 
     @Slot()
     def on_action_save_document_triggered(self):
@@ -425,6 +420,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_load_document_triggered(self):
         self.current_dialog = dialog = LoadDocumentDialog(self, self.document)
+        dialog.request_run_async_task.connect(self.request_run_async_task)
         dialog.accepted.connect(self.ui.central_widget.select_first_page)
         dialog.finished.connect(self.on_dialog_finished)
         show_wizard_or_dialog(dialog)
@@ -486,7 +482,7 @@ class MainWindow(QMainWindow):
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes
         ) == StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
-            self.card_data_downloader.import_from_api()
+            self.ui.action_download_card_data.trigger()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.ui.action_download_card_data.setEnabled(True)
@@ -542,7 +538,7 @@ class MainWindow(QMainWindow):
     def dropEvent(self, event: QDropEvent) -> None:
         if path := self._to_save_file_path(event):
             logger.info("User dropped save file onto the main window, loading the dropped document")
-            self.document.loader.load_document(path)
+            self.request_run_async_task.emit(DocumentLoader(self.document, path))
         elif CustomCardImportDialog.dragdrop_acceptable(event):
             self.current_dialog = dialog = CustomCardImportDialog(self.document, self)
             dialog.request_action.connect(self.document.apply)
@@ -565,3 +561,19 @@ class MainWindow(QMainWindow):
             if acceptable:
                 return path
         return None
+
+    @Slot()
+    def ui_lock_acquire(self):
+        global UI_LOCK_SEMAPHORE
+        if not UI_LOCK_SEMAPHORE:
+            for item in self._get_widgets_and_actions_disabled_in_loading_state():
+                item.setDisabled(True)
+        UI_LOCK_SEMAPHORE += 1
+
+    @Slot()
+    def ui_lock_release(self):
+        global UI_LOCK_SEMAPHORE
+        UI_LOCK_SEMAPHORE = max(0, UI_LOCK_SEMAPHORE-1)
+        if not UI_LOCK_SEMAPHORE:
+            for item in self._get_widgets_and_actions_disabled_in_loading_state():
+                item.setEnabled(True)

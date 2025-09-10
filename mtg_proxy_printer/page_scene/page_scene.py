@@ -14,6 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+from collections.abc import Generator
 import enum
 import functools
 import itertools
@@ -36,13 +37,13 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-PixelCache = typing.DefaultDict[PageType, list[float]]
+PixelCache = collections.defaultdict[PageType, list[float]]
 ItemDataRole = Qt.ItemDataRole
 ColorGroup = QPalette.ColorGroup
 ColorRole = QPalette.ColorRole
 SortOrder = Qt.SortOrder
 
-ZERO_WIDTH = 0 * unit_registry.mm
+ZERO_WIDTH: Quantity = 0 * unit_registry.mm
 
 @enum.unique
 class RenderMode(enum.Flag):
@@ -99,7 +100,7 @@ class PageScene(QGraphicsScene):
         if page_layout.draw_cut_markers:
             self.draw_cut_markers()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {render_mode}")
-        
+
     def _connect_document_signals(self, document: Document):
         document.rowsInserted.connect(self.on_rows_inserted)
         document.rowsRemoved.connect(self.on_rows_removed)
@@ -569,7 +570,7 @@ class PageScene(QGraphicsScene):
                 page_layout.margin_left, page_layout.column_spacing
             ))
 
-    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> typing.Generator[float, None, None]:
+    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> Generator[float, None, None]:
         spacing = distance_to_rounded_px(parameters.image_spacing)
         card_size: int = round(parameters.card_size.magnitude)
         # Excessively large margins may shift the page content off-center. Clamp the border to the non-negative range

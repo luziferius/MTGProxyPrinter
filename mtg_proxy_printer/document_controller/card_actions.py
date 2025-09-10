@@ -13,10 +13,13 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Sequence
 import functools
 import itertools
 import math
 import typing
+
+from PySide6.QtCore import QObject
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -26,7 +29,6 @@ from mtg_proxy_printer.natsort import to_list_of_ranges
 from ._interface import DocumentAction, IllegalStateError, Self, split_iterable
 from .page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.logger import get_logger
-
 logger = get_logger(__name__)
 del get_logger
 __all__ = [
@@ -44,8 +46,8 @@ class ActionAddCard(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["card", "count", "added_new_pages", "added_cards_to_existing_pages"]
 
-    def __init__(self, card: AnyCardType, count: int = 1, *, target_page: int = None):
-        super().__init__()
+    def __init__(self, card: AnyCardType, count: int = 1, *, target_page: int = None, parent: QObject = None):
+        super().__init__(parent)
         self.target_page = target_page
         self.card = card
         self.count = count
@@ -135,7 +137,7 @@ class ActionAddCard(DocumentAction):
 
         self.added_new_pages = self.first_added_page = 0
         self.added_cards_to_existing_pages.clear()
-        return self
+        return super().undo(document)
 
     @functools.cached_property
     def as_str(self):
@@ -172,10 +174,10 @@ class ActionRemoveCards(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["card_ranges_to_remove", "page_number", "removed_cards"]
 
-    def __init__(self, cards_to_remove: typing.Sequence[int], page_number: int = None):
+    def __init__(self, cards_to_remove: Sequence[int], page_number: int = None, parent: QObject = None):
         if not cards_to_remove:
             raise ValueError("Parameter cards_to_remove must not be empty")
-        super().__init__()
+        super().__init__(parent)
         # The source of the input row sequence is a Qt multi-selection, which is unordered.
         # The individual selections are ordered, but the selection groups are not. To not break the algorithm,
         # if the user selects cards from bottom to top, the rows have to be sorted.
@@ -210,7 +212,7 @@ class ActionRemoveCards(DocumentAction):
                 page.insert(begin, card)
             document.endInsertRows()
         self.removed_cards.clear()
-        return self
+        return super().undo(document)
 
     @functools.cached_property
     def as_str(self):

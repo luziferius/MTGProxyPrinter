@@ -14,32 +14,32 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import math
 from functools import partial
+import math
+from pathlib import Path
+import typing
 
 try:
     from os import process_cpu_count
-except ImportError:
+except ImportError:  # Py <3.13 compatibility
     from os import cpu_count as process_cpu_count
-from pathlib import Path
-from threading import BoundedSemaphore
-import typing
 
-from PySide6.QtCore import QObject, QMarginsF, QSizeF, QSize, Slot, QPersistentModelIndex, QThreadPool
+from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QObject, QMarginsF, QSizeF, Signal, QSize, Slot, QPersistentModelIndex, QThreadPool
 from PySide6.QtGui import QPainter, QPdfWriter, QPageSize, QImage, QColor
 from PySide6.QtPrintSupport import QPrinter
 
 
-from mtg_proxy_printer.runner import ProgressSignalContainer
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
+    from mtg_proxy_printer.ui.dialogs import SavePDFDialog
 
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.units_and_sizes import RESOLUTION
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.model.carddb import with_database_write_lock
 from mtg_proxy_printer.page_scene.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.units_and_sizes
@@ -56,10 +56,10 @@ __all__ = [
     "PNGRenderer",
 ]
 
-PNGEncoderThreadLimit = BoundedSemaphore(max(1, process_cpu_count()-1))
+PNGEncoderThreadLimit = max(1, process_cpu_count()-1)
 
 
-class PNGRenderer(ProgressSignalContainer):
+class PNGRenderer(AsyncTask):
     def __init__(self, main_window: "MainWindow|None", document: Document, file_path: str):
         super().__init__(main_window)
         self.document = document
@@ -67,34 +67,39 @@ class PNGRenderer(ProgressSignalContainer):
         self.page_count = document.rowCount()
         self.completed = 0
 
-    def render_document(self):
+    def run(self):
         document = self.document
         file_path = self.file_path
         page_count = self.page_count
         if not page_count:  # No pages in document
             logger.error("Tried to export a document with zero pages. Aborting.")
-            self.update_completed.emit()
+            self.task_completed.emit()
             return
         logger.info(f'Exporting document with {document.rowCount()} pages as PNG image sequence to "{file_path}"')
         page_size = document.page_layout.to_page_layout(RenderMode.ON_PAPER).pageSize().sizePixels(
             round(RESOLUTION.magnitude))
-        pool = QThreadPool.globalInstance()
+        pool = QThreadPool(self, maxThreadCount=PNGEncoderThreadLimit)
         scene = PageScene(document, RenderMode.ON_PAPER, self)
         dots_per_meter = round(RESOLUTION.to("pixel/meter").magnitude)
         background_color = settings["export"].get_color("png-background-color")
         number_width = len(str(page_count))
         parent = file_path.parent
-        self.begin_update.emit(page_count, self.tr("Export as PNGs"))
+        self.task_begins.emit(page_count, self.tr("Export as PNGs"))
+        self.ui_lock_acquire.emit()
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"
             output_path = str(parent / file_name)
             image = self._create_image(page_size, background_color, dots_per_meter)
             painter = QPainter(image)
+            painter.setRenderHint(RenderHint.LosslessImageRendering, True)
             page_index = QPersistentModelIndex(document.index(page_nr, 0))
             scene.on_current_page_changed(page_index)
             scene.render(painter)
             painter.end()
             pool.start(partial(self._compress_single_image, image, output_path))
+        self.ui_lock_release.emit()
+        pool.waitForDone()
+        self.task_completed.emit()
 
     @staticmethod
     def _create_image(page_size: QSize, background_color: QColor, dots_per_meter: int):
@@ -106,27 +111,33 @@ class PNGRenderer(ProgressSignalContainer):
         image.fill(background_color)
         return image
 
-    @with_database_write_lock(PNGEncoderThreadLimit)
     def _compress_single_image(self, image: QImage, output_path: str):
         image.save(output_path, "PNG", 0)
-        self.completed += 1
         self.advance_progress.emit()
-        self.progress.emit(self.completed)
-        if self.completed == self.page_count:
-            self.update_completed.emit()
 
 
-def export_pdf(document: Document, file_path: str, parent: QObject = None):
-    pages_to_print = settings["export"].getint("pdf-page-count-limit") or document.rowCount()
+def export_pdf(document: Document, file_path: str, parent: "SavePDFDialog"):
+    # TODO: Deprecate this and merge logic into the PDFPrinter class
+    main_window = parent.parent()
+    total_pages = document.rowCount()
+    pages_to_print = settings["export"].getint("pdf-page-count-limit") or total_pages
     if not pages_to_print:  # No pages in document. Return now, to avoid dividing by zero
         logger.error("Tried to export a document with zero pages as a PDF. Aborting.")
         return
-    logger.info(f'Exporting document with {document.rowCount()} pages as PDF to "{file_path}"')
-    total_documents = math.ceil(document.rowCount()/pages_to_print)
+    logger.info(f'Exporting document with {total_pages} pages as PDF to "{file_path}"')
+    total_documents = math.ceil(total_pages/pages_to_print)
+    export_progress = AsyncTask()
+    main_window.progress_bar_manager.add_task(export_progress)
+    export_progress.task_begins.emit(
+        total_pages, QApplication.translate("export_pdf", "Write PDF:", "Progress label"))
+    QApplication.processEvents()
     for document_index in range(total_documents):
         logger.info(f"Creating PDF ({document_index+1}/{total_documents}) with up to {pages_to_print} pages.")
-        printer = PDFPrinter(document, file_path, parent, document_index, pages_to_print)
-        printer.print_document()
+        PDFPrinter(
+            document, file_path, export_progress.advance_progress, parent, document_index, pages_to_print
+        ).run()
+    export_progress.task_completed.emit()
+    QApplication.processEvents()
 
 
 def create_printer(renderer: "Renderer") -> QPrinter:
@@ -155,7 +166,7 @@ class PDFPrinter(QPdfWriter):
     Can be given an optional index and length parameter to only export a chunk of the document for splitting purposes.
     """
 
-    def __init__(self, document: Document, file_path: str, parent: QObject = None,
+    def __init__(self, document: Document, file_path: str, advance_signal: Signal, parent: QObject = None,
                  document_index: int = 0, pages_to_print: int = None):
         """
         Constructs a new PDFPrinter.
@@ -166,6 +177,7 @@ class PDFPrinter(QPdfWriter):
         :param document_index: Document sequence number. Used to compute the range of pages to be exported
         :param pages_to_print: Number of pages to export. Default value None means "all pages"
         """
+        self.advance_progress = advance_signal
         self.document = document
         self.document_index = document_index
         self.pages_to_print = pages_to_print = pages_to_print or document.rowCount()
@@ -197,7 +209,7 @@ class PDFPrinter(QPdfWriter):
             size.transpose()
         return QPageSize(size, QPageSize.Unit.Millimeter)
 
-    def print_document(self):
+    def run(self):
         logger.info("Begin rendering PDF document.")
         layout = self.document.page_layout
         scaling = 1
@@ -220,6 +232,8 @@ class PDFPrinter(QPdfWriter):
             self.scene.render(self.painter)
             if page_number + 1 < last_index:  # Avoid including a trailing, empty page
                 self.newPage()
+            self.advance_progress.emit()
+            QApplication.processEvents()
         self.painter.end()
         logger.info("Writing document finished.")
 

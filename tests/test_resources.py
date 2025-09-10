@@ -14,9 +14,9 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
+from collections.abc import Iterable
 import xml.etree.ElementTree
 import os
-import typing
 from pathlib import Path
 
 from hamcrest import *
@@ -29,7 +29,7 @@ if os.getenv("MTGPROXYPRINTER_SKIP_RESOURCE_TESTS"):
         allow_module_level=True
     )
 
-def list_dir(directory: Path) -> typing.Iterable[Path]:
+def list_dir(directory: Path) -> Iterable[Path]:
     walker = os.walk(directory)
     for subdir, _, files in walker:
         for file_name in files:

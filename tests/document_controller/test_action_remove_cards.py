@@ -24,7 +24,8 @@ from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller import IllegalStateError, DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards, to_list_of_ranges
 
-from .helpers import append_new_card_in_page, card_container_with, create_card
+from tests.helpers import create_card
+from .helpers import append_new_card_in_page, card_container_with
 
 
 def test___init___raises_exception_with_epty_cards_to_remove_parameter():
@@ -133,10 +134,15 @@ def test_apply_emits_page_type_changed_signal_if_changed(qtbot: QtBot, document_
     assert_that(page.page_type(), is_(PageType.UNDETERMINED))
 
 
+def _create_applied_action(cards_to_remove: list[int], page_number: int | None) -> ActionRemoveCards:
+    action = ActionRemoveCards(cards_to_remove, page_number)
+    action._already_applied = True
+    return action
+
 def test_undo_restores_two_1_card_ranges(qtbot: QtBot, document_light: Document):
     page = document_light.pages[0]
     remaining = append_new_card_in_page(page, "Remaining")
-    action = ActionRemoveCards([0, 2], page_number=0)
+    action = _create_applied_action([0, 2], page_number=0)
     removed_1 = create_card("Removed 1")
     removed_2 = create_card("Removed 2")
     action.removed_cards.append([CardContainer(page, removed_1)])  # Range [0, 0]
@@ -160,7 +166,7 @@ def test_undo_restores_one_2_card_range(qtbot: QtBot, document_light: Document):
     remaining = append_new_card_in_page(page, "Remaining")
     removed_1 = create_card("Removed 1")
     removed_2 = create_card("Removed 2")
-    action = ActionRemoveCards([0, 1], page_number=0)
+    action = _create_applied_action([0, 1], page_number=0)
     action.removed_cards.append(
         [CardContainer(page, removed_1), CardContainer(page, removed_2)]
     )

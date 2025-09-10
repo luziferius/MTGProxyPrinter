@@ -154,7 +154,7 @@ def _migrate_5_to_6(db: sqlite3.Connection, settings: PageLayoutSettings):
               key TEXT NOT NULL UNIQUE CHECK (key <> ''),
               value INTEGER NOT NULL CHECK (value >= 0)
             )"""),
-            textwrap.dedent("""INSERT INTO DocumentSettings (key, value) 
+            textwrap.dedent("""INSERT INTO DocumentSettings (key, value)
               SELECT 'page_height', "page_height" FROM DocumentSettings_Old UNION ALL
               SELECT 'page_width', "page_width" FROM DocumentSettings_Old UNION ALL
               SELECT 'margin_top', "margin_top" FROM DocumentSettings_Old UNION ALL
@@ -185,14 +185,14 @@ def _migrate_image_spacing_settings(db: sqlite3.Connection):
     for statement in [
         textwrap.dedent("""\
         UPDATE DocumentSettings SET key = 'row_spacing'
-          WHERE key == 'image_spacing_horizontal' 
+          WHERE key == 'image_spacing_horizontal'
           AND NOT EXISTS (
             SELECT key FROM DocumentSettings
             WHERE key == 'row_spacing')
         """),
         textwrap.dedent("""\
         UPDATE DocumentSettings SET key = 'column_spacing'
-          WHERE key == 'image_spacing_vertical' 
+          WHERE key == 'image_spacing_vertical'
           AND NOT EXISTS (
             SELECT key FROM DocumentSettings
             WHERE key == 'column_spacing')
@@ -279,9 +279,9 @@ def _migrate_6_to_7(db: sqlite3.Connection, _: PageLayoutSettings = None):
         INSERT INTO DocumentDimensions ("key", value)
           SELECT "key", printf('%d millimeter', value) FROM DocumentSettings_old
           WHERE "key" in (
-            'page_height', 'page_width', 
+            'page_height', 'page_width',
             'margin_top', 'margin_bottom',
-            'margin_left', 'margin_right', 
+            'margin_left', 'margin_right',
             'column_spacing', 'row_spacing',
             'card_bleed'
           )
@@ -300,14 +300,14 @@ def _migrate_paper_size_settings(db: sqlite3.Connection):
     for statement in [
         textwrap.dedent("""\
         UPDATE DocumentDimensions SET key = 'custom_page_height' -- _migrate_paper_size_settings()
-          WHERE key == 'page_height' 
+          WHERE key == 'page_height'
           AND NOT EXISTS (
             SELECT key FROM DocumentDimensions
             WHERE key == 'custom_page_height')
         """),
         textwrap.dedent("""\
         UPDATE DocumentDimensions SET key = 'custom_page_width' -- _migrate_paper_size_settings()
-          WHERE key == 'page_width' 
+          WHERE key == 'page_width'
           AND NOT EXISTS (
             SELECT key FROM DocumentDimensions
             WHERE key == 'custom_page_width')

@@ -22,11 +22,15 @@ import dataclasses
 import sys
 import types
 
+from PySide6.QtCore import QCoreApplication, QThreadPool
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import mtg_proxy_printer.printing_filter_updater
-import mtg_proxy_printer.card_info_downloader
-import mtg_proxy_printer.model.carddb
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
+import mtg_proxy_printer.async_tasks.card_info_downloader
+from mtg_proxy_printer.async_tasks.card_info_downloader import DatabaseImportTask, FileStreamTask
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.async_tasks.base import AsyncTaskRunner
 
 
 @dataclasses.dataclass()
@@ -53,7 +57,7 @@ def parse_args() -> Namespace:
 
 
 to_be_profiled_functions = {
-    mtg_proxy_printer.card_info_downloader.DatabaseImportWorker: [
+    DatabaseImportTask: [
         "_populate_database",
         "_parse_single_printing",
         "_insert_set",
@@ -64,7 +68,7 @@ to_be_profiled_functions = {
         "_handle_printing",
         "_insert_face_name",
     ],
-    mtg_proxy_printer.card_info_downloader: [
+    mtg_proxy_printer.async_tasks.card_info_downloader: [
         "_get_card_filter_data",
     ]
 }
@@ -109,14 +113,20 @@ if __name__ == "__main__":
         print("Creating new database…")
     elif args.keep:
         print("Re-use existing database…")
-    cdb = mtg_proxy_printer.model.carddb.CardDatabase(args.database_path)
-    fup = mtg_proxy_printer.printing_filter_updater.PrintingFilterUpdater(cdb)
-    cid = mtg_proxy_printer.card_info_downloader.DatabaseImportWorker(cdb)
+    app = QCoreApplication([], applicationName="BenchmarkCardDataImport")
+    tp = QThreadPool.globalInstance()
+    cdb = CardDatabase(args.database_path)
+    fup = PrintingFilterUpdater(cdb)
+    fst = FileStreamTask(args.card_data)
+    dit = DatabaseImportTask(fst, None, args.database_path)
     # Remove the semaphore protection, because it also checks the QApplication instance to determine if tasks should
     # start. That does not exist in this context, and thus needs to be removed.
-    cid.import_card_data_from_local_file = types.MethodType(cid.import_card_data_from_local_file.__wrapped__, cid)
+    fup.run = types.MethodType(fup.run.__wrapped__, fup)
+    dit.run = types.MethodType(dit.run.__wrapped__, dit)
 
     print("Starting benchmark…")
-    fup._store_current_printing_filters()
-    cid.import_card_data_from_local_file(args.card_data)
+    fup.run()
+    tp.start(AsyncTaskRunner(fst))
+    dit.run()
+    tp.waitForDone()
     print("Done")

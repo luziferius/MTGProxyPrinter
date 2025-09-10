@@ -15,10 +15,11 @@
 
 
 from abc import abstractmethod
+from collections.abc import Iterable
 from functools import partial
 import itertools
 import operator
-from typing import Self, TypeVar, TYPE_CHECKING, Iterable
+from typing import Self, TypeVar, TYPE_CHECKING
 
 from PySide6.QtCore import QObject
 
@@ -51,10 +52,17 @@ class DocumentAction(QObject):
 
     COMPARISON_ATTRIBUTES: list[str] = []  # Defines which attributes have to be compared in __eq__()
 
+    def __init__(self, parent: QObject = None):
+        super().__init__(parent)
+        self._already_applied = False
+
     @abstractmethod
     def apply(self, document: "Document") -> Self:
         """Apply the action to the given document"""
         str(self)  # Populate the as_str cache
+        if self._already_applied:
+            raise IllegalStateError(f"BUG: Action {str(self)} already applied!")
+        self._already_applied = True
         return self
 
     @abstractmethod
@@ -63,6 +71,9 @@ class DocumentAction(QObject):
         Reverses the application of the action to the given document, undoing its effects.
         For this to work properly, this action must have been the most recent action applied to the document.
         """
+        if not self._already_applied:
+            raise IllegalStateError(f"BUG: Action {str(self)} not applied!")
+        self._already_applied = False
         return self
 
     def __eq__(self, other) -> bool:
@@ -83,7 +94,7 @@ class DocumentAction(QObject):
         # DocumentAction methods, like __str__(), because instances aren’t hashable.
         # Other caches, like @functools.cache() aren’t available in Py 3.8, require third-party dependencies or
         # require some boilerplate code. Using @functools.cached_property is a reasonably elegant workaround.
-        pass
+        return ""
 
     def __str__(self):
         return self.as_str

@@ -67,10 +67,14 @@ def test___enter___emits_io_begin_signal(
         http_file: MeteredSeekableHTTPFile, qtbot: QtBot, ui_hint: str, expected_size: int):
     set_file_size(http_file, expected_size)
     http_file.ui_hint = ui_hint
-    with qtbot.wait_signal(
-            http_file.io_begin,
-            check_params_cb=lambda size, hint: size == expected_size and hint == ui_hint):
-        http_file.__enter__()
+    if ui_hint:
+        with qtbot.wait_signal(
+                (http_file.io_begin, "io_begin"),
+                check_params_cb=lambda size, hint: size == expected_size and hint == ui_hint):
+            http_file.__enter__()
+    else:
+        with qtbot.assert_not_emitted(http_file.io_begin):
+            http_file.__enter__()
 
 
 @pytest.mark.parametrize("expected_size", [123, 1])
@@ -87,7 +91,7 @@ def test___exit___emits_signals_on_regular_closure(
 @pytest.mark.parametrize("error_on_exit", [AssertionError, IOError, urllib.error.URLError])
 @pytest.mark.parametrize("expected_size", [123, 1])
 def test___exit___emits_signals_on_exception_during_closure(
-        http_file: MeteredSeekableHTTPFile, qtbot: QtBot, expected_size: int, error_on_exit: typing.Type[Exception]):
+        http_file: MeteredSeekableHTTPFile, qtbot: QtBot, expected_size: int, error_on_exit: type[Exception]):
     set_file_size(http_file, expected_size)
     http_file.file.__exit__.side_effect = error_on_exit("")
     http_file.read_bytes = expected_size

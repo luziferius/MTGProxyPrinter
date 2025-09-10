@@ -14,7 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import typing
+from collections.abc import Callable
 
 from mtg_proxy_printer.logger import get_logger
 
@@ -22,13 +22,13 @@ logger = get_logger(__name__)
 del get_logger
 
 
-class ProgressMeter:
+class ProgressMeter:  # TODO: Deprecated
 
     def __init__(
             self, maximum: int, message: str,
-            start_signal: typing.Callable[[int, str], None],
-            progress_signal: typing.Callable[[int], None],
-            end_signal: typing.Callable[[], None]):
+            start_signal: Callable[[int, str], None],
+            progress_signal: Callable[[int], None],
+            end_signal: Callable[[], None]):
         self._maximum = maximum
         self._progress = 0
         start_signal(maximum, message)

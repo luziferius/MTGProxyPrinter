@@ -26,7 +26,7 @@ from pytestqt.qtbot import QtBot
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
-from mtg_proxy_printer.units_and_sizes import unit_registry
+from mtg_proxy_printer.units_and_sizes import unit_registry, Unit, Quantity
 
 from tests.hasgetter import has_getter
 from tests.helpers import quantity_close_to, quantity_between, number_between, close_to_

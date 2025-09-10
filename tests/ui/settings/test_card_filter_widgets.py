@@ -66,7 +66,7 @@ def test_general_printing_filter_loads_correctly(qtbot, download_section: Sectio
         )
 
 
-def _create_widget_with_loaded_settings(qtbot, widget_class: typing.Type[T], download_section: SectionProxy) -> T:
+def _create_widget_with_loaded_settings(qtbot, widget_class: type[T], download_section: SectionProxy) -> T:
     widget: AbstractPrintingFilter = widget_class()
     qtbot.addWidget(widget)
     with qtbot.waitExposed(widget, timeout=1000):

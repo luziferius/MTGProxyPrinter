@@ -17,7 +17,7 @@
 import functools
 import typing
 
-from PySide6.QtCore import QModelIndex, Qt, QCoreApplication
+from PySide6.QtCore import QModelIndex, Qt, QObject
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -39,8 +39,8 @@ class ActionEditCustomCard(DocumentAction):
     """
     COMPARISON_ATTRIBUTES = ["old_value", "new_value", "page", "row", "column"]
 
-    def __init__(self, index: QModelIndex, value):
-        super().__init__()
+    def __init__(self, index: QModelIndex, value: typing.Any, parent: QObject = None):
+        super().__init__(parent)
         self.page = index.parent().row()
         self.row = index.row()
         self.column = PageColumns(index.column())

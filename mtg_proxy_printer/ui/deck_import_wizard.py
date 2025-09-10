@@ -13,10 +13,10 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Callable
 import itertools
 import pathlib
 import re
-import typing
 import urllib.error
 import urllib.parse
 
@@ -25,12 +25,12 @@ from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL,
 from PySide6.QtGui import QValidator, QIcon, QDesktopServices
 from PySide6.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
-
+from mtg_proxy_printer.async_tasks.image_downloader import BatchDownloadTask
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import SectionProxy
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
-from mtg_proxy_printer.decklist_downloader import IsIdentifyingDeckUrlValidator, AVAILABLE_DOWNLOADERS, \
+from mtg_proxy_printer.async_tasks.decklist_downloader import IsIdentifyingDeckUrlValidator, AVAILABLE_DOWNLOADERS, \
     get_downloader_class, ParserBase
 from mtg_proxy_printer.model.card_list import CardListModel
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
@@ -318,7 +318,7 @@ class SelectDeckParserPage(QWizardPage):
         self.card_db = document.card_db
         self.image_db = document.image_db
         self._selected_parser = None
-        self.parser_creator: typing.Callable[[], None] = (lambda: None)
+        self.parser_creator: Callable[[], None] = (lambda: None)
         group_names = ', '.join(sorted(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES))
         custom_re_input = ui.custom_re_input
         custom_re_input.setToolTip(custom_re_input.toolTip().format(group_names=group_names))
@@ -371,7 +371,7 @@ class SelectDeckParserPage(QWizardPage):
         used_downloader: str = self.field("deck-list-downloaded")
         if used_downloader:
             parser_to_use = AVAILABLE_DOWNLOADERS[used_downloader].PARSER_CLASS
-            parser_table: dict[typing.Type[ParserBase], QRadioButton] = {
+            parser_table: dict[type[ParserBase], QRadioButton] = {
                 re_parsers.MagicWorkstationDeckDataFormatParser: ui.select_parser_magic_workstation,
                 re_parsers.MTGArenaParser: ui.select_parser_mtg_arena,
                 re_parsers.MTGOnlineParser: ui.select_parser_mtg_online,
@@ -593,7 +593,7 @@ class SummaryPage(QWizardPage):
 
 
 class DeckImportWizard(WizardBase):
-    request_action = Signal(ActionImportDeckList)
+    request_run_async_task = Signal(BatchDownloadTask)
     BUTTON_ICONS = {
         QWizard.WizardButton.FinishButton: "dialog-ok",
         QWizard.WizardButton.CancelButton: "dialog-cancel",
@@ -611,6 +611,7 @@ class DeckImportWizard(WizardBase):
         self.addPage(self.summary_page)
         self.setWindowIcon(QIcon.fromTheme("document-import"))
         self.setWindowTitle(self.tr("Import a deck list"))
+        self.image_db = document.image_db
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def accept(self):
@@ -628,7 +629,8 @@ class DeckImportWizard(WizardBase):
             replace_document
         )
         logger.info(f"User loaded a deck list with {action.card_count()} cards, adding these to the document")
-        self.request_action.emit(action)
+
+        self.request_run_async_task.emit(BatchDownloadTask(self.image_db, action))
 
     def _ask_about_oversized_cards(self) -> bool:
         oversized_count = self.summary_page.card_list.oversized_card_count

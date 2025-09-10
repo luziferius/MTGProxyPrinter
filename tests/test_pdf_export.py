@@ -16,19 +16,26 @@
 
 from pathlib import Path
 
+from PySide6.QtCore import QObject, Signal
 from hamcrest import *
+from pytestqt.qtbot import QtBot
 
 from tests.hasgetter import has_getters
 
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.print import PDFPrinter
 
+class AdvanceSignal(QObject):
+    advance_progress = Signal()
 
 
-def test_pdf_export_does_not_raise_exception(tmp_path: Path, document: Document):
+def test_pdf_export_does_not_raise_exception(qtbot: QtBot, tmp_path: Path, document: Document):
     pdf_path = tmp_path/"test.pdf"
-    printer = PDFPrinter(document, str(pdf_path))
-    printer.print_document()
+    signals = AdvanceSignal()
+    with qtbot.assert_not_emitted(signals.advance_progress):
+        printer = PDFPrinter(document, str(pdf_path), signals.advance_progress)
+    with qtbot.wait_signal(signals.advance_progress):
+        printer.run()
     assert_that(
         pdf_path,
         has_getters({

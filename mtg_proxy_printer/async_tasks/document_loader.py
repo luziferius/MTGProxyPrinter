@@ -15,16 +15,15 @@
 
 import collections
 import enum
-import functools
 import itertools
 import pathlib
 import sqlite3
 import textwrap
-from typing import Counter, Iterable, NamedTuple, TYPE_CHECKING
+from typing import Counter, NamedTuple, TYPE_CHECKING
+from collections.abc import Iterable
 
-from pint import Quantity
 from PySide6.QtGui import QPageLayout, QPageSize, QColor
-from PySide6.QtCore import QObject, Signal, QThreadPool, Qt
+from PySide6.QtCore import Signal, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, is_, any_of, none, has_item, has_property, equal_to, contains_exactly
 
@@ -34,13 +33,13 @@ from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardDatabase
 from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType, CustomCard
-from mtg_proxy_printer.model.imagedb import ImageDownloader
+from mtg_proxy_printer.async_tasks.image_downloader import ImageDownloadTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import  PageType, CardSize, CardSizes, unit_registry, \
-    T, UUID, OptStr
+    Quantity, T, UUID, OptStr
 from mtg_proxy_printer.document_controller import DocumentAction
-from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.save_file_migrations import migrate_database
 
 if TYPE_CHECKING:
@@ -57,8 +56,11 @@ __all__ = [
 SAVE_FILE_MAGIC_NUMBER = 41325044
 Orientation = QPageLayout.Orientation
 Millimeter = QPageSize.Unit.Millimeter
+CardTableRow = tuple[int, bool, str, OptStr, OptStr]
+CardTableContent = Iterable[CardTableRow]
 
 class CardType(str, enum.Enum):
+    value: str
     REGULAR = "r"
     CHECK_CARD = "d"
 
@@ -85,7 +87,7 @@ class CardRow(NamedTuple):
 
 
 sqlite3.register_adapter(CardType, lambda item: item.value)
-CustomCards = dict[str, Card]
+CustomCards = dict[str, CustomCard]
 
 
 def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[tuple[T, ...]]:
@@ -93,127 +95,67 @@ def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[tuple[
     iterable = iter(iterable)
     return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())
 
+class CancelledState(Exception):
+    pass
 
-class LoaderSignals(QObject):
-    """
-    These Qt signals are used to communicate loading progress.
-    They are shared by the API and backend classes.
-    """
-    finished = Signal()
-    unknown_scryfall_ids_found = Signal(int, int)
-    loading_file_failed = Signal(pathlib.Path, str)
-
-    begin_loading_loop = Signal(int, str)
-    progress_loading_loop = Signal(int)
-    # Emitted when downloading required images during the loading process failed due to network issues.
-    network_error_occurred = Signal(str)
-    load_requested = Signal(DocumentAction)
-
-
-class DocumentLoader(LoaderSignals):
+class DocumentLoader(AsyncTask):
     """
     Implements asynchronous background document loading.
     Loading a document can take a long time, if it includes downloading all card images and still takes a noticeable
     time when the card images have to be loaded from a slow hard disk.
-
-    This class uses an internal worker to push that work off the GUI thread to keep the application
-    responsive during a loading process.
     """
-
-    loading_state_changed = Signal(bool)
-
-    def __init__(self, document: "Document"):
-        super().__init__(None)
-        self.document = document
-        disable_loading_state_on_completion = functools.partial(self.loading_state_changed.emit, False)
-        self.finished.connect(disable_loading_state_on_completion, Qt.ConnectionType.DirectConnection)
-
-    def load_document(self, save_file_path: pathlib.Path):
-        logger.info(f"Loading document from {save_file_path}")
-        self.loading_state_changed.emit(True)
-        QThreadPool.globalInstance().start(LoaderRunner(save_file_path, self))
-
-    def on_loading_file_successful(self, file_path: pathlib.Path):
-        logger.info(f"Loading document from {file_path} successful.")
-        self.document.save_file_path = file_path
-
-    @staticmethod
-    def cancel():
-        for instance in LoaderRunner.INSTANCES:
-            if isinstance(instance, LoaderRunner):
-                instance.cancel()
-
-
-class LoaderRunner(Runnable):
-    def __init__(self, path: pathlib.Path, parent: DocumentLoader):
-        super().__init__()
-        self.parent = parent
-        self.path = path
-        self.worker = None
-
-    def run(self):
-        try:
-            self.worker = self._create_worker()
-            self.worker.load_document()
-        finally:
-            self.release_instance()
-
-    def _create_worker(self):
-        parent = self.parent
-        worker = Worker(parent.document, self.path)
-        # The blocking connection causes the worker to wait for the document in the main thread to complete the loading
-        worker.load_requested.connect(parent.load_requested, Qt.ConnectionType.BlockingQueuedConnection)
-        worker.loading_file_failed.connect(parent.loading_file_failed)
-        worker.unknown_scryfall_ids_found.connect(parent.unknown_scryfall_ids_found)
-        worker.loading_file_successful.connect(parent.on_loading_file_successful)
-        worker.network_error_occurred.connect(parent.network_error_occurred)
-        worker.finished.connect(parent.finished)
-        worker.begin_loading_loop.connect(parent.begin_loading_loop)
-        worker.progress_loading_loop.connect(parent.progress_loading_loop)
-        return worker
-
-    def cancel(self):
-        try:
-            self.worker.cancel_running_operations()
-        except AttributeError:
-            pass
-
-
-class Worker(LoaderSignals):
-    """
-    This worker creates ActionLoadDocument instances from saved documents.
-    """
-    loading_file_successful = Signal(pathlib.Path)
+    load_requested = Signal(DocumentAction)
+    unknown_scryfall_ids_found = Signal(int, int)
+    loading_file_failed = Signal(pathlib.Path, str)
+    LOAD_REQUESTED_CONNECTION_TYPE = Qt.ConnectionType.BlockingQueuedConnection
 
     def __init__(self, document: "Document", path: pathlib.Path):
         super().__init__(None)
         self.document = document
+        # BlockingQueuedConnection keeps the task alive until the action is processed by the Document instance.
+        # This prevents the garbage collector from collecting it in-flight, resulting in SegmentationFaults
+        # Unit tests replace this with a regular connection to avoid deadlocks
+        self.load_requested.connect(document.apply, self.LOAD_REQUESTED_CONNECTION_TYPE)
         self.save_path = path
-        self.card_db = self._open_carddb(document)
-        self.image_db = image_db = document.image_db
+        self.card_db: CardDatabase | None = None
         # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
         # That one lives in its own thread and runs asynchronously and is thus unusable for loading documents.
         # So create a separate instance and use it synchronously inside this worker thread.
-        self.image_loader = image_loader = ImageDownloader(image_db, self)
-        image_loader.download_begins.connect(image_db.card_download_starting)
-        image_loader.download_finished.connect(image_db.card_download_finished)
-        image_loader.download_progress.connect(image_db.card_download_progress)
-        image_loader.network_error_occurred.connect(self.on_network_error_occurred)
+        self.image_loader: ImageDownloadTask | None = None
         self.network_errors_during_load: Counter[str] = collections.Counter()
-        self.finished.connect(self.propagate_errors_during_load)
+        self.task_completed.connect(self.propagate_errors_during_load)
         self.should_run: bool = True
         self.unknown_ids = 0
         self.migrated_ids = 0
-        self.current_progress = 0
         self.prefer_already_downloaded = mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
             "prefer-already-downloaded-images")
 
-    def _open_carddb(self, document: "Document") -> CardDatabase:
-        db_path = document.card_db.db_path
+    @property
+    def can_cancel(self) -> bool:
+        return True
+
+    def cancel(self):
+        self.should_run = False
+
+    def _create_card_db(self) -> CardDatabase:
+        db_path = self.document.card_db.db_path
         card_db = CardDatabase(db_path, self, register_exit_hooks=False)
         if db_path == ":memory:":  # For testing, copy the in-memory database of the passed card database instance
-            document.card_db.db.backup(card_db.db)
+            self.document.card_db.db.backup(card_db.db)
         return card_db
+
+    def _create_image_loader(self) -> ImageDownloadTask:
+        """
+        Create an ImageDownloadTask instance. This is used to fetch card images not already downloaded.
+        It is required when card images are missing during load, which can happen if card images were deleted previously,
+        or when a document was received from another system.
+        It is registered as a subtask, so that its own download progress reporting is shown via the UI.
+        """
+        image_loader = ImageDownloadTask(self.document.image_db)
+        self.inner_tasks.append(image_loader)
+        self.request_register_subtask.emit(image_loader)
+        image_loader.network_error_occurred.connect(self.on_network_error_occurred)
+        return image_loader
 
     def propagate_errors_during_load(self):
         if error_count := sum(self.network_errors_during_load.values()):
@@ -223,23 +165,29 @@ class Worker(LoaderSignals):
                 f"Error count: {error_count}. Most common error message:\n"
                 f"{self.network_errors_during_load.most_common(1)[0][0]}"
             )
-            self.network_errors_during_load.clear()
         else:
             logger.info("No errors occurred during document load")
 
     def on_network_error_occurred(self, error: str):
         self.network_errors_during_load[error] += 1
 
-    def load_document(self):
+    def run(self):
+        logger.info(f"About to load document from {self.save_path}")
         self.should_run = True
+        self.card_db = self._create_card_db()
+        self.image_loader = self._create_image_loader()
+        self.ui_lock_acquire.emit()
         try:
             self._load_document()
+        except CancelledState:
+            self.task_completed.emit()  # _load_document() emits this during regular operation
         except (AssertionError, sqlite3.DatabaseError) as e:
             logger.exception(
                 "Selected file is not a known MTGProxyPrinter document or contains invalid data. Not loading it.")
             self.loading_file_failed.emit(self.save_path, str(e))
-            self.finished.emit()  # Release UI in failure case. _load_document() emits this during regular operation
+            self.task_completed.emit()  # _load_document() emits this during regular operation
         finally:
+            self.ui_lock_release.emit()
             self.card_db.db.rollback()
             self.card_db.db.close()
             self.card_db = None
@@ -248,31 +196,26 @@ class Worker(LoaderSignals):
         if self.unknown_ids or self.migrated_ids:
             self.unknown_scryfall_ids_found.emit(self.unknown_ids, self.migrated_ids)
             self.unknown_ids = self.migrated_ids = 0
-        self.loading_file_successful.emit(self.save_path)
-        self.finished.emit()
+        self.task_completed.emit()
 
     def _load_document(self):
-        # Imported here to break a circular import. TODO: Investigate a better fix
-        from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
         additional_steps = 2
         save_db = self._open_validate_and_migrate_save_file(self.save_path)
         total_cards = save_db.execute("SELECT count(1) FROM Card").fetchone()[0]
-        self.begin_loading_loop.emit(total_cards+additional_steps, "Loading document:")
+        self.task_begins.emit(total_cards + additional_steps, "Loading document:")
         page_layout = self._load_document_settings(save_db)
-        self._advance_progress()
+        self.advance_progress.emit()
         logger.debug(f"About to load {total_cards} cards.")
         pages = self._load_cards(save_db) if total_cards else []
         save_db.rollback()
         save_db.close()
         self._fix_mixed_pages(pages, page_layout)
-        self._advance_progress()
+        self.advance_progress.emit()
+        # Imported here to break a circular import
+        from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
         action = ActionLoadDocument(self.save_path, pages, page_layout)
         self.load_requested.emit(action)
         self._complete_loading()
-
-    def _advance_progress(self):
-        self.current_progress += 1
-        self.progress_loading_loop.emit(self.current_progress)
 
     @staticmethod
     def _open_validate_and_migrate_save_file(save_path: pathlib.Path) -> sqlite3.Connection:
@@ -284,7 +227,7 @@ class Worker(LoaderSignals):
         :return: The opened database connection."""
         db = open_database(save_path, f"document-v7")
         try:
-            user_version = Worker._validate_database_schema(db)
+            user_version = DocumentLoader._validate_database_schema(db)
             if user_version not in range(2, 8):
                 raise AssertionError(f"Unknown database schema version: {user_version}")
             logger.info(f"Save file version is {user_version}")
@@ -294,7 +237,6 @@ class Worker(LoaderSignals):
             db.close()
             raise
         return db
-
 
     def _load_cards(self, save_db: sqlite3.Connection) -> list[CardList]:
         custom_cards: CustomCards = {}
@@ -306,6 +248,8 @@ class Worker(LoaderSignals):
         allowed_sizes = {CardSizes.REGULAR.to_save_data(), CardSizes.OVERSIZED.to_save_data()}
         for page, expected_size in save_db.execute(
                 "SELECT page, image_size FROM Page ORDER BY page ASC").fetchall():  # type: int, str
+            if not self.should_run:
+                raise CancelledState()
             assert_that(page, is_(instance_of(int)))
             assert_that(expected_size, is_in(allowed_sizes))
             pages.append(self._load_cards_on_page(save_db, page, expected_size, custom_cards))
@@ -318,12 +262,14 @@ class Worker(LoaderSignals):
                 FROM Card
                 WHERE page = ?
                 ORDER BY page ASC, slot ASC""")
-        db_data: Iterable[tuple[int, bool, str, OptStr, OptStr]] = save_db.execute(query, (page,))
+        db_data: CardTableContent = save_db.execute(query, (page,))
         valid_card_types = {v.value for v in CardType}
         is_positive_int = all_of(instance_of(int), greater_than_or_equal_to(1))
         result: CardList = []
         card_size = CardSizes.REGULAR if expected_size == CardSizes.REGULAR.to_save_data() else CardSizes.OVERSIZED
         for item in db_data:
+            if not self.should_run:
+                raise CancelledState()
             self._validate_save_db_card_row(is_positive_int, item, valid_card_types)
             slot, is_front, card_type_str, scryfall_id, custom_card_id = item
             card_row = CardRow(is_front, CardType(card_type_str), scryfall_id, custom_card_id)
@@ -340,17 +286,17 @@ class Worker(LoaderSignals):
                         continue
 
             elif scryfall_id:
-                loaded = self._load_official_card_from_card_db(card_row)
+                loaded = self._load_official_card_from_save(card_row)
                 result.append(loaded.card)
                 if loaded.was_migrated:
                     self.migrated_ids += 1
             else:
                 result.append(self.document.get_empty_card_for_size(card_size))
-            self._advance_progress()
+            self.advance_progress.emit()
         return result
 
     @staticmethod
-    def _validate_save_db_card_row(is_positive_int, item, valid_card_types):
+    def _validate_save_db_card_row(is_positive_int, item: CardTableRow, valid_card_types: set[str]):
         assert_that(item, contains_exactly(
             is_positive_int,
             is_in({True, False}),
@@ -366,7 +312,7 @@ class Worker(LoaderSignals):
             (scryfall_id, custom_card_id), has_item(none()),
             "Scryfall ID and custom card ID must not be both present")
 
-    def _load_official_card_from_card_db(self, data: CardRow) -> DatabaseLoadResult | None:
+    def _load_official_card_from_save(self, data: CardRow) -> DatabaseLoadResult | None:
         if data.card_type == CardType.CHECK_CARD:
             return self._load_check_card(data)
         else:
@@ -374,7 +320,7 @@ class Worker(LoaderSignals):
 
     def _load_check_card(self, data: CardRow) -> DatabaseLoadResult | None:
         """
-        Loads a check card. Retuns None if the given scryfall id does not belong to a DFC.
+        Loads a check card. Returns None if the given scryfall id does not belong to a DFC.
         If the front is unavailable, try to find a replacement.
         Returns None, if the back of the found replacement is unavailable.
         """
@@ -385,7 +331,7 @@ class Worker(LoaderSignals):
             return None
         front = self.card_db.get_card_with_scryfall_id(scryfall_id, True)
         if front is None:
-            front = self._find_replacement_card(scryfall_id, True, self.prefer_already_downloaded)
+            front = self._find_replacement_card_for_hidden_official_card(scryfall_id, True, self.prefer_already_downloaded)
             if front is None:
                 logger.info("Unable to find suitable replacement card. Skipping it.")
                 return None
@@ -398,7 +344,7 @@ class Worker(LoaderSignals):
                 "Unable to find suitable replacement card for the DFC back. This should not happen. Skipping it.")
             return None
         card = CheckCard(front, back)
-        self.image_loader.get_image_synchronous(card)
+        self.image_loader.fetch_and_set_image(card, self.image_loader)
         return DatabaseLoadResult(card, migrated)
 
     def _load_official_card(self, data: CardRow) -> DatabaseLoadResult | None:
@@ -406,15 +352,17 @@ class Worker(LoaderSignals):
         scryfall_id = data.scryfall_id
         is_front = data.is_front
         if (card := self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)) is None:
-            card = self._find_replacement_card(scryfall_id, is_front, self.prefer_already_downloaded)
+            card = self._find_replacement_card_for_hidden_official_card(
+                scryfall_id, is_front, self.prefer_already_downloaded)
             migrated = True
         if card is None:
             logger.info("Unable to find suitable replacement card. Skipping it.")
             return None
-        self.image_loader.get_image_synchronous(card)
+        self.image_loader.fetch_and_set_image(card, self.image_loader)
         return DatabaseLoadResult(card, migrated)
 
-    def _find_replacement_card(self, scryfall_id: str, is_front: bool, prefer_already_downloaded: bool):
+    def _find_replacement_card_for_hidden_official_card(
+            self, scryfall_id: str, is_front: bool, prefer_already_downloaded: bool):
         logger.info(f"Unknown card scryfall ID found in document:  {scryfall_id=}, {is_front=}")
         card = None
         identification_data = CardIdentificationData(scryfall_id=scryfall_id, is_front=is_front)
@@ -423,15 +371,16 @@ class Worker(LoaderSignals):
         if choices:
             filtered_choices = []
             if prefer_already_downloaded:
-                filtered_choices = self.image_db.filter_already_downloaded(choices)
+                filtered_choices = self.document.image_db.filter_already_downloaded(choices)
             card = filtered_choices[0] if filtered_choices else choices[0]
             logger.info(f"Found suitable replacement card: {card}")
         return card
 
-    def _load_custom_card_from_save(self, save_db: sqlite3.Connection, card_size: CardSize, card_row: CardRow) -> CustomCard:
+    def _load_custom_card_from_save(
+            self, save_db: sqlite3.Connection, card_size: CardSize, card_row: CardRow) -> CustomCard:
         query = cached_dedent("""\
         SELECT name, set_code, set_name, collector_number, image
-          FROM CustomCardData 
+          FROM CustomCardData
           WHERE card_id = ? AND is_front = ?
         """)
         name, set_code, set_name, collector_number, image_bytes = save_db.execute(
@@ -571,7 +520,7 @@ class Worker(LoaderSignals):
             "Application ID mismatch. Not an MTGProxyPrinter save file!",
         )
 
-    def cancel_running_operations(self):
+    def cancel(self):
         self.should_run = False
         if self.image_loader.currently_opened_file is not None:
             # Force aborting the download by closing the input stream

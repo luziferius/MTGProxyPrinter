@@ -13,14 +13,12 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+from collections.abc import Callable
 from pathlib import Path
 import shutil
 import sys
 import typing
-from typing import Callable
-
-from PySide6.QtCore import QFile, Signal, Slot, QThreadPool, QObject, QEvent, Qt
+from PySide6.QtCore import QFile, Signal, Slot, QObject, QEvent, Qt
 from PySide6.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PySide6.QtGui import QIcon
 from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
@@ -33,6 +31,9 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
+from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader
+from mtg_proxy_printer.async_tasks.base import AsyncTask
+
 from mtg_proxy_printer.model.imagedb_files import ImageKey
 
 if typing.TYPE_CHECKING:
@@ -40,7 +41,7 @@ if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, ConfigParser
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
-from mtg_proxy_printer.print_count_updater import PrintCountUpdater
+from mtg_proxy_printer.async_tasks.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.logger import get_logger
 
 try:
@@ -83,8 +84,10 @@ def read_path(section: str, setting: str) -> str:
 
 
 class SavePDFDialog(QFileDialog):
+    parent: Callable[[], "MainWindow"]
+    request_run_async_task = Signal(PrintCountUpdater)
 
-    def __init__(self, parent: QWidget, document: "Document"):
+    def __init__(self, parent: "MainWindow", document: "Document"):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, "", self.get_preferred_file_name(document))
@@ -116,7 +119,7 @@ class SavePDFDialog(QFileDialog):
         logger.debug("User chose a file name, about to generate the PDF document")
         path = self.selectedFiles()[0]
         mtg_proxy_printer.print.export_pdf(self.document, path, self)
-        QThreadPool.globalInstance().start(PrintCountUpdater(self.document))
+        self.request_run_async_task.emit(PrintCountUpdater(self.document))
         logger.info(f"Saved document to {path}")
 
     @Slot()
@@ -127,6 +130,7 @@ class SavePDFDialog(QFileDialog):
 class SavePNGDialog(QFileDialog):
 
     parent: Callable[[], "MainWindow"]
+    request_run_async_task = Signal(AsyncTask)
 
     def __init__(self, parent: "MainWindow", document: "Document"):
         # Note: Cannot supply already translated strings to __init__,
@@ -161,9 +165,8 @@ class SavePNGDialog(QFileDialog):
         path = self.selectedFiles()[0]
         main_window = self.parent()
         renderer = mtg_proxy_printer.print.PNGRenderer(main_window, self.document, path)
-        main_window.progress_bars.connect_outer_progress(renderer)
-        renderer.render_document()
-        QThreadPool.globalInstance().start(PrintCountUpdater(self.document))
+        self.request_run_async_task.emit(renderer)
+        self.request_run_async_task.emit(PrintCountUpdater(self.document))
         logger.info(f"Saved document to {path}")
 
     @Slot()
@@ -213,6 +216,8 @@ class SaveDocumentAsDialog(LoadSaveDialog):
 
 class LoadDocumentDialog(LoadSaveDialog):
 
+    request_run_async_task = Signal(DocumentLoader)
+
     def __init__(
             self, parent: QWidget,
             document: "Document", **kwargs):
@@ -233,7 +238,8 @@ class LoadDocumentDialog(LoadSaveDialog):
     def on_accept(self):
         logger.debug("User chose a file name, about to load the document from disk")
         path = Path(self.selectedFiles()[0])
-        self.document.loader.load_document(path)
+        task = DocumentLoader(self.document, path)
+        self.request_run_async_task.emit(task)
         logger.info(f"Requested loading document from {path}")
 
     @Slot()
@@ -336,6 +342,8 @@ class PrintPreviewDialog(QPrintPreviewDialog):
 
 class PrintDialog(QPrintDialog):
 
+    request_run_async_task = Signal(PrintCountUpdater)
+
     def __init__(self, document: "Document", parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
         self.q_printer = mtg_proxy_printer.print.create_printer(self.renderer)
@@ -343,12 +351,12 @@ class PrintDialog(QPrintDialog):
         self.renderer.setParent(self)
         # When the user accepts the dialog, print the document and increase the usage counts
         self.accepted[QPrinter].connect(self.renderer.print_document)
-        self.accepted.connect(lambda: QThreadPool.globalInstance().start(PrintCountUpdater(document)))
+        self.accepted.connect(lambda: self.request_run_async_task.emit(PrintCountUpdater(document)))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 
 class ChangedSettingsHoverEventFilter(QObject):
-    parent: typing.Callable[[], "DocumentSettingsDialog"]
+    parent: Callable[[], "DocumentSettingsDialog"]
 
     def __init__(self, settings: ConfigParser, parent: "DocumentSettingsDialog"):
         super().__init__(parent)
@@ -429,10 +437,11 @@ class DocumentSettingsDialog(QDialog):
 
     def clear_highlight(self):
         """Clears all GUI widget highlights."""
-        for item in self.findChildren(QWidget, options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
+        for item in self.findChildren(QWidget, options=Qt.FindChildOption.FindChildrenRecursively):
             item.setGraphicsEffect(None)
 
 
+# Some platforms disallow certain characters in file names. Card names may contain them, so map those to underscores
 UNSAFE_FILE_NAME_CHARS = r'''*"/\<>:|?^'''
 UNSAFE_FILE_NAME_MAPPING = str.maketrans(UNSAFE_FILE_NAME_CHARS, "_"*len(UNSAFE_FILE_NAME_CHARS))
 
@@ -472,7 +481,7 @@ class ExportCardImagesDialog(QDialog):
             ui.export_official_cards.isChecked(),
             ui.export_custom_cards.isChecked(),
         )))
-        
+
     def accept(self):
         logger.info(f"User accepted card image export. Writing card images to {self.ui.output_path.text()}")
         try:

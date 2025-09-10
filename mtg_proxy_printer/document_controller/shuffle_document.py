@@ -15,7 +15,7 @@
 
 from random import Random, randbytes
 
-from PySide6.QtCore import Qt, QModelIndex, QCoreApplication
+from PySide6.QtCore import Qt, QModelIndex, QObject
 
 from ._interface import DocumentAction, IllegalStateError, Self
 from ..model.card import Card
@@ -37,9 +37,10 @@ class ActionShuffleDocument(DocumentAction):
     """
     COMPARISON_ATTRIBUTES = ["random_seed"]
 
-    def __init__(self):
+    def __init__(self, parent: QObject = None):
         # The seed is created at instantiation time and ensures that two runs of apply() return a deterministic
         # order. This ensures that redoing the same action always returns the same result
+        super().__init__(parent)
         self.random_seed = randbytes(64)
         self.shuffle_order: dict[PageType, list[int]] = {}
 
@@ -65,7 +66,7 @@ class ActionShuffleDocument(DocumentAction):
             if page_type in self.shuffle_order:
                 self._undo_shuffle_of_type(document, page_type)
         self.shuffle_order.clear()
-        return self
+        return super().undo(document)
 
     def _undo_shuffle_of_type(self, document: Document, page_type: PageType):
         model_indices = list(document.get_card_indices_of_type(page_type))

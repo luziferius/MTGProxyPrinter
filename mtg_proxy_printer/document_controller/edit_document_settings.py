@@ -18,6 +18,8 @@ import copy
 import itertools
 import typing
 
+from PySide6.QtCore import QObject
+
 from ._interface import DocumentAction, ActionList, Self, split_iterable
 from .card_actions import ActionRemoveCards
 from .move_cards import ActionMoveCards
@@ -51,8 +53,8 @@ class ActionEditDocumentSettings(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["new_settings", "old_settings", "reflow_actions"]
 
-    def __init__(self, new_settings: PageLayoutSettings):
-        super().__init__()
+    def __init__(self, new_settings: PageLayoutSettings, parent: QObject = None):
+        super().__init__(parent)
         if new_settings.compute_page_card_capacity(PageType.OVERSIZED) < 1:
             raise ValueError("New document settings must allow at least one card per page")
         self.new_settings = copy.copy(new_settings)
@@ -127,7 +129,7 @@ class ActionEditDocumentSettings(DocumentAction):
             action.undo(document)
         self.old_settings = None
         self.reflow_actions.clear()
-        return self
+        return super().undo(document)
 
     @property
     def as_str(self):

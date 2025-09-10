@@ -13,6 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Sequence
 import json
 import logging
 from functools import partial
@@ -20,21 +21,20 @@ import pathlib
 import typing
 from abc import abstractmethod
 
-from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
+from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt
 from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon, QColor
-from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QDoubleSpinBox, \
+from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QLineEdit, QDoubleSpinBox, \
     QColorDialog
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.card_info_downloader import FileDownloadTask, FileStreamTask, DatabaseImportTask
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
-
-if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.application import Application
 
 try:
     from mtg_proxy_printer.ui.generated.settings_window.debug_settings_page import Ui_DebugSettingsPage
@@ -78,7 +78,7 @@ class PageMetadata(typing.NamedTuple):
 class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
 
-    def display_item(self) -> typing.Sequence[QStandardItem]:
+    def display_item(self) -> Sequence[QStandardItem]:
         """Returns a list model item for this page, used to represent the page in the settings page selection UI."""
         data = self.display_metadata()
         item = QStandardItem(data.text)
@@ -121,8 +121,7 @@ class Page(QWidget):
 
 
 class DebugSettingsPage(Page):
-
-    requested_card_download = Signal(pathlib.Path)
+    request_run_async_task = Signal(AsyncTask)
 
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(
@@ -134,7 +133,7 @@ class DebugSettingsPage(Page):
         super().__init__(parent)
         self.ui = ui = Ui_DebugSettingsPage()
         ui.setupUi(self)
-        self.requested_card_download.connect(lambda _: ui.debug_download_card_data_as_file.setEnabled(False))
+        self.request_run_async_task.connect(lambda _: ui.debug_download_card_data_as_file.setEnabled(False))
         ui.log_level_combo_box.addItems(map(logging.getLevelName, range(10, 60, 10)))
         url = QUrl("https://github.com/busimus/cutelog", QUrl.ParsingMode.StrictMode)
         ui.open_cutelog_website_button.clicked.connect(partial(QDesktopServices.openUrl, url))
@@ -196,7 +195,7 @@ class DebugSettingsPage(Page):
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Download card data to file {path}")
-        self.requested_card_download.emit(path)
+        self.request_run_async_task.emit(FileDownloadTask(path))
 
     @Slot()
     def on_debug_import_card_data_from_file_clicked(self):
@@ -217,8 +216,8 @@ class DebugSettingsPage(Page):
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Import card data from {path}")
-        app: "Application" = QApplication.instance()
-        app.card_info_downloader.import_from_file(path)
+        self.request_run_async_task.emit(data_source := FileStreamTask(path))
+        self.request_run_async_task.emit(DatabaseImportTask(data_source))  # TODO: Pass the actually used carddb path
 
 
 class DecklistImportSettingsPage(Page):
@@ -441,14 +440,10 @@ class GeneralSettingsPage(Page):
 
 
 class HidePrintingsPage(Page):
+    request_run_async_task = Signal(PrintingFilterUpdater)
 
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(self.tr("Hide printings"), "view-hidden", self.tr("Hide unwanted printings"))
-
-    error_occurred = Signal(str)
-    long_running_process_begins = Signal(int, str)
-    process_updated = Signal(int)
-    process_finished = Signal()
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -469,10 +464,7 @@ class HidePrintingsPage(Page):
         ui.card_filter_general_settings.save_settings(section)
         ui.card_filter_format_settings.save_settings(section)
         section["hidden-sets"] = ui.set_filter_settings.toPlainText()
-        updater = PrintingFilterUpdater(self.card_db)
-        updater.connect_progress_signals(self.long_running_process_begins, self.process_updated, self.process_finished)
-        updater.signals.error_occurred.connect(self.error_occurred, QueuedConnection)
-        QThreadPool.globalInstance().start(updater)
+        self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
 
     def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]

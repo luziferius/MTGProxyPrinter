@@ -13,19 +13,18 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+from collections.abc import Sequence
 import sqlite3
-import typing
+from typing import LiteralString, TYPE_CHECKING, Any
 
-from PySide6.QtCore import QObject, Signal, Qt, QCoreApplication
+from PySide6.QtCore import Qt, QCoreApplication
 
 import mtg_proxy_printer.settings
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from mtg_proxy_printer.model.carddb import CardDatabase
-    from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
-from mtg_proxy_printer.runner import Runnable, ProgressSignalContainer
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import SectionProxy
 logger = get_logger(__name__)
@@ -34,7 +33,7 @@ del get_logger
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 
-class PrintingFilterUpdater(Runnable):
+class PrintingFilterUpdater(AsyncTask):
     """
     This class updates the printing filters stored in the database.
     Syncs the db-internal printing filters with the filters stored in the configuration file,
@@ -55,16 +54,15 @@ class PrintingFilterUpdater(Runnable):
         :param force_update_hidden_column: Force re-writing the is_hidden columns. The columns need updates,
           if the filter values change (determined internally) or the card data changes.
           This boolean can be used by the card data update to enforce refreshing
-          the cached is_hidden, as the value may change for each card, even if the filters stayed constant.
+          the cached is_hidden, as the value may change for each card, even if the filters were unchanged.
         """
         super().__init__()
-        self.signals = signals = ProgressSignalContainer()
         self.model = model
         self.progress = 0
-        signals.ui_update_required.connect(model.restart_transaction, QueuedConnection)
-        signals.ui_update_required.connect(model.card_data_updated, QueuedConnection)
+        self.ui_update_required.connect(model.restart_transaction, QueuedConnection)
+        self.ui_update_required.connect(model.card_data_updated, QueuedConnection)
         self.force_update_hidden_column = force_update_hidden_column
-        self.db_passed = bool(db_connection)
+        self.uses_self_opened_db_connection = not db_connection
         self._db = db_connection
         self.update_ui = False
         self.should_abort = False
@@ -72,25 +70,6 @@ class PrintingFilterUpdater(Runnable):
 
     def cancel(self):
         self.should_abort = True
-
-    def connect_main_window_signals(self, main_window: "MainWindow"):
-        progress_bars = main_window.progress_bars
-        self.connect_progress_signals(
-            progress_bars.begin_independent_progress,
-            progress_bars.set_independent_progress,
-            progress_bars.end_independent_progress
-        )
-
-    def connect_progress_signals(self, begin_signal, progress_signal, end_signal):
-        signals = self.signals
-        signals.begin_update.connect(begin_signal, QueuedConnection)
-        signals.progress.connect(progress_signal, QueuedConnection)
-        signals.update_completed.connect(end_signal, QueuedConnection)
-
-    def advance_progress(self):
-        self.progress += 1
-        self.signals.progress.emit(self.progress)
-        self.signals.advance_progress.emit()
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -106,38 +85,32 @@ class PrintingFilterUpdater(Runnable):
     def run(self):
         logger.debug(f"Called {self.__class__.__name__}.run()")
         try:
-            self.store_current_printing_filters()
-        finally:
-            self.release_instance()
-
-    def store_current_printing_filters(self):
-        try:
-            if self.db_passed:
-                # Passed-in connections have a running transaction, which has to be closed
-                self.db.commit()
-            self.signals.begin_update.emit(
-                self.PROGRESS_STEP_COUNT,
-                QCoreApplication.translate("PrintingFilterUpdater.store_current_printing_filters()",
-                                           "Processing updated card filters:"))
-            self.update_ui = self._store_current_printing_filters()
+            self.task_begins.emit(
+                self.PROGRESS_STEP_COUNT, QCoreApplication.translate(
+                    "PrintingFilterUpdater.store_current_printing_filters()",
+                    "Processing updated card filters:")
+            )
+            self.update_ui = self.store_current_printing_filters()
             if self.should_abort:
                 self.db.rollback()
-                return
+            else:
+                self.db.commit()
+            return
         except sqlite3.Error as e:
             logger.exception(e)
-            self.signals.error_occurred.emit(e.sqlite_errorname)
+            self.error_occurred.emit(e.sqlite_errorname)
             self.db.rollback()
         finally:
-            self.signals.update_completed.emit()
-            if not self.db_passed:
+            self.task_completed.emit()
+            if self.uses_self_opened_db_connection:
                 logger.debug(f"Closing {self.__class__.__name__} connection")
                 self.db.close()
                 self._db = None
 
-    def _store_current_printing_filters(self) -> bool:
+    def store_current_printing_filters(self) -> bool:
         db = self.db
-        progress_signal = self.advance_progress
-        db.execute("BEGIN IMMEDIATE TRANSACTION\n")
+        if self.uses_self_opened_db_connection:
+            db.execute("BEGIN IMMEDIATE TRANSACTION\n")
         section = mtg_proxy_printer.settings.settings["card-filter"]
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
         old_filter_removed = self._remove_old_printing_filters(section)
@@ -158,18 +131,19 @@ class PrintingFilterUpdater(Runnable):
             )
             if self.should_abort:
                 return False
-            progress_signal()
+            self.advance_progress.emit()
         if set_code_updated := self._set_code_filters_need_update():
             self._update_set_code_filters_in_db()
         if self.should_abort:
             return False
-        progress_signal()
+        self.advance_progress.emit()
         update_ui = filters_need_update or old_filter_removed or self.force_update_hidden_column or set_code_updated
         if update_ui:
-            self._update_cached_data(progress_signal)
-        db.commit()
+            self._update_cached_data()
+        if self.uses_self_opened_db_connection:
+            db.commit()
         if update_ui:
-            self.signals.ui_update_required.emit()
+            self.ui_update_required.emit()
         return update_ui
 
     def _set_code_filters_need_update(self) -> bool:
@@ -275,9 +249,8 @@ class PrintingFilterUpdater(Runnable):
         ]
         return result
 
-    def _update_cached_data(self, progress_signal: typing.Callable[[], None]):
-        logger.debug("Update the Printing.is_hidden column")
-        self.db.execute(cached_dedent("""\
+    UPDATE_CACHED_DATA_STEPS: list[tuple[str, LiteralString]] = [
+        ("Update the Printing.is_hidden column", cached_dedent("""\
         UPDATE Printing    -- _update_cached_data()
             SET is_hidden = Printing.printing_id IN (
               SELECT HiddenPrintingIDs.printing_id FROM HiddenPrintingIDs
@@ -286,12 +259,8 @@ class PrintingFilterUpdater(Runnable):
               SELECT HiddenPrintingIDs.printing_id FROM HiddenPrintingIDs
             ))
         ;
-        """))
-        if self.should_abort:
-            return
-        progress_signal()
-        logger.debug("Update the FaceName.is_hidden column")
-        self.db.execute(cached_dedent("""\
+        """)),
+        ("Update the FaceName.is_hidden column", cached_dedent("""\
         WITH FaceNameShouldBeHidden (face_name_id, should_be_hidden) AS (    -- _update_cached_data()
           -- A FaceName should be hidden, iff all uses by printings are hidden,
           -- i.e. the total use count is equal to the hidden use count
@@ -310,26 +279,19 @@ class PrintingFilterUpdater(Runnable):
           WHERE FaceName.face_name_id = FaceNameShouldBeHidden.face_name_id
           AND FaceName.is_hidden <> FaceNameShouldBeHidden.should_be_hidden
         ;
-        """))
-        if self.should_abort:
-            return
-        progress_signal()
-        logger.debug("Update the RemovedPrintings table")
-        self.db.execute(cached_dedent("""\
+        """)),
+        ("Remove outdated entries in the RemovedPrintings table", cached_dedent("""\
         DELETE FROM RemovedPrintings    -- _update_cached_data()
           WHERE scryfall_id IN (
             SELECT Printing.scryfall_id
             FROM Printing
             WHERE Printing.is_hidden IS FALSE
           );
-        """))
-        if self.should_abort:
-            return
-        progress_signal()
+        """)),
         # Performance note: Using INSERT OR IGNORE and removing the inner scryfall_id NOT IN (subquery) simplifies the
         # query plan, but takes about 40% longer to evaluate (on the card data of late April 2022)
         # than the current method that only inserts missing rows.
-        self.db.execute(cached_dedent("""\
+        ("Add new items to the RemovedPrintings table", cached_dedent("""\
         INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)    -- _update_cached_data()
           SELECT DISTINCT scryfall_id, language, oracle_id
             FROM Printing
@@ -341,11 +303,18 @@ class PrintingFilterUpdater(Runnable):
               AND scryfall_id NOT IN (
                 SELECT rp.scryfall_id
                 FROM RemovedPrintings AS rp
-              );
-        """))
-        if self.should_abort:
-            return
-        progress_signal()
+            );
+        """)),
+    ]
+
+    def _update_cached_data(self):
+        db = self.db
+        for step, statement in self.UPDATE_CACHED_DATA_STEPS:  # type: str, LiteralString
+            logger.debug(step)
+            db.execute(statement)
+            self.advance_progress.emit()
+            if self.should_abort:
+                return
         logger.debug("Finished maintenance tasks.")
 
     def get_currently_enabled_set_code_filters(self) -> set[str]:
@@ -354,7 +323,7 @@ class PrintingFilterUpdater(Runnable):
         result = {value for (value,) in values}
         return result
 
-    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
+    def _read_optional_scalar_from_db(self, query: str, parameters: Sequence[Any]):
         if result := self.db.execute(query, parameters).fetchone():
             return result[0]
         else:

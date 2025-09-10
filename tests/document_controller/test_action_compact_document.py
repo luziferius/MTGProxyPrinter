@@ -26,7 +26,8 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, Ac
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
 
-from .helpers import append_new_card_in_page, card_container_with, create_card
+from tests.helpers import create_card
+from .helpers import append_new_card_in_page, card_container_with
 
 OVERSIZED = CardSizes.OVERSIZED
 REGULAR = CardSizes.REGULAR

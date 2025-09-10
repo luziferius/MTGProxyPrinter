@@ -22,26 +22,24 @@ To add a new migration, place a MigrationScript instance in the MIGRATION_SCRIPT
 using the source schema version as the dict key.
 """
 
+from collections.abc import Iterable, Generator
 import dataclasses
 import datetime
 import socket
 import sqlite3
 import time
-import typing
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import Any, Generator, Callable, Iterable, LiteralString
+from typing import Any, Callable, LiteralString, TYPE_CHECKING
 
 from PySide6.QtCore import QCoreApplication, Qt
 
-from mtg_proxy_printer.progress_meter import ProgressMeter
-from mtg_proxy_printer.runner import Runnable, ProgressSignalContainer
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.model.carddb import CardDatabase, with_database_write_lock
-
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
 
 
@@ -50,7 +48,7 @@ del get_logger
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 __all__ = [
-    "DatabaseMigrationRunner",
+    "DatabaseMigrationTask",
     "migrate_card_database_location",
 ]
 # Overwrite the dedent signature for type hinting purposes.
@@ -64,7 +62,7 @@ Statement = LiteralString | tuple[LiteralString, list[tuple[Any, ...]]]
 class MigrationScript:
     script: list[Statement] = None
 
-    def get_script(self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter) -> list[Statement]:
+    def get_script(self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask) -> list[Statement]:
         """Returns the script to run. Can be overridden by subclasses to allow dynamic behavior"""
         if self.script is None:
             raise RuntimeError("BUG: Migration script is None. Either not provided or this function wasn't overridden")
@@ -82,17 +80,17 @@ class MigrationScript:
 class Migrate_21_to_22(MigrationScript):
 
     def get_script(
-            self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter) -> list[Statement]:
+            self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask) -> list[Statement]:
         return list(self._migrate_21_to_22(db, suffix, progress_meter))
 
     @staticmethod
     def _migrate_21_to_22(
-            db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter
+            db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask
     ) -> Generator[Statement, None, None]:
         # Full edit procedure not needed here, because the table has no indices or foreign keys associated
         # Import locally to break a cyclic dependency
-        import mtg_proxy_printer.card_info_downloader
-        aw = mtg_proxy_printer.card_info_downloader.ApiStreamWorker()
+        import mtg_proxy_printer.async_tasks.card_info_downloader
+        aw = mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask()
         updates: Iterable[tuple[int, datetime.datetime]] = db.execute(
             "SELECT update_id, update_timestamp FROM LastDatabaseUpdate"+suffix)
         data = []
@@ -105,7 +103,7 @@ class Migrate_21_to_22(MigrationScript):
                 "q": f"date>1970-01-01 date<={timestamp.date()}"
             })
             try:
-                card_count = next(aw.read_json_card_data_from_url(
+                card_count = next(aw.read_json_card_data_from(
                     f'https://api.scryfall.com/cards/search?{url_parameters}', 'total_cards'
                 ))
             except (urllib.error.URLError, socket.error):
@@ -113,7 +111,7 @@ class Migrate_21_to_22(MigrationScript):
             data.append((id_, timestamp.isoformat(), card_count))
             # Rate limit the requests to 10 per second, according to the Scryfall API usage recommendations
             time.sleep(0.1)
-            progress_meter.advance()
+            progress_meter.advance_progress.emit()
 
         logger.info(f"Acquired data for upgrade to schema version 22: {data}")
         yield dedent("""\
@@ -182,7 +180,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         CREATE TABLE LastImageUseTimestamps (
           -- Used to store the last image use timestamp and usage count of each image.
           -- The usage count measures how often an image was part of a printed or exported document. Printing multiple
-          -- copies in a document still counts as a single use. Saving/loading is not enough to count as a "use". 
+          -- copies in a document still counts as a single use. Saving/loading is not enough to count as a "use".
           scryfall_id TEXT NOT NULL,
           is_front INTEGER NOT NULL CHECK (is_front in (0, 1)),
           usage_count INTEGER NOT NULL CHECK (usage_count > 0) DEFAULT 1,
@@ -223,7 +221,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         )"""),
         dedent("""\
         CREATE TABLE NewCardFace (
-          -- The printable card face of a specific card in a specific language. Is the front most of the time, 
+          -- The printable card face of a specific card in a specific language. Is the front most of the time,
           -- but can be the back face for double-faced cards.
           card_face_id INTEGER NOT NULL PRIMARY KEY,
           card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -237,14 +235,14 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           UNIQUE(face_name_id, set_id, card_id, is_front, collector_number)  -- Order important: Used to find matching sets
         )"""),
         dedent("""\
-        INSERT INTO NewFaceName (face_name_id, card_name, language_id) 
+        INSERT INTO NewFaceName (face_name_id, card_name, language_id)
           SELECT face_name_id, card_name, language_id
           FROM FaceName"""),
         dedent("""\
-        INSERT INTO NewCardFace 
+        INSERT INTO NewCardFace
           (card_face_id, card_id, set_id, face_name_id, is_front,
-           collector_number, scryfall_id, highres_image, png_image_uri) 
-        SELECT 
+           collector_number, scryfall_id, highres_image, png_image_uri)
+        SELECT
            card_face_id, card_id, set_id, face_name_id, is_front,
            collector_number, scryfall_id, highres_image, png_image_uri
         FROM CardFace"""),
@@ -308,8 +306,8 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         INSERT OR IGNORE INTO Printing(card_id, set_id, collector_number, scryfall_id, highres_image, is_oversized)
           SELECT card_id, set_id, collector_number, scryfall_id, highres_image,
             -- The patterns below match sets containing oversized cards.
-            -- Note: Scryfall serves regularly sized images for the "% Championship" sets 
-            -- despite being marked as "oversized". Thus those are explicitly not matched.  
+            -- Note: Scryfall serves regularly sized images for the "% Championship" sets
+            -- despite being marked as "oversized". Thus those are explicitly not matched.
             set_name LIKE '% Oversized' OR set_name LIKE '% Schemes' OR set_name LIKE '% Planes'
           FROM CardFace JOIN "Set" USING (set_id)"""),
         # Joining USING (scryfall_id) is fine, because that is UNIQUE in Printing,
@@ -354,7 +352,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         )"""),
         dedent("""\
         INSERT INTO CardFaceNew (card_face_id, printing_id, face_name_id, is_front, png_image_uri, face_number)
-          SELECT card_face_id, printing_id, face_name_id, is_front, png_image_uri, 
+          SELECT card_face_id, printing_id, face_name_id, is_front, png_image_uri,
                row_number() over (partition by printing_id ORDER BY card_face_id) -1 as face_number
             FROM FaceName JOIN CardFace USING (face_name_id) JOIN Printing USING (printing_id)"""),
         "DROP TABLE CardFace",
@@ -645,7 +643,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         "CREATE INDEX PrintingDisplayFilter_Printing_from_filter_lookup ON PrintingDisplayFilter(filter_id)",
         dedent("""\
         CREATE VIEW VisiblePrintings AS
-        WITH 
+        WITH
           double_faced_printings(printing_id, is_dfc) AS (
           SELECT DISTINCT printing_id, TRUE as is_dfc
             FROM CardFace
@@ -673,7 +671,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
             AND FaceName.is_hidden IS FALSE"""),
         dedent("""\
         CREATE VIEW AllPrintings AS
-        WITH 
+        WITH
         double_faced_printings(printing_id, is_dfc) AS (
           SELECT DISTINCT printing_id, TRUE as is_dfc
             FROM CardFace
@@ -713,7 +711,7 @@ def migrate_card_database_location():
         OLD_DATABASE_LOCATION.rename(DEFAULT_DATABASE_LOCATION)
 
 
-class DatabaseMigrationRunner(Runnable):
+class DatabaseMigrationTask(AsyncTask):
     """
     Upgrades the database schema of the given Card Database to the latest supported schema version.
 
@@ -724,37 +722,19 @@ class DatabaseMigrationRunner(Runnable):
 
     def __init__(self, card_db: CardDatabase, migration_scripts: dict[int, MigrationScript] = None):
         super().__init__()
-        self.total_update_signals = ProgressSignalContainer()
-        self.script_update_signals = ProgressSignalContainer()
+        self.script_update_signals = AsyncTask()
+        self.inner_tasks.append(self.script_update_signals)
         self.db_path = card_db.db_path
         self.migration_scripts = migration_scripts or MIGRATION_SCRIPTS
         logger.debug(f"Created {self.__class__.__name__} instance.")
 
     def connect_main_window_signals(self, main_window: "MainWindow"):
-        progress_bars = main_window.progress_bars
         # Using a blocking queued connection makes the migrator wait until the user acknowledges the error.
         # Otherwise, the "this app needs additional card data downloads" dialog will pop over the error and requires
         # the user to handle them out of sequence.
-        self.total_update_signals.error_occurred.connect(
-            main_window.on_error_occurred, Qt.ConnectionType.BlockingQueuedConnection)
-        self.connect_progress_signals(
-            self.total_update_signals,
-            progress_bars.begin_outer_progress,
-            progress_bars.set_outer_progress,
-            progress_bars.end_outer_progress,
+        self.error_occurred.connect(
+            main_window.on_error_occurred, Qt.ConnectionType.BlockingQueuedConnection
         )
-        self.connect_progress_signals(
-            self.script_update_signals,
-            progress_bars.begin_inner_progress,
-            progress_bars.set_inner_progress,
-            progress_bars.end_inner_progress
-        )
-
-    @staticmethod
-    def connect_progress_signals(signals: ProgressSignalContainer, begin_signal, progress_signal, end_signal):
-        signals.begin_update.connect(begin_signal, QueuedConnection)
-        signals.progress.connect(progress_signal, QueuedConnection)
-        signals.update_completed.connect(end_signal, QueuedConnection)
 
     @with_database_write_lock()
     def run(self):
@@ -765,34 +745,33 @@ class DatabaseMigrationRunner(Runnable):
         begin_schema_version = self._get_schema_version(db)
         target_version = max(self.migration_scripts.keys())+1
         if begin_schema_version >= target_version:
-            self.total_update_signals.update_completed.emit()
-            self.release_instance()
+            self.task_completed.emit()
             return
         if self.migration_scripts is not MIGRATION_SCRIPTS:
             logger.debug(f"Custom migration scripts passed: {self.migration_scripts}")
         logger.info(f"Migrating database from version {begin_schema_version} to {target_version}. "
                     f"About to run {target_version-begin_schema_version} migration scripts.")
-        top_level_progress_meter = self._create_top_level_progress_meter(begin_schema_version, target_version)
+        self._begin_top_level_progress(begin_schema_version, target_version)
+        self.request_register_subtask.emit(self.script_update_signals)
         try:
             for source_version in range(begin_schema_version, target_version):
                 script = self.migration_scripts[source_version]
                 self._migrate_version(db, source_version, script)
-                top_level_progress_meter.advance()
+                self.advance_progress.emit()
             current_schema_version = self._get_schema_version(db)
             logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
             db.execute("ANALYZE\n")
-            top_level_progress_meter.advance()
+            self.advance_progress.emit()
             db.execute("VACUUM\n")
-            top_level_progress_meter.advance()
+            self.advance_progress.emit()
         except sqlite3.Error as e:
-            self.script_update_signals.update_completed.emit()  # Close the inner progress bar that was left open
+            self.script_update_signals.task_completed.emit()  # Close the inner progress bar that was left open
             if e.sqlite_errorcode == sqlite3.SQLITE_BUSY:
                 raise e
             else:
                 self._recreate_carddb_on_failed_migration(db, e)
-        top_level_progress_meter.finish()
+        self.task_completed.emit()
         logger.info("Rebuild done.")
-        self.release_instance()
 
     def _recreate_carddb_on_failed_migration(self, db: sqlite3.Connection, e: sqlite3.Error):
         logger.exception(
@@ -805,7 +784,7 @@ class DatabaseMigrationRunner(Runnable):
             "downloaded card data and require re-downloading it.\nReported error message:\n\n{error_message}",
             "Applying card database migrations required after an app upgrade failed, "
             "presumably because the data on disk got corrupted somehow.").format(error_message=str(e))
-        self.total_update_signals.error_occurred.emit(msg)
+        self.error_occurred.emit(msg)
         db.close()
         del db
         base_name = self.db_path.name
@@ -818,13 +797,10 @@ class DatabaseMigrationRunner(Runnable):
         db.commit()
         logger.info("Re-created database after deleting the corrupted card database.")
 
-    def _create_top_level_progress_meter(self, begin_schema_version: int, target_version: int) -> ProgressMeter:
-        signals = self.total_update_signals
+    def _begin_top_level_progress(self, begin_schema_version: int, target_version: int):
+        steps = target_version - begin_schema_version + 2  # ANALYZE and VACUUM (2 steps) are run as top-level tasks
         msg = QCoreApplication.translate("DatabaseMigrationRunner", "Running database migrations:", "")
-        progress_meter = ProgressMeter(
-            target_version-begin_schema_version+2, msg,  # ANALYZE and VACUUM (2 steps) are run as top-level tasks
-            signals.begin_update.emit, signals.progress.emit, signals.update_completed.emit)
-        return progress_meter
+        self.task_begins.emit(steps, msg)
 
     @staticmethod
     def _get_schema_version(db: sqlite3.Connection) -> int:
@@ -839,13 +815,11 @@ class DatabaseMigrationRunner(Runnable):
         msg = QCoreApplication.translate(
             "DatabaseMigrationRunner", "Migrate to version %n:",
             "The numeric parameter is a version number, and not countable.", source_version)
-        meter = ProgressMeter(
-            steps, msg,
-            signals.begin_update.emit, signals.progress.emit, signals.update_completed.emit)
+        signals.task_begins.emit(steps, msg)
 
         logger.debug(f"Starting migration from {source_version}")
         db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)
-        for statement in script.get_script(db, suffix, meter):  # type: Statement
+        for statement in script.get_script(db, suffix, signals):  # type: Statement
             if isinstance(statement, str):
                 if is_pragma := statement.startswith("PRAGMA"):
                     db.execute("COMMIT" + suffix)
@@ -855,9 +829,9 @@ class DatabaseMigrationRunner(Runnable):
             else:
                 statement, parameters = statement
                 db.executemany(statement + suffix, parameters)
-            meter.advance()
+            signals.advance_progress.emit()
         db.execute(f"PRAGMA user_version = {next_version}" + suffix)
         db.commit()
         logger.debug(f"Migrated to {next_version}")
-        meter.advance()
-        meter.finish()
+        signals.advance_progress.emit()
+        signals.task_completed.emit()

@@ -31,7 +31,6 @@ from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 __all__ = [
     "append_new_pages",
     "verify_page_index_cache_is_valid",
-    "create_card",
     "card_container_with",
     "card_container_with_name",
     "append_new_card_in_page",
@@ -53,12 +52,6 @@ def verify_page_index_cache_is_valid(document):
         is_(equal_to(expected_index)),
         "Index of page id to page number not updated properly"
     )
-
-
-def create_card(name: str, size: CardSize = CardSizes.REGULAR, image_uri: str = "", pixmap: QPixmap = None) -> Card:
-    """Creates a Card with given name and size. Most properties are empty."""
-    return Card(name, MTGSet("", ""), "", "", "", True, "", image_uri, True, size, 0, False, pixmap)
-
 
 def card_container_with(card: AnyCardType, parent: Page):
     """Hamcrest matcher for a CardContainer."""

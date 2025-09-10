@@ -19,17 +19,16 @@ from functools import partial
 import math
 from typing import Any, NamedTuple
 
-import pint
 from PySide6.QtCore import Slot, Qt, Signal
 from PySide6.QtGui import QPageSize, QPageLayout, QColor
 from PySide6.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QColorDialog, \
     QLabel, QSlider, QPushButton, QComboBox
-
+from pint.registry import Unit, Quantity
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, \
-    PageType, unit_registry, ConfigParser, PageSizeManager, Unit
+    PageType, unit_registry, ConfigParser, PageSizeManager
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -41,6 +40,8 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 CheckState = Qt.CheckState
+UserRole = Qt.ItemDataRole.UserRole
+NameFormat = QColor.NameFormat
 DISTANCE_UNIT = unit_registry.UnitsContainer({"[length]": 1})
 mm = unit_registry.mm
 degree = unit_registry.degree
@@ -56,15 +57,16 @@ class ColorEditorWidgets(NamedTuple):
 
 
 def is_pint_distance(value: Any) -> bool:
-    return isinstance(value, pint.Quantity) and value.dimensionality == DISTANCE_UNIT
+    return isinstance(value, Quantity) and value.dimensionality == DISTANCE_UNIT
+
 
 
 def is_pint_angle(value: Any) -> bool:
-    return isinstance(value, pint.Quantity) and value.units == degree
+    return isinstance(value, Quantity) and value.units == degree
 
 
 def is_pint_point(value: Any) -> bool:
-    return isinstance(value, pint.Quantity) and value.units == point
+    return isinstance(value, Quantity) and value.units == point
 
 
 class PageConfigWidget(QGroupBox):
@@ -96,7 +98,6 @@ class PageConfigWidget(QGroupBox):
         ui.print_registration_marks_style.addItem(
             self.tr("Silhouette cutter (Cameo-compatible)",
                     "A print/cut registration marker style"), "Cut marker")
-        "Cut marker"
         ui.print_registration_marks_style.currentIndexChanged.connect(self._on_print_registration_marks_style_changed)
         ui.print_registration_marks_style.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
@@ -181,13 +182,13 @@ class PageConfigWidget(QGroupBox):
         ui.custom_page_width.setEnabled(custom_paper_size_selected)  # 3 UI elements for custom paper sizes
         ui.custom_page_height.setEnabled(custom_paper_size_selected)
         ui.flip_page_dimensions.setEnabled(custom_paper_size_selected)
-        selected_paper_size_item: QPageSize.PageSizeId = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
+        selected_paper_size_item: QPageSize.PageSizeId = ui.paper_size.currentData(UserRole)
         self.page_layout.paper_size = PageSizeManager.PageSizeReverse[selected_paper_size_item]
 
     @Slot()
     def _on_paper_orientation_changed(self):
         ui = self.ui
-        orientation: QPageLayout.Orientation = ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
+        orientation: QPageLayout.Orientation = ui.paper_orientation.currentData(UserRole)
         self.page_layout.paper_orientation = PageSizeManager.PageOrientationReverse[orientation]
 
     @Slot(int)
@@ -289,9 +290,9 @@ class PageConfigWidget(QGroupBox):
         ui = self.ui
         if not ui.paper_size.currentIndex():
             return ui.custom_page_height.value()
-        page_size: QPageSize.PageSizeId = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
+        page_size: QPageSize.PageSizeId = ui.paper_size.currentData(UserRole)
         size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
-        orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)]
+        orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(UserRole)]
         return size.height() if orientation == "Portrait" else size.width()
 
     def _current_page_width(self) -> float:
@@ -299,9 +300,9 @@ class PageConfigWidget(QGroupBox):
         ui = self.ui
         if not ui.paper_size.currentIndex():
             return ui.custom_page_width.value()
-        page_size: QPageSize.PageSizeId = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
+        page_size: QPageSize.PageSizeId = ui.paper_size.currentData(UserRole)
         size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
-        orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)]
+        orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(UserRole)]
         return size.width() if orientation == "Portrait" else size.height()
 
     def load_document_settings_from_config(self, new_config: ConfigParser):
@@ -339,7 +340,7 @@ class PageConfigWidget(QGroupBox):
         #  it may pass invalid state (160|160) in between, which would trigger a reset
         #  or unwanted value clamping.
         for spinbox, setting, unit in self._get_numerical_settings_widgets():
-            value = getattr(other, name := spinbox.objectName())
+            value: Quantity | bool | str | QColor = getattr(other, name := spinbox.objectName())
             with BlockedSignals(spinbox):
                 spinbox.setValue(value.magnitude)
             value = spinbox.value()*value.units
@@ -367,7 +368,7 @@ class PageConfigWidget(QGroupBox):
 
     @staticmethod
     def _show_color(label: QLabel, opacity_slider: QSlider, color: QColor):
-        sheet = "QLabel {" + f"background-color: {color.name(QColor.NameFormat.HexArgb)}" + "}"
+        sheet = "QLabel {" + f"background-color: {color.name(NameFormat.HexArgb)}" + "}"
         label.setStyleSheet(sheet)
         if opacity_slider.value() != color.alpha():
             opacity_slider.setValue(color.alpha())
@@ -394,7 +395,7 @@ class PageConfigWidget(QGroupBox):
     def _set_combo_box_current_item_to_given_item(combo_box: QComboBox, user_data_item: Any):
         model = combo_box.model()
         for row in range(model.rowCount()):
-            if model.data(model.index(row, 0), Qt.ItemDataRole.UserRole) == user_data_item:
+            if model.data(model.index(row, 0), UserRole) == user_data_item:
                 # Blocks premature execution of validation logic triggered via change signals
                 # that should not run *right now*.
                 with BlockedSignals(combo_box):
@@ -413,7 +414,7 @@ class PageConfigWidget(QGroupBox):
         documents_section["cut-marker-style"] = self.page_layout.cut_marker_style
         documents_section["print-registration-marks-style"] = self.page_layout.print_registration_marks_style
         documents_section["watermark-color"] = self.page_layout.watermark_color.name(QColor.NameFormat.HexArgb)
-        documents_section["cut-marker-color"] = self.page_layout.cut_marker_color.name(QColor.NameFormat.HexArgb)
+        documents_section["cut-marker-color"] = self.page_layout.cut_marker_color.name(NameFormat.HexArgb)
         documents_section["paper-size"] = PageSizeManager.PageSizeReverse[self._current_page_size()]
         documents_section["paper-orientation"] = PageSizeManager.PageOrientationReverse[self._current_page_orientation()]
         logger.debug("Saving done.")
@@ -470,7 +471,7 @@ class PageConfigWidget(QGroupBox):
         return widgets_with_settings
 
     def _current_page_size(self) -> QPageSize.PageSizeId:
-        return self.ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
+        return self.ui.paper_size.currentData(UserRole)
 
     def _current_page_orientation(self) -> QPageLayout.Orientation:
         return self.ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
@@ -479,7 +480,7 @@ class PageConfigWidget(QGroupBox):
         return self.ui.cut_marker_style.currentData(Qt.ItemDataRole.UserRole)
 
     def _current_print_registration_marks_style(self) -> str:
-        return self.ui.print_registration_marks_style.currentData(Qt.ItemDataRole.UserRole)
+        return self.ui.print_registration_marks_style.currentData(UserRole)
 
     @functools.singledispatchmethod
     def highlight_differing_settings(self, to_compare: ConfigParser | PageLayoutSettings):

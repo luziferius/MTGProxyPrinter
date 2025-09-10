@@ -18,6 +18,8 @@ import functools
 import pathlib
 import typing
 
+from PySide6.QtCore import QObject
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.page_layout import PageLayoutSettings
     from mtg_proxy_printer.model.document import Document
@@ -40,8 +42,10 @@ __all__ = [
 class ActionLoadDocument(DocumentAction):
     COMPARISON_ATTRIBUTES = ["save_path", "loaded_cards", "page_layout"]
 
-    def __init__(self, save_path: pathlib.Path, loaded_cards: list[CardList], page_layout: "PageLayoutSettings"):
-        super().__init__()
+    def __init__(
+            self, save_path: pathlib.Path, loaded_cards: list[CardList],
+            page_layout: "PageLayoutSettings", parent: QObject = None):
+        super().__init__(parent)
         self.save_path = save_path
         self.page_layout = page_layout
         self.actions: ActionList = []
@@ -53,6 +57,7 @@ class ActionLoadDocument(DocumentAction):
         self.actions.append(ActionNewDocument().apply(document))
         self.actions.append(ActionEditDocumentSettings(self.page_layout).apply(document))
         document.set_currently_edited_page(document.pages[0])
+        document.save_file_path = self.save_path
         if self.loaded_cards:
             self.actions.append(ActionNewPage(count=len(self.loaded_cards), content=self.loaded_cards).apply(document))
             self.actions.append(ActionRemovePage(0).apply(document))
@@ -62,7 +67,7 @@ class ActionLoadDocument(DocumentAction):
         for action in reversed(self.actions):
             action.undo(document)
         self.actions.clear()
-        return self
+        return super().undo(document)
 
     @functools.cached_property
     def as_str(self):

@@ -15,6 +15,8 @@
 
 import functools
 
+from PySide6.QtCore import QObject
+
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import PageType
 from ._interface import DocumentAction, IllegalStateError, ActionList, Self
@@ -41,15 +43,15 @@ class ActionCompactDocument(DocumentAction):
     """
     COMPARISON_ATTRIBUTES = ["actions"]
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent: QObject = None):
+        super().__init__(parent)
         self.actions: ActionList = []
 
     def apply(self, document: Document) -> Self:
         if self.actions:
             raise IllegalStateError("Cannot apply action twice")
         if document.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
-            return self
+            return super().apply(document)
         logger.info("Compacting document.")
         self._compact_pages_of_type(document, PageType.REGULAR)
         self._compact_pages_of_type(document, PageType.OVERSIZED)
@@ -100,7 +102,7 @@ class ActionCompactDocument(DocumentAction):
         for action in reversed(self.actions):
             action.undo(document)
         self.actions.clear()
-        return self
+        return super().undo(document)
 
     @functools.cached_property
     def as_str(self):

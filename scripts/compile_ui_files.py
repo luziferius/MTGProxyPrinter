@@ -159,7 +159,7 @@ def build_class_registry(package_path: Path) -> ClassRegistry:
         content = py_file.read_text("utf-8")
         root_node = ast.parse(content, py_file)
         for class_def in type_filter(root_node.body, ast.ClassDef):
-            result[class_def.name] = ast.ImportFrom(module_path, [ast.alias(class_def.name)])
+            result[class_def.name] = ast.ImportFrom(module_path, [ast.alias(class_def.name)], 0)
     return result
 
 

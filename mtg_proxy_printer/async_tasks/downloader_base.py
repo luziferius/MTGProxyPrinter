@@ -16,10 +16,10 @@
 
 import gzip
 
-from PySide6.QtCore import QObject, Signal
-
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.async_tasks.base import AsyncTask
+
 logger = get_logger(__name__)
 del get_logger
 
@@ -27,16 +27,10 @@ del get_logger
 supported_encodings = ("gzip", "identity")
 
 
-class DownloaderBase(QObject):
+class DownloaderBase(AsyncTask):
     """
     Base class for classes that are able to download data from the Internet.
     """
-
-    other_error_occurred = Signal(str)  # Emitted when database population failed due to non-network issues.
-    network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
-    download_finished = Signal()  # Emitted when the input data is exhausted and processing finished
-    download_begins = Signal(int, str)  # Emitted when the download starts. Data represents the expected total data
-    download_progress = Signal(int)  # Emits the total number of processed data after processing each item
 
     def read_from_url(self, url: str, ui_hint: str = ""):
         """
@@ -57,10 +51,10 @@ class DownloaderBase(QObject):
 
     def _open_url(self, url: str, ui_hint: str) -> mtg_proxy_printer.http_file.MeteredSeekableHTTPFile:
         headers = {"Accept-Encoding": ", ".join(supported_encodings)}
-        response = mtg_proxy_printer.http_file.MeteredSeekableHTTPFile(url, headers, self, ui_hint=ui_hint)
+        response = mtg_proxy_printer.http_file.MeteredSeekableHTTPFile(url, headers, ui_hint=ui_hint)
         if (response_code := response.getcode()) >= 300:
             raise RuntimeError(f"Error from server! Error code: {response_code}")
         if ui_hint:  # Without a display text for the UI, there is no meaningful progress report. So skip if not given
-            response.total_bytes_processed.connect(self.download_progress)
-            response.io_begin.connect(self.download_begins)
+            response.total_bytes_processed.connect(self.set_progress)
+            response.io_begin.connect(self.task_begins)
         return response

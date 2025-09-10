@@ -20,11 +20,11 @@ import pint
 import pytest
 from hamcrest import *
 
-import mtg_proxy_printer.model.document_loader
+import mtg_proxy_printer.async_tasks.document_loader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.document_loader import SAVE_FILE_MAGIC_NUMBER, CardType
+from mtg_proxy_printer.async_tasks.document_loader import SAVE_FILE_MAGIC_NUMBER, CardType
 import mtg_proxy_printer.save_file_migrations
 from mtg_proxy_printer.units_and_sizes import unit_registry
 

@@ -18,6 +18,8 @@ import functools
 import itertools
 import typing
 
+from PySide6.QtCore import QObject
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.decklist_parser.common import CardCounter
     from mtg_proxy_printer.model.document import Document
@@ -39,8 +41,8 @@ class ActionImportDeckList(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["cards", "clear_document", "actions"]
 
-    def __init__(self, cards: "CardCounter", clear_document: bool):
-        super().__init__()
+    def __init__(self, cards: "CardCounter", clear_document: bool, parent: QObject = None):
+        super().__init__(parent)
         self.cards = cards
         self.clear_document = clear_document
         self.actions: ActionList = []
@@ -65,7 +67,7 @@ class ActionImportDeckList(DocumentAction):
         for action in reversed(self.actions):
             action.undo(document)
         self.actions.clear()
-        return self
+        return super().undo(document)
 
     def card_count(self) -> int:
         """Returns the number of cards added by this action"""

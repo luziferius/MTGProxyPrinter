@@ -22,9 +22,8 @@ import platform
 import shutil
 import sys
 from tempfile import mkdtemp
-import typing
 
-from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo
+from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo, Qt
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QIcon
 
@@ -34,19 +33,23 @@ import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.carddb_migrations
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
-from mtg_proxy_printer.carddb_migrations import DatabaseMigrationRunner
-from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.card_info_downloader import FileStreamTask, DatabaseImportTask
+from mtg_proxy_printer.carddb_migrations import DatabaseMigrationTask
+from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer import settings
-from mtg_proxy_printer.update_checker import UpdateChecker
-import mtg_proxy_printer.card_info_downloader
+from mtg_proxy_printer.async_tasks.update_checker import UpdateChecker
+import mtg_proxy_printer.async_tasks.card_info_downloader
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
 import mtg_proxy_printer.progress_meter
-from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.async_tasks.base import AsyncTask, AsyncTaskRunner
 from mtg_proxy_printer.logger import get_logger
+
 logger = get_logger(__name__)
 del get_logger
+BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 
 __all__ = [
     "Application",
@@ -75,16 +78,16 @@ class Application(QApplication):
         self._setup_icons()
         self.language_model = self._create_language_model()  # TODO: Can this be removed?
         self.card_db, self.image_db = self._open_databases(args)
-        self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
         self.document = self._create_document_instance(self.card_db, self.image_db)
         logger.debug("Creating GUI")
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
-            self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
+            self.card_db, self.image_db, self.document, self.language_model
         )
+        self.main_window.request_run_async_task.connect(self.run_async_task)
         self.update_checker = self._create_update_checker(args)
         self.main_window.ui.action_download_card_data.setEnabled(False)
         self.settings_window = self._create_settings_window(
-            self.language_model, self.document, self.main_window, self.card_info_downloader)
+            self.language_model, self.document, self.main_window)
         if settings.settings["gui"].getboolean("gui-open-maximized"):
             self.main_window.showMaximized()
         else:
@@ -110,11 +113,9 @@ class Application(QApplication):
             QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
         logger.debug("Enqueueing update check")
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
-
-        card_db_migration_runner = DatabaseMigrationRunner(self.card_db)
-        card_db_migration_runner.connect_main_window_signals(self.main_window)
-        card_db_migration_runner.total_update_signals.update_completed.connect(self._on_carddb_migrations_completed)
-        QThreadPool.globalInstance().start(card_db_migration_runner)
+        task = DatabaseMigrationTask(self.card_db)
+        task.task_completed.connect(self._on_carddb_migrations_completed)
+        self.run_async_task(task)
 
     @Slot()
     def _on_carddb_migrations_completed(self):
@@ -122,9 +123,8 @@ class Application(QApplication):
         logger.debug(
             "Card database migrations completed. Database re-opened. Checking if the printing filters need updates.")
         printing_filter_updater_runner = PrintingFilterUpdater(self.card_db)
-        printing_filter_updater_runner.connect_main_window_signals(self.main_window)
-        printing_filter_updater_runner.signals.update_completed.connect(self._on_printing_filter_updater_completed)
-        QThreadPool.globalInstance().start(printing_filter_updater_runner)
+        printing_filter_updater_runner.task_completed.connect(self._on_printing_filter_updater_completed)
+        self.run_async_task(printing_filter_updater_runner)
 
     @Slot()
     def _on_printing_filter_updater_completed(self):
@@ -138,13 +138,14 @@ class Application(QApplication):
         args = self.args
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
-            self.card_info_downloader.import_from_file(args.card_data)
+            self.run_async_task(data_source := FileStreamTask(args.card_data))
+            self.run_async_task(DatabaseImportTask(data_source, carddb_path=self.card_db.db_path))
         elif not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
         if args.file is not None:
             if args.file.is_file():
-                QTimer.singleShot(0, partial(self.document.loader.load_document, args.file))
+                QTimer.singleShot(0, lambda: self.run_async_task(DocumentLoader(self.document, args.file)))
                 logger.info(f'Enqueued loading of document "{args.file}"')
             elif args.file.exists():
                 logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
@@ -166,35 +167,42 @@ class Application(QApplication):
         image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         return card_db, image_db
 
-    @staticmethod
     def _create_settings_window(
-            language_model: QStringListModel, document: mtg_proxy_printer.model.document.Document,
-            main_window: mtg_proxy_printer.ui.main_window.MainWindow,
-            card_info_downloader: mtg_proxy_printer.card_info_downloader.CardInfoDownloader):
+            self, language_model: QStringListModel, document: mtg_proxy_printer.model.document.Document,
+            main_window: mtg_proxy_printer.ui.main_window.MainWindow):
         settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             language_model, document, main_window)
+        settings_window.request_run_async_task.connect(self.run_async_task)
         settings_window.custom_card_corner_style_changed.connect(document.on_custom_card_corner_style_changed)
         settings_window.document_settings_updated.connect(document.apply)
         settings_window.preferred_language_changed.connect(
             main_window.ui.central_widget.ui.add_card_widget.on_settings_preferred_language_changed)
-        settings_window.requested_card_download.connect(card_info_downloader.download_to_file)
-        settings_window.long_running_process_begins.connect(main_window.progress_bars.begin_outer_progress)
-        settings_window.process_updated.connect(main_window.progress_bars.set_outer_progress)
-        settings_window.process_finished.connect(main_window.progress_bars.end_outer_progress)
-        settings_window.error_occurred.connect(main_window.on_error_occurred)
-
         main_window.ui.action_show_settings.triggered.connect(
             partial(mtg_proxy_printer.ui.common.show_wizard_or_dialog, settings_window))
         return settings_window
+
+    @Slot(AsyncTask)
+    def run_async_task(self, task: AsyncTask):
+        logger.debug(f"Received task to schedule: {task}")
+        main_window = self.main_window
+        task.ui_lock_acquire.connect(main_window.ui_lock_acquire)
+        task.ui_lock_release.connect(main_window.ui_lock_release)
+        task.error_occurred.connect(main_window.on_error_occurred)
+        task.network_error_occurred.connect(main_window.on_network_error_occurred)
+        if hasattr(task, "request_action"):
+            task.request_action.connect(self.document.apply, BlockingQueuedConnection)
+        if task.report_progress:
+            main_window.progress_bar_manager.add_task(task)
+        logger.debug(f"Starting task {task}")
+        QThreadPool.globalInstance().start(AsyncTaskRunner(task))
 
     def _create_document_instance(
             self,
             card_db: mtg_proxy_printer.model.carddb.CardDatabase,
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
-        document.request_fill_image_for_action.connect(image_db.fill_document_action_image)
-        image_db.request_action.connect(document.apply)
-        image_db.download_worker.missing_image_obtained.connect(document.on_missing_image_obtained)
+        document.request_run_async_task.connect(self.run_async_task)
+        image_db.missing_image_obtained.connect(document.on_missing_image_obtained)
         return document
 
     def _create_language_model(self):
@@ -204,6 +212,7 @@ class Application(QApplication):
 
     def _create_update_checker(self, args: Namespace) -> UpdateChecker:
         update_checker = UpdateChecker(self.card_db, args, self)
+        update_checker.request_run_async_task.connect(self.run_async_task)
         update_checker.network_error_occurred.connect(self.main_window.on_network_error_occurred)
         update_checker.card_data_update_found.connect(self.main_window.show_card_data_update_available_message_box)
         update_checker.application_update_found.connect(self.main_window.show_application_update_available_message_box)
@@ -275,7 +284,7 @@ class Application(QApplication):
         self.main_window.hide()
         self.main_window.close()
         self.closeAllWindows()
-        Runnable.cancel_all_runners()
+        AsyncTaskRunner.cancel_all_tasks()
         logger.debug("All windows closed. Waiting for background threads to finish")
         pool = QThreadPool.globalInstance()
         pool.clear()

@@ -18,21 +18,22 @@ import random
 import re
 import socket
 import sqlite3
-import typing
+import ssl
 import urllib.parse
 import urllib.error
 
 import ijson
-from PySide6.QtCore import QObject, Signal, QThreadPool
+from PySide6.QtCore import QObject, Signal
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer import settings
+from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME
-from mtg_proxy_printer.card_info_downloader import ApiStreamWorker, CardInfoWorkerBase
+from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
-from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import OptStr
 
@@ -51,13 +52,13 @@ KNOWN_APPLICATION_MIRRORS: list[str] = [
 ]
 
 
-class CardDataUpdateCheckWorker(ApiStreamWorker):
+class CardDataUpdateCheckTask(ApiStreamTask):
     card_data_update_found = Signal(int)
 
-    def __init__(self, parent: CardDatabase):
-        super().__init__(parent)
-        self.card_db = parent
-        self._db = None
+    def __init__(self, card_db: CardDatabase, db: sqlite3.Connection = None):
+        super().__init__()
+        self.card_db = card_db
+        self._db = db
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -68,7 +69,6 @@ class CardDataUpdateCheckWorker(ApiStreamWorker):
             logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
             self._db = open_database(self.card_db.db_path, SCHEMA_NAME)
         return self._db
-
 
     def perform_card_data_update_check(self):
         if not self.card_database_has_data():
@@ -105,30 +105,25 @@ class CardDataUpdateCheckWorker(ApiStreamWorker):
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
         return bool(result)
 
+    def run(self):
+        try:
+            self.perform_card_data_update_check()
+        except ValueError:
+            logger.info("Card data update check cancelled.")
+        except ssl.SSLError as e:
+            logger.exception(f"Update check failed: {e}")
 
-class CardDataUpdateCheckRunner(Runnable):
 
-    def __init__(self, parent: "UpdateChecker"):
-        super().__init__()
-        self.parent = parent
+class ApplicationUpdateCheckTask(DownloaderBase):
+    application_update_found = Signal(str)
 
     def run(self):
         try:
-            self._perform_check()
+            self.perform_application_update_check()
         except ValueError:
-            logger.info("Card data update check cancelled.")
-        finally:
-            self.release_instance()
-
-    def _perform_check(self):
-        worker = CardDataUpdateCheckWorker(self.parent.card_db)
-        worker.card_data_update_found.connect(self.parent.card_data_update_found)
-        worker.network_error_occurred.connect(self.parent.network_error_occurred)
-        worker.perform_card_data_update_check()
-
-
-class ApplicationUpdateCheckWorker(CardInfoWorkerBase):
-    application_update_found = Signal(str)
+            logger.info("Application update check cancelled.")
+        except ssl.SSLError as e:
+            logger.exception(f"Update check failed: {e}")
 
     def perform_application_update_check(self):
         logger.info("Checking for application updates.")
@@ -166,7 +161,7 @@ class ApplicationUpdateCheckWorker(CardInfoWorkerBase):
         return tags
 
     def _read_available_application_versions_from_mirror(self, mirror):
-        data, _ = self.read_from_url(f"{mirror}/json/tag/list/")
+        data, _ = self.read_from_url(f"{mirror}/json/tag/list/", self.tr("Application update check: "))
         items = ijson.items(data, "payload.tags.item", use_float=True)
         matches = filter(
             None,
@@ -175,32 +170,12 @@ class ApplicationUpdateCheckWorker(CardInfoWorkerBase):
         return natural_sorted((match["version"] for match in matches), reverse=True)
 
 
-class ApplicationUpdateCheckRunner(Runnable):
-
-    def __init__(self, parent: "UpdateChecker"):
-        super().__init__()
-        self.parent = parent
-
-    def run(self):
-        try:
-            self._perform_check()
-        except ValueError:
-            logger.info("Application update check cancelled.")
-        finally:
-            self.release_instance()
-
-    def _perform_check(self):
-        self.worker = worker = ApplicationUpdateCheckWorker()
-        worker.application_update_found.connect(self.parent.application_update_found)
-        worker.network_error_occurred.connect(self.parent.network_error_occurred)
-        worker.perform_application_update_check()
-
-
 class UpdateChecker(QObject):
     """The interface class."""
     card_data_update_found = Signal(int)
     application_update_found = Signal(str)
     network_error_occurred = Signal(str)
+    request_run_async_task = Signal(AsyncTask)
 
     def __init__(self, card_db: CardDatabase, args: Namespace, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
@@ -214,11 +189,17 @@ class UpdateChecker(QObject):
         section = settings.settings["update-checks"]
         if section.getboolean("check-for-application-updates"):
             logger.debug("Enqueue application update check")
-            QThreadPool.globalInstance().start(ApplicationUpdateCheckRunner(self))
+            task = ApplicationUpdateCheckTask()
+            task.network_error_occurred.connect(self.network_error_occurred)
+            task.application_update_found.connect(self.application_update_found)
+            self.request_run_async_task.emit(task)
         else:
             logger.info("Not running application update check")
         if not self.card_data_parameter_passed and section.getboolean("check-for-card-data-updates"):
             logger.debug("Enqueue card data update check")
-            QThreadPool.globalInstance().start(CardDataUpdateCheckRunner(self))
+            task = CardDataUpdateCheckTask(self.card_db)
+            task.network_error_occurred.connect(self.network_error_occurred)
+            task.card_data_update_found.connect(self.card_data_update_found)
+            self.request_run_async_task.emit(task)
         else:
             logger.info("Not running card data update check")

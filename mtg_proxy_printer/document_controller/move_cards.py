@@ -13,12 +13,12 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+from collections.abc import Sequence
 import functools
 import itertools
 import typing
 
-from PySide6.QtCore import QModelIndex
+from PySide6.QtCore import QModelIndex, QObject
 
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
@@ -42,7 +42,9 @@ class ActionMoveCards(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["source_page", "target_page", "card_ranges_to_move"]
 
-    def __init__(self, source: int, cards_to_move: typing.Sequence[int], target_page: int, target_row: int = None):
+    def __init__(
+            self, source: int, cards_to_move: Sequence[int],
+            target_page: int, target_row: int = None, parent: QObject = None):
         """
         :param source: The source page, as integer page number (0-indexed)
         :param cards_to_move: The cards to move, as indices into the source Page. May be in any order. (0-indexed)
@@ -50,7 +52,7 @@ class ActionMoveCards(DocumentAction):
         :param target_row: If given, the cards_to_move are inserted at that array index (0-indexed).
                            Existing cards in the target page at that index are pushed back.
         """
-        super().__init__()
+        super().__init__(parent)
         self.source_page = source
         self.target_page = target_page
         self.target_row = target_row
@@ -115,10 +117,10 @@ class ActionMoveCards(DocumentAction):
             document.page_type_changed.emit(source_index)
         if target_page.page_type() != target_page_type:
             document.page_type_changed.emit(target_index)
-        return self
+        return super().undo(document)
 
     @staticmethod
-    def _to_list_of_ranges(sequence: typing.Sequence[int]) -> list[tuple[int, int]]:
+    def _to_list_of_ranges(sequence: Sequence[int]) -> list[tuple[int, int]]:
         ranges: list[tuple[int, int]] = []
         sequence = itertools.chain(sequence, (sentinel := object(),))
         lower = upper = next(sequence)

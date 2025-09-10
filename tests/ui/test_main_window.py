@@ -15,51 +15,60 @@
 
 
 from collections import Counter
+from collections.abc import Generator
 import pathlib
-import typing
 import unittest.mock
 
-from PySide6.QtCore import QStringListModel, QThreadPool
+from PySide6.QtCore import QStringListModel
 from PySide6.QtWidgets import QMessageBox
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 import pytest
 
 import mtg_proxy_printer.http_file
-import mtg_proxy_printer.downloader_base
-from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
+import mtg_proxy_printer.async_tasks.downloader_base
+import mtg_proxy_printer.async_tasks.card_info_downloader
+from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.ui.central_widget import Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, \
     Ui_TabbedCentralWidget
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 
-from tests.helpers import fill_card_database_with_json_cards
+from tests.helpers import fill_card_database_with_json_cards, AsyncTaskReceiver
 from tests.document_controller.helpers import insert_card_in_page
 StandardButton = QMessageBox.StandardButton
 
 
+def _create_task_receiver(main_window: MainWindow) -> AsyncTaskReceiver:
+    receiver = AsyncTaskReceiver(main_window)
+    main_window.request_run_async_task.connect(receiver.receive_task)
+    return receiver
+
+
 @pytest.fixture(params=[Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, Ui_TabbedCentralWidget])
-def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> typing.Generator[MainWindow, None, None]:
+def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Generator[MainWindow, None, None]:
     fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
     with unittest.mock.patch(
             "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",
             return_value=request.param), \
             unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "get_scryfall_bulk_card_data_url",
+                mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask, "get_scryfall_bulk_card_data_url",
                 return_value=(unittest.mock.MagicMock(), 10)), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.ApiStreamWorker, "read_json_card_data_from_url",
+                mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask, "read_json_card_data_from",
                 return_value=iter([10])):
-        cid = CardInfoDownloader(card_db)
-        main_window = MainWindow(card_db, cid, document.image_db, document, QStringListModel(["en"]))
+        main_window = MainWindow(card_db, document.image_db, document, QStringListModel(["en"]))
         qtbot.add_widget(main_window)
         with qtbot.wait_exposed(main_window, timeout=1000):
             main_window.show()
         yield main_window
         main_window.hide()
+
+        main_window.__dict__.clear()
 
 
 def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
@@ -67,47 +76,61 @@ def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, mai
     ui.action_download_card_data.setEnabled(False)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No), \
-        unittest.mock.patch(
-            "mtg_proxy_printer.card_info_downloader.DatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
-        unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start, \
-            qtbot.assertNotEmitted(main_window.loading_state_changed):
-        main_window.show_card_data_update_available_message_box(10000)
-    thread_pool_start.assert_not_called()
-    import_from_api.assert_not_called()
+        qtbot.assert_not_emitted(main_window.request_run_async_task):
+            main_window.show_card_data_update_available_message_box(10000)
 
 
 def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtBot, main_window: MainWindow):
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
+    received = _create_task_receiver(main_window)
     with unittest.mock.patch.object(
         mtg_proxy_printer.ui.main_window.QMessageBox,
-            "question", return_value=StandardButton.Yes) as message_box, \
-            unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start:
+            "question", return_value=StandardButton.Yes) as message_box:
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
-    thread_pool_start.assert_called_once()
+    assert_that(
+        received.tasks, contains_inanyorder(instance_of(ApiStreamTask), instance_of(DatabaseImportTask))
+    )
+
+
+def test_action_download_card_data_disables_itself(qtbot: QtBot, main_window: MainWindow):
+    ui = main_window.ui
+    ui.action_download_card_data.trigger()
+    assert_that(ui.action_download_card_data.isEnabled(), is_(False))
 
 
 def test_action_download_card_data_is_enabled_after_network_error(qtbot: QtBot, main_window: MainWindow):
     ui = main_window.ui
-    ui.action_download_card_data.setEnabled(False)
+    receiver = _create_task_receiver(main_window)
+    ui.action_download_card_data.trigger()
+    if ui.action_download_card_data.isEnabled():
+        pytest.skip("Test setup failed")
     with unittest.mock.patch.object(
         mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=StandardButton.Ok
     ) as warning_box:
-        main_window.card_data_downloader.network_error_occurred.emit("Test reason")
+        receiver.api_stream_task.network_error_occurred.emit("Test reason")
     warning_box.assert_called_once()
     assert_that(ui.action_download_card_data.isEnabled(), is_(True))
 
 
-def test_action_download_card_data_is_enabled_after_other_error(qtbot: QtBot, main_window: MainWindow):
+@pytest.mark.parametrize("task_raising_error", [ApiStreamTask, DatabaseImportTask])
+def test_action_download_card_data_is_enabled_after_other_error(
+        qtbot: QtBot, main_window: MainWindow, task_raising_error: type[AsyncTask]):
     ui = main_window.ui
-    ui.action_download_card_data.setEnabled(False)
-    with unittest.mock.patch.object(
-        mtg_proxy_printer.ui.main_window.QMessageBox, "critical", return_value=StandardButton.Ok
-    ) as warning_box:
-        main_window.card_data_downloader.other_error_occurred.emit("Test reason")
-    warning_box.assert_called_once()
+    receiver = _create_task_receiver(main_window)
+    ui.action_download_card_data.trigger()
+    if ui.action_download_card_data.isEnabled():
+        pytest.skip("Test setup failed")
+    failing_task = receiver.find_task(task_raising_error)
+    MB = mtg_proxy_printer.ui.main_window.QMessageBox
+    Ok = StandardButton.Ok
+    with (unittest.mock.patch.object(MB, "warning", return_value=Ok) as warning_box,  # Network error
+          unittest.mock.patch.object(MB, "critical", return_value=Ok) as error_box,  # Other error
+          ):
+        failing_task.error_occurred.emit("Test reason")
     assert_that(ui.action_download_card_data.isEnabled(), is_(True))
+    assert_that(warning_box.call_count+error_box.call_count, is_(1))
 
 
 def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
@@ -115,14 +138,13 @@ def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtB
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No) as message_box, \
-        unittest.mock.patch(
-            "mtg_proxy_printer.card_info_downloader.DatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
-            unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start, \
-            qtbot.assertNotEmitted(main_window.loading_state_changed):
+        unittest.mock.patch("mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask.run") as stream_run, \
+        unittest.mock.patch("mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask.run") as import_run, \
+            qtbot.assert_not_emitted(main_window.request_run_async_task):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
-    thread_pool_start.assert_not_called()
-    import_from_api.assert_not_called()
+    stream_run.assert_not_called()
+    import_run.assert_not_called()
     assert_that(ui.action_download_card_data.isEnabled(), is_(True))
 
 
@@ -130,12 +152,14 @@ def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtb
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
-        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.Yes
-    ) as message_box, \
-        unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start:
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.Yes
+            ) as message_box, \
+            qtbot.wait_signal(
+                main_window.request_run_async_task, check_params_cb=lambda task: isinstance(task, ApiStreamTask)), \
+            qtbot.wait_signal(
+                main_window.request_run_async_task, check_params_cb=lambda task: isinstance(task, DatabaseImportTask)):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
-    thread_pool_start.assert_called_once()
 
 
 def test_accepting_application_update_offer_opens_website_in_default_browser(main_window: MainWindow):

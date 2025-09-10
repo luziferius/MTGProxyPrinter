@@ -13,11 +13,13 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from functools import partial
+from typing import Callable
 
 from PySide6.QtCore import Slot, Qt
-from PySide6.QtWidgets import QWidget, QLabel, QProgressBar
+from PySide6.QtWidgets import QWidget,QHBoxLayout
 
-from mtg_proxy_printer.runner import ProgressSignalContainer
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 
 try:
     from mtg_proxy_printer.ui.generated.progress_bar import Ui_ProgressBar
@@ -32,99 +34,69 @@ del get_logger
 ConnectionType = Qt.ConnectionType
 QueuedConnection = ConnectionType.QueuedConnection
 __all__ = [
-    "ProgressBar",
+    "ProgressBarManager",
 ]
 
-
 class ProgressBar(QWidget):
+    def __init__(self, task: AsyncTask, parent: QWidget = None, flags=Qt.WindowType()):
+        super().__init__(parent, flags)
+        self.task = task
+        self.ui = ui = Ui_ProgressBar()
+        ui.setupUi(self)
+        policy = self.sizePolicy()
+        policy.setRetainSizeWhenHidden(True)  # Prevent jitter when batch tasks hide/show subtask progress bars.
+        self.setSizePolicy(policy)
+        ui.progress_bar.setValue(0)
+        ui.cancel_button.hide()
+        ui.cancel_button.clicked.connect(task.cancel)
+        task.task_begins.connect(self.begin_progress)
+        task.set_progress.connect(ui.progress_bar.setValue)
+        task.advance_progress.connect(self.advance_progress)
+        task.task_completed.connect(self.hide)
+        self.hide()
+
+    @Slot(int)
+    @Slot(int, str)
+    def begin_progress(self, upper_limit: int, ui_hint: str = ""):
+        ui = self.ui
+        self.show()  # Support re-use
+        label = ui.task_label
+        label.setText(ui_hint)
+        label.setVisible(bool(ui_hint))
+        progress_bar = ui.progress_bar
+        progress_bar.setMaximum(upper_limit)
+        progress_bar.show()  # Support re-use
+        ui.cancel_button.setVisible(self.task.can_cancel)
+
+    @Slot()
+    @Slot(int)
+    def advance_progress(self, amount: int = 1):
+        bar = self.ui.progress_bar
+        bar.setValue(bar.value() + amount)
+
+
+class ProgressBarManager(QWidget):
+    """Displays progress bars of currently running async tasks in the status bar."""
+    layout: Callable[[], QHBoxLayout]
 
     def __init__(self, parent: QWidget = None, flags=Qt.WindowType.Widget):
         super().__init__(parent, flags)
-        self.ui = ui = Ui_ProgressBar()
-        ui.setupUi(self)
-        self.set_outer_progress = ui.outer_progress_bar.setValue
-        self.set_inner_progress = ui.inner_progress_bar.setValue
-        self.set_independent_progress = ui.independent_bar.setValue
-        for item in (ui.inner_progress_bar, ui.inner_progress_label):
-            self._set_retain_size_policy(item, True)
-            item.hide()
-        for item in (ui.outer_progress_bar, ui.outer_progress_label, ui.independent_bar, ui.independent_label):
-            item.hide()
+        self.setLayout(self._setup_layout())
 
-    def connect_inner_progress(self, sender: ProgressSignalContainer, con_type: ConnectionType = QueuedConnection):
-        self._connect_progress_slots(
-            sender, con_type,
-            self.begin_inner_progress, self.set_inner_progress, self.end_inner_progress
-        )
+    def _setup_layout(self) -> QHBoxLayout:
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        return layout
 
-    def connect_outer_progress(self, sender: ProgressSignalContainer, con_type: ConnectionType = QueuedConnection):
-        self._connect_progress_slots(
-            sender, con_type,
-            self.begin_outer_progress, self.set_outer_progress, self.end_outer_progress
-        )
-
-    def connect_independent_progress(self, sender: ProgressSignalContainer, con_type: ConnectionType = QueuedConnection):
-        self._connect_progress_slots(
-            sender, con_type,
-            self.begin_independent_progress, self.set_independent_progress, self.end_independent_progress
-        )
-
-    @staticmethod
-    def _connect_progress_slots(
-            sender: ProgressSignalContainer, con_type: ConnectionType, begin_slot, progress_slot, end_slot):
-        sender.begin_update.connect(begin_slot, con_type)
-        sender.progress.connect(progress_slot, con_type)
-        sender.update_completed.connect(end_slot, con_type)
-
-    @staticmethod
-    def _set_retain_size_policy(widget: QWidget, value: bool):
-        policy = widget.sizePolicy()
-        policy.setRetainSizeWhenHidden(value)
-        widget.setSizePolicy(policy)
-
-    @Slot(int)
-    @Slot(int, str)
-    def begin_outer_progress(self, upper_limit: int, ui_hint: str = ""):
-        self._begin_progress(self.ui.outer_progress_bar, self.ui.outer_progress_label, upper_limit, ui_hint)
-
-    @Slot(int)
-    @Slot(int, str)
-    def begin_inner_progress(self, upper_limit: int, ui_hint: str = ""):
-        self._begin_progress(self.ui.inner_progress_bar, self.ui.inner_progress_label, upper_limit, ui_hint)
-
-    @Slot(int)
-    @Slot(int, str)
-    def begin_independent_progress(self, upper_limit: int, ui_hint: str = ""):
-        self._begin_progress(self.ui.independent_bar, self.ui.independent_label, upper_limit, ui_hint)
-
-    @staticmethod
-    def _begin_progress(progress_bar: QProgressBar, label: QLabel, upper_limit: int, ui_hint: str):
-        label.setText(ui_hint)
-        label.setVisible(bool(ui_hint))
-        progress_bar.setValue(0)
-        progress_bar.setMaximum(upper_limit)
-        progress_bar.setVisible(True)
-
-    @Slot()
-    def end_outer_progress(self):
-        progress_bar = self.ui.outer_progress_bar
-        if (current := progress_bar.value()) != (maximum := progress_bar.maximum()):
-            logger.warning(f"Outer progress bar missed 100% upon completion. {current=}, {maximum=}")
-        progress_bar.hide()
-        self.ui.outer_progress_label.hide()
-
-    @Slot()
-    def end_inner_progress(self):
-        progress_bar = self.ui.inner_progress_bar
-        if (current := progress_bar.value()) != (maximum := progress_bar.maximum()):
-            logger.warning(f"Inner progress bar missed 100% upon completion. {current=}, {maximum=}")
-        progress_bar.hide()
-        self.ui.inner_progress_label.hide()
-
-    @Slot()
-    def end_independent_progress(self):
-        progress_bar = self.ui.independent_bar
-        if (current := progress_bar.value()) != (maximum := progress_bar.maximum()):
-            logger.warning(f"Independent progress bar missed 100% upon completion. {current=}, {maximum=}")
-        progress_bar.hide()
-        self.ui.independent_label.hide()
+    @Slot(AsyncTask)
+    def add_task(self, task: AsyncTask):
+        """Create a new progress bar for the given task"""
+        logger.debug(f"Adding progress bar for task {task}")
+        bar = ProgressBar(task, self)
+        layout = self.layout()
+        task.request_register_subtask.connect(lambda subtask: logger.debug(f"Registering subtask {subtask}"))
+        task.request_register_subtask.connect(self.add_task)
+        task.task_deleted.connect(lambda: logger.debug(f"Deleting progress bar for task {task}"))
+        task.task_deleted.connect(partial(layout.removeWidget, bar))
+        task.task_deleted.connect(partial(bar.setParent, None))
+        layout.insertWidget(0, bar)

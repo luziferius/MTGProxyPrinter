@@ -13,10 +13,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Iterable
 import dataclasses
 import itertools
 import math
-import typing
+from typing import TYPE_CHECKING, Any
 
 from pint import Quantity
 from PySide6.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
@@ -26,9 +27,8 @@ import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, \
-    distance_to_mm
-if typing.TYPE_CHECKING:
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, distance_to_mm
+if TYPE_CHECKING:
     from mtg_proxy_printer.page_scene.page_scene import RenderMode
 logger = get_logger(__name__)
 del get_logger
@@ -39,7 +39,8 @@ __all__ = [
 ]
 
 
-def _is_quantity_setting(pair: tuple[str, typing.Any]):
+
+def _is_quantity_setting(pair: tuple[str, Any]):
     return isinstance(pair[1], Quantity)
 
 
@@ -179,7 +180,7 @@ class PageLayoutSettings:
         return settings, dimensions
 
     @staticmethod
-    def _setting_to_str(key: str, value: typing.Any) -> tuple[str, str]:
+    def _setting_to_str(key: str, value: Any) -> tuple[str, str]:
         if isinstance(value, str):
             pass
         elif isinstance(value, QColor):
@@ -206,7 +207,7 @@ class PageLayoutSettings:
             or self.compute_page_card_capacity(PageType.OVERSIZED) \
             > other.compute_page_card_capacity(PageType.OVERSIZED)
 
-    def update(self, other: typing.Iterable[tuple[str, typing.Any]]):
+    def update(self, other: Iterable[tuple[str, Any]]):
         known_keys = set(self.__annotations__.keys())
         for key, value in other:
             if key in known_keys:
@@ -235,7 +236,7 @@ class PageLayoutSettings:
             return 0
         cards = 1 + math.floor(
             (available_height - card_height) /
-                (card_height + distance_to_mm(self.row_spacing))
+            (card_height + distance_to_mm(self.row_spacing))
         )
         return cards
 

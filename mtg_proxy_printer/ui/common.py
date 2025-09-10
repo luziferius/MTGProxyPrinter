@@ -88,7 +88,7 @@ def show_wizard_or_dialog(wizard: QDialog | QWizard):
     """
     Shows a wizard or dialog.
     Uses the "wizards-open-maximized" setting to determine, if it should be shown as a small floating window or
-    show maximized.
+    shown maximized.
     """
     if mtg_proxy_printer.settings.settings["gui"].getboolean("wizards-open-maximized"):
         wizard.showMaximized()
@@ -160,10 +160,10 @@ def load_file(file_path_str: str, parent: QObject = None) -> bytes:
     if file.open(QIODevice.OpenModeFlag.ReadOnly):
         try:
             data = file.readAll().data()
+        except Exception:
+            logger.exception(f"Opening {full_file_path} failed")
         finally:
             file.close()
-        return data
-    logger.error(f"Opening {full_file_path} failed")
     return data
 
 

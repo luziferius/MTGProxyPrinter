@@ -16,15 +16,14 @@
 import itertools
 import unittest.mock
 
-from pint import Unit, Quantity
-
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
-import mtg_proxy_printer.model.document_loader
-import mtg_proxy_printer.model.page_layout
+import mtg_proxy_printer.async_tasks.document_loader
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, unit_registry, StrDict
 from mtg_proxy_printer.page_scene.page_scene import RenderMode
 
+from pint import Quantity
 from PySide6.QtGui import QPageLayout, QPageSize, QColorConstants
 from PySide6.QtCore import QMarginsF
 import pytest
@@ -33,8 +32,7 @@ from hamcrest import *
 from tests.hasgetter import has_getters
 from tests.helpers import quantity_close_to, close_to_
 
-PageLayoutSettings = mtg_proxy_printer.model.page_layout.PageLayoutSettings
-mm: Unit = unit_registry.mm
+mm = unit_registry.mm
 HexArgb = QColorConstants.Red.NameFormat.HexArgb
 
 @pytest.mark.parametrize("page_type, expected", [

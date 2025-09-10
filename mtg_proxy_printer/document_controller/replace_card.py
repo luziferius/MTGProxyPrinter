@@ -17,7 +17,7 @@
 import functools
 import typing
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QObject
 
 from ..model.card import Card
 
@@ -43,8 +43,8 @@ class ActionReplaceCard(DocumentAction):
     """
     COMPARISON_ATTRIBUTES = ["card", "old_card", "page", "slot"]
 
-    def __init__(self, new_card: Card, page: int, slot: int):
-        super().__init__()
+    def __init__(self, new_card: Card, page: int, slot: int, parent: QObject = None):
+        super().__init__(parent)
         self.card = new_card
         self.old_card: Card | None = None
         # The new card may have a different size than the old one. Most likely when the commander card of old
@@ -71,7 +71,7 @@ class ActionReplaceCard(DocumentAction):
             self._replace_card_in_document_with(document, self.old_card)
         self.old_card = None
         self.size_change_actions.clear()
-        return self
+        return super().undo(document)
 
     def _replace_card_in_document_with(self, document: "Document", replacement: Card):
         page_index = document.index(self.page, 0)

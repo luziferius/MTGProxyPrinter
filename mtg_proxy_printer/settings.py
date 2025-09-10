@@ -13,17 +13,16 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+from collections import defaultdict
+from collections.abc import Callable
 import logging
 import math
 import pathlib
 import re
 import typing
 import tokenize
-from collections import defaultdict
-from typing import Callable
 
-from pint import DimensionalityError, Quantity, Unit
+from pint import DimensionalityError, Unit
 from PySide6.QtCore import QStandardPaths, QLocale, Qt
 from PySide6.QtGui import QPageSize, QPageLayout, QColor, QColorConstants
 from PySide6.QtPrintSupport import QPrinterInfo
@@ -32,7 +31,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import \
-    CardSizes, ConfigParser, SectionProxy, unit_registry, T, PageSizeManager, is_acceptable_page_size
+    CardSizes, ConfigParser, SectionProxy, unit_registry, T, Quantity, PageSizeManager, is_acceptable_page_size
 StandardLocation = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
 Territory = QLocale.Country  # TODO: Adjust for PySide6
@@ -274,6 +273,7 @@ DEFAULT_SETTINGS["export"] = {
     "png-background-color": "#ffffffff",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
+ALLOWED_LENGTH_UNITS: frozenset[Quantity] = frozenset({mm})
 
 
 def round_to_nearest_multiple(value: T, multiple: T) -> T:
@@ -600,8 +600,8 @@ def _01_migrate_layout_setting(to_migrate: ConfigParser):
         if layout == "vertical":
             layout = "columnar"
         gui_section["central-widget-layout"] = layout
-        
-        
+
+
 def _02_migrate_download_settings(to_migrate: ConfigParser):
     target_section_name = "card-filter"
     if to_migrate.has_section(target_section_name) or not to_migrate.has_section("downloads"):
@@ -679,8 +679,8 @@ def _07_migrate_document_settings_to_pint(to_migrate: ConfigParser):
     if "margin-top-mm" not in section:
         return
     for key in ("card-bleed", "paper-height", "paper-width",
-            "margin-top", "margin-bottom", "margin-left", "margin-right",
-            "row-spacing", "column-spacing"):
+                "margin-top", "margin-bottom", "margin-left", "margin-right",
+                "row-spacing", "column-spacing"):
         old_key = f"{key}-mm"
         if old_key in section:
             section[key] = f"{section[old_key]} mm"

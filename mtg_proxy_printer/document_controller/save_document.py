@@ -18,7 +18,7 @@ import sqlite3
 from pathlib import Path
 import typing
 
-from PySide6.QtCore import QCoreApplication
+from PySide6.QtCore import QObject
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -28,7 +28,7 @@ from mtg_proxy_printer.sqlite_helpers import open_database, cached_dedent
 from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.model.card import AnyCardType
-from mtg_proxy_printer.model.document_loader import CardType
+from mtg_proxy_printer.async_tasks.document_loader import CardType
 from mtg_proxy_printer.save_file_migrations import migrate_database
 
 from mtg_proxy_printer.logger import get_logger
@@ -46,8 +46,8 @@ class ActionSaveDocument(DocumentAction):
     """
     COMPARISON_ATTRIBUTES = []
 
-    def __init__(self, file_path: Path):
-        super().__init__()
+    def __init__(self, file_path: Path, parent: QObject = None):
+        super().__init__(parent)
         self.file_path = file_path
 
     def apply(self, document: "Document") -> Self:
@@ -63,7 +63,7 @@ class ActionSaveDocument(DocumentAction):
             self._clean_unused_custom_cards(db)
             db.commit()
             if db.execute(cached_dedent("""\
-                SELECT cast(freelist_count AS real)/page_count > 0.1 AS "should vacuum" -- apply() 
+                SELECT cast(freelist_count AS real)/page_count > 0.1 AS "should vacuum" -- apply()
                   FROM pragma_page_count
                   INNER JOIN pragma_freelist_count
                 """)).fetchone()[0]:

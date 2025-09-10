@@ -15,16 +15,19 @@
 
 
 import collections
+from collections.abc import Generator, Iterable
 import enum
 import itertools
 import math
 from pathlib import Path
 import sys
-from typing import Counter, Iterable, Any, Generator
+from typing import Any, Counter
 
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
     QPersistentModelIndex, QMimeData
 
+from mtg_proxy_printer.async_tasks.base import AsyncTask
+from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask, SingleActions
 from mtg_proxy_printer.document_controller.move_page import ActionMovePage
 from mtg_proxy_printer.model.imagedb_files import ImageKey
 from mtg_proxy_printer.natsort import to_list_of_ranges
@@ -34,7 +37,6 @@ from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType, CustomCard
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 
@@ -67,6 +69,7 @@ AnyIndex = QModelIndex | QPersistentModelIndex
 ItemDataRole = Qt.ItemDataRole
 Orientation = Qt.Orientation
 ItemFlag = Qt.ItemFlag
+BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 
 
 class Document(QAbstractItemModel):
@@ -76,7 +79,6 @@ class Document(QAbstractItemModel):
     """
     INVALID_INDEX = INVALID_INDEX
 
-    loading_state_changed = Signal(bool)
     current_page_changed = Signal(QPersistentModelIndex)
     page_layout_changed = Signal(PageLayoutSettings)
     page_type_changed = Signal(QModelIndex)
@@ -85,7 +87,7 @@ class Document(QAbstractItemModel):
     action_undone = Signal(DocumentAction)
     undo_available_changed = Signal(bool)
     redo_available_changed = Signal(bool)
-    request_fill_image_for_action = Signal(DocumentAction)
+    request_run_async_task = Signal(AsyncTask)
 
     EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber, PageColumns.Language}
 
@@ -105,9 +107,6 @@ class Document(QAbstractItemModel):
         self.save_file_path: Path | None = None
         self.card_db = card_db
         self.image_db = image_db
-        self.loader = DocumentLoader(self)
-        self.loader.loading_state_changed.connect(self.loading_state_changed)
-        self.loader.load_requested.connect(self.apply)
         self.pages: list[Page] = [first_page := Page()]
         # Mapping from page id() to list index in the page list
         self.page_index_cache: dict[int, int] = {id(first_page): 0}
@@ -278,11 +277,16 @@ class Document(QAbstractItemModel):
                 replacement = self.card_db.translate_card(card, value)
                 if replacement != card:
                     action = ActionReplaceCard(replacement, index.parent().row(), index.row())
-                    self.request_fill_image_for_action.emit(action)
+                    self._fetch_image_and_apply_action(action)
                     return True
                 return False
             return self._request_replacement_card(index, card_data)
         return False
+
+    def _fetch_image_and_apply_action(self, action: SingleActions):
+        task = SingleDownloadTask(self.image_db, action)
+        task.request_action.connect(self.apply, BlockingQueuedConnection)
+        self.request_run_async_task.emit(task)
 
     def mimeData(self, indexes: list[QModelIndex], /) -> QMimeData:
         """Supports encoding the row of a singular QModelIndex as QMimeData. Used for moving Pages via drag&drop."""
@@ -324,7 +328,7 @@ class Document(QAbstractItemModel):
             # the results.
             new_card = result[0]
             action = ActionReplaceCard(new_card, index.parent().row(), index.row())
-            self.request_fill_image_for_action.emit(action)
+            self._fetch_image_and_apply_action(action)
             return True
         return False
 

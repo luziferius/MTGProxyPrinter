@@ -27,7 +27,7 @@ from hamcrest import contains_exactly
 import pytest
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes, CardSize
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, Unit, CardSizes, CardSize
 from mtg_proxy_printer.model.card import MTGSet, Card
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
@@ -39,8 +39,8 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
-from tests.document_controller.helpers import append_new_card_in_page
-from ..document_controller.helpers import insert_card_in_page, create_card
+from tests.helpers import create_card
+from tests.document_controller.helpers import append_new_card_in_page, insert_card_in_page
 
 ItemDataRole = Qt.ItemDataRole
 mm: Unit = unit_registry.mm
