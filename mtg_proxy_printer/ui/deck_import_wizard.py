@@ -25,7 +25,6 @@ from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL,
 from PySide6.QtGui import QValidator, QIcon, QDesktopServices
 from PySide6.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
-from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.image_downloader import BatchDownloadTask
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import SectionProxy
@@ -594,7 +593,7 @@ class SummaryPage(QWizardPage):
 
 
 class DeckImportWizard(WizardBase):
-    request_run_async_task = Signal(AsyncTask)  # TODO: Test if this could use BatchImportTask to reduce imports
+    request_run_async_task = Signal(BatchDownloadTask)
     BUTTON_ICONS = {
         QWizard.WizardButton.FinishButton: "dialog-ok",
         QWizard.WizardButton.CancelButton: "dialog-cancel",

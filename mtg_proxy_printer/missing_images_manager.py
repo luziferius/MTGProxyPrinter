@@ -19,7 +19,6 @@ from typing import Any
 
 from PySide6.QtCore import QObject, Signal, Slot
 
-from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.image_downloader import ObtainMissingImagesTask
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger
@@ -39,7 +38,7 @@ class MissingImagesManager(QObject):
     or printer.
     """
     obtaining_missing_images_failed = Signal(str)
-    request_run_async_task = Signal(AsyncTask)  # TODO: Test if this could use ObtainMissingImagesTask to reduce imports
+    request_run_async_task = Signal(ObtainMissingImagesTask)
 
     def __init__(self, document: Document, parent: QObject = None):
         super().__init__(parent)

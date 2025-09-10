@@ -21,7 +21,6 @@ from PySide6.QtWidgets import QWidget, QDialogButtonBox
 from PySide6.QtGui import QIcon
 
 import mtg_proxy_printer.model.card
-from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 import mtg_proxy_printer.model.string_list
@@ -58,7 +57,7 @@ SelectionFlag = QItemSelectionModel.SelectionFlag
 
 class AddCardWidget(QWidget):
 
-    request_run_async_task = Signal(AsyncTask)  # TODO: Test if this could use SingleDownloadTask to reduce imports
+    request_run_async_task = Signal(SingleDownloadTask)
 
     def __init__(self, ui_class: UiTypes, parent: QWidget = None):
         super().__init__(parent)

@@ -440,7 +440,7 @@ class GeneralSettingsPage(Page):
 
 
 class HidePrintingsPage(Page):
-    request_run_async_task = Signal(AsyncTask)
+    request_run_async_task = Signal(PrintingFilterUpdater)
 
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(self.tr("Hide printings"), "view-hidden", self.tr("Hide unwanted printings"))

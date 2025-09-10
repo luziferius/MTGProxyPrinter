@@ -24,7 +24,6 @@ from PySide6.QtGui import QIcon, QAction
 from PySide6.QtWidgets import QTableView, QWidget, QMenu, QInputDialog, QFileDialog
 
 from mtg_proxy_printer.app_dirs import data_directories
-from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
@@ -44,7 +43,7 @@ ItemDataRole = Qt.ItemDataRole
 class PageCardTableView(QTableView):
 
     request_action = Signal(DocumentAction)
-    request_run_async_task = Signal(AsyncTask)
+    request_run_async_task = Signal(SingleDownloadTask)
     changed_selection_is_empty = Signal(bool)
 
     def __init__(self, parent: QWidget = None):

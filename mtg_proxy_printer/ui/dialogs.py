@@ -85,7 +85,7 @@ def read_path(section: str, setting: str) -> str:
 
 class SavePDFDialog(QFileDialog):
     parent: Callable[[], "MainWindow"]
-    request_run_async_task = Signal(AsyncTask)
+    request_run_async_task = Signal(PrintCountUpdater)
 
     def __init__(self, parent: "MainWindow", document: "Document"):
         # Note: Cannot supply already translated strings to __init__,
@@ -165,7 +165,7 @@ class SavePNGDialog(QFileDialog):
         path = self.selectedFiles()[0]
         main_window = self.parent()
         renderer = mtg_proxy_printer.print.PNGRenderer(main_window, self.document, path)
-        main_window.progress_bar_manager.add_task(renderer)
+        main_window.progress_bar_manager.add_task(renderer)  # FIXME: What's that? This is not API compliant. Application does that!
         self.request_run_async_task.emit(renderer)
         self.request_run_async_task.emit(PrintCountUpdater(self.document))
         logger.info(f"Saved document to {path}")
@@ -217,7 +217,7 @@ class SaveDocumentAsDialog(LoadSaveDialog):
 
 class LoadDocumentDialog(LoadSaveDialog):
 
-    request_run_async_task = Signal(AsyncTask)
+    request_run_async_task = Signal(DocumentLoader)
 
     def __init__(
             self, parent: QWidget,
@@ -343,7 +343,7 @@ class PrintPreviewDialog(QPrintPreviewDialog):
 
 class PrintDialog(QPrintDialog):
 
-    request_run_async_task = Signal(AsyncTask)
+    request_run_async_task = Signal(PrintCountUpdater)
 
     def __init__(self, document: "Document", parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
