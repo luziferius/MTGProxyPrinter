@@ -201,6 +201,7 @@ class Application(QApplication):
             card_db: mtg_proxy_printer.model.carddb.CardDatabase,
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
+        document.request_run_async_task.connect(self.run_async_task)
         image_db.missing_image_obtained.connect(document.on_missing_image_obtained)
         return document
 
