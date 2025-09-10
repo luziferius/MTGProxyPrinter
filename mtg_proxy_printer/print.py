@@ -96,6 +96,9 @@ class PNGRenderer(AsyncTask):
             scene.render(painter)
             painter.end()
             pool.start(partial(self._compress_single_image, image, output_path))
+        self.ui_lock_release.emit()
+        pool.waitForDone()
+        self.task_completed.emit()
 
     @staticmethod
     def _create_image(page_size: QSize, background_color: QColor, dots_per_meter: int):
@@ -106,9 +109,6 @@ class PNGRenderer(AsyncTask):
         image.setDotsPerMeterY(dots_per_meter)
         image.fill(background_color)
         return image
-        self.ui_lock_release.emit()
-        pool.waitForDone()
-        self.task_completed.emit()
 
     def _compress_single_image(self, image: QImage, output_path: str):
         image.save(output_path, "PNG", 0)
