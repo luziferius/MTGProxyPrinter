@@ -213,6 +213,8 @@ class MainWindow(QMainWindow):
             ui.action_add_custom_cards,
             ui.action_download_missing_card_images,
             ui.action_export_card_images,
+            ui.action_undo,
+            ui.action_redo,
         ]
 
     def _create_progress_bar_manager(self):

@@ -167,6 +167,7 @@ class DocumentLoader(AsyncTask):
         self.should_run = True
         self.card_db = self._create_card_db()
         self.image_loader = self._create_image_loader()
+        self.ui_lock_acquire.emit()
         try:
             self._load_document()
         except (AssertionError, sqlite3.DatabaseError) as e:
@@ -175,6 +176,7 @@ class DocumentLoader(AsyncTask):
             self.loading_file_failed.emit(self.save_path, str(e))
             self.task_completed.emit()  # Release UI in failure case. _load_document() emits this during regular operation
         finally:
+            self.ui_lock_release.emit()
             self.card_db.db.rollback()
             self.card_db.db.close()
             self.card_db = None
