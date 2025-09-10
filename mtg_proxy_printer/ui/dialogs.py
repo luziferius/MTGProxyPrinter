@@ -165,7 +165,6 @@ class SavePNGDialog(QFileDialog):
         path = self.selectedFiles()[0]
         main_window = self.parent()
         renderer = mtg_proxy_printer.print.PNGRenderer(main_window, self.document, path)
-        main_window.progress_bar_manager.add_task(renderer)  # FIXME: What's that? This is not API compliant. Application does that!
         self.request_run_async_task.emit(renderer)
         self.request_run_async_task.emit(PrintCountUpdater(self.document))
         logger.info(f"Saved document to {path}")
