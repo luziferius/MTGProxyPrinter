@@ -23,9 +23,8 @@
 - DFC placeholder cards are now generated with the proper corner radius.
 - Reworked handling of background tasks
   - Progress reporting of background tasks no longer breaks, when more than one task runs
-  - Some tasks, like the card data update, can be canceled. These show a cancel button next to the progress bar 
-
-
+  - Some long-running tasks can now be canceled explicitly. These show a cancel button next to their progress bar
+  - Cancelable tasks are loading documents, importing deck lists, and updating the internal card database.
 
 # Fixed issues
 
