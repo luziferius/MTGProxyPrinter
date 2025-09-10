@@ -91,6 +91,7 @@ class PNGRenderer(AsyncTask):
             output_path = str(parent / file_name)
             image = self._create_image(page_size, background_color, dots_per_meter)
             painter = QPainter(image)
+            painter.setRenderHint(RenderHint.LosslessImageRendering, True)
             page_index = QPersistentModelIndex(document.index(page_nr, 0))
             scene.on_current_page_changed(page_index)
             scene.render(painter)
