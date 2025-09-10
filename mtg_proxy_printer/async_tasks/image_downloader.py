@@ -235,6 +235,7 @@ class ObtainMissingImagesTask(ImageDownloadTask):
 
     def obtain_missing_images(self, card_indices: list[QModelIndex]):
         if not card_indices:
+            self.task_completed.emit()
             return
         total_cards = len(card_indices)
         logger.debug(f"Requesting {total_cards} missing images")
