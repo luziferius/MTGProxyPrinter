@@ -196,6 +196,13 @@ class BatchDownloadTask(ImageDownloadTask):
         self.image_download_task = AsyncTask()
         self.inner_tasks.append(self.image_download_task)
 
+    @property
+    def can_cancel(self) -> bool:
+        return True
+
+    def cancel(self):
+        self.should_run = False
+
     @with_database_write_lock(download_semaphore)
     def run(self):
         self.request_register_subtask.emit(self.image_download_task)
@@ -209,6 +216,8 @@ class BatchDownloadTask(ImageDownloadTask):
             total_cards,
             self.tr("Importing deck list", "Progress bar label text"))
         for card in cards:
+            if not self.should_run:
+                return
             self.fetch_and_set_image(card, self.image_download_task)
             self.advance_progress.emit()
         self.request_action.emit(action)
@@ -228,6 +237,13 @@ class ObtainMissingImagesTask(ImageDownloadTask):
         self.image_download_task = AsyncTask()
         self.inner_tasks.append(self.image_download_task)
 
+    @property
+    def can_cancel(self) -> bool:
+        return True
+
+    def cancel(self):
+        self.should_run = False
+
     @with_database_write_lock(download_semaphore)
     def run(self):
         self.request_register_subtask.emit(self.image_download_task)
@@ -245,6 +261,9 @@ class ObtainMissingImagesTask(ImageDownloadTask):
             total_cards,
             self.tr("Fetching missing images", "Progress bar label text"))
         for card_index in card_indices:
+            if not self.should_run:
+                self.task_completed.emit()
+                return
             card = card_index.data(ItemDataRole.UserRole)
             self.fetch_and_set_image(card, self.image_download_task)
             if card.image_file not in blanks:
