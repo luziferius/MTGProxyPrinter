@@ -22,6 +22,7 @@ from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, 
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, QDialog
 from PySide6.QtPrintSupport import QPrintDialog
 
+from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
@@ -535,7 +536,7 @@ class MainWindow(QMainWindow):
     def dropEvent(self, event: QDropEvent) -> None:
         if path := self._to_save_file_path(event):
             logger.info("User dropped save file onto the main window, loading the dropped document")
-            # TODO: Load document
+            self.request_run_async_task.emit(DocumentLoader(self.document, path))
         elif CustomCardImportDialog.dragdrop_acceptable(event):
             self.current_dialog = dialog = CustomCardImportDialog(self.document, self)
             dialog.request_action.connect(self.document.apply)
