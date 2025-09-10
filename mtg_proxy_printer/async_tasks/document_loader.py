@@ -95,6 +95,8 @@ def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[tuple[
     iterable = iter(iterable)
     return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())
 
+class CancelledState(Exception):
+    pass
 
 class DocumentLoader(AsyncTask):
     """
@@ -127,6 +129,13 @@ class DocumentLoader(AsyncTask):
         self.migrated_ids = 0
         self.prefer_already_downloaded = mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
             "prefer-already-downloaded-images")
+
+    @property
+    def can_cancel(self) -> bool:
+        return True
+
+    def cancel(self):
+        self.should_run = False
 
     def _create_card_db(self) -> CardDatabase:
         db_path = self.document.card_db.db_path
@@ -170,11 +179,13 @@ class DocumentLoader(AsyncTask):
         self.ui_lock_acquire.emit()
         try:
             self._load_document()
+        except CancelledState:
+            self.task_completed.emit()  # _load_document() emits this during regular operation
         except (AssertionError, sqlite3.DatabaseError) as e:
             logger.exception(
                 "Selected file is not a known MTGProxyPrinter document or contains invalid data. Not loading it.")
             self.loading_file_failed.emit(self.save_path, str(e))
-            self.task_completed.emit()  # Release UI in failure case. _load_document() emits this during regular operation
+            self.task_completed.emit()  # _load_document() emits this during regular operation
         finally:
             self.ui_lock_release.emit()
             self.card_db.db.rollback()
@@ -237,6 +248,8 @@ class DocumentLoader(AsyncTask):
         allowed_sizes = {CardSizes.REGULAR.to_save_data(), CardSizes.OVERSIZED.to_save_data()}
         for page, expected_size in save_db.execute(
                 "SELECT page, image_size FROM Page ORDER BY page ASC").fetchall():  # type: int, str
+            if not self.should_run:
+                raise CancelledState()
             assert_that(page, is_(instance_of(int)))
             assert_that(expected_size, is_in(allowed_sizes))
             pages.append(self._load_cards_on_page(save_db, page, expected_size, custom_cards))
@@ -255,6 +268,8 @@ class DocumentLoader(AsyncTask):
         result: CardList = []
         card_size = CardSizes.REGULAR if expected_size == CardSizes.REGULAR.to_save_data() else CardSizes.OVERSIZED
         for item in db_data:
+            if not self.should_run:
+                raise CancelledState()
             self._validate_save_db_card_row(is_positive_int, item, valid_card_types)
             slot, is_front, card_type_str, scryfall_id, custom_card_id = item
             card_row = CardRow(is_front, CardType(card_type_str), scryfall_id, custom_card_id)
