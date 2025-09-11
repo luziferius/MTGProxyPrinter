@@ -40,7 +40,7 @@ class ToLength(pint.facets.context.objects.Transformation):
 
 
 def _setup_units() -> tuple[UnitRegistry, Quantity]:
-    registry = UnitRegistry(cache_folder=":auto:")
+    registry = UnitRegistry()
     resolution = registry.parse_expression("300dots/inch")
     print_context = Context("print")
     print_context.add_transformation("[length]", "[printing_unit]", ToDots())
