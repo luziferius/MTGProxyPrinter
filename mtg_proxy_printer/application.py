@@ -236,9 +236,7 @@ class Application(QApplication):
         logger.info(
             f"Loading localisations. System locale: {system_locale.name()}, selected locale: {locale.name()}. "
             f"Possible display languages are: {locale.uiLanguages()}")
-        path = ":" if mtg_proxy_printer.ui.common.HAS_COMPILED_RESOURCES \
-            else str(pathlib.Path(mtg_proxy_printer.__file__).parent / "resources")
-        path += "/translations"
+        path = mtg_proxy_printer.ui.common.TRANSLATIONS_PATH
         logger.debug(f"Locale search path is '{path}'")
         self._load_translator(locale, "qtbase", QLibraryInfo.location(QLibraryInfo.LibraryPath.TranslationsPath))
         self._load_translator(locale, "mtgproxyprinter", path)

@@ -21,6 +21,7 @@ from pathlib import Path
 
 from hamcrest import *
 import pytest
+from mtg_proxy_printer.ui.common import RESOURCE_PATH_PREFIX
 
 
 if os.getenv("MTGPROXYPRINTER_SKIP_RESOURCE_TESTS"):
@@ -38,10 +39,13 @@ def list_dir(directory: Path) -> Iterable[Path]:
 
 @pytest.fixture
 def resource_path() -> Path:
-    import mtg_proxy_printer.resources
-    directory = Path(mtg_proxy_printer.resources.__path__._path[0])
+    directory = Path(RESOURCE_PATH_PREFIX)
     qrc_file = directory / "resources.qrc"
     return qrc_file
+
+
+def test_resource_registry_exists(resource_path: Path):
+    assert_that(resource_path.is_file(), is_(True))
 
 
 def test_all_resources_listed_in_resources_qrc_exist_as_files(resource_path: Path):

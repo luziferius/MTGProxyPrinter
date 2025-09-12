@@ -1,11 +1,11 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource prefix="/">
     <!-- Changelog -->
-    <file alias="changelog.md">../../doc/changelog.md</file>
+    <file alias="changelog.md">../doc/changelog.md</file>
     <!-- Licenses of used dependencies. These have to be included for the binary Windows bundles created with
     cx_Freeze, because this bundles everything in one package. -->
-    <file alias="ThirdPartyLicenses.md">../../doc/ThirdPartyLicenses.md</file>
-    <file alias="License.md">../../LICENSE.md</file>
+    <file alias="ThirdPartyLicenses.md">../doc/ThirdPartyLicenses.md</file>
+    <file alias="License.md">../LICENSE.md</file>
     <file>Common_Registration_Mark.svg</file>
 
     <!-- Localisations -->

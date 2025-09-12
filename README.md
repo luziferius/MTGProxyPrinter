@@ -233,7 +233,7 @@ See the LICENSE file for details.
 
 Copyright (C) 2014 Uri Herrera <uri_herrera@nitrux.in> and others
 
-The icons shipped in the directory mtg_proxy_printer/resources/icons/ are used as a fallback if no
+The icons shipped in the directory resources/icons/ are used as a fallback if no
 system theme is present, and are sourced from Breeze icon theme created by the KDE project.
 These fall under the LGPL either version 3 of the License, or
 (at your option) any later version.

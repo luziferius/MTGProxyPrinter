@@ -6,7 +6,7 @@
 
 files: [
   {
-    "source": "mtg_proxy_printer/resources/translations/mtgproxyprinter_sources.ts",
-    "translation": "mtg_proxy_printer/resources/translations/mtgproxyprinter_%locale%.ts",
+    "source": "resources/translations/mtgproxyprinter_sources.ts",
+    "translation": "resources/translations/mtgproxyprinter_%locale%.ts",
   }
 ]

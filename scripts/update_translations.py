@@ -49,8 +49,9 @@ LOCALES = {
     "zh-TW": "zh_TW",
 }
 
-TRANSLATIONS_DIR = pathlib.Path(__file__, "..", "..", "mtg_proxy_printer/resources/translations/").resolve()
-crowdin_yml_path = pathlib.Path(__file__).parent.parent/"crowdin.yml"
+ROOT_DIR = pathlib.Path(__file__).parent.parent.resolve()
+TRANSLATIONS_DIR = ROOT_DIR / "resources/translations"
+crowdin_yml_path = ROOT_DIR / "crowdin.yml"
 SOURCES_PATH = pathlib.Path(
     # Fetch the name of the sources .ts file from crowdin.yml.
     # (Since Python does not come with a YAML parser, use a simple RE for data extraction)
