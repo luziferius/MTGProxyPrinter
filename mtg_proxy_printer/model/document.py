@@ -15,6 +15,7 @@
 
 
 import collections
+import json
 from collections.abc import Generator, Iterable
 import enum
 import itertools
@@ -45,6 +46,7 @@ from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 
 PAGE_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-PageMove"
+CARD_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-CardMove"
 
 logger = get_logger(__name__)
 del get_logger
@@ -289,33 +291,49 @@ class Document(QAbstractItemModel):
         self.request_run_async_task.emit(task)
 
     def mimeData(self, indexes: list[QModelIndex], /) -> QMimeData:
-        """Supports encoding the row of a singular QModelIndex as QMimeData. Used for moving Pages via drag&drop."""
-        if len(indexes) != 1:
-            return QMimeData()
-        row = indexes[0].row()
-        logger.debug(f"Initiating drag for page {row}")
+        """
+        Reads model data and converts them into QMimeData used for Drag&Drop.
+        Dragging a page encodes its initial position
+        Dragging cards encodes their shared page index, and a list of card indices.
+        """
         mime_data = QMimeData()
-        mime_data.setData(PAGE_MOVE_MIME_TYPE, row.to_bytes(8))
+        if not indexes:
+            return mime_data
+
+        if not (first := indexes[0]).parent().isValid():
+            row = first.row()
+            logger.debug(f"Initiating drag for page {row}")
+            mime_data.setData(PAGE_MOVE_MIME_TYPE, row.to_bytes(8))
+            return mime_data
+        page = first.parent().row()
+        cards = [index.row() for index in indexes]
+        logger.debug(f"Initiating drag for {len(cards)} cards on page {page}")
+        data = json.dumps({"page": page, "cards": cards}).encode("utf-8")
+        mime_data.setData(CARD_MOVE_MIME_TYPE, data)
         return mime_data
 
     def dropMimeData(
             self, data: QMimeData, action: Qt.DropAction,
             row: int, column: PageColumns | DocumentColumns, parent: QModelIndex, /):
-        """Supports dropping pages moved via drag&drop. Only Page moves supported at the moment."""
+        """Supports dropping cards or pages moved via drag&drop."""
         if data.hasFormat(PAGE_MOVE_MIME_TYPE):
             logger.debug(f"Received page drop onto {row=}")
             if row == -1:  # Drop onto empty space or after last entry. Append in this case
                 row = self.rowCount()
             source_row = int.from_bytes(data.data(PAGE_MOVE_MIME_TYPE).data())
             self.apply(ActionMovePage(source_row, row))
+        elif data.hasFormat(CARD_MOVE_MIME_TYPE):
+            card_data = json.loads(data.data(CARD_MOVE_MIME_TYPE).data())
+            logger.debug(f"Received card drop onto {row=}: {card_data}")
+
         return False  # Move complete, so signal via False that the caller does not have to remove the source rows
 
     def supportedDropActions(self, /) -> Qt.DropAction:
         return Qt.DropAction.MoveAction
 
     def mimeTypes(self, /) -> list[str]:
-        """Supported mime types. Currently only supporting Page moves"""
-        return [PAGE_MOVE_MIME_TYPE]
+        """Supported mime types."""
+        return [PAGE_MOVE_MIME_TYPE, CARD_MOVE_MIME_TYPE]
 
     @staticmethod
     def _to_index(other: QPersistentModelIndex | QModelIndex) -> QModelIndex:
