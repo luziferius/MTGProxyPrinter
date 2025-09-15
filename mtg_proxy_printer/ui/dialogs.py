@@ -300,15 +300,15 @@ class AboutDialog(QDialog):
         self.ui.about_text.setMarkdown(formatted_about_text)
 
     def _setup_license_text(self):
-        file_path = self._get_file_path(":/License.md", "/../../LICENSE.md")
+        file_path = self._get_file_path(":/License.md", "/../LICENSE.md")
         self._set_text_browser_with_markdown_file_content(file_path, self.ui.license_text_browser)
 
     def _setup_third_party_license_text(self):
-        file_path = self._get_file_path(":/ThirdPartyLicenses.md", "/../../doc/ThirdPartyLicenses.md")
+        file_path = self._get_file_path(":/ThirdPartyLicenses.md", "/../doc/ThirdPartyLicenses.md")
         self._set_text_browser_with_markdown_file_content(file_path, self.ui.third_party_license_text_browser)
 
     def _setup_changelog_text(self):
-        file_path = self._get_file_path(":/changelog.md", "/../../doc/changelog.md")
+        file_path = self._get_file_path(":/changelog.md", "/../doc/changelog.md")
         self._set_text_browser_with_markdown_file_content(file_path, self.ui.changelog_text_browser)
 
     def _set_text_browser_with_markdown_file_content(self, file_path: str, text_browser: QTextBrowser):

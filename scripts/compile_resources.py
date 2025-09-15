@@ -18,7 +18,7 @@
 
 """
 This script compiles the resources listed in the Qt resources registry under
-mtg_proxy_printer/resources/resources.qrc into an importable Python module for packaging.
+resources/resources.qrc into an importable Python module for packaging.
 
 For development, the codebase loads the files directly from disk,
 which allows working on them without intermediate compilation steps.
@@ -38,9 +38,9 @@ from typing import NamedTuple, TypeVar, Iterable, Callable
 
 
 main_package = "mtg_proxy_printer"
-PACKAGE_PATH = (Path(__file__).parent.with_name(main_package)).resolve()
-SOURCES_PATH = PACKAGE_PATH / "resources" / "resources.qrc"
-TARGET_PATH = PACKAGE_PATH / "ui" / "compiled_resources.py"
+ROOT_PATH = Path(__file__).parent.parent.resolve()
+SOURCES_PATH = ROOT_PATH / "resources" / "resources.qrc"
+TARGET_PATH = ROOT_PATH / main_package / "ui" / "compiled_resources.py"
 T = TypeVar("T")
 
 

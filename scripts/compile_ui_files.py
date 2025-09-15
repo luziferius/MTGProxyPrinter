@@ -41,7 +41,7 @@ from typing import NamedTuple, TypeVar, Iterable, Type, Any
 
 SOURCE_ROOT = Path(__file__).parent.parent  # Checkout root directory
 MAIN_PACKAGE = SOURCE_ROOT / "mtg_proxy_printer"
-UI_SOURCE_PATH = MAIN_PACKAGE / "resources/ui"  # UI files live here
+UI_SOURCE_PATH = SOURCE_ROOT / "resources/ui"  # UI files live here
 TARGET_PATH = MAIN_PACKAGE / "ui/generated"  # Package containing generated modules/type hinting stubs
 T = TypeVar("T")
 ClassRegistry = dict[str, ast.ImportFrom]

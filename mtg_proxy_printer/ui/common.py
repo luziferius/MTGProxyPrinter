@@ -24,6 +24,7 @@ from PySide6.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEd
 from PySide6.QtGui import QIcon, QPixmap, QColor, QColorConstants
 from PySide6.QtUiTools import loadUiType
 
+import mtg_proxy_printer
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.units_and_sizes import OptStr
 from mtg_proxy_printer.logger import get_logger
@@ -49,16 +50,17 @@ __all__ = [
 try:
     import mtg_proxy_printer.ui.compiled_resources
 except ModuleNotFoundError:
-    RESOURCE_PATH_PREFIX = str(Path(__file__).resolve().parent.with_name("resources"))
-    ICON_PATH_PREFIX = str(Path(__file__).resolve().parent.with_name("resources") / "icons")
+    RESOURCE_PATH_PREFIX = str(Path(mtg_proxy_printer.__file__).resolve().parent.with_name("resources"))
     HAS_COMPILED_RESOURCES = False
 else:
     import atexit
     # Compiled resources found, so use it.
     RESOURCE_PATH_PREFIX = ":"
-    ICON_PATH_PREFIX = ":/icons"
     HAS_COMPILED_RESOURCES = True
     atexit.register(mtg_proxy_printer.ui.compiled_resources.qCleanupResources)
+
+ICON_PATH_PREFIX = f"{RESOURCE_PATH_PREFIX}/icons"
+TRANSLATIONS_PATH = f"{RESOURCE_PATH_PREFIX}/translations"
 
 
 @lru_cache(maxsize=256)

@@ -25,7 +25,10 @@ import mtg_proxy_printer.settings
 
 root_logger = logging.getLogger(PROGRAMNAME)
 LOG_FORMAT = "%(asctime)s %(levelname)s - %(name)s - %(message)s"
-_CRASH_LOG_FILE = None
+LOG_DIR = data_directories.user_log_path
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+#_CRASH_LOG_FILE = open(LOG_DIR / f"{PROGRAMNAME}-crashes.log", "at", encoding="utf-8")
+#faulthandler.enable(_CRASH_LOG_FILE, all_threads=True)
 
 __all__ = [
     "get_logger",
@@ -46,11 +49,6 @@ def configure_root_logger(output_stdout: bool = True):
     Initialize the logging system.
     """
     global _CRASH_LOG_FILE
-    log_dir = data_directories.user_log_path
-    log_dir.mkdir(parents=True, exist_ok=True)
-    crash_log_path = log_dir / f"{PROGRAMNAME}-crashes.log"
-    # Not closing the file at all to catch segmentation faults occurring at application exit.
-    faulthandler.enable(_CRASH_LOG_FILE := crash_log_path.open("at", encoding="utf-8"))
     debug_settings = mtg_proxy_printer.settings.settings["debug"]
     file_log_level = debug_settings["log-level"]
     root_logger.setLevel(1)
@@ -64,7 +62,8 @@ def configure_root_logger(output_stdout: bool = True):
         root_logger.addHandler(socket_handler)
         root_logger.info(f"""Connected logger "{root_logger.name}" to local log server.""")
     if debug_settings.getboolean("write-log-file"):
-        log_file_path = log_dir / f"{PROGRAMNAME}.log"
-        file_handler = logging.handlers.TimedRotatingFileHandler(log_file_path, "D", 1, 10, "utf-8", True)
+        log_file_path = LOG_DIR / f"{PROGRAMNAME}.log"
+        file_handler = logging.handlers.TimedRotatingFileHandler(
+            log_file_path, "D", 1, 10, "utf-8", True)
         file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
         root_logger.addHandler(file_handler)
