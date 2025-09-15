@@ -126,7 +126,7 @@ class ActionMoveCards(DocumentAction):
     def as_str(self):
         source_page = self.source_page+1
         target_page = self.target_page+1
-        count = sum(upper-lower+1 for lower, upper in self.card_ranges_to_move)
+        count = self._total_moved_cards()
         return self.tr(
             "Move %n card(s) from page {source_page} to {target_page}",
             "Undo/redo tooltip text", count
