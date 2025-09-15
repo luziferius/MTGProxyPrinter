@@ -102,7 +102,7 @@ def register_new_raw_strings():
         "-source-language", "en_US",
         "-recursive", "-no-obsolete",
         "-extensions", "py,ui",
-        "mtg_proxy_printer", "resources/ui"
+        "mtg_proxy_printer", "resources/ui",
         "-ts", SOURCES_PATH
     ])
 
