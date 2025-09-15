@@ -15,11 +15,11 @@
 
 from collections.abc import Sequence
 import functools
-import itertools
 import typing
 
 from PySide6.QtCore import QModelIndex, QObject
 
+from mtg_proxy_printer.natsort import to_list_of_ranges
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
 
@@ -40,7 +40,7 @@ class ActionMoveCards(DocumentAction):
     Values of consecutive card ranges are inclusive.
     """
 
-    COMPARISON_ATTRIBUTES = ["source_page", "target_page", "card_ranges_to_move"]
+    COMPARISON_ATTRIBUTES = ["source_page", "target_page", "card_ranges_to_move", "target_row"]
 
     def __init__(
             self, source: int, cards_to_move: Sequence[int],
@@ -56,7 +56,7 @@ class ActionMoveCards(DocumentAction):
         self.source_page = source
         self.target_page = target_page
         self.target_row = target_row
-        self.card_ranges_to_move = self._to_list_of_ranges(cards_to_move)
+        self.card_ranges_to_move = to_list_of_ranges(cards_to_move)
 
     def apply(self, document: "Document") -> Self:
         source_page = document.pages[self.source_page]
@@ -118,19 +118,6 @@ class ActionMoveCards(DocumentAction):
         if target_page.page_type() != target_page_type:
             document.page_type_changed.emit(target_index)
         return super().undo(document)
-
-    @staticmethod
-    def _to_list_of_ranges(sequence: Sequence[int]) -> list[tuple[int, int]]:
-        ranges: list[tuple[int, int]] = []
-        sequence = itertools.chain(sequence, (sentinel := object(),))
-        lower = upper = next(sequence)
-        for item in sequence:
-            if item is sentinel or upper != item-1:
-                ranges.append((lower, upper))
-                lower = upper = item
-            else:
-                upper = item
-        return ranges
 
     def _total_moved_cards(self) -> int:
         return sum(last-first+1 for first, last in self.card_ranges_to_move)
