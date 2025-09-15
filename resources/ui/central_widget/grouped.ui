@@ -40,7 +40,7 @@
       </sizepolicy>
      </property>
      <property name="dragDropMode">
-      <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
+      <enum>QAbstractItemView::DragDropMode::DragDrop</enum>
      </property>
      <property name="defaultDropAction">
       <enum>Qt::DropAction::MoveAction</enum>
@@ -131,6 +131,12 @@
      </property>
      <property name="lineWidth">
       <number>0</number>
+     </property>
+     <property name="dragDropMode">
+      <enum>QAbstractItemView::DragDropMode::DragDrop</enum>
+     </property>
+     <property name="defaultDropAction">
+      <enum>Qt::DropAction::MoveAction</enum>
      </property>
      <property name="alternatingRowColors">
       <bool>true</bool>
