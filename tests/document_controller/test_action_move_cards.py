@@ -604,3 +604,84 @@ def test_undo_with_target_at_end_from_end(qtbot: QtBot, document_light: Document
         ),
         "Incorrect card move"
     )
+
+@pytest.fixture()
+def document_with_cards(document_light: Document) -> Document:
+    ActionNewPage(count=3, content=[[], [], []]).apply(document_light)
+    pages = document_light.pages
+    content: list[tuple[int, str]] = [
+        (0, "A1"),
+        (0, "A2"),
+        (0, "A3"),
+        (1, "B1"),
+        (1, "B2"),
+        (1, "B3"),
+        (3, "D1"),
+        (3, "D2"),
+        (3, "D3"),
+        (3, "D4"),
+        (3, "D5"),
+        (3, "D6"),
+    ]
+    for page, name in content:
+        append_new_card_in_page(pages[page], name)
+    return document_light
+
+
+def gather_card_names(document: Document) -> list[str]:
+    return [
+        ",".join(container.card.name for container in page)
+        for page in document.pages
+    ]
+
+def generate_test_cases_for_card_moves():
+    # Tuples source, cards_to_move, target_page, target_row, expected
+    # Origin card order: ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+
+    # Move between pages
+    yield 0, [0], 1, None, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0], 1, 3, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0], 1, 0, ["A2,A3", "A1,B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0,2], 1, None, ["A2", "B1,B2,B3,A1,A3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [1], 1, None, ["A1,A3", "B1,B2,B3,A2", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0,1,2], 1, None, ["", "B1,B2,B3,A1,A2,A3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0,1,2], 1, 1, ["", "B1,A1,A2,A3,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 1, [0], 2, None, ["A1,A2,A3", "B2,B3", "B1", "D1,D2,D3,D4,D5,D6"]
+    yield 1, [0], 3, None, ["A1,A2,A3", "B2,B3", "", "D1,D2,D3,D4,D5,D6,B1"]
+    yield 3, [0, 2], 0, None, ["A1,A2,A3,D1,D3", "B1,B2,B3", "", "D2,D4,D5,D6"]
+
+    # Move within page
+    yield 0, [0], 0, None, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0], 0, 0, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0], 0, 1, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0], 0, 2, ["A2,A1,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0], 0, 3, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+
+
+@pytest.mark.parametrize(
+    "source, cards_to_move, target_page, target_row, expected",
+    generate_test_cases_for_card_moves())
+def test_apply(
+        document_with_cards: Document,
+        source: int, cards_to_move: list[int], target_page: int, target_row: int|None,
+        expected: list[str]):
+    action = ActionMoveCards(source, cards_to_move, target_page, target_row)
+    action.apply(document_with_cards)
+    assert_that(gather_card_names(document_with_cards), contains_exactly(*expected))
+
+
+@pytest.mark.parametrize(
+    "source, cards_to_move, target_page, target_row, expected",
+    generate_test_cases_for_card_moves())
+def test_undo(
+        document_with_cards: Document,
+        source: int, cards_to_move: list[int], target_page: int, target_row: int|None,
+        expected: list[str]):
+    action = ActionMoveCards(source, cards_to_move, target_page, target_row)
+    action.apply(document_with_cards)
+    try:
+        assert_that(gather_card_names(document_with_cards), contains_exactly(*expected))
+    except AssertionError:
+        pytest.skip("Test setup failed")
+    action.undo(document_with_cards)
+    assert_that(gather_card_names(document_with_cards), contains_exactly("A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3"))
