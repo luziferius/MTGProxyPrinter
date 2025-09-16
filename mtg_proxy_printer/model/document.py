@@ -14,21 +14,23 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import collections
-import json
+from collections import deque, Counter
 from collections.abc import Generator, Iterable
+import json
+import typing
 import enum
 import itertools
 import math
 from pathlib import Path
 import sys
-from typing import Any, Counter
+from typing import Any
 
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
     QPersistentModelIndex, QMimeData
 
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask, SingleActions
+from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
 from mtg_proxy_printer.document_controller.move_page import ActionMovePage
 from mtg_proxy_printer.model.imagedb_files import ImageKey
 from mtg_proxy_printer.natsort import to_list_of_ranges
@@ -45,16 +47,8 @@ from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 
-PAGE_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-PageMove"
-CARD_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-CardMove"
-
 logger = get_logger(__name__)
 del get_logger
-
-if sys.version_info[:2] >= (3, 9):
-    Counter = collections.Counter
-else:
-    Counter = Counter
 
 __all__ = [
     "Document",
@@ -66,12 +60,19 @@ class DocumentColumns(enum.IntEnum):
 
 
 INVALID_INDEX = QModelIndex()
-ActionStack = collections.deque[DocumentAction]
+ActionStack = deque[DocumentAction]
 AnyIndex = QModelIndex | QPersistentModelIndex
 ItemDataRole = Qt.ItemDataRole
 Orientation = Qt.Orientation
 ItemFlag = Qt.ItemFlag
 BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
+PAGE_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-PageMove"
+CARD_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-CardMove"
+
+
+class CardMoveMimeData(typing.TypedDict):
+    page: int
+    cards: list[int]
 
 
 class Document(QAbstractItemModel):
@@ -104,8 +105,8 @@ class Document(QAbstractItemModel):
             PageColumns.IsFront: self.tr("Side"),
         }
 
-        self.undo_stack: ActionStack = collections.deque()
-        self.redo_stack: ActionStack = collections.deque()
+        self.undo_stack: ActionStack = deque()
+        self.redo_stack: ActionStack = deque()
         self.save_file_path: Path | None = None
         self.card_db = card_db
         self.image_db = image_db
@@ -250,10 +251,10 @@ class Document(QAbstractItemModel):
         flags = super().flags(index)
         if isinstance(data, CardContainer) and (index.column() in self.EDITABLE_COLUMNS or data.card.is_custom_card):
             flags |= ItemFlag.ItemIsEditable
-        if isinstance(data, Page):
-            flags |= ItemFlag.ItemIsDragEnabled  # Pages can be moved
-        if not index.isValid():
-            flags |= ItemFlag.ItemIsDropEnabled  # Only the root can accept drops to not overwrite items
+        if isinstance(data, Page|CardContainer):
+            flags |= ItemFlag.ItemIsDragEnabled  # Pages and cards can be moved
+        if not index.isValid() or isinstance(data, Page):
+            flags |= ItemFlag.ItemIsDropEnabled  # Cards cannot accept drops.
         return flags
 
     def setData(self, index: AnyIndex, value: Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
@@ -306,10 +307,11 @@ class Document(QAbstractItemModel):
             mime_data.setData(PAGE_MOVE_MIME_TYPE, row.to_bytes(8))
             return mime_data
         page = first.parent().row()
-        cards = [index.row() for index in indexes]
+        cards = sorted(set(index.row() for index in indexes))
         logger.debug(f"Initiating drag for {len(cards)} cards on page {page}")
-        data = json.dumps({"page": page, "cards": cards}).encode("utf-8")
-        mime_data.setData(CARD_MOVE_MIME_TYPE, data)
+        data: CardMoveMimeData = {"page": page, "cards": cards}
+        encoded_data = json.dumps(data).encode("utf-8")
+        mime_data.setData(CARD_MOVE_MIME_TYPE, encoded_data)
         return mime_data
 
     def dropMimeData(
@@ -323,8 +325,9 @@ class Document(QAbstractItemModel):
             source_row = int.from_bytes(data.data(PAGE_MOVE_MIME_TYPE).data())
             self.apply(ActionMovePage(source_row, row))
         elif data.hasFormat(CARD_MOVE_MIME_TYPE):
-            card_data = json.loads(data.data(CARD_MOVE_MIME_TYPE).data())
+            card_data: CardMoveMimeData = json.loads(data.data(CARD_MOVE_MIME_TYPE).data())
             logger.debug(f"Received card drop onto {row=}: {card_data}")
+            self.apply(ActionMoveCards(card_data["page"], card_data["cards"], row))
 
         return False  # Move complete, so signal via False that the caller does not have to remove the source rows
 
@@ -396,7 +399,7 @@ class Document(QAbstractItemModel):
         return None
 
     def _get_page_preview(self, page: Page):
-        names = collections.Counter(container.card.name for container in page)
+        names = Counter(container.card.name for container in page)
         return "\n".join(self.tr(
             "%n× {name}",
             "Used to display a card name and amount of copies in the page overview. "
@@ -423,7 +426,7 @@ class Document(QAbstractItemModel):
         """
         Computes the number of pages that can be saved by compacting the document.
         """
-        cards: Counter[PageType] = collections.Counter()
+        cards: Counter[PageType] = Counter()
         for page in self.pages:
             cards[page.page_type()] += len(page)
         required_pages = (
