@@ -22,6 +22,7 @@ from PySide6.QtCore import QModelIndex, QObject
 from mtg_proxy_printer.natsort import to_list_of_ranges
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
+from .page_actions import ActionNewPage
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document_page import Page
@@ -40,7 +41,7 @@ class ActionMoveCards(DocumentAction):
     Values of consecutive card ranges are inclusive.
     """
 
-    COMPARISON_ATTRIBUTES = ["source_page", "target_page", "card_ranges_to_move", "target_row"]
+    COMPARISON_ATTRIBUTES = ["source_page", "target_page", "card_ranges_to_move", "target_row", "insert_page_action"]
 
     def __init__(
             self, source: int, cards_to_move: Sequence[int],
@@ -51,14 +52,22 @@ class ActionMoveCards(DocumentAction):
         :param target_page: The target page, as integer page number. (0-indexed)
         :param target_row: If given, the cards_to_move are inserted at that array index (0-indexed).
                            Existing cards in the target page at that index are pushed back.
+                           None means "append". -1 means "0, but insert new page at target_page"
         """
         super().__init__(parent)
+        if target_row == -1:
+            target_row = None
+            self.insert_page_action = ActionNewPage(target_page, parent=self)
+        else:
+            self.insert_page_action = None
         self.source_page = source
         self.target_page = target_page
         self.target_row = target_row
         self.card_ranges_to_move = to_list_of_ranges(cards_to_move)
 
     def apply(self, document: "Document") -> Self:
+        if self.insert_page_action is not None:
+            self.insert_page_action.apply(document)
         source_page = document.pages[self.source_page]
         target_page = document.pages[self.target_page]
         source_page_type = source_page.page_type()
@@ -72,6 +81,7 @@ class ActionMoveCards(DocumentAction):
         target_index = document.index(self.target_page, 0)
 
         target_row = len(target_page) if self.target_row is None else self.target_row
+
         for source_row_first, source_row_last in reversed(self.card_ranges_to_move):
             self._move_cards_to_target_page(
                 document, source_index, source_page, source_row_first, source_row_last, target_index,
@@ -112,7 +122,8 @@ class ActionMoveCards(DocumentAction):
                 document, source_index, source_page, source_row_first, source_row_last, target_index,
                 target_page, target_row_first
             )
-
+        if self.insert_page_action is not None:
+            self.insert_page_action.undo(document)
         if source_page.page_type() != source_page_type:
             document.page_type_changed.emit(source_index)
         if target_page.page_type() != target_page_type:
