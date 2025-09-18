@@ -23,7 +23,7 @@ import itertools
 import math
 from pathlib import Path
 import sys
-from typing import Any
+from typing import Any, Literal
 
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
     QPersistentModelIndex, QMimeData
@@ -68,7 +68,7 @@ ItemFlag = Qt.ItemFlag
 BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 PAGE_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-PageMove"
 CARD_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-CardMove"
-
+DRAG_OPERATION_TYPE = Literal["application/x-MTGProxyPrinter-PageMove"] | Literal["application/x-MTGProxyPrinter-CardMove"] | None
 
 class CardMoveMimeData(typing.TypedDict):
     page: int
@@ -115,6 +115,8 @@ class Document(QAbstractItemModel):
         self.page_index_cache: dict[int, int] = {id(first_page): 0}
         self.currently_edited_page = first_page
         self.page_layout = PageLayoutSettings.create_from_settings()
+        # The last started drag operation affects the index flags().
+        self.current_drag_operation: DRAG_OPERATION_TYPE = None
         logger.debug(f"Loaded document settings from configuration file: {self.page_layout}")
         logger.info(f"Created {self.__class__.__name__} instance")
 
@@ -253,8 +255,10 @@ class Document(QAbstractItemModel):
             flags |= ItemFlag.ItemIsEditable
         if isinstance(data, Page|CardContainer):
             flags |= ItemFlag.ItemIsDragEnabled  # Pages and cards can be moved
-        if not index.isValid() or isinstance(data, Page):
-            flags |= ItemFlag.ItemIsDropEnabled  # Cards cannot accept drops.
+        if (not index.isValid()  # Top level can accept any drop, both pages and cards, where the latter gets a new page
+            or (isinstance(data, Page) and self.current_drag_operation == CARD_MOVE_MIME_TYPE)  # Pages only accept cards
+        ):
+            flags |= ItemFlag.ItemIsDropEnabled
         return flags
 
     def setData(self, index: AnyIndex, value: Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
@@ -305,6 +309,7 @@ class Document(QAbstractItemModel):
             row = first.row()
             logger.debug(f"Initiating drag for page {row}")
             mime_data.setData(PAGE_MOVE_MIME_TYPE, row.to_bytes(8))
+            self.current_drag_operation = PAGE_MOVE_MIME_TYPE
             return mime_data
         page = first.parent().row()
         cards = sorted(set(index.row() for index in indexes))
@@ -312,6 +317,7 @@ class Document(QAbstractItemModel):
         data: CardMoveMimeData = {"page": page, "cards": cards}
         encoded_data = json.dumps(data).encode("utf-8")
         mime_data.setData(CARD_MOVE_MIME_TYPE, encoded_data)
+        self.current_drag_operation = CARD_MOVE_MIME_TYPE
         return mime_data
 
     def dropMimeData(
