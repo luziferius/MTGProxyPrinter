@@ -22,7 +22,6 @@ import enum
 import itertools
 import math
 from pathlib import Path
-import sys
 from typing import Any, Literal
 
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
@@ -117,6 +116,9 @@ class Document(QAbstractItemModel):
         self.page_layout = PageLayoutSettings.create_from_settings()
         # The last started drag operation affects the index flags().
         self.current_drag_operation: DRAG_OPERATION_TYPE = None
+        # Also note the size of dragged cards. This allows checking, if pages can accept the drop,
+        # to prevent creation of MIXED pages.
+        self.current_drag_card_size: PageType = PageType.UNDETERMINED
         logger.debug(f"Loaded document settings from configuration file: {self.page_layout}")
         logger.info(f"Created {self.__class__.__name__} instance")
 
@@ -256,8 +258,11 @@ class Document(QAbstractItemModel):
         if isinstance(data, Page|CardContainer):
             flags |= ItemFlag.ItemIsDragEnabled  # Pages and cards can be moved
         if (not index.isValid()  # Top level can accept any drop, both pages and cards, where the latter gets a new page
-            or (isinstance(data, Page) and self.current_drag_operation == CARD_MOVE_MIME_TYPE)  # Pages only accept cards
-        ):
+            or (
+                isinstance(data, Page)
+                and self.current_drag_operation == CARD_MOVE_MIME_TYPE  # Pages only accept cards …
+                and data.accepts_card(self.current_drag_card_size)  # with an acceptable size.
+                )):
             flags |= ItemFlag.ItemIsDropEnabled
         return flags
 
@@ -318,6 +323,7 @@ class Document(QAbstractItemModel):
         encoded_data = json.dumps(data).encode("utf-8")
         mime_data.setData(CARD_MOVE_MIME_TYPE, encoded_data)
         self.current_drag_operation = CARD_MOVE_MIME_TYPE
+        self.current_drag_card_size = self.pages[page].page_type()
         return mime_data
 
     def dropMimeData(
