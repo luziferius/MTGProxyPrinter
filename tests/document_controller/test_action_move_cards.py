@@ -638,7 +638,7 @@ def generate_test_cases_for_card_moves():
     # Tuples source, cards_to_move, target_page, target_row, expected
     # Origin card order: ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
 
-    # Move between pages
+    # Move onto another existing page
     yield 0, [0], 1, None, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]
     yield 0, [0], 1, 3, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]
     yield 0, [0], 1, 0, ["A2,A3", "A1,B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
@@ -653,7 +653,7 @@ def generate_test_cases_for_card_moves():
     yield 3, [0, 2, 3, 5], 0, -1, ["D1,D3,D4,D6", "A1,A2,A3", "B1,B2,B3", "", "D2,D5"]
     yield 3, [0, 2, 3, 5], 1, -1, ["A1,A2,A3", "D1,D3,D4,D6", "B1,B2,B3", "", "D2,D5"]
     # Move to new page at document end
-    yield 3, [0, 2, 3, 5], -1, -1, ["A1,A2,A3", "B1,B2,B3", "", "D2,D5", "D1,D3,D4,D6"]
+    yield 3, [0, 2, 3, 5], 4, -1, ["A1,A2,A3", "B1,B2,B3", "", "D2,D5", "D1,D3,D4,D6"]
 
     # Move within page
     yield 0, [0], 0, None, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
