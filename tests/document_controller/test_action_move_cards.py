@@ -14,7 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Optional
+from typing import Optional, Sequence
 
 import pytest
 from hamcrest import *
@@ -628,7 +628,7 @@ def document_with_cards(document_light: Document) -> Document:
     return document_light
 
 
-def gather_card_names(document: Document) -> list[str]:
+def gather_card_names(document: Document) -> Sequence[str]:
     return [
         ",".join(container.card.name for container in page)
         for page in document.pages
@@ -649,6 +649,11 @@ def generate_test_cases_for_card_moves():
     yield 1, [0], 2, None, ["A1,A2,A3", "B2,B3", "B1", "D1,D2,D3,D4,D5,D6"]
     yield 1, [0], 3, None, ["A1,A2,A3", "B2,B3", "", "D1,D2,D3,D4,D5,D6,B1"]
     yield 3, [0, 2], 0, None, ["A1,A2,A3,D1,D3", "B1,B2,B3", "", "D2,D4,D5,D6"]
+    # Move to new page before target_page
+    yield 3, [0, 2, 3, 5], 0, -1, ["D1,D3,D4,D6", "A1,A2,A3", "B1,B2,B3", "", "D2,D5"]
+    yield 3, [0, 2, 3, 5], 1, -1, ["A1,A2,A3", "D1,D3,D4,D6", "B1,B2,B3", "", "D2,D5"]
+    # Move to new page at document end
+    yield 3, [0, 2, 3, 5], -1, -1, ["A1,A2,A3", "B1,B2,B3", "", "D2,D5", "D1,D3,D4,D6"]
 
     # Move within page
     yield 0, [0], 0, None, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
@@ -667,7 +672,8 @@ def test_apply(
         expected: list[str]):
     action = ActionMoveCards(source, cards_to_move, target_page, target_row)
     action.apply(document_with_cards)
-    assert_that(gather_card_names(document_with_cards), contains_exactly(*expected))
+    result = gather_card_names(document_with_cards)
+    assert_that(result, contains_exactly(*expected), f"Got: {result}")
 
 
 @pytest.mark.parametrize(
@@ -684,4 +690,5 @@ def test_undo(
     except AssertionError:
         pytest.skip("Test setup failed")
     action.undo(document_with_cards)
-    assert_that(gather_card_names(document_with_cards), contains_exactly("A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3"))
+    result = gather_card_names(document_with_cards)
+    assert_that(result, contains_exactly("A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3"), f"Got: {result}")
