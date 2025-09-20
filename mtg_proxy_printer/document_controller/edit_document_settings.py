@@ -22,7 +22,7 @@ from PySide6.QtCore import QObject
 
 from ._interface import DocumentAction, ActionList, Self, split_iterable
 from .card_actions import ActionRemoveCards
-from .move_cards import ActionMoveCards
+from .move_cards import ActionMoveCardsBetweenPages
 from .page_actions import ActionNewPage
 from mtg_proxy_printer.logger import get_logger
 
@@ -112,7 +112,7 @@ class ActionEditDocumentSettings(DocumentAction):
         #  if the excess exceeds some threshold.
         for page_index, page in enumerate(partition.pages[:-1], start=start_index):
             if (page_length := len(page)) > page_capacity:
-                action = ActionMoveCards(page_index, range(page_capacity, page_length), page_index+1, 0)
+                action = ActionMoveCardsBetweenPages(page_index, range(page_capacity, page_length), page_index + 1, 0)
                 self.reflow_actions.append(action.apply(document))
         last_page = partition.pages[-1]
         if (page_length := len(last_page)) > page_capacity:

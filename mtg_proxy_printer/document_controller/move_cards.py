@@ -31,11 +31,12 @@ if typing.TYPE_CHECKING:
 logger = get_logger(__name__)
 del get_logger
 __all__ = [
-    "ActionMoveCards",
+    "ActionMoveCardsBetweenPages",
+    "ActionMoveCardsWithinPage",
 ]
 
 
-class ActionMoveCards(DocumentAction):
+class ActionMoveCardsBetweenPages(DocumentAction):
     """
     Moves a sequence of cards from a source page to a target page. By default, cards are appended.
     Values of consecutive card ranges are inclusive.
@@ -149,3 +150,32 @@ class ActionMoveCards(DocumentAction):
             "Move %n card(s) from page {source_page} to {target_page}",
             "Undo/redo tooltip text", count
         ).format(source_page=source_page, target_page=target_page)
+
+
+class ActionMoveCardsWithinPage(DocumentAction):
+    """Move a subset of cards on a page to another position within the same page."""
+
+    def __init__(
+            self, page: int, cards_to_move: Sequence[int],
+            target_row: int, parent: QObject = None):
+        """
+        :param page: The page with cards, as integer page number (0-indexed)
+        :param cards_to_move: The cards to move, as indices into the source Page. May be in any order. (0-indexed)
+        :param target_row: If given, the cards_to_move are inserted before that array index (0-indexed).
+        """
+        super().__init__(parent)
+        self.page = page
+        self.card_ranges_to_move = to_list_of_ranges(cards_to_move)
+        self.target_row = target_row
+
+    def _total_moved_cards(self) -> int:
+        return sum(last-first+1 for first, last in self.card_ranges_to_move)
+
+    @functools.cached_property
+    def as_str(self):
+        page = self.page+1
+        count = self._total_moved_cards()
+        return self.tr(
+            "Reorder %n card(s) on page {page}",
+            "Undo/redo tooltip text", count
+        ).format(page=page)

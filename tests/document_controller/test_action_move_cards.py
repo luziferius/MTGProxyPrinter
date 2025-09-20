@@ -26,7 +26,7 @@ from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
-from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
+from mtg_proxy_printer.document_controller.move_cards import ActionMoveCardsBetweenPages, ActionMoveCardsWithinPage
 
 from .helpers import card_container_with, append_new_card_in_page, card_container_with_name
 OptInt = Optional[int]
@@ -64,7 +64,7 @@ def test_apply_raises_exception_when_trying_to_create_a_mixed_size_page(document
     append_new_card_in_page(document_light.pages[1], "Large", CardSizes.OVERSIZED)
     assert_that(document_light.pages[0].page_type(), is_(PageType.REGULAR))
     assert_that(document_light.pages[1].page_type(), is_(PageType.OVERSIZED))
-    assert_that(calling(ActionMoveCards(0, [0], 1).apply).with_args(document_light), raises(IllegalStateError))
+    assert_that(calling(ActionMoveCardsBetweenPages(0, [0], 1).apply).with_args(document_light), raises(IllegalStateError))
 
 
 def test_apply_move_all_cards_onto_empty_page(qtbot: QtBot, document_light: Document):
@@ -76,7 +76,7 @@ def test_apply_move_all_cards_onto_empty_page(qtbot: QtBot, document_light: Docu
             [document_light.page_type_changed] * 2 + [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
             timeout=1000, check_params_cbs=[lambda index: index.row() == 0, lambda index: index.row() == 1] +
                                            [row_move_validator] * 2):
-        ActionMoveCards(0, [0], 1).apply(document_light)
+        ActionMoveCardsBetweenPages(0, [0], 1).apply(document_light)
 
     assert_that(
         pages,
@@ -99,7 +99,7 @@ def test_apply_move_all_cards_onto_partially_filled_page(qtbot: QtBot, document_
             [document_light.page_type_changed, document_light.rowsAboutToBeMoved, document_light.rowsMoved],
             timeout=1000, check_params_cbs=[lambda index: index.row() == 0] +
                                            [row_move_validator] * 2):
-        ActionMoveCards(0, [0], 1).apply(document_light)
+        ActionMoveCardsBetweenPages(0, [0], 1).apply(document_light)
 
     assert_that(
         pages,
@@ -125,7 +125,7 @@ def test_apply_move_subset_of_cards_onto_empty_page(qtbot: QtBot, document_light
             [document_light.page_type_changed, document_light.rowsAboutToBeMoved, document_light.rowsMoved],
             timeout=1000, check_params_cbs=[lambda index: index.row() == 1] +
                                            [row_move_validator] * 2):
-        ActionMoveCards(0, [0], 1).apply(document_light)
+        ActionMoveCardsBetweenPages(0, [0], 1).apply(document_light)
 
     assert_that(
         pages,
@@ -150,7 +150,7 @@ def test_apply_move_subset_of_cards_onto_partially_filled_page(qtbot: QtBot, doc
             qtbot.wait_signals(
                 [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
                 timeout=1000, check_params_cbs=[row_move_validator] * 2):
-        ActionMoveCards(0, [0], 1).apply(document_light)
+        ActionMoveCardsBetweenPages(0, [0], 1).apply(document_light)
 
     assert_that(
         pages,
@@ -194,7 +194,7 @@ def test_apply_move_center_block(qtbot: QtBot, document_light: Document):
             qtbot.wait_signals(
                 [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
                 timeout=1000, check_params_cbs=[row_move_validator] * 2):
-        ActionMoveCards(0, [1, 2], 1).apply(document_light)
+        ActionMoveCardsBetweenPages(0, [1, 2], 1).apply(document_light)
 
     assert_that(
         pages,
@@ -237,7 +237,7 @@ def test_apply_move_two_separate_cards(qtbot: QtBot, document_light: Document):
             qtbot.wait_signals(
                 [document_light.rowsAboutToBeMoved, document_light.rowsMoved]*2,
                 timeout=1000, check_params_cbs=[row_move_validator_1] * 2 + [row_move_validator_2] * 2):
-        ActionMoveCards(0, [0, 2], 1).apply(document_light)
+        ActionMoveCardsBetweenPages(0, [0, 2], 1).apply(document_light)
     assert_that(
         pages,
         contains_exactly(
@@ -258,7 +258,7 @@ def test_apply_move_card_with_target_inserts_at_front(qtbot: QtBot, document_lig
     card_1 = append_new_card_in_page(pages[0], "Move1")
     not_moved = append_new_card_in_page(pages[0], "Stay on 0")
     card_2 = append_new_card_in_page(pages[1], "After")
-    action = ActionMoveCards(0, [0], 1, 0)
+    action = ActionMoveCardsBetweenPages(0, [0], 1, 0)
     row_move_validator = partial(validate_qt_model_move_signal_parameter, 0, 0, 0, 1, 0)
     with qtbot.assert_not_emitted(document_light.page_type_changed), \
             qtbot.wait_signals(
@@ -287,7 +287,7 @@ def test_apply_move_card_with_target_inserts_between_cards(qtbot: QtBot, documen
     not_moved = append_new_card_in_page(pages[0], "Stay on 0")
     card_2 = append_new_card_in_page(pages[1], "Before")
     card_3 = append_new_card_in_page(pages[1], "After")
-    action = ActionMoveCards(0, [0], 1, 1)
+    action = ActionMoveCardsBetweenPages(0, [0], 1, 1)
     row_move_validator = partial(validate_qt_model_move_signal_parameter, 0, 0, 0, 1, 1)
     with qtbot.assert_not_emitted(document_light.page_type_changed), \
             qtbot.wait_signals(
@@ -317,7 +317,7 @@ def test_apply_move_card_with_target_appends_to_page(qtbot: QtBot, document_ligh
     card_1 = append_new_card_in_page(pages[0], "Move1")
     not_moved = append_new_card_in_page(pages[0], "Stay on 0")
     card_2 = append_new_card_in_page(pages[1], "Before")
-    action = ActionMoveCards(0, [0], 1, target_row)
+    action = ActionMoveCardsBetweenPages(0, [0], 1, target_row)
     row_move_validator = partial(validate_qt_model_move_signal_parameter, 0, 0, 0, 1, 1)
     with qtbot.assert_not_emitted(document_light.page_type_changed), \
             qtbot.wait_signals(
@@ -345,7 +345,7 @@ def test_apply_without_indices_does_nothing(qtbot: QtBot, document_light: Docume
     ActionNewPage().apply(document_light)
     card_1 = append_new_card_in_page(pages[0], "Move1")
     card_2 = append_new_card_in_page(pages[1], "After")
-    action = ActionMoveCards(0, [], 1, target_row)
+    action = ActionMoveCardsBetweenPages(0, [], 1, target_row)
     with qtbot.assert_not_emitted(document_light.page_type_changed), \
             qtbot.assert_not_emitted(document_light.rowsAboutToBeMoved), \
             qtbot.assert_not_emitted(document_light.rowsMoved):
@@ -366,14 +366,14 @@ def test_apply_without_indices_does_nothing(qtbot: QtBot, document_light: Docume
 
 @pytest.mark.parametrize("indices", [[], [0], [1], [0, 1], [0, 2], [0, 1, 2], [0, 1, 3, 4]])
 def test___total_moved_cards(indices: IntList):
-    action = ActionMoveCards(0, indices, 0)
+    action = ActionMoveCardsBetweenPages(0, indices, 0)
     expected_result = len(indices)
     assert_that(action._total_moved_cards(), is_(equal_to(expected_result)))
 
 
 def _create_applied_action(
-        source: int, cards_to_move: list[int], target_page: int, target_row: int = None) -> ActionMoveCards:
-    action = ActionMoveCards(source, cards_to_move, target_page, target_row)
+        source: int, cards_to_move: list[int], target_page: int, target_row: int = None) -> ActionMoveCardsBetweenPages:
+    action = ActionMoveCardsBetweenPages(source, cards_to_move, target_page, target_row)
     action._already_applied = True
     return action
 
@@ -634,7 +634,7 @@ def gather_card_names(document: Document) -> Sequence[str]:
         for page in document.pages
     ]
 
-def generate_test_cases_for_card_moves():
+def generate_test_cases_for_card_moves_between_pages():
     # Tuples source, cards_to_move, target_page, target_row, expected
     # Origin card order: ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
 
@@ -655,22 +655,15 @@ def generate_test_cases_for_card_moves():
     # Move to new page at document end
     yield 3, [0, 2, 3, 5], 4, -1, ["A1,A2,A3", "B1,B2,B3", "", "D2,D5", "D1,D3,D4,D6"]
 
-    # Move within page
-    yield 0, [0], 0, None, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0], 0, 0, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0], 0, 1, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0], 0, 2, ["A2,A1,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0], 0, 3, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-
 
 @pytest.mark.parametrize(
     "source, cards_to_move, target_page, target_row, expected",
-    generate_test_cases_for_card_moves())
-def test_apply(
+    generate_test_cases_for_card_moves_between_pages())
+def test_ActionMoveCardsBetweenPages_apply(
         document_with_cards: Document,
         source: int, cards_to_move: list[int], target_page: int, target_row: int|None,
         expected: list[str]):
-    action = ActionMoveCards(source, cards_to_move, target_page, target_row)
+    action = ActionMoveCardsBetweenPages(source, cards_to_move, target_page, target_row)
     action.apply(document_with_cards)
     result = gather_card_names(document_with_cards)
     assert_that(result, contains_exactly(*expected), f"Got: {result}")
@@ -678,12 +671,12 @@ def test_apply(
 
 @pytest.mark.parametrize(
     "source, cards_to_move, target_page, target_row, expected",
-    generate_test_cases_for_card_moves())
-def test_undo(
+    generate_test_cases_for_card_moves_between_pages())
+def test_ActionMoveCardsBetweenPages_undo(
         document_with_cards: Document,
         source: int, cards_to_move: list[int], target_page: int, target_row: int|None,
         expected: list[str]):
-    action = ActionMoveCards(source, cards_to_move, target_page, target_row)
+    action = ActionMoveCardsBetweenPages(source, cards_to_move, target_page, target_row)
     action.apply(document_with_cards)
     try:
         assert_that(gather_card_names(document_with_cards), contains_exactly(*expected))
@@ -691,4 +684,47 @@ def test_undo(
         pytest.skip("Test setup failed")
     action.undo(document_with_cards)
     result = gather_card_names(document_with_cards)
-    assert_that(result, contains_exactly("A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3"), f"Got: {result}")
+    assert_that(result, contains_exactly("A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"), f"Got: {result}")
+
+def generate_test_cases_for_card_moves_within_page():
+    # Tuples page, cards_to_move, target_row, expected
+    # Origin card order: ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+
+    yield 0, [0], None, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0], 0, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0], 1, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0], 2, ["A2,A1,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0], 3, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 3, [0,1,5], None, ["A1,A2,A3", "B1,B2,B3", "", "D3,D4,D5,D1,D2,D6"]
+    yield 3, [0, 5], 0, ["A1,A2,A3", "B1,B2,B3", "", "D1,D6,D2,D3,D4,D5"]
+    yield 3, [0, 5], 3, ["A1,A2,A3", "B1,B2,B3", "", "D2,D3,D1,D6,D4,D5"]
+
+
+@pytest.mark.parametrize(
+    "page, cards_to_move, target_row, expected",
+    generate_test_cases_for_card_moves_within_page())
+def test_ActionMoveCardsWithinPage_apply(
+        document_with_cards: Document,
+        page: int, cards_to_move: list[int], target_row: int|None,
+        expected: list[str]):
+    action = ActionMoveCardsWithinPage(page, cards_to_move, target_row)
+    action.apply(document_with_cards)
+    result = gather_card_names(document_with_cards)
+    assert_that(result, contains_exactly(*expected), f"Got: {result}")
+
+@pytest.mark.parametrize(
+    "page, cards_to_move, target_row, expected",
+    generate_test_cases_for_card_moves_within_page())
+def test_ActionMoveCardsWithinPage_undo(
+        document_with_cards: Document,
+        page: int, cards_to_move: list[int], target_row: int|None,
+        expected: list[str]):
+    action = ActionMoveCardsWithinPage(page, cards_to_move, target_row)
+    action.apply(document_with_cards)
+    try:
+        assert_that(gather_card_names(document_with_cards), contains_exactly(*expected))
+    except AssertionError:
+        pytest.skip("Test setup failed")
+    action.undo(document_with_cards)
+    result = gather_card_names(document_with_cards)
+    assert_that(result, contains_exactly("A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"), f"Got: {result}")

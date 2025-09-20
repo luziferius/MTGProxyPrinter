@@ -27,7 +27,7 @@ from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
-from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
+from mtg_proxy_printer.document_controller.move_cards import ActionMoveCardsBetweenPages
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
 from tests.helpers import create_card
@@ -205,7 +205,7 @@ def test_undo_restores_old_page_content(qtbot: QtBot, document_light: Document):
     document_light.page_layout.page_height += 1*unit_registry.mm
     action.reflow_actions += [
         new_page,
-        ActionMoveCards(0, range(7, 10), 1)
+        ActionMoveCardsBetweenPages(0, range(7, 10), 1)
     ]
     for sub_action in action.reflow_actions:
         sub_action._already_applied = True

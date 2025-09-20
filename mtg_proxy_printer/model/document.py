@@ -29,7 +29,10 @@ from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
 
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask, SingleActions
-from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
+from mtg_proxy_printer.document_controller import DocumentAction
+from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
+from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
+from mtg_proxy_printer.document_controller.move_cards import ActionMoveCardsBetweenPages, ActionMoveCardsWithinPage
 from mtg_proxy_printer.document_controller.move_page import ActionMovePage
 from mtg_proxy_printer.model.imagedb_files import ImageKey
 from mtg_proxy_printer.natsort import to_list_of_ranges
@@ -42,9 +45,6 @@ from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 
-from mtg_proxy_printer.document_controller import DocumentAction
-from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
-from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 
 logger = get_logger(__name__)
 del get_logger
@@ -351,16 +351,22 @@ class Document(QAbstractItemModel):
             card_data: CardMoveMimeData = json.loads(data.data(CARD_MOVE_MIME_TYPE).data())
             logger.debug(f"Received card drop onto {row=}: {card_data}")
             # Case 1:  Cards are dropped onto an existing page, given by parent.row().
-            if parent.isValid():  # and row == column == -1 is True
-                # TODO: Can row be != -1? D&D within same page?
-                action = ActionMoveCards(card_data["page"], card_data["cards"], parent.row(), None)
+            if parent.isValid():
+                if row == column == -1:
+                    # The drop ended on empty space within the page card table view.
+                    # Append the cards at the end of the given page
+                    row = self.rowCount(parent)
+                if parent.row() == card_data["page"]:
+                    action = ActionMoveCardsWithinPage(parent.row(), card_data["cards"], row)
+                else:
+                    action = ActionMoveCardsBetweenPages(card_data["page"], card_data["cards"], parent.row(), None)
             else:
                 # Case 2: Cards are dropped between pages, and a new page must be inserted for the dropped cards
                 if row == column == -1:
                     # Subcase 1: The drop ended on empty space within the view. Append a new page.
                     row = self.rowCount()
                 # Subcase 2: Cards are moved to row on the page given by parent
-                action = ActionMoveCards(card_data["page"], card_data["cards"], row, -1)
+                action = ActionMoveCardsBetweenPages(card_data["page"], card_data["cards"], row, -1)
             self.apply(action)
 
         return False  # Move complete, so signal via False that the caller does not have to remove the source rows

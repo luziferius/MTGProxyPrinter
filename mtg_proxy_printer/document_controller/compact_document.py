@@ -21,7 +21,7 @@ from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import PageType
 from ._interface import DocumentAction, IllegalStateError, ActionList, Self
 from .page_actions import ActionRemovePage
-from .move_cards import ActionMoveCards
+from .move_cards import ActionMoveCardsBetweenPages
 
 from mtg_proxy_printer.logger import get_logger
 
@@ -83,7 +83,7 @@ class ActionCompactDocument(DocumentAction):
                         last_index -= 1
                         continue
                     cards_to_take = min(len(page_to_draw_from), cards_to_add)
-                    action = ActionMoveCards(last_index, range(cards_to_take), current_index)
+                    action = ActionMoveCardsBetweenPages(last_index, range(cards_to_take), current_index)
                     self.actions.append(action.apply(document))
                     cards_to_add -= cards_to_take
                     logger.debug(f"Moved {cards_to_take} from page {last_index} to page {current_index}. "
