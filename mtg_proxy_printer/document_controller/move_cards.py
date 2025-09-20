@@ -171,6 +171,29 @@ class ActionMoveCardsWithinPage(DocumentAction):
     def _total_moved_cards(self) -> int:
         return sum(last-first+1 for first, last in self.card_ranges_to_move)
 
+    def apply(self, document: "Document") -> Self:
+        super().apply(document)
+        page_index = document.index(self.page, 0)
+        page: Page = page_index.internalPointer()
+        for first, last in reversed(self.card_ranges_to_move):
+            target_row = self.target_row
+            if first <= target_row <= last+1:
+                continue
+            moved_cards = last-first+1
+            document.beginMoveRows(page_index, first, last, page_index, target_row)
+            cards = page[first:last+1]
+            del page[first:last+1]
+            # If cards were removed before the target row, the target shifts that many slots to the front.
+            target_row -= (last < self.target_row) * moved_cards
+            page[target_row:target_row] = cards
+            document.endMoveRows()
+        return self
+
+    def undo(self, document: "Document") -> Self:
+        super().undo(document)
+
+        return self
+
     @functools.cached_property
     def as_str(self):
         page = self.page+1
