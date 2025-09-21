@@ -1,5 +1,13 @@
 # Changelog
 
+# Next version (in development)
+
+# New features
+
+- Move cards around via drag&drop
+  - Drop onto other pages to move cards to those pages
+  - Drop cards between pages to insert a new page with the cards at that location
+
 # Version 0.34.0 (2025-09-11)  <a name="v0_34_0"></a>
 
 # New features
