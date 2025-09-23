@@ -363,19 +363,11 @@ class PageScene(QGraphicsScene):
             card_item = CardItem(index, self.document)
             self.addItem(card_item)
             card_item.setPos(position)
-            if next_item is not None:
-                # See https://doc.qt.io/qt-6/qgraphicsitem.html#sorting
-                # "You can call stackBefore() to reorder the list of children.
-                # This will directly modify the insertion order."
-                # This is required to keep the card order consistent with the model when inserting cards in the
-                # middle of the page. This can happen when undoing a card removal. The caller has to supply the
-                # item which’s position the new item takes.
-                card_item.stackBefore(next_item)
 
     def update_card_positions(self):
         page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
-        for index, card in enumerate(self.card_items):
-            card.setPos(self._compute_position_for_image(index, page_type))
+        for card in self.card_items:
+            card.setPos(self._compute_position_for_image(card.index.row(), page_type))
 
     def _is_valid_page_index(self, index: QModelIndex | QPersistentModelIndex):
         return index.isValid() and not index.parent().isValid() and index.row() < self.document.rowCount()
@@ -466,11 +458,6 @@ class PageScene(QGraphicsScene):
             self.on_rows_removed(parent, start, end)
         elif source_page_row == current_page_row == destination_page_row:
             logger.debug("Cards moved within the current page, reordering them")
-            card_items = self.card_items
-            # Dropping at the end has row pointing one item out of bounds
-            target_item = card_items[min(row, len(card_items)-1)]
-            for item in card_items[start:end + 1]:
-                item.stackBefore(target_item)
             self.update_card_positions()
         # Remaining cases are card moves happening "off-screen", so nothing has to be done on them.
 
