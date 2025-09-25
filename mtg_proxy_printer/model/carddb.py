@@ -474,6 +474,14 @@ class CardDatabase(QObject):
         return list(starmap(MTGSet, self.db.execute(query, parameters)))
 
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
+        """
+        Returns the printing identified by the scryfall_id and side.
+        Returns None, if such printing does not exist, or if the requested printing is hidden.
+
+        :param scryfall_id: UUID of the requested printing
+        :param is_front: Side of the printing. True returns the front, False returns the back, if it exists.
+        :return: A Card, if it exists and is visible, None otherwise
+        """
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
             highres_image, is_oversized, face_number, is_dfc -- get_card_with_scryfall_id()

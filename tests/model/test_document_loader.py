@@ -27,6 +27,7 @@ import pytest
 from hamcrest import *
 
 from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader, CardType
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 from tests.helpers import quantity_close_to
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes
 from mtg_proxy_printer.model.card import CheckCard
@@ -34,6 +35,7 @@ import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+import mtg_proxy_printer.settings
 
 from tests.helpers import create_save_database_with
 
@@ -414,3 +416,26 @@ def test_load_correctly_sets_document_title(
             qtbot.assert_not_emitted(loader.loading_file_failed):
         loader.run()
     assert_that(document.page_layout, has_property("document_name", equal_to(title)))
+
+
+def test_load_works_with_hidden_card_without_replacement(
+        qtbot: QtBot, empty_save_database: sqlite3.Connection, loader: DocumentLoader
+):
+    oversized_id = "650722b4-d72b-4745-a1a5-00a34836282b"
+    create_save_database_with(
+        empty_save_database,
+        [(1, CardSizes.OVERSIZED)],
+        [(1, 1, True, oversized_id, CardType.REGULAR)],
+        PageLayoutSettings.create_from_settings())
+    with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings["card-filter"], {"hide-oversized-cards": "True",}):
+        PrintingFilterUpdater(
+            loader.document.card_db, loader.document.card_db.db, force_update_hidden_column=True
+        ).run()
+    assert_that(
+        loader.document.card_db.get_card_with_scryfall_id(oversized_id, True), is_(none()),
+        "Setup failed. Printing not hidden."
+    )
+    with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database), \
+            qtbot.wait_signals([loader.load_requested, loader.document.action_applied, loader.unknown_scryfall_ids_found]), \
+            qtbot.assert_not_emitted(loader.loading_file_failed):
+        loader.run()

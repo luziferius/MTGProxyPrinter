@@ -1,5 +1,12 @@
 # Changelog
 
+# Next version (in development)
+
+# Fixed issues
+
+- Fixed crash when trying to load a document that contains a hidden printing
+  that does not have an available replacement printing.
+
 # Version 0.34.0 (2025-09-11)  <a name="v0_34_0"></a>
 
 # New features
