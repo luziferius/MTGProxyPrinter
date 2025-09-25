@@ -157,11 +157,11 @@ class ActionMoveCardsWithinPage(DocumentAction):
 
     def __init__(
             self, page: int, cards_to_move: Sequence[int],
-            target_row: int, parent: QObject = None):
+            target_row: int | None, parent: QObject = None):
         """
         :param page: The page with cards, as integer page number (0-indexed)
         :param cards_to_move: The cards to move, as indices into the source Page. May be in any order. (0-indexed)
-        :param target_row: If given, the cards_to_move are inserted before that array index (0-indexed).
+        :param target_row: The cards_to_move are inserted before that array index (0-indexed).
         """
         super().__init__(parent)
         self.page = page
@@ -175,23 +175,42 @@ class ActionMoveCardsWithinPage(DocumentAction):
         super().apply(document)
         page_index = document.index(self.page, 0)
         page: Page = page_index.internalPointer()
-        for first, last in reversed(self.card_ranges_to_move):
-            target_row = self.target_row
+        for first, last in self.card_ranges_to_move:
+            target_row = self._get_target_row(document, page_index)
             if first <= target_row <= last+1:
                 continue
-            moved_cards = last-first+1
+            moved_cards_count = last-first+1
             document.beginMoveRows(page_index, first, last, page_index, target_row)
-            cards = page[first:last+1]
+            moving_cards = page[first:last+1]
             del page[first:last+1]
-            # If cards were removed before the target row, the target shifts that many slots to the front.
-            target_row -= (last < self.target_row) * moved_cards
-            page[target_row:target_row] = cards
+            # If cards were removed before the target row, the target shifts moved_cards_count slots to the front.
+            target_row -= (last < target_row) * moved_cards_count
+            page[target_row:target_row] = moving_cards
             document.endMoveRows()
         return self
 
+    def _get_target_row(self, document: "Document", page_index: QModelIndex):
+        return self.target_row if isinstance(self.target_row, int) else document.rowCount(page_index)
+
     def undo(self, document: "Document") -> Self:
         super().undo(document)
+        page_index = document.index(self.page, 0)
+        page: Page = page_index.internalPointer()
+        for first, last in self.card_ranges_to_move:
+            source_row = self._get_target_row(document, page_index)
+            if first <= source_row <= last+1:
+                continue
+            moved_cards_count = last-first+1
+            # The range spanning to source_row is excluding the tail, so subtract 1
+            # to convert it to a Qt-style inclusive index range
+            document.beginMoveRows(page_index, source_row-moved_cards_count, source_row-1, page_index, first)
 
+            moving_cards = page[source_row-moved_cards_count:source_row]
+            del page[source_row-moved_cards_count:source_row]
+            # If cards were moved to the front during apply(), the target shifts moved_cards_count slots to the front.
+            first -= (first > source_row) * moved_cards_count
+            page[first:first] = moving_cards
+            document.endMoveRows()
         return self
 
     @functools.cached_property
