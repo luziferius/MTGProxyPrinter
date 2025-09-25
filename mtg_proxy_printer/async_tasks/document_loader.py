@@ -195,7 +195,6 @@ class DocumentLoader(AsyncTask):
     def _complete_loading(self):
         if self.unknown_ids or self.migrated_ids:
             self.unknown_scryfall_ids_found.emit(self.unknown_ids, self.migrated_ids)
-            self.unknown_ids = self.migrated_ids = 0
         self.task_completed.emit()
 
     def _load_document(self):
@@ -209,6 +208,7 @@ class DocumentLoader(AsyncTask):
         pages = self._load_cards(save_db) if total_cards else []
         save_db.rollback()
         save_db.close()
+        del save_db
         self._fix_mixed_pages(pages, page_layout)
         self.advance_progress.emit()
         # Imported here to break a circular import
@@ -286,10 +286,16 @@ class DocumentLoader(AsyncTask):
                         continue
 
             elif scryfall_id:
-                loaded = self._load_official_card_from_save(card_row)
-                result.append(loaded.card)
-                if loaded.was_migrated:
-                    self.migrated_ids += 1
+                match self._load_official_card_from_save(card_row):
+                    case None:
+                        self.unknown_ids += 1
+                    case DatabaseLoadResult(card=card, was_migrated=True):
+                        self.migrated_ids += 1
+                        result.append(card)
+                    case DatabaseLoadResult(card=card):
+                        result.append(card)
+                    case _:
+                        raise RuntimeError("Invalid case entered")
             else:
                 result.append(self.document.get_empty_card_for_size(card_size))
             self.advance_progress.emit()

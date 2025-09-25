@@ -191,6 +191,9 @@ class Application(QApplication):
         task.network_error_occurred.connect(main_window.on_network_error_occurred)
         if hasattr(task, "request_action"):
             task.request_action.connect(self.document.apply, BlockingQueuedConnection)
+        if hasattr(task, "unknown_scryfall_ids_found"):
+            task.unknown_scryfall_ids_found.connect(
+                self.main_window.on_document_loading_found_unknown_scryfall_ids,BlockingQueuedConnection)
         if task.report_progress:
             main_window.progress_bar_manager.add_task(task)
         logger.debug(f"Starting task {task}")
