@@ -12,7 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import enum
 from collections.abc import Sequence
 import functools
 import typing
@@ -152,6 +152,13 @@ class ActionMoveCardsBetweenPages(DocumentAction):
         ).format(source_page=source_page, target_page=target_page)
 
 
+class CardMove(typing.NamedTuple):
+    first: int
+    last: int
+    target_row: int
+    moved_cards_count: int
+
+
 class ActionMoveCardsWithinPage(DocumentAction):
     """Move a subset of cards on a page to another position within the same page."""
 
@@ -171,15 +178,50 @@ class ActionMoveCardsWithinPage(DocumentAction):
     def _total_moved_cards(self) -> int:
         return sum(last-first+1 for first, last in self.card_ranges_to_move)
 
+    def _get_card_move_ranges_without_zero_moves_at_ends(self, target_row: int, cards_on_page: int):
+        card_ranges = self.card_ranges_to_move.copy()
+        # Shortcut two special cases:
+        # If the first row is selected and the target is before the first row, skip that move and move the target back
+        # so that further moves put cards after the first block
+        if target_row == (card_range := card_ranges[0])[0] == 0:
+            target_row += card_range[1] - card_range[0] + 1
+            del card_ranges[0]
+        if not card_ranges:
+            return [], target_row
+        # If the last row is selected and the target is after the last row, skip that move and move the target forward
+        # so that further moves put cards before the last block
+        if target_row == (card_range := card_ranges[-1])[1] + 1 == cards_on_page:
+            target_row -= card_range[1] - card_range[0] + 1
+            del card_ranges[-1]
+        return card_ranges, target_row
+
+    def _compute_card_moves(self, document: "Document", page_index: QModelIndex):
+        result: list[CardMove] = []
+        card_ranges, target_row = self._get_card_move_ranges_without_zero_moves_at_ends(
+            self._get_target_row(document, page_index), document.rowCount(page_index))
+        if not card_ranges:
+            return result
+
+        source_offset = 0
+        for first, last in card_ranges:
+            moved_cards = last-first+1
+            if first <= target_row <= last+1:
+                # This batch of cards is currently at the correct location already, so no need to do anything further
+                continue
+            if last < target_row:
+                # While processing batches before the target_row, moving cards to the back will move the next ranges
+                # by that many cards to the front
+                first -= source_offset
+                last -= source_offset
+                source_offset += moved_cards
+            result.append(CardMove(first, last, target_row, moved_cards))
+        return result
+
     def apply(self, document: "Document") -> Self:
         super().apply(document)
         page_index = document.index(self.page, 0)
         page: Page = page_index.internalPointer()
-        for first, last in self.card_ranges_to_move:
-            target_row = self._get_target_row(document, page_index)
-            if first <= target_row <= last+1:
-                continue
-            moved_cards_count = last-first+1
+        for first, last, target_row, moved_cards_count in self._compute_card_moves(document, page_index):
             document.beginMoveRows(page_index, first, last, page_index, target_row)
             moving_cards = page[first:last+1]
             del page[first:last+1]

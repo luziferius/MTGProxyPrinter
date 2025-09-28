@@ -642,10 +642,10 @@ def generate_test_cases_for_card_moves_between_pages():
     yield 0, [0], 1, None, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]
     yield 0, [0], 1, 3, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]
     yield 0, [0], 1, 0, ["A2,A3", "A1,B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0,2], 1, None, ["A2", "B1,B2,B3,A1,A3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0, 2], 1, None, ["A2", "B1,B2,B3,A1,A3", "", "D1,D2,D3,D4,D5,D6"]
     yield 0, [1], 1, None, ["A1,A3", "B1,B2,B3,A2", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0,1,2], 1, None, ["", "B1,B2,B3,A1,A2,A3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0,1,2], 1, 1, ["", "B1,A1,A2,A3,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0, 1, 2], 1, None, ["", "B1,B2,B3,A1,A2,A3", "", "D1,D2,D3,D4,D5,D6"]
+    yield 0, [0, 1, 2], 1, 1, ["", "B1,A1,A2,A3,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
     yield 1, [0], 2, None, ["A1,A2,A3", "B2,B3", "B1", "D1,D2,D3,D4,D5,D6"]
     yield 1, [0], 3, None, ["A1,A2,A3", "B2,B3", "", "D1,D2,D3,D4,D5,D6,B1"]
     yield 3, [0, 2], 0, None, ["A1,A2,A3,D1,D3", "B1,B2,B3", "", "D2,D4,D5,D6"]
@@ -690,14 +690,16 @@ def generate_test_cases_for_card_moves_within_page():
     # Tuples page, cards_to_move, target_row, expected
     # Origin card order: ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
 
-    yield 0, [0], None, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0], 0, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0], 1, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0], 2, ["A2,A1,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0], 3, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 3, [0,1,5], None, ["A1,A2,A3", "B1,B2,B3", "", "D3,D4,D5,D1,D2,D6"]
-    yield 3, [0, 5], 0, ["A1,A2,A3", "B1,B2,B3", "", "D1,D6,D2,D3,D4,D5"]
-    yield 3, [0, 5], 3, ["A1,A2,A3", "B1,B2,B3", "", "D2,D3,D1,D6,D4,D5"]
+    yield 0, [0], None, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 0
+    yield 0, [0], 0, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 1
+    yield 0, [0], 1, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 2
+    yield 0, [0], 2, ["A2,A1,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 3
+    yield 0, [0], 3, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 4
+    yield 3, [0, 1, 5], None, ["A1,A2,A3", "B1,B2,B3", "", "D3,D4,D5,D1,D2,D6"]  # 5
+    yield 3, [0, 5], 0, ["A1,A2,A3", "B1,B2,B3", "", "D1,D6,D2,D3,D4,D5"]  # 6
+    yield 3, [0, 5], 3, ["A1,A2,A3", "B1,B2,B3", "", "D2,D3,D1,D6,D4,D5"]  # 7
+    yield 3, [0, 2], 4, ["A1,A2,A3", "B1,B2,B3", "", "D2,D4,D1,D3,D5,D6"]  # 8
+    yield 3, [3, 5], 0, ["A1,A2,A3", "B1,B2,B3", "", "D4,D6,D1,D2,D3,D5"]  # 9
 
 
 @pytest.mark.parametrize(
