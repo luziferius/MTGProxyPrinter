@@ -700,6 +700,7 @@ def generate_test_cases_for_card_moves_within_page():
     yield 3, [0, 5], 3, ["A1,A2,A3", "B1,B2,B3", "", "D2,D3,D1,D6,D4,D5"]  # 7
     yield 3, [0, 2], 4, ["A1,A2,A3", "B1,B2,B3", "", "D2,D4,D1,D3,D5,D6"]  # 8
     yield 3, [3, 5], 0, ["A1,A2,A3", "B1,B2,B3", "", "D4,D6,D1,D2,D3,D5"]  # 9
+    yield 3, [1, 2, 4, 5], 0, ["A1,A2,A3", "B1,B2,B3", "", "D2,D3,D5,D6,D1,D4"]  # 10
 
 
 @pytest.mark.parametrize(

@@ -215,6 +215,9 @@ class ActionMoveCardsWithinPage(DocumentAction):
                 last -= source_offset
                 source_offset += moved_cards
             result.append(CardMove(first, last, target_row, moved_cards))
+            if first > target_row:
+                # When moving cards to the front, the target row moves back that many cards to keep the order stable
+                target_row += moved_cards
         return result
 
     def apply(self, document: "Document") -> Self:
