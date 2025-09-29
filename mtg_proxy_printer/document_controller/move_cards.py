@@ -224,7 +224,8 @@ class ActionMoveCardsWithinPage(DocumentAction):
         super().apply(document)
         page_index = document.index(self.page, 0)
         page: Page = page_index.internalPointer()
-        for first, last, target_row, moved_cards_count in self._compute_card_moves(document, page_index):
+        for first, last, target_row, moved_cards_count in self._compute_card_moves(
+                document, page_index):  # type: int, int, int, int
             document.beginMoveRows(page_index, first, last, page_index, target_row)
             moving_cards = page[first:last+1]
             del page[first:last+1]
@@ -241,19 +242,14 @@ class ActionMoveCardsWithinPage(DocumentAction):
         super().undo(document)
         page_index = document.index(self.page, 0)
         page: Page = page_index.internalPointer()
-        for first, last in self.card_ranges_to_move:
-            source_row = self._get_target_row(document, page_index)
-            if first <= source_row <= last+1:
-                continue
-            moved_cards_count = last-first+1
-            # The range spanning to source_row is excluding the tail, so subtract 1
-            # to convert it to a Qt-style inclusive index range
-            document.beginMoveRows(page_index, source_row-moved_cards_count, source_row-1, page_index, first)
-
-            moving_cards = page[source_row-moved_cards_count:source_row]
-            del page[source_row-moved_cards_count:source_row]
-            # If cards were moved to the front during apply(), the target shifts moved_cards_count slots to the front.
-            first -= (first > source_row) * moved_cards_count
+        for first, last, target_row, moved_cards_count in reversed(self._compute_card_moves(
+                document, page_index)):  # type: int, int, int, int
+            undo_first = target_row-moved_cards_count
+            document.beginMoveRows(page_index, undo_first, target_row-1, page_index, first)
+            moving_cards = page[undo_first:target_row]
+            del page[undo_first:target_row]
+            # If cards were removed before the target row, the target shifts moved_cards_count slots to the front.
+            first -= (target_row < first) * moved_cards_count
             page[first:first] = moving_cards
             document.endMoveRows()
         return self
