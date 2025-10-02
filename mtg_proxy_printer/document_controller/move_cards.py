@@ -81,16 +81,9 @@ class ActionMoveCardsBetweenPages(DocumentAction):
             )
         source_index = document.index(self.source_page, 0)
         target_index = document.index(self.target_page, 0)
-
         destination_row = len(target_page) if self.target_row is None else self.target_row
-        in_page_move = self.source_page == self.target_page
 
         for source_row_first, source_row_last in reversed(self.card_ranges_to_move):
-            if in_page_move and source_row_first <= destination_row <= source_row_last + 1:
-                # Nothing to do. Cards already at the right location.
-                # Offset +1: Cards are inserted before the given row, so moving card 0 to position 1 moves it *before*
-                # the second card, thus not moving it at all.
-                continue
             self._move_cards_to_target_page(
                 document, source_index, source_page, source_row_first, source_row_last, target_index,
                 target_page, destination_row

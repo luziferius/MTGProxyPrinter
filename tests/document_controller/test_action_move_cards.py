@@ -691,9 +691,9 @@ def generate_test_cases_for_card_moves_within_page():
     # Tuples page, cards_to_move, target_row, expected
     # Origin card order: ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
 
-    #yield 0, [0], None, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 0
-    #yield 0, [0], 0, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 1
-    #yield 0, [0], 1, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 2
+    yield 0, [0], None, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 0
+    yield 0, [0], 0, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 1
+    yield 0, [0], 1, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 2
     yield 0, [0], 2, ["A2,A1,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 3
     yield 0, [0], 3, ["A2,A3,A1", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 4
     yield 3, [0, 1, 5], None, ["A1,A2,A3", "B1,B2,B3", "", "D3,D4,D5,D1,D2,D6"]  # 5
@@ -707,12 +707,9 @@ def generate_test_cases_for_card_moves_within_page():
 @pytest.mark.parametrize(
     "page, cards_to_move, target_row, expected",
     generate_test_cases_for_card_moves_within_page())
-def test_ActionMoveCardsWithinPage_apply(
-        document_with_cards: Document,
-        page: int, cards_to_move: list[int], target_row: int|None,
-        expected: list[str]):
-    action = ActionMoveCardsWithinPage(page, cards_to_move, target_row)
-    action.apply(document_with_cards)
+def test_ActionMoveCardsWithinPage_apply(document_with_cards: Document, page: int, cards_to_move: list[int],
+                                         target_row: int|None, expected: list[str]):
+    ActionMoveCardsWithinPage(page, cards_to_move, target_row).apply(document_with_cards)
     result = gather_card_names(document_with_cards)
     assert_that(result, contains_exactly(*expected), f"Got: {result}")
 
@@ -720,12 +717,9 @@ def test_ActionMoveCardsWithinPage_apply(
 @pytest.mark.parametrize(
     "page, cards_to_move, target_row, expected",
     generate_test_cases_for_card_moves_within_page())
-def test_ActionMoveCardsWithinPage_undo(
-        document_with_cards: Document,
-        page: int, cards_to_move: list[int], target_row: int|None,
-        expected: list[str]):
-    action = ActionMoveCardsWithinPage(page, cards_to_move, target_row)
-    action.apply(document_with_cards)
+def test_ActionMoveCardsWithinPage_undo(document_with_cards: Document, page: int, cards_to_move: list[int],
+                                        target_row: int|None, expected: list[str]):
+    (action := ActionMoveCardsWithinPage(page, cards_to_move, target_row)).apply(document_with_cards)
     try:
         assert_that(gather_card_names(document_with_cards), contains_exactly(*expected))
     except AssertionError:
