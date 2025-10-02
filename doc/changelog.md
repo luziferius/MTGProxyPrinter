@@ -6,7 +6,8 @@
 
 - Move cards around via drag&drop
   - Drop onto other pages to move cards to those pages
-  - Drop cards between pages to insert a new page with the cards at that location
+  - Drop cards between pages to move those cards onto a new page at that location
+  - Re-order cards within a page
 
 # Fixed issues
 
