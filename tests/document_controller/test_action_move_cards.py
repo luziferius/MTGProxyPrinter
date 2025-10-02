@@ -715,13 +715,13 @@ def test_ActionMoveCardsWithinPage_apply(document_with_cards: Document, page: in
 
 
 @pytest.mark.parametrize(
-    "page, cards_to_move, target_row, expected",
+    "page, cards_to_move, target_row, after_apply",
     generate_test_cases_for_card_moves_within_page())
 def test_ActionMoveCardsWithinPage_undo(document_with_cards: Document, page: int, cards_to_move: list[int],
-                                        target_row: int|None, expected: list[str]):
+                                        target_row: int|None, after_apply: list[str]):
     (action := ActionMoveCardsWithinPage(page, cards_to_move, target_row)).apply(document_with_cards)
     try:
-        assert_that(gather_card_names(document_with_cards), contains_exactly(*expected))
+        assert_that(gather_card_names(document_with_cards), contains_exactly(*after_apply))
     except AssertionError:
         pytest.skip("Test setup failed")
     action.undo(document_with_cards)
