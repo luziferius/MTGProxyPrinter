@@ -167,6 +167,7 @@ class ActionMoveCardsWithinPage(DocumentAction):
         self.page = page
         self.card_ranges_to_move = to_list_of_ranges(cards_to_move)
         self.target_row = target_row
+        self.card_moves: list[CardMove] = []
 
     def _total_moved_cards(self) -> int:
         return sum(last-first+1 for first, last in self.card_ranges_to_move)
@@ -217,8 +218,8 @@ class ActionMoveCardsWithinPage(DocumentAction):
         super().apply(document)
         page_index = document.index(self.page, 0)
         page: Page = page_index.internalPointer()
-        moves = self._compute_card_moves(document, page_index)
-        for first, last, target_row, moved_cards_count in moves:  # type: int, int, int, int
+        self.card_moves = self._compute_card_moves(document, page_index)
+        for first, last, target_row, moved_cards_count in self.card_moves:  # type: int, int, int, int
             document.beginMoveRows(page_index, first, last, page_index, target_row)
             moving_cards = page[first:last+1]
             del page[first:last+1]
@@ -235,16 +236,15 @@ class ActionMoveCardsWithinPage(DocumentAction):
         super().undo(document)
         page_index = document.index(self.page, 0)
         page: Page = page_index.internalPointer()
-        moves = self._compute_card_moves(document, page_index)
-        moves.reverse()
-        for target_row, _, first, moved_cards_count in moves:  # type: int, int, int, int
-            first -= moved_cards_count
+        card_moves = list(reversed(self.card_moves))
+        for target_row, _, first, moved_cards_count in card_moves:  # type: int, int, int, int
+
+            first -= (first > target_row) * moved_cards_count
             last = first + moved_cards_count
             document.beginMoveRows(page_index, first, last-1, page_index, target_row)
             moving_cards = page[first:last]
             del page[first:last]
             # If cards were removed before the target row, the target shifts moved_cards_count slots to the front.
-            target_row -= (last < target_row) * moved_cards_count
             page[target_row:target_row] = moving_cards
             document.endMoveRows()
         return self
