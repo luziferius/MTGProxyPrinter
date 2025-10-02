@@ -238,10 +238,9 @@ class ActionMoveCardsWithinPage(DocumentAction):
         page: Page = page_index.internalPointer()
         card_moves = list(reversed(self.card_moves))
         for target_row, _, first, moved_cards_count in card_moves:  # type: int, int, int, int
-
             first -= (first > target_row) * moved_cards_count
             last = first + moved_cards_count
-            document.beginMoveRows(page_index, first, last-1, page_index, target_row)
+            document.beginMoveRows(page_index, first, last-1, page_index, target_row + (first < target_row) * moved_cards_count)
             moving_cards = page[first:last]
             del page[first:last]
             # If cards were removed before the target row, the target shifts moved_cards_count slots to the front.
