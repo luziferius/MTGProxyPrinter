@@ -24,7 +24,7 @@ import sys
 from typing import Any, Counter
 
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
-    QPersistentModelIndex, QMimeData
+    QPersistentModelIndex, QMimeData, QObject
 
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask, SingleActions
@@ -91,8 +91,8 @@ class Document(QAbstractItemModel):
 
     EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber, PageColumns.Language}
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+        super().__init__(parent)
         self.header = {
             PageColumns.CardName: self.tr("Card name"),
             PageColumns.Set: self.tr("Set"),
@@ -285,7 +285,7 @@ class Document(QAbstractItemModel):
 
     def _fetch_image_and_apply_action(self, action: SingleActions):
         task = SingleDownloadTask(self.image_db, action)
-        task.request_action.connect(self.apply, BlockingQueuedConnection)
+        task.request_action.connect(self.apply)
         self.request_run_async_task.emit(task)
 
     def mimeData(self, indexes: list[QModelIndex], /) -> QMimeData:
