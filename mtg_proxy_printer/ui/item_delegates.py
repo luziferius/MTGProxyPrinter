@@ -28,9 +28,9 @@ except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
     Ui_SetEditor = load_ui_from_file("set_editor_widget")
 
-
 logger = get_logger(__name__)
 del get_logger
+
 __all__ = [
     "CollectorNumberEditorDelegate",
     "BoundedCopiesSpinboxDelegate",
@@ -147,6 +147,7 @@ class SetEditorDelegate(FastComboBoxDelegate):
             self, editor: QComboBox | CustomCardSetEditor, model: QAbstractItemModel, index: QModelIndex) -> None:
         card: AnyCardType = index.data(ItemDataRole.UserRole)
         data = editor.to_mtg_set() if card.is_custom_card else editor.currentData(ItemDataRole.UserRole)
+        logger.debug(f"Replacing card set {card.set} with {data}")
         model.setData(index, data, ItemDataRole.EditRole)
 
     @staticmethod
