@@ -30,10 +30,14 @@ def ConnectionType__or__(self: ConnectionType, other: ConnectionType):
     non_flag_other = other.value & 0x7
     self_is_flags_only = self.value and not non_flag_self
     other_is_flags_only = other.value and not non_flag_other
-    if (self.value & 0x7) != (other.value & 0x7) and not (self_is_flags_only or other_is_flags_only):
+    if non_flag_self != non_flag_other and not (self_is_flags_only or other_is_flags_only):
         raise ValueError(
             f"Cannot combine two distinct members of {ConnectionType.__name__}: '{self}' and '{other}'")
     return ConnectionType(self.value | other.value)
 
 
 ConnectionType.__or__ = ConnectionType__or__
+AutoConnection = ConnectionType.AutoConnection | ConnectionType.UniqueConnection
+DirectConnection = ConnectionType.DirectConnection | ConnectionType.UniqueConnection
+QueuedConnection = ConnectionType.QueuedConnection | ConnectionType.UniqueConnection
+BlockingQueuedConnection = ConnectionType.BlockingQueuedConnection | ConnectionType.UniqueConnection
