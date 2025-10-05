@@ -15,3 +15,25 @@
 
 
 from mtg_proxy_printer.meta_data import __version__
+
+from PySide6.QtCore import Qt
+ConnectionType = Qt.ConnectionType
+
+
+def ConnectionType__or__(self: ConnectionType, other: ConnectionType):
+    if not isinstance(other, ConnectionType):
+        raise TypeError(
+            f"unsupported operand type(s) for |: '{ConnectionType.__name__}' and '{other.__class__.__name__}")
+    if self == other:
+        return self
+    non_flag_self = self.value & 0x7
+    non_flag_other = other.value & 0x7
+    self_is_flags_only = self.value and not non_flag_self
+    other_is_flags_only = other.value and not non_flag_other
+    if (self.value & 0x7) != (other.value & 0x7) and not (self_is_flags_only or other_is_flags_only):
+        raise ValueError(
+            f"Cannot combine two distinct members of {ConnectionType.__name__}: '{self}' and '{other}'")
+    return ConnectionType(self.value | other.value)
+
+
+ConnectionType.__or__ = ConnectionType__or__
