@@ -20,7 +20,7 @@ from PySide6.QtCore import Qt
 ConnectionType = Qt.ConnectionType
 
 
-def ConnectionType__or__(self: ConnectionType, other: ConnectionType):
+def ConnectionType__or__(self: ConnectionType, other: ConnectionType) -> ConnectionType:
     if not isinstance(other, ConnectionType):
         raise TypeError(
             f"unsupported operand type(s) for |: '{ConnectionType.__name__}' and '{other.__class__.__name__}")
@@ -37,7 +37,7 @@ def ConnectionType__or__(self: ConnectionType, other: ConnectionType):
 
 
 ConnectionType.__or__ = ConnectionType__or__
-AutoConnection = ConnectionType.AutoConnection | ConnectionType.UniqueConnection
-DirectConnection = ConnectionType.DirectConnection | ConnectionType.UniqueConnection
-QueuedConnection = ConnectionType.QueuedConnection | ConnectionType.UniqueConnection
-BlockingQueuedConnection = ConnectionType.BlockingQueuedConnection | ConnectionType.UniqueConnection
+AutoConnection: ConnectionType = ConnectionType.AutoConnection | ConnectionType.UniqueConnection
+DirectConnection: ConnectionType = ConnectionType.DirectConnection | ConnectionType.UniqueConnection
+QueuedConnection: ConnectionType = ConnectionType.QueuedConnection | ConnectionType.UniqueConnection
+BlockingQueuedConnection: ConnectionType = ConnectionType.BlockingQueuedConnection | ConnectionType.UniqueConnection

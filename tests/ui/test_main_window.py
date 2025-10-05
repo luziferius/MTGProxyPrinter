@@ -28,6 +28,7 @@ import pytest
 import mtg_proxy_printer.http_file
 import mtg_proxy_printer.async_tasks.downloader_base
 import mtg_proxy_printer.async_tasks.card_info_downloader
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
@@ -44,7 +45,7 @@ StandardButton = QMessageBox.StandardButton
 
 def _create_task_receiver(main_window: MainWindow) -> AsyncTaskReceiver:
     receiver = AsyncTaskReceiver(main_window)
-    main_window.request_run_async_task.connect(receiver.receive_task)
+    main_window.request_run_async_task.connect(receiver.receive_task, AutoConnection)
     return receiver
 
 

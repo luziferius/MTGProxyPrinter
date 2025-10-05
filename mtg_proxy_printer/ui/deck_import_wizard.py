@@ -25,6 +25,7 @@ from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL,
 from PySide6.QtGui import QValidator, QIcon, QDesktopServices
 from PySide6.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.async_tasks.image_downloader import BatchDownloadTask
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import SectionProxy
@@ -104,12 +105,8 @@ class LoadListPage(QWizardPage):
         ui.setupUi(self)
         self.deck_list_url_validator = IsIdentifyingDeckUrlValidator(self)
         self._deck_list_downloader: str | None = None
-        ui.scryfall_search.textChanged.connect(
-            lambda text: ui.scryfall_search_view_button.setEnabled(bool(text))
-        )
-        ui.scryfall_search.textChanged.connect(
-            lambda text: ui.scryfall_search_download_button.setEnabled(bool(text))
-        )
+        ui.scryfall_search.textChanged.connect(lambda text: ui.scryfall_search_view_button.setEnabled(bool(text)))
+        ui.scryfall_search.textChanged.connect(lambda text: ui.scryfall_search_download_button.setEnabled(bool(text)))
         ui.deck_list_download_url_line_edit.textChanged.connect(
             lambda text: ui.deck_list_download_button.setEnabled(
                 self.deck_list_url_validator.validate(text)[0] == State.Acceptable))
@@ -127,7 +124,6 @@ class LoadListPage(QWizardPage):
             "currentText", "currentTextChanged(str)"
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
-
 
     @Property(str, notify=deck_list_downloader_changed)
     def deck_list_downloader(self):
@@ -438,7 +434,8 @@ class SelectDeckParserPage(QWizardPage):
         # The call to connect() is here, because the  parser_creator callback created the selected parser.
         # If that later determines an incompatibility, it has to signal that to the user, so connect the error signal
         # here.
-        self.selected_parser.incompatible_file_format.connect(self.wizard().on_incompatible_deck_file_selected)
+        self.selected_parser.incompatible_file_format.connect(
+            self.wizard().on_incompatible_deck_file_selected, AutoConnection)
         logger.info(f"Created parser: {self.selected_parser.__class__.__name__}")
         return self.isComplete()
 
@@ -459,11 +456,12 @@ class SummaryPage(QWizardPage):
         ui.setupUi(self)
         self.setCommitPage(True)
         self.card_list = CardListModel(document, self)
-        self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
+        self.card_list.oversized_card_count_changed.connect(
+            self._update_accept_button_on_oversized_card_count_changed, AutoConnection)
         ui.parsed_cards_table.setModel(self.card_list)
         self.registerField("should_replace_document", self.ui.should_replace_document)
         ui.should_replace_document.toggled[bool].connect(
-            self._update_accept_button_on_replace_document_option_toggled)
+            self._update_accept_button_on_replace_document_option_toggled, AutoConnection)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _create_sort_model(self, source_model: CardListModel) -> NaturallySortedSortFilterProxyModel:
@@ -528,7 +526,7 @@ class SummaryPage(QWizardPage):
 
     def _initialize_custom_buttons(self, decklist_import_section: SectionProxy):
         wizard = self.wizard()
-        wizard.customButtonClicked.connect(self.custom_button_clicked)
+        wizard.customButtonClicked.connect(self.custom_button_clicked, AutoConnection)
         # When basic lands are stripped fully automatically, there is no need to have a non-functional button.
         should_offer_basic_land_removal = not decklist_import_section.getboolean("automatically-remove-basic-lands")
         wizard.setOption(self.BasicLandRemovalOption, should_offer_basic_land_removal)
@@ -546,7 +544,7 @@ class SummaryPage(QWizardPage):
         remove_selected_cards_button.setToolTip(self.tr("Remove all selected cards in the deck list above"))
         remove_selected_cards_button.setIcon(QIcon.fromTheme("edit-delete"))
         self.ui.parsed_cards_table.changed_selection_is_empty.connect(
-            remove_selected_cards_button.setDisabled
+            remove_selected_cards_button.setDisabled, AutoConnection
         )
 
     def cleanupPage(self):

@@ -25,6 +25,7 @@ from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, QPoint, Signal, QObject,
 from PySide6.QtGui import QPen, QColorConstants, QColor, QPalette, QFontMetrics
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
@@ -102,14 +103,14 @@ class PageScene(QGraphicsScene):
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {render_mode}")
 
     def _connect_document_signals(self, document: Document):
-        document.rowsInserted.connect(self.on_rows_inserted)
-        document.rowsRemoved.connect(self.on_rows_removed)
-        document.rowsAboutToBeRemoved.connect(self.on_rows_about_to_be_removed)
-        document.rowsMoved.connect(self.on_rows_moved)
-        document.current_page_changed.connect(self.on_current_page_changed)
-        document.dataChanged.connect(self.on_data_changed)
-        document.page_type_changed.connect(self.on_page_type_changed)
-        document.page_layout_changed.connect(self.on_page_layout_changed)
+        document.rowsInserted.connect(self.on_rows_inserted, AutoConnection)
+        document.rowsRemoved.connect(self.on_rows_removed, AutoConnection)
+        document.rowsAboutToBeRemoved.connect(self.on_rows_about_to_be_removed, AutoConnection)
+        document.rowsMoved.connect(self.on_rows_moved, AutoConnection)
+        document.current_page_changed.connect(self.on_current_page_changed, AutoConnection)
+        document.dataChanged.connect(self.on_data_changed, AutoConnection)
+        document.page_type_changed.connect(self.on_page_type_changed, AutoConnection)
+        document.page_layout_changed.connect(self.on_page_layout_changed, AutoConnection)
 
     def _update_row_and_column_counts(self, document: Document):
         page_type = document.currently_edited_page.page_type()

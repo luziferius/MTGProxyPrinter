@@ -19,6 +19,7 @@ from typing import Callable
 from PySide6.QtCore import Slot, Qt
 from PySide6.QtWidgets import QWidget,QHBoxLayout
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 
 try:
@@ -48,11 +49,11 @@ class ProgressBar(QWidget):
         self.setSizePolicy(policy)
         ui.progress_bar.setValue(0)
         ui.cancel_button.hide()
-        ui.cancel_button.clicked.connect(task.cancel)
-        task.task_begins.connect(self.begin_progress)
-        task.set_progress.connect(ui.progress_bar.setValue)
-        task.advance_progress.connect(self.advance_progress)
-        task.task_completed.connect(self.hide)
+        ui.cancel_button.clicked.connect(task.cancel, AutoConnection)
+        task.task_begins.connect(self.begin_progress, AutoConnection)
+        task.set_progress.connect(ui.progress_bar.setValue, AutoConnection)
+        task.advance_progress.connect(self.advance_progress, AutoConnection)
+        task.task_completed.connect(self.hide, AutoConnection)
         self.hide()
 
     @Slot(int)
@@ -94,8 +95,9 @@ class ProgressBarManager(QWidget):
         logger.debug(f"Adding progress bar for task {task}")
         bar = ProgressBar(task, self)
         layout = self.layout()
-        task.request_register_subtask.connect(lambda subtask: logger.debug(f"Registering subtask {subtask}"))
-        task.request_register_subtask.connect(self.add_task)
+        task.request_register_subtask.connect(
+            lambda subtask: logger.debug(f"Registering subtask {subtask}"))
+        task.request_register_subtask.connect(self.add_task, AutoConnection)
         task.task_deleted.connect(lambda: logger.debug(f"Deleting progress bar for task {task}"))
         task.task_deleted.connect(partial(layout.removeWidget, bar))
         task.task_deleted.connect(partial(bar.setParent, None))

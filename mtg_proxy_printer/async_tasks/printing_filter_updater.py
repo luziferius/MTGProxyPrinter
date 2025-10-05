@@ -20,6 +20,8 @@ from typing import LiteralString, TYPE_CHECKING, Any
 from PySide6.QtCore import Qt, QCoreApplication
 
 import mtg_proxy_printer.settings
+from mtg_proxy_printer import QueuedConnection
+
 if TYPE_CHECKING:
     from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
@@ -29,9 +31,6 @@ from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import SectionProxy
 logger = get_logger(__name__)
 del get_logger
-
-QueuedConnection = Qt.ConnectionType.QueuedConnection
-
 
 class PrintingFilterUpdater(AsyncTask):
     """

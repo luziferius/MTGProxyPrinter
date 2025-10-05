@@ -23,6 +23,7 @@ from PySide6.QtCore import QPoint, Qt, Signal, Slot, QPersistentModelIndex
 from PySide6.QtGui import QIcon, QAction
 from PySide6.QtWidgets import QTableView, QWidget, QMenu, QInputDialog, QFileDialog
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.app_dirs import data_directories
 from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask
 from mtg_proxy_printer.document_controller import DocumentAction
@@ -48,7 +49,7 @@ class PageCardTableView(QTableView):
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        self.customContextMenuRequested.connect(self.page_table_context_menu_requested)
+        self.customContextMenuRequested.connect(self.page_table_context_menu_requested, AutoConnection)
         self._column_delegates = (
             self._setup_combo_box_item_delegate(),
             self._setup_language_delegate(),
@@ -61,10 +62,10 @@ class PageCardTableView(QTableView):
         self.card_db = card_db
         self.image_db = document.image_db
         self.setModel(document)
-        self.request_action.connect(document.apply)
-        document.current_page_changed.connect(self.on_current_page_changed)
+        self.request_action.connect(document.apply, AutoConnection)
+        document.current_page_changed.connect(self.on_current_page_changed, AutoConnection)
         # Has to be set up here, because setModel() implicitly creates the QItemSelectionModel
-        self.selectionModel().selectionChanged.connect(self._on_selection_changed)
+        self.selectionModel().selectionChanged.connect(self._on_selection_changed, AutoConnection)
 
     @Slot()
     def _on_selection_changed(self):
@@ -144,7 +145,7 @@ class PageCardTableView(QTableView):
     def _create_add_copies_action(self, label: str, count: int | None,
                                   card: AnyCardType | CardList):
         action = QAction(QIcon.fromTheme("list-add"), label, self)
-        action.triggered.connect(functools.partial(self._add_copies, card, count))
+        action.triggered.connect(functools.partial(self._add_copies, card, count), AutoConnection)
         return action
 
     def _create_add_related_actions(self, parent: QMenu, related_cards: CardList) -> None:
@@ -186,7 +187,7 @@ class PageCardTableView(QTableView):
     def _add_save_image_action(self, parent: QMenu, card: AnyCardType):
         action = QAction(QIcon.fromTheme("document-save"), self.tr("Export image"), parent)
         action.setData(card)
-        action.triggered.connect(self._on_save_image_action_triggered)
+        action.triggered.connect(self._on_save_image_action_triggered, AutoConnection)
         parent.addSeparator()
         parent.addAction(action)
 

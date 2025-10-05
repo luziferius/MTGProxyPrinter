@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
 from PySide6.QtGui import QIcon, QStandardItemModel, QResizeEvent
 
 import mtg_proxy_printer.app_dirs
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.units_and_sizes import ConfigParser
 from mtg_proxy_printer.model.document import Document
@@ -85,7 +86,8 @@ class SettingsWindow(QDialog):
         self.document = document
         self.ui = ui = Ui_SettingsWindow()
         ui.setupUi(self)
-        ui.general_settings_page.custom_card_corner_style_changed.connect(self.custom_card_corner_style_changed)
+        ui.general_settings_page.custom_card_corner_style_changed.connect(
+            self.custom_card_corner_style_changed, AutoConnection)
         self.pages_model = self._setup_pages_model(ui)
         ui.general_settings_page.set_language_model(language_model)
         ui.default_document_layout_page.ui.page_config_preview_area.hide()
@@ -94,7 +96,7 @@ class SettingsWindow(QDialog):
             lambda: QTimer.singleShot(0, lambda: self._adapt_layout_to_size(self.size()))
         )
         self._setup_hide_printing_page(ui.hide_printings_page, document.card_db)
-        ui.debug_settings_page.request_run_async_task.connect(self.request_run_async_task)
+        ui.debug_settings_page.request_run_async_task.connect(self.request_run_async_task, AutoConnection)
         self._setup_button_box()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -112,8 +114,9 @@ class SettingsWindow(QDialog):
         selection_model = ui.page_selection_list_view.selectionModel()
         selection_model.select(first_page, ClearAndSelect)
         # Connect the list view selection model and the combo box with the page stack
-        selection_model.currentRowChanged.connect(lambda current, _: ui.stacked_pages.setCurrentIndex(current.row()))
-        ui.page_selection_combo_box.currentIndexChanged.connect(ui.stacked_pages.setCurrentIndex)
+        selection_model.currentRowChanged.connect(
+            lambda current, _: ui.stacked_pages.setCurrentIndex(current.row()))
+        ui.page_selection_combo_box.currentIndexChanged.connect(ui.stacked_pages.setCurrentIndex, AutoConnection)
 
         # Sync selections of both page list views
         selection_model.currentRowChanged.connect(
@@ -125,18 +128,18 @@ class SettingsWindow(QDialog):
 
     def _setup_hide_printing_page(self, page: HidePrintingsPage, card_db):
         page.card_db = card_db
-        page.request_run_async_task.connect(self.request_run_async_task)
+        page.request_run_async_task.connect(self.request_run_async_task, AutoConnection)
 
     def _setup_button_box(self):
         button_box = self.ui.button_box
 
         restore_defaults = button_box.button(DialogBoxButton.RestoreDefaults)
-        restore_defaults.clicked.connect(self.restore_defaults)
+        restore_defaults.clicked.connect(self.restore_defaults, AutoConnection)
         restore_defaults.installEventFilter(
             HighlightDifferingSettingsHoverEventFilter(mtg_proxy_printer.settings.DEFAULT_SETTINGS, self))
 
         reset = button_box.button(DialogBoxButton.Reset)
-        reset.clicked.connect(self.reset)
+        reset.clicked.connect(self.reset, AutoConnection)
         reset.installEventFilter(
             HighlightDifferingSettingsHoverEventFilter(mtg_proxy_printer.settings.settings, self))
 

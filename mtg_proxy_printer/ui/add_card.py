@@ -21,6 +21,7 @@ from PySide6.QtWidgets import QWidget, QDialogButtonBox
 from PySide6.QtGui import QIcon
 
 import mtg_proxy_printer.model.card
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 import mtg_proxy_printer.model.string_list
@@ -78,8 +79,8 @@ class AddCardWidget(QWidget):
         ok_button = box.button(StandardButton.Ok)
         reset_button = box.button(StandardButton.Reset)
         ok_button.setEnabled(False)
-        ok_button.clicked.connect(self.ok_button_triggered)
-        reset_button.clicked.connect(self.reset)
+        ok_button.clicked.connect(self.ok_button_triggered, AutoConnection)
+        reset_button.clicked.connect(self.reset, AutoConnection)
         buttons_with_icons = [
             (StandardButton.Reset, "edit-undo"),
             (StandardButton.Ok, "dialog-ok"),
@@ -93,14 +94,15 @@ class AddCardWidget(QWidget):
         preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
         model = QStringListModel([preferred_language], self)
         self.ui.language_combo_box.setModel(model)
-        self.ui.language_combo_box.currentTextChanged.connect(self.language_combo_box_changed)
+        self.ui.language_combo_box.currentTextChanged.connect(self.language_combo_box_changed, AutoConnection)
         return model
 
     def _setup_card_name_box(self) -> QStringListModel:
         model = QStringListModel([], self.ui.card_name_list)
         self.ui.card_name_list.setModel(model)
-        self.ui.card_name_list.selectionModel().selectionChanged.connect(self.card_name_list_selection_changed)
-        self.ui.card_name_filter.textChanged.connect(self.card_name_filter_updated)
+        self.ui.card_name_list.selectionModel().selectionChanged.connect(
+            self.card_name_list_selection_changed, AutoConnection)
+        self.ui.card_name_filter.textChanged.connect(self.card_name_filter_updated, AutoConnection)
         return model
 
     def _setup_set_name_box(self) -> mtg_proxy_printer.model.string_list.PrettySetListModel:
@@ -109,8 +111,9 @@ class AddCardWidget(QWidget):
         self.card_name_model.rowsRemoved.connect(lambda: model.set_set_data([]))
 
         self.ui.set_name_list.setModel(model)
-        self.ui.set_name_list.selectionModel().selectionChanged.connect(self.set_name_list_selection_changed)
-        self.ui.set_name_filter.textChanged.connect(self.set_name_filter_updated)
+        self.ui.set_name_list.selectionModel().selectionChanged.connect(
+            self.set_name_list_selection_changed, AutoConnection)
+        self.ui.set_name_filter.textChanged.connect(self.set_name_filter_updated, AutoConnection)
         return model
 
     def _setup_collector_number_box(self) -> QStringListModel:
@@ -120,7 +123,7 @@ class AddCardWidget(QWidget):
 
         self.ui.collector_number_list.setModel(model)
         self.ui.collector_number_list.selectionModel().selectionChanged.connect(
-            self.collector_number_list_selection_changed
+            self.collector_number_list_selection_changed, AutoConnection
         )
         return model
 

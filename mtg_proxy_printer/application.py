@@ -28,7 +28,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QIcon
 
 from mtg_proxy_printer.argument_parser import Namespace
-from mtg_proxy_printer import meta_data
+from mtg_proxy_printer import meta_data, AutoConnection, BlockingQueuedConnection
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.carddb_migrations
 import mtg_proxy_printer.model.document
@@ -49,7 +49,6 @@ from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
-BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 
 __all__ = [
     "Application",
@@ -83,7 +82,7 @@ class Application(QApplication):
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.image_db, self.document, self.language_model
         )
-        self.main_window.request_run_async_task.connect(self.run_async_task)
+        self.main_window.request_run_async_task.connect(self.run_async_task, AutoConnection)
         self.update_checker = self._create_update_checker(args)
         self.main_window.ui.action_download_card_data.setEnabled(False)
         self.settings_window = self._create_settings_window(
@@ -114,7 +113,7 @@ class Application(QApplication):
         logger.debug("Enqueueing update check")
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
         task = DatabaseMigrationTask(self.card_db)
-        task.task_completed.connect(self._on_carddb_migrations_completed)
+        task.task_completed.connect(self._on_carddb_migrations_completed, AutoConnection)
         self.run_async_task(task)
 
     @Slot()
@@ -123,7 +122,7 @@ class Application(QApplication):
         logger.debug(
             "Card database migrations completed. Database re-opened. Checking if the printing filters need updates.")
         printing_filter_updater_runner = PrintingFilterUpdater(self.card_db)
-        printing_filter_updater_runner.task_completed.connect(self._on_printing_filter_updater_completed)
+        printing_filter_updater_runner.task_completed.connect(self._on_printing_filter_updater_completed, AutoConnection)
         self.run_async_task(printing_filter_updater_runner)
 
     @Slot()
@@ -172,11 +171,11 @@ class Application(QApplication):
             main_window: mtg_proxy_printer.ui.main_window.MainWindow):
         settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             language_model, document, main_window)
-        settings_window.request_run_async_task.connect(self.run_async_task)
-        settings_window.custom_card_corner_style_changed.connect(document.on_custom_card_corner_style_changed)
-        settings_window.document_settings_updated.connect(document.apply)
+        settings_window.request_run_async_task.connect(self.run_async_task, AutoConnection)
+        settings_window.custom_card_corner_style_changed.connect(document.on_custom_card_corner_style_changed, AutoConnection)
+        settings_window.document_settings_updated.connect(document.apply, AutoConnection)
         settings_window.preferred_language_changed.connect(
-            main_window.ui.central_widget.ui.add_card_widget.on_settings_preferred_language_changed)
+            main_window.ui.central_widget.ui.add_card_widget.on_settings_preferred_language_changed, AutoConnection)
         main_window.ui.action_show_settings.triggered.connect(
             partial(mtg_proxy_printer.ui.common.show_wizard_or_dialog, settings_window))
         return settings_window
@@ -185,15 +184,15 @@ class Application(QApplication):
     def run_async_task(self, task: AsyncTask):
         logger.debug(f"Received task to schedule: {task}")
         main_window = self.main_window
-        task.ui_lock_acquire.connect(main_window.ui_lock_acquire)
-        task.ui_lock_release.connect(main_window.ui_lock_release)
-        task.error_occurred.connect(main_window.on_error_occurred)
-        task.network_error_occurred.connect(main_window.on_network_error_occurred)
+        task.ui_lock_acquire.connect(main_window.ui_lock_acquire, AutoConnection)
+        task.ui_lock_release.connect(main_window.ui_lock_release, AutoConnection)
+        task.error_occurred.connect(main_window.on_error_occurred, AutoConnection)
+        task.network_error_occurred.connect(main_window.on_network_error_occurred, AutoConnection)
         if hasattr(task, "request_action"):
             task.request_action.connect(self.document.apply, BlockingQueuedConnection)
         if hasattr(task, "unknown_scryfall_ids_found"):
             task.unknown_scryfall_ids_found.connect(
-                self.main_window.on_document_loading_found_unknown_scryfall_ids,BlockingQueuedConnection)
+                self.main_window.on_document_loading_found_unknown_scryfall_ids, BlockingQueuedConnection)
         if task.report_progress:
             main_window.progress_bar_manager.add_task(task)
         logger.debug(f"Starting task {task}")
@@ -204,8 +203,8 @@ class Application(QApplication):
             card_db: mtg_proxy_printer.model.carddb.CardDatabase,
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
-        document.request_run_async_task.connect(self.run_async_task)
-        image_db.missing_image_obtained.connect(document.on_missing_image_obtained)
+        document.request_run_async_task.connect(self.run_async_task, AutoConnection)
+        image_db.missing_image_obtained.connect(document.on_missing_image_obtained, AutoConnection)
         return document
 
     def _create_language_model(self):
@@ -215,10 +214,12 @@ class Application(QApplication):
 
     def _create_update_checker(self, args: Namespace) -> UpdateChecker:
         update_checker = UpdateChecker(self.card_db, args, self)
-        update_checker.request_run_async_task.connect(self.run_async_task)
-        update_checker.network_error_occurred.connect(self.main_window.on_network_error_occurred)
-        update_checker.card_data_update_found.connect(self.main_window.show_card_data_update_available_message_box)
-        update_checker.application_update_found.connect(self.main_window.show_application_update_available_message_box)
+        update_checker.request_run_async_task.connect(self.run_async_task, AutoConnection)
+        update_checker.network_error_occurred.connect(self.main_window.on_network_error_occurred, AutoConnection)
+        update_checker.card_data_update_found.connect(
+            self.main_window.show_card_data_update_available_message_box, AutoConnection)
+        update_checker.application_update_found.connect(
+            self.main_window.show_application_update_available_message_box, AutoConnection)
         return update_checker
 
     def _check_for_undecided_update_settings(self):

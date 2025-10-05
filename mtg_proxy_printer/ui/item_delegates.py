@@ -18,6 +18,7 @@ from PySide6.QtGui import QKeyEvent, QFocusEvent
 from PySide6.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QSpinBox, QLineEdit, \
     QApplication
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger

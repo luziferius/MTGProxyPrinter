@@ -24,6 +24,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.app_dirs
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.card import AnyCardType
 import mtg_proxy_printer.model.imagedb
@@ -100,8 +101,8 @@ class SavePDFDialog(QFileDialog):
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
         self.setDefaultSuffix("pdf")
         self.setFileMode(QFileDialog.FileMode.AnyFile)
-        self.accepted.connect(self.on_accept)
-        self.rejected.connect(self.on_reject)
+        self.accepted.connect(self.on_accept, AutoConnection)
+        self.rejected.connect(self.on_reject, AutoConnection)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @staticmethod
@@ -145,8 +146,8 @@ class SavePNGDialog(QFileDialog):
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
         self.setDefaultSuffix("png")
         self.setFileMode(QFileDialog.FileMode.AnyFile)
-        self.accepted.connect(self.on_accept)
-        self.rejected.connect(self.on_reject)
+        self.accepted.connect(self.on_accept, AutoConnection)
+        self.rejected.connect(self.on_reject, AutoConnection)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @staticmethod
@@ -198,8 +199,8 @@ class SaveDocumentAsDialog(LoadSaveDialog):
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
         self.setFileMode(QFileDialog.FileMode.AnyFile)
-        self.accepted.connect(self.on_accept)
-        self.rejected.connect(self.on_reject)
+        self.accepted.connect(self.on_accept, AutoConnection)
+        self.rejected.connect(self.on_reject, AutoConnection)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @Slot()
@@ -230,8 +231,8 @@ class LoadDocumentDialog(LoadSaveDialog):
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
         self.setFileMode(QFileDialog.FileMode.ExistingFile)
-        self.accepted.connect(self.on_accept)
-        self.rejected.connect(self.on_reject)
+        self.accepted.connect(self.on_accept, AutoConnection)
+        self.rejected.connect(self.on_reject, AutoConnection)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @Slot()
@@ -266,7 +267,7 @@ class AboutDialog(QDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def populate_card_database_update_timestamp_label(self):
-        self.card_database.card_data_updated.connect(self.on_card_database_updated)
+        self.card_database.card_data_updated.connect(self.on_card_database_updated, AutoConnection)
         self.on_card_database_updated()
 
     @Slot()
@@ -330,7 +331,7 @@ class PrintPreviewDialog(QPrintPreviewDialog):
         self.renderer.setParent(self)
         # The only way found to reliably set the window size is by forcing it larger via the minimum size.
         self.setMinimumSize(1000, 800)
-        self.paintRequested.connect(self.renderer.print_document)
+        self.paintRequested.connect(self.renderer.print_document, AutoConnection)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def showEvent(self, a0):
@@ -350,7 +351,7 @@ class PrintDialog(QPrintDialog):
         super().__init__(self.q_printer, parent)
         self.renderer.setParent(self)
         # When the user accepts the dialog, print the document and increase the usage counts
-        self.accepted[QPrinter].connect(self.renderer.print_document)
+        self.accepted[QPrinter].connect(self.renderer.print_document, AutoConnection)
         self.accepted.connect(lambda: self.request_run_async_task.emit(PrintCountUpdater(document)))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -389,7 +390,7 @@ class DocumentSettingsDialog(QDialog):
         page_config_widget.setTitle(
             self.tr("These settings only affect the current document"))
         self._setup_button_box()
-        self.accepted.connect(self.on_accept)
+        self.accepted.connect(self.on_accept, AutoConnection)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_button_box(self):
@@ -398,11 +399,11 @@ class DocumentSettingsDialog(QDialog):
 
         restore_defaults = button_box.button(button_roles.RestoreDefaults)
         restore_defaults.installEventFilter(ChangedSettingsHoverEventFilter(mtg_proxy_printer.settings.settings, self))
-        restore_defaults.clicked.connect(self.restore_defaults_button_clicked)
+        restore_defaults.clicked.connect(self.restore_defaults_button_clicked, AutoConnection)
 
         reset = button_box.button(button_roles.Reset)
         reset.installEventFilter(ChangedSettingsHoverEventFilter(self.document.page_layout, self))
-        reset.clicked.connect(self.reset_button_clicked)
+        reset.clicked.connect(self.reset_button_clicked, AutoConnection)
 
         buttons_with_icons = [
             (button_roles.Reset, "edit-undo"),

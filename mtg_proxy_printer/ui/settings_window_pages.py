@@ -28,6 +28,7 @@ from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QLin
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.async_tasks.card_info_downloader import FileDownloadTask, FileStreamTask, DatabaseImportTask
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
@@ -133,7 +134,8 @@ class DebugSettingsPage(Page):
         super().__init__(parent)
         self.ui = ui = Ui_DebugSettingsPage()
         ui.setupUi(self)
-        self.request_run_async_task.connect(lambda _: ui.debug_download_card_data_as_file.setEnabled(False))
+        self.request_run_async_task.connect(
+            lambda _: ui.debug_download_card_data_as_file.setEnabled(False))
         ui.log_level_combo_box.addItems(map(logging.getLevelName, range(10, 60, 10)))
         url = QUrl("https://github.com/busimus/cutelog", QUrl.ParsingMode.StrictMode)
         ui.open_cutelog_website_button.clicked.connect(partial(QDesktopServices.openUrl, url))

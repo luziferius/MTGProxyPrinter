@@ -18,6 +18,7 @@ import math
 from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtWidgets import QTableView, QWidget
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.model.card_list import CardListColumns, CardListModel
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.ui.item_delegates import CollectorNumberEditorDelegate, BoundedCopiesSpinboxDelegate, \
@@ -51,7 +52,7 @@ class CardListTableView(QTableView):
         self.sort_model.setSourceModel(model)
         super().setModel(self.sort_model)
         # Has to be set up here, because setModel() implicitly creates the QItemSelectionModel
-        self.selectionModel().selectionChanged.connect(self._on_selection_changed)
+        self.selectionModel().selectionChanged.connect(self._on_selection_changed, AutoConnection)
         # Now that the model is set and columns are discovered, set the column widths to reasonable values.
         self._setup_default_column_widths()
 

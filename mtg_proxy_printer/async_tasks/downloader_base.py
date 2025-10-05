@@ -17,6 +17,7 @@
 import gzip
 
 import mtg_proxy_printer.http_file
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 
@@ -55,6 +56,6 @@ class DownloaderBase(AsyncTask):
         if (response_code := response.getcode()) >= 300:
             raise RuntimeError(f"Error from server! Error code: {response_code}")
         if ui_hint:  # Without a display text for the UI, there is no meaningful progress report. So skip if not given
-            response.total_bytes_processed.connect(self.set_progress)
-            response.io_begin.connect(self.task_begins)
+            response.total_bytes_processed.connect(self.set_progress, AutoConnection)
+            response.io_begin.connect(self.task_begins, AutoConnection)
         return response

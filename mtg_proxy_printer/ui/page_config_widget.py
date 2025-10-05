@@ -24,6 +24,8 @@ from PySide6.QtGui import QPageSize, QPageLayout, QColor
 from PySide6.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QColorDialog, \
     QLabel, QSlider, QPushButton, QComboBox
 from pint.registry import Unit, Quantity
+
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
@@ -90,7 +92,7 @@ class PageConfigWidget(QGroupBox):
         ui.cut_marker_style.addItem(self.tr("Solid lines", "A cut marker style"), "Solid")
         ui.cut_marker_style.addItem(self.tr("Dashed lines", "A cut marker style"), "Dashes")
         ui.cut_marker_style.addItem(self.tr("Dotted lines", "A cut marker style"), "Dots")
-        ui.cut_marker_style.currentIndexChanged.connect(self._on_cut_marker_style_changed)
+        ui.cut_marker_style.currentIndexChanged.connect(self._on_cut_marker_style_changed, AutoConnection)
         ui.cut_marker_style.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
         ui.print_registration_marks_style.addItem(self.tr("Disabled", "A print/cut registration marker style"), "None")
@@ -98,7 +100,8 @@ class PageConfigWidget(QGroupBox):
         ui.print_registration_marks_style.addItem(
             self.tr("Silhouette cutter (Cameo-compatible)",
                     "A print/cut registration marker style"), "Cut marker")
-        ui.print_registration_marks_style.currentIndexChanged.connect(self._on_print_registration_marks_style_changed)
+        ui.print_registration_marks_style.currentIndexChanged.connect(
+            self._on_print_registration_marks_style_changed, AutoConnection)
         ui.print_registration_marks_style.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
         for page_size_id in PageSizeManager.PageSize.values():
@@ -106,35 +109,36 @@ class PageConfigWidget(QGroupBox):
         for item, value in PageSizeManager.PageOrientation.items():
             ui.paper_orientation.addItem(item, value)
 
-        ui.paper_size.currentIndexChanged.connect(self._on_paper_size_changed)
-        ui.paper_size.currentIndexChanged.connect(self.validate_paper_size_settings)
-        ui.paper_size.currentIndexChanged.connect(self.on_page_layout_changed)
+        ui.paper_size.currentIndexChanged.connect(self._on_paper_size_changed, AutoConnection)
+        ui.paper_size.currentIndexChanged.connect(self.validate_paper_size_settings, AutoConnection)
+        ui.paper_size.currentIndexChanged.connect(self.on_page_layout_changed, AutoConnection)
         ui.paper_size.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
-        ui.paper_orientation.currentIndexChanged.connect(self._on_paper_orientation_changed)
-        ui.paper_orientation.currentIndexChanged.connect(self.validate_paper_size_settings)
-        ui.paper_orientation.currentIndexChanged.connect(self.on_page_layout_changed)
+        ui.paper_orientation.currentIndexChanged.connect(self._on_paper_orientation_changed, AutoConnection)
+        ui.paper_orientation.currentIndexChanged.connect(self.validate_paper_size_settings, AutoConnection)
+        ui.paper_orientation.currentIndexChanged.connect(self.on_page_layout_changed, AutoConnection)
         ui.paper_orientation.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
-        ui.watermark_color_button.clicked.connect(self._on_watermark_color_button_clicked)
-        ui.watermark_opacity.valueChanged.connect(self._on_watermark_color_opacity_changed)
+        ui.watermark_color_button.clicked.connect(self._on_watermark_color_button_clicked, AutoConnection)
+        ui.watermark_opacity.valueChanged.connect(self._on_watermark_color_opacity_changed, AutoConnection)
         ui.watermark_opacity.valueChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
-        ui.cut_marker_color_button.clicked.connect(self._on_cut_marker_color_button_clicked)
-        ui.cut_marker_opacity.valueChanged.connect(self._on_cut_marker_color_opacity_changed)
+        ui.cut_marker_color_button.clicked.connect(self._on_cut_marker_color_button_clicked, AutoConnection)
+        ui.cut_marker_opacity.valueChanged.connect(self._on_cut_marker_color_opacity_changed, AutoConnection)
         ui.cut_marker_opacity.valueChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
         for spinbox, _, unit in self._get_numerical_settings_widgets():
             layout_key = spinbox.objectName()
             spinbox.valueChanged[float].connect(
                 partial(self.set_numerical_page_layout_item, page_layout, layout_key, unit))
-            spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
-            spinbox.valueChanged[float].connect(self.on_page_layout_changed)
+            spinbox.valueChanged[float].connect(self.validate_paper_size_settings, AutoConnection)
+            spinbox.valueChanged[float].connect(self.on_page_layout_changed, AutoConnection)
             spinbox.valueChanged[float].connect(lambda: self.page_layout_changed.emit(page_layout))
 
         for checkbox, _ in self._get_boolean_settings_widgets():
             layout_key = checkbox.objectName()
-            checkbox.stateChanged.connect(partial(self.set_boolean_page_layout_item, page_layout, layout_key))
+            checkbox.stateChanged.connect(
+                partial(self.set_boolean_page_layout_item, page_layout, layout_key))
             checkbox.stateChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
         for line_edit, _ in self._get_string_settings_widgets():

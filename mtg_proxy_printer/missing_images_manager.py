@@ -19,6 +19,7 @@ from typing import Any
 
 from PySide6.QtCore import QObject, Signal, Slot
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.async_tasks.image_downloader import ObtainMissingImagesTask
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger
@@ -52,7 +53,7 @@ class MissingImagesManager(QObject):
         images_to_fetch = list(self.document.get_missing_image_cards())
         logger.debug(f"About to fetch {len(images_to_fetch)} missing images")
         task = ObtainMissingImagesTask(self.image_db, images_to_fetch)
-        task.task_completed.connect(self.on_missing_images_obtained)
+        task.task_completed.connect(self.on_missing_images_obtained, AutoConnection)
         self.request_run_async_task.emit(task)
 
     @Slot()

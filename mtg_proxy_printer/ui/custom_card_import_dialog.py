@@ -20,6 +20,7 @@ from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QPixmap
 from PySide6.QtWidgets import QDialog, QWidget, QFileDialog, QPushButton
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 from mtg_proxy_printer.model.card import CustomCard
@@ -53,12 +54,12 @@ class CustomCardImportDialog(QDialog):
         self.ok_button.setEnabled(False)
         ui.remove_selected.setDisabled(True)
         self.model = model = CardListModel(document)
-        model.request_action.connect(self.request_action)
+        model.request_action.connect(self.request_action, AutoConnection)
         ui.card_table.setModel(model)
-        ui.card_table.selectionModel().selectionChanged.connect(self.on_card_table_selection_changed)
-        model.rowsInserted.connect(self.on_rows_inserted)
-        model.rowsRemoved.connect(self.on_rows_removed)
-        model.modelReset.connect(self.on_rows_removed)
+        ui.card_table.selectionModel().selectionChanged.connect(self.on_card_table_selection_changed, AutoConnection)
+        model.rowsInserted.connect(self.on_rows_inserted, AutoConnection)
+        model.rowsRemoved.connect(self.on_rows_removed, AutoConnection)
+        model.modelReset.connect(self.on_rows_removed, AutoConnection)
         logger.info(f"Created {self.__class__.__name__} instance")
 
     @property

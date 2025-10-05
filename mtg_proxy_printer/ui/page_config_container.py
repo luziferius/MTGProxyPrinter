@@ -18,6 +18,7 @@ from functools import partial
 
 from PySide6.QtWidgets import QWidget
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.ui.common import load_ui_from_file
 from mtg_proxy_printer.logger import get_logger
 
@@ -44,8 +45,8 @@ class PageConfigContainer(QWidget):
 
         page_layout_changed = config_widget.page_layout_changed
         page_layout_changed.connect(partial(setattr, preview_area.document, "page_layout"))
-        page_layout_changed.connect(preview_area.document.page_layout_changed)
-        page_layout_changed.connect(preview_area.on_page_layout_changed)
+        page_layout_changed.connect(preview_area.document.page_layout_changed, AutoConnection)
+        page_layout_changed.connect(preview_area.on_page_layout_changed, AutoConnection)
 
-        config_widget.ui.show_preview_button.toggled.connect(preview_area.setVisible)
+        config_widget.ui.show_preview_button.toggled.connect(preview_area.setVisible, AutoConnection)
         logger.info(f"Created {self.__class__.__name__} instance")

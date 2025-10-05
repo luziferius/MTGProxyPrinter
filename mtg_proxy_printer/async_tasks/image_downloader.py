@@ -24,6 +24,7 @@ from PySide6.QtCore import Qt, QModelIndex, Signal
 from PySide6.QtGui import QPixmap
 
 import mtg_proxy_printer.async_tasks.downloader_base
+from mtg_proxy_printer import QueuedConnection, AutoConnection
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.document_controller import DocumentAction
 
@@ -43,7 +44,6 @@ logger = get_logger(__name__)
 del get_logger
 
 ItemDataRole = Qt.ItemDataRole
-QueuedConnection = Qt.ConnectionType.QueuedConnection
 BatchActions = ActionImportDeckList
 SingleActions = ActionAddCard | ActionReplaceCard
 IndexList = list[QModelIndex]
@@ -135,8 +135,8 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
         # Disconnect the implicitly connected signals. TODO: Rework that?
         self.currently_opened_file_monitor.io_begin.disconnect(self.task_begins)
         self.currently_opened_file_monitor.total_bytes_processed.disconnect(self.set_progress)
-        self.currently_opened_file_monitor.io_begin.connect(progress_container.task_begins)
-        self.currently_opened_file_monitor.total_bytes_processed.connect(progress_container.set_progress)
+        self.currently_opened_file_monitor.io_begin.connect(progress_container.task_begins, AutoConnection)
+        self.currently_opened_file_monitor.total_bytes_processed.connect(progress_container.set_progress, AutoConnection)
         try:
             with self.currently_opened_file, download_path.open("wb") as file_in_cache:
                 shutil.copyfileobj(self.currently_opened_file, file_in_cache)

@@ -23,12 +23,13 @@ from typing import Counter, NamedTuple, TYPE_CHECKING
 from collections.abc import Iterable
 
 from PySide6.QtGui import QPageLayout, QPageSize, QColor
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Signal
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, is_, any_of, none, has_item, has_property, equal_to, contains_exactly
 
 import mtg_proxy_printer.units_and_sizes
 import mtg_proxy_printer.settings
+from mtg_proxy_printer import BlockingQueuedConnection, AutoConnection
 from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardDatabase
@@ -107,7 +108,7 @@ class DocumentLoader(AsyncTask):
     load_requested = Signal(DocumentAction)
     unknown_scryfall_ids_found = Signal(int, int)
     loading_file_failed = Signal(pathlib.Path, str)
-    LOAD_REQUESTED_CONNECTION_TYPE = Qt.ConnectionType.BlockingQueuedConnection
+    LOAD_REQUESTED_CONNECTION_TYPE = BlockingQueuedConnection
 
     def __init__(self, document: "Document", path: pathlib.Path):
         super().__init__(None)
@@ -123,7 +124,7 @@ class DocumentLoader(AsyncTask):
         # So create a separate instance and use it synchronously inside this worker thread.
         self.image_loader: ImageDownloadTask | None = None
         self.network_errors_during_load: Counter[str] = collections.Counter()
-        self.task_completed.connect(self.propagate_errors_during_load)
+        self.task_completed.connect(self.propagate_errors_during_load, AutoConnection)
         self.should_run: bool = True
         self.unknown_ids = 0
         self.migrated_ids = 0
@@ -154,7 +155,7 @@ class DocumentLoader(AsyncTask):
         image_loader = ImageDownloadTask(self.document.image_db)
         self.inner_tasks.append(image_loader)
         self.request_register_subtask.emit(image_loader)
-        image_loader.network_error_occurred.connect(self.on_network_error_occurred)
+        image_loader.network_error_occurred.connect(self.on_network_error_occurred, AutoConnection)
         return image_loader
 
     def propagate_errors_during_load(self):

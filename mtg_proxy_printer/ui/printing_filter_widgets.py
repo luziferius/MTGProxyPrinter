@@ -22,6 +22,7 @@ from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QGroupBox, QWidget, QCheckBox, QPushButton
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.units_and_sizes import ConfigParser, SectionProxy
 from mtg_proxy_printer.ui.common import highlight_widget
 
@@ -73,7 +74,7 @@ class GeneralPrintingFilter(AbstractPrintingFilter):
         ui.view_cards_depicting_racism.clicked.connect(
             partial(self.view_query_on_scryfall, "function:banned-due-to-racist-imagery"))
         ui.view_oversized_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:oversized"))
-        ui.view_white_bordered_cards.clicked.connect(partial(self.view_query_on_scryfall, "border:white"))
+        ui.view_white_bordered_cards.clicked.connect( partial(self.view_query_on_scryfall, "border:white"))
         ui.view_gold_bordered_cards.clicked.connect(partial(self.view_query_on_scryfall, "border:gold"))
         ui.view_borderless_cards.clicked.connect(partial(self.view_query_on_scryfall, "border:borderless"))
         ui.view_extended_art_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:extended"))

@@ -33,8 +33,9 @@ import urllib.parse
 from textwrap import dedent
 from typing import Any, Callable, LiteralString, TYPE_CHECKING
 
-from PySide6.QtCore import QCoreApplication, Qt
+from PySide6.QtCore import QCoreApplication
 
+from mtg_proxy_printer import BlockingQueuedConnection
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
@@ -45,7 +46,6 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 del get_logger
-QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 __all__ = [
     "DatabaseMigrationTask",
@@ -733,7 +733,7 @@ class DatabaseMigrationTask(AsyncTask):
         # Otherwise, the "this app needs additional card data downloads" dialog will pop over the error and requires
         # the user to handle them out of sequence.
         self.error_occurred.connect(
-            main_window.on_error_occurred, Qt.ConnectionType.BlockingQueuedConnection
+            main_window.on_error_occurred, BlockingQueuedConnection
         )
 
     @with_database_write_lock()

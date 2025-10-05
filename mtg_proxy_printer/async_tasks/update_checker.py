@@ -27,7 +27,7 @@ from PySide6.QtCore import QObject, Signal
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
-from mtg_proxy_printer import settings
+from mtg_proxy_printer import settings, AutoConnection
 from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME
 from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask
@@ -190,16 +190,16 @@ class UpdateChecker(QObject):
         if section.getboolean("check-for-application-updates"):
             logger.debug("Enqueue application update check")
             task = ApplicationUpdateCheckTask()
-            task.network_error_occurred.connect(self.network_error_occurred)
-            task.application_update_found.connect(self.application_update_found)
+            task.network_error_occurred.connect(self.network_error_occurred, AutoConnection)
+            task.application_update_found.connect(self.application_update_found, AutoConnection)
             self.request_run_async_task.emit(task)
         else:
             logger.info("Not running application update check")
         if not self.card_data_parameter_passed and section.getboolean("check-for-card-data-updates"):
             logger.debug("Enqueue card data update check")
             task = CardDataUpdateCheckTask(self.card_db)
-            task.network_error_occurred.connect(self.network_error_occurred)
-            task.card_data_update_found.connect(self.card_data_update_found)
+            task.network_error_occurred.connect(self.network_error_occurred, AutoConnection)
+            task.card_data_update_found.connect(self.card_data_update_found, AutoConnection)
             self.request_run_async_task.emit(task)
         else:
             logger.info("Not running card data update check")

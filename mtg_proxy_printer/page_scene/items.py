@@ -10,6 +10,7 @@ from PySide6.QtSvgWidgets import QGraphicsSvgItem
 
 from pint import Quantity
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.model.card import AnyCardType, CardCorner
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
@@ -243,7 +244,7 @@ class CardItem(QGraphicsItemGroup):
 
     def __init__(self, index: QModelIndex, document: Document, parent: QGraphicsItem = None):
         super().__init__(parent)
-        document.page_layout_changed.connect(self.on_page_layout_changed)
+        document.page_layout_changed.connect(self.on_page_layout_changed, AutoConnection)
         card: AnyCardType = index.data(ItemDataRole.UserRole)
         self.index = QPersistentModelIndex(index)
         self.card_pixmap_item = self._create_pixmap_item(card)

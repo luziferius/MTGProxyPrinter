@@ -22,6 +22,7 @@ from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, 
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, QDialog
 from PySide6.QtPrintSupport import QPrintDialog
 
+from mtg_proxy_printer import AutoConnection, QueuedConnection
 from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
@@ -108,14 +109,14 @@ class MainWindow(QMainWindow):
 
     def _create_about_dialog(self, card_database: CardDatabase) -> AboutDialog:
         about_dialog = AboutDialog(card_database, self)
-        self.ui.action_show_about_dialog.triggered.connect(about_dialog.show_about)
-        self.ui.action_show_changelog.triggered.connect(about_dialog.show_changelog)
+        self.ui.action_show_about_dialog.triggered.connect(about_dialog.show_about, AutoConnection)
+        self.ui.action_show_changelog.triggered.connect(about_dialog.show_changelog, AutoConnection)
         return about_dialog
 
     def _create_missing_images_manager(self, document: Document) -> MissingImagesManager:
         manager = MissingImagesManager(document, self)
-        manager.request_run_async_task.connect(self.request_run_async_task)
-        manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
+        manager.request_run_async_task.connect(self.request_run_async_task, AutoConnection)
+        manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred, AutoConnection)
         return manager
 
     @staticmethod
@@ -148,16 +149,16 @@ class MainWindow(QMainWindow):
 
     def _setup_central_widget(self):
         self.ui.central_widget.set_data(self.document, self.card_database, self.image_db)
-        self.ui.central_widget.request_run_async_task.connect(self.request_run_async_task)
+        self.ui.central_widget.request_run_async_task.connect(self.request_run_async_task, AutoConnection)
 
     def _setup_undo_redo_actions(self, document: Document):
         ui = self.ui
-        ui.action_undo.triggered.connect(document.undo)
-        ui.action_redo.triggered.connect(document.redo)
-        document.action_applied.connect(self.on_document_action_applied_or_undone)
-        document.action_undone.connect(self.on_document_action_applied_or_undone)
-        document.undo_available_changed.connect(ui.action_undo.setEnabled)
-        document.redo_available_changed.connect(ui.action_redo.setEnabled)
+        ui.action_undo.triggered.connect(document.undo, AutoConnection)
+        ui.action_redo.triggered.connect(document.redo, AutoConnection)
+        document.action_applied.connect(self.on_document_action_applied_or_undone, AutoConnection)
+        document.action_undone.connect(self.on_document_action_applied_or_undone, AutoConnection)
+        document.undo_available_changed.connect(ui.action_undo.setEnabled, AutoConnection)
+        document.redo_available_changed.connect(ui.action_redo.setEnabled, AutoConnection)
 
     def _connect_document_signals(self, document: Document):
         ui = self.ui
@@ -168,7 +169,7 @@ class MainWindow(QMainWindow):
         ui.action_shuffle_document.triggered.connect(lambda: document.apply(ActionShuffleDocument()))
 
     def _setup_card_data_download_actions(self):
-        self.ui.action_download_card_data.triggered.connect(self._update_card_data_from_scryfall)
+        self.ui.action_download_card_data.triggered.connect(self._update_card_data_from_scryfall, AutoConnection)
 
     @Slot()
     def _update_card_data_from_scryfall(self):
@@ -176,16 +177,16 @@ class MainWindow(QMainWindow):
         ui = self.ui
         ui.action_download_card_data.setDisabled(True)
         data_source = ApiStreamTask()
-        data_source.network_error_occurred.connect(self.on_network_error_occurred)
+        data_source.network_error_occurred.connect(self.on_network_error_occurred, AutoConnection)
         data_source.network_error_occurred.connect(lambda: ui.action_download_card_data.setEnabled(True))
-        data_source.error_occurred.connect(self.on_error_occurred)
+        data_source.error_occurred.connect(self.on_error_occurred, AutoConnection)
         data_source.error_occurred.connect(lambda: ui.action_download_card_data.setEnabled(True))
 
         import_task = DatabaseImportTask(data_source, carddb_path=self.card_database.db_path)
-        import_task.error_occurred.connect(self.on_error_occurred)
+        import_task.error_occurred.connect(self.on_error_occurred, AutoConnection)
         import_task.error_occurred.connect(lambda: ui.action_download_card_data.setEnabled(True))
 
-        import_task.task_completed.connect(self.card_database.card_data_updated, Qt.ConnectionType.QueuedConnection)
+        import_task.task_completed.connect(self.card_database.card_data_updated, QueuedConnection)
         self.request_run_async_task.emit(data_source)
         self.request_run_async_task.emit(import_task)
 
@@ -268,15 +269,15 @@ class MainWindow(QMainWindow):
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.document, self.language_model, self)
-        wizard.request_run_async_task.connect(self.request_run_async_task)
+        wizard.request_run_async_task.connect(self.request_run_async_task, AutoConnection)
         show_wizard_or_dialog(wizard)
 
     @Slot()
     def on_action_add_custom_cards_triggered(self):
         logger.info(f"User adds custom cards.")
         self.current_dialog = dialog = CustomCardImportDialog(self.document, self)
-        dialog.finished.connect(self.on_dialog_finished)
-        dialog.request_action.connect(self.document.apply)
+        dialog.finished.connect(self.on_dialog_finished, AutoConnection)
+        dialog.request_action.connect(self.document.apply, AutoConnection)
         show_wizard_or_dialog(dialog)
 
     @Slot()
@@ -288,8 +289,8 @@ class MainWindow(QMainWindow):
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = dialog = PrintDialog(self.document, self)
-        dialog.request_run_async_task.connect(self.request_run_async_task)
-        dialog.finished.connect(self.on_dialog_finished)
+        dialog.request_run_async_task.connect(self.request_run_async_task, AutoConnection)
+        dialog.finished.connect(self.on_dialog_finished, AutoConnection)
         # Use the QDialog base class open() method, because QPrintDialog.open() performs additional, unwanted actions.
         self.missing_images_manager.obtain_missing_images(super(QPrintDialog, dialog).open)
 
@@ -302,7 +303,7 @@ class MainWindow(QMainWindow):
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = dialog = PrintPreviewDialog(self.document, self)
-        dialog.finished.connect(self.on_dialog_finished)
+        dialog.finished.connect(self.on_dialog_finished, AutoConnection)
         self.missing_images_manager.obtain_missing_images(dialog.open)
 
     @Slot()
@@ -314,8 +315,8 @@ class MainWindow(QMainWindow):
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = dialog = SavePDFDialog(self, self.document)
-        dialog.request_run_async_task.connect(self.request_run_async_task)
-        dialog.finished.connect(self.on_dialog_finished)
+        dialog.request_run_async_task.connect(self.request_run_async_task, AutoConnection)
+        dialog.finished.connect(self.on_dialog_finished, AutoConnection)
         self.missing_images_manager.obtain_missing_images(dialog.open)
 
     @Slot()
@@ -327,16 +328,16 @@ class MainWindow(QMainWindow):
         if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = dialog = SavePNGDialog(self, self.document)
-        dialog.request_run_async_task.connect(self.request_run_async_task)
-        dialog.finished.connect(self.on_dialog_finished)
+        dialog.request_run_async_task.connect(self.request_run_async_task, AutoConnection)
+        dialog.finished.connect(self.on_dialog_finished, AutoConnection)
         self.missing_images_manager.obtain_missing_images(dialog.open)
 
     @Slot()
     def on_action_export_card_images_triggered(self):
         logger.info("User exports the card images in the current document to a directory")
         self.current_dialog = dialog = ExportCardImagesDialog(self.document, self)
-        dialog.error_occurred.connect(self.on_error_occurred)
-        dialog.finished.connect(self.on_dialog_finished)
+        dialog.error_occurred.connect(self.on_error_occurred, AutoConnection)
+        dialog.finished.connect(self.on_dialog_finished, AutoConnection)
         dialog.open()
 
     @Slot()
@@ -403,7 +404,7 @@ class MainWindow(QMainWindow):
     def on_action_edit_document_settings_triggered(self):
         logger.info("User wants to edit the document settings. Showing the editor dialog")
         self.current_dialog = dialog = DocumentSettingsDialog(self.document, self)
-        dialog.finished.connect(self.on_dialog_finished)
+        dialog.finished.connect(self.on_dialog_finished, AutoConnection)
         show_wizard_or_dialog(dialog)
 
     @Slot()
@@ -414,15 +415,15 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_save_as_triggered(self):
         self.current_dialog = dialog = SaveDocumentAsDialog(self.document, self)
-        dialog.finished.connect(self.on_dialog_finished)
+        dialog.finished.connect(self.on_dialog_finished, AutoConnection)
         show_wizard_or_dialog(dialog)
 
     @Slot()
     def on_action_load_document_triggered(self):
         self.current_dialog = dialog = LoadDocumentDialog(self, self.document)
-        dialog.request_run_async_task.connect(self.request_run_async_task)
-        dialog.accepted.connect(self.ui.central_widget.select_first_page)
-        dialog.finished.connect(self.on_dialog_finished)
+        dialog.request_run_async_task.connect(self.request_run_async_task, AutoConnection)
+        dialog.accepted.connect(self.ui.central_widget.select_first_page, AutoConnection)
+        dialog.finished.connect(self.on_dialog_finished, AutoConnection)
         show_wizard_or_dialog(dialog)
 
     def on_document_loading_failed(self, failed_path: Path, reason: str):
@@ -541,8 +542,8 @@ class MainWindow(QMainWindow):
             self.request_run_async_task.emit(DocumentLoader(self.document, path))
         elif CustomCardImportDialog.dragdrop_acceptable(event):
             self.current_dialog = dialog = CustomCardImportDialog(self.document, self)
-            dialog.request_action.connect(self.document.apply)
-            dialog.finished.connect(self.on_dialog_finished)
+            dialog.request_action.connect(self.document.apply, AutoConnection)
+            dialog.finished.connect(self.on_dialog_finished, AutoConnection)
             dialog.show_from_drop_event(event)
 
     @staticmethod

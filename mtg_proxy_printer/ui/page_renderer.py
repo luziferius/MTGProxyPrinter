@@ -21,7 +21,7 @@ from PySide6.QtCore import Qt, QEvent
 from PySide6.QtWidgets import QGraphicsView, QWidget
 from PySide6.QtGui import QWheelEvent, QKeySequence, QPalette, QResizeEvent, QAction
 
-
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.page_scene.page_scene import RenderMode, PageScene
@@ -98,7 +98,7 @@ class PageRenderer(QGraphicsView):
         logger.info("Document instance received, creating PageScene.")
         self.document = document
         self.setScene(scene := PageScene(document, RenderMode.ON_SCREEN, self))
-        scene.scene_size_changed.connect(self.resizeEvent)
+        scene.scene_size_changed.connect(self.resizeEvent, AutoConnection)
 
     def _perform_zoom_step(self, direction: ZoomDirection):
         scaling_factor = 1.1 if direction is ZoomDirection.IN else 0.9

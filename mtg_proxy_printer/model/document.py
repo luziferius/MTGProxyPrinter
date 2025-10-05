@@ -26,6 +26,7 @@ from typing import Any, Counter
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
     QPersistentModelIndex, QMimeData, QObject
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask, SingleActions
 from mtg_proxy_printer.document_controller.move_page import ActionMovePage
@@ -285,7 +286,7 @@ class Document(QAbstractItemModel):
 
     def _fetch_image_and_apply_action(self, action: SingleActions):
         task = SingleDownloadTask(self.image_db, action)
-        task.request_action.connect(self.apply)
+        task.request_action.connect(self.apply, AutoConnection)  # FIXME: This is a double connection. Remove this line
         self.request_run_async_task.emit(task)
 
     def mimeData(self, indexes: list[QModelIndex], /) -> QMimeData:

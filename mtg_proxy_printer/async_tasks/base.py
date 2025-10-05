@@ -17,6 +17,7 @@ import abc
 
 from PySide6.QtCore import QRunnable, QObject, Signal, Slot
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -90,8 +91,8 @@ class AsyncTask(QObject):
         self.inner_tasks: list[AsyncTask] = []
         self._running = False
         self._ui_hint = ""
-        self.task_begins.connect(self._on_task_begins)
-        self.task_completed.connect(self._on_task_completed)
+        self.task_begins.connect(self._on_task_begins, AutoConnection)
+        self.task_completed.connect(self._on_task_completed, AutoConnection)
 
     @Slot(int, str)
     def _on_task_begins(self, _: int, ui_hint: str):

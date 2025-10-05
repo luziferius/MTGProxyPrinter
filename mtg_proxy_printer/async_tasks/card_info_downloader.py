@@ -36,6 +36,7 @@ from typing import Literal
 import ijson
 from PySide6.QtCore import Qt
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
 from mtg_proxy_printer.http_file import MeteredSeekableHTTPFile
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock, \
@@ -254,10 +255,11 @@ class FileStreamTask(StreamTask):
 
     def _wrap_in_metered_file(self, raw_file, file_size: int):
         monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size)
-        monitor.total_bytes_processed.connect(self.set_progress)
-        monitor.io_begin.connect(lambda size: self.task_begins.emit(
-            size,
-            self.tr("Importing card data from disk:", "Progress bar label text")))
+        monitor.total_bytes_processed.connect(self.set_progress, AVERAGE_SIZE_PER_UNCOMPRESSED_JSON_ENTRY_IN_BYTES)
+        monitor.io_begin.connect(
+            lambda size: self.task_begins.emit(
+                size,
+                self.tr("Importing card data from disk:", "Progress bar label text")))
         return monitor
 
     @property
@@ -469,7 +471,7 @@ class DatabaseImportTask(AsyncTask):
         updater = PrintingFilterUpdater(
             CardDatabase(self.carddb_path, check_same_thread=True, register_exit_hooks=False),
             self.db, force_update_hidden_column=True)
-        updater.advance_progress.connect(self.advance_progress)
+        updater.advance_progress.connect(self.advance_progress, AutoConnection)
         updater.store_current_printing_filters()  # Don't call run() to not deadlock via the db semaphore
         # Store the timestamp of this import.
         db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n", (index,))

@@ -26,6 +26,7 @@ from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *
 
+from mtg_proxy_printer import AutoConnection
 from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader, CardType
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 from tests.helpers import quantity_close_to
@@ -315,7 +316,7 @@ def test_cancelling_loading_does_not_crash(
         ],
         document.page_layout
     )
-    loader.begin_loading_loop.connect(loader.cancel)
+    loader.begin_loading_loop.connect(loader.cancel, AutoConnection)
     with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database:
         loader.run()
     open_database.assert_called_once()
