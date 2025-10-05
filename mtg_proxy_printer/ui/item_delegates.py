@@ -147,11 +147,9 @@ class SetEditorDelegate(FastComboBoxDelegate):
             self, editor: QComboBox | CustomCardSetEditor, model: QAbstractItemModel, index: QModelIndex) -> None:
         card: AnyCardType = index.data(ItemDataRole.UserRole)
         data = editor.to_mtg_set() if card.is_custom_card else editor.currentData(ItemDataRole.UserRole)
-        model.setData(index, data, ItemDataRole.EditRole)
-
-    @staticmethod
-    def _is_official_card(editor: QComboBox | CustomCardSetEditor):
-        return isinstance(editor, QComboBox)
+        if card.set != data:
+            logger.debug(f"Switching printing of card '{card.name}' from set {card.set} to {data}")
+            model.setData(index, data, ItemDataRole.EditRole)
 
 
 class LanguageEditorDelegate(FastComboBoxDelegate):
