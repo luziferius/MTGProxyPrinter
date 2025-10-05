@@ -284,9 +284,7 @@ class Document(QAbstractItemModel):
         return False
 
     def _fetch_image_and_apply_action(self, action: SingleActions):
-        task = SingleDownloadTask(self.image_db, action)
-        task.request_action.connect(self.apply, BlockingQueuedConnection)
-        self.request_run_async_task.emit(task)
+        self.request_run_async_task.emit(SingleDownloadTask(self.image_db, action))
 
     def mimeData(self, indexes: list[QModelIndex], /) -> QMimeData:
         """Supports encoding the row of a singular QModelIndex as QMimeData. Used for moving Pages via drag&drop."""
