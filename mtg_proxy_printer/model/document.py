@@ -69,6 +69,13 @@ PAGE_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-PageMove"
 CARD_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-CardMove"
 DRAG_OPERATION_TYPE = Literal["application/x-MTGProxyPrinter-PageMove"] | Literal["application/x-MTGProxyPrinter-CardMove"] | None
 
+
+class DragOperationType(typing.TypedDict):
+    type: Literal["application/x-MTGProxyPrinter-PageMove"] | Literal["application/x-MTGProxyPrinter-CardMove"]
+    source_size: typing.NotRequired[PageType]
+    source_count: typing.NotRequired[int]
+
+
 class CardMoveMimeData(typing.TypedDict):
     page: int
     cards: list[int]
@@ -114,11 +121,8 @@ class Document(QAbstractItemModel):
         self.page_index_cache: dict[int, int] = {id(first_page): 0}
         self.currently_edited_page = first_page
         self.page_layout = PageLayoutSettings.create_from_settings()
-        # The last started drag operation affects the index flags().
-        self.current_drag_operation: DRAG_OPERATION_TYPE = None
-        # Also note the size of dragged cards. This allows checking, if pages can accept the drop,
-        # to prevent creation of MIXED pages.
-        self.current_drag_card_size: PageType = PageType.UNDETERMINED
+        # The last started drag operation affects the index flags() related to drag&drop.
+        self.current_drag_operation: DragOperationType = {"type": PAGE_MOVE_MIME_TYPE}
         logger.debug(f"Loaded document settings from configuration file: {self.page_layout}")
         logger.info(f"Created {self.__class__.__name__} instance")
 
@@ -259,9 +263,11 @@ class Document(QAbstractItemModel):
             flags |= ItemFlag.ItemIsDragEnabled  # Pages and cards can be moved
         if (not index.isValid()  # Top level can accept any drop, both pages and cards, where the latter gets a new page
             or (
-                isinstance(data, Page)
-                and self.current_drag_operation == CARD_MOVE_MIME_TYPE  # Pages only accept cards …
-                and data.accepts_card(self.current_drag_card_size)  # with an acceptable size.
+                isinstance(data, Page)  # Dropped onto a page.
+                and self.current_drag_operation["type"] == CARD_MOVE_MIME_TYPE  # Pages only accept cards …
+                and data.accepts_card(self.current_drag_operation["source_size"])  # that have an acceptable size, …
+                and len(data) + self.current_drag_operation["source_count"] # and if they can fit the dropped cards
+                    <= self.page_layout.compute_page_card_capacity(self.current_drag_operation["source_size"])
                 )):
             flags |= ItemFlag.ItemIsDropEnabled
         return flags
@@ -312,7 +318,7 @@ class Document(QAbstractItemModel):
             row = first.row()
             logger.debug(f"Initiating drag for page {row}")
             mime_data.setData(PAGE_MOVE_MIME_TYPE, row.to_bytes(8))
-            self.current_drag_operation = PAGE_MOVE_MIME_TYPE
+            self.current_drag_operation = DragOperationType(type=PAGE_MOVE_MIME_TYPE)
             return mime_data
         page = first.parent().row()
         cards = sorted(set(index.row() for index in indexes))
@@ -320,8 +326,7 @@ class Document(QAbstractItemModel):
         data: CardMoveMimeData = {"page": page, "cards": cards}
         encoded_data = json.dumps(data).encode("utf-8")
         mime_data.setData(CARD_MOVE_MIME_TYPE, encoded_data)
-        self.current_drag_operation = CARD_MOVE_MIME_TYPE
-        self.current_drag_card_size = self.pages[page].page_type()
+        self.current_drag_operation = DragOperationType(type=CARD_MOVE_MIME_TYPE, source_count=len(cards), source_size=self.pages[page].page_type())
         return mime_data
 
     def dropMimeData(
