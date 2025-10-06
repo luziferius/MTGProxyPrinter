@@ -72,8 +72,9 @@ DRAG_OPERATION_TYPE = Literal["application/x-MTGProxyPrinter-PageMove"] | Litera
 
 class DragOperationType(typing.TypedDict):
     type: Literal["application/x-MTGProxyPrinter-PageMove"] | Literal["application/x-MTGProxyPrinter-CardMove"]
-    source_size: typing.NotRequired[PageType]
-    source_count: typing.NotRequired[int]
+    source_size: typing.NotRequired[PageType]  # Size of moved cards. Prevents creation of mixed pages
+    source_count: typing.NotRequired[int]  # Number of cards moved. Prevents overflowing pages
+    source_page: typing.NotRequired[int]  # The origin page of card moves. Disables count checks for in-page moves
 
 
 class CardMoveMimeData(typing.TypedDict):
@@ -266,8 +267,10 @@ class Document(QAbstractItemModel):
                 isinstance(data, Page)  # Dropped onto a page.
                 and self.current_drag_operation["type"] == CARD_MOVE_MIME_TYPE  # Pages only accept cards …
                 and data.accepts_card(self.current_drag_operation["source_size"])  # that have an acceptable size, …
-                and len(data) + self.current_drag_operation["source_count"] # and if they can fit the dropped cards
+                and (len(data) + self.current_drag_operation["source_count"] # and if they can fit the dropped cards
                     <= self.page_layout.compute_page_card_capacity(self.current_drag_operation["source_size"])
+                    or self.current_drag_operation["source_page"] == index.row()
+                )
                 )):
             flags |= ItemFlag.ItemIsDropEnabled
         return flags
@@ -326,7 +329,9 @@ class Document(QAbstractItemModel):
         data: CardMoveMimeData = {"page": page, "cards": cards}
         encoded_data = json.dumps(data).encode("utf-8")
         mime_data.setData(CARD_MOVE_MIME_TYPE, encoded_data)
-        self.current_drag_operation = DragOperationType(type=CARD_MOVE_MIME_TYPE, source_count=len(cards), source_size=self.pages[page].page_type())
+        self.current_drag_operation = DragOperationType(
+            type=CARD_MOVE_MIME_TYPE, source_count=len(cards), source_size=self.pages[page].page_type(),
+            source_page=page)
         return mime_data
 
     def dropMimeData(
