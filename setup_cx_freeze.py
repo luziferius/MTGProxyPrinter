@@ -24,7 +24,7 @@ import sys
 from cx_Freeze import setup, Executable
 
 ROOT_DIR = pathlib.Path(__file__).parent
-resource_path = ROOT_DIR / "resources.bak"
+resource_path = ROOT_DIR / "resources"
 main_package = "mtg_proxy_printer"
 meta_data = (ROOT_DIR/main_package/"meta_data.py").read_text()
 version = re.search(
@@ -89,6 +89,7 @@ if sys.platform == "win32":
         "platformdirs.unix",
     ]
 
+
 def get_icon() -> str:
     icon_path = resource_path / "icons" / "MTGPP.png"
     if sys.platform == "win32":
@@ -100,6 +101,7 @@ def get_icon() -> str:
         return str(dest)
     else:
         return str(icon_path)
+
 
 icon = get_icon()
 

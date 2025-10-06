@@ -363,19 +363,11 @@ class PageScene(QGraphicsScene):
             card_item = CardItem(index, self.document)
             self.addItem(card_item)
             card_item.setPos(position)
-            if next_item is not None:
-                # See https://doc.qt.io/qt-6/qgraphicsitem.html#sorting
-                # "You can call stackBefore() to reorder the list of children.
-                # This will directly modify the insertion order."
-                # This is required to keep the card order consistent with the model when inserting cards in the
-                # middle of the page. This can happen when undoing a card removal. The caller has to supply the
-                # item which’s position the new item takes.
-                card_item.stackBefore(next_item)
 
     def update_card_positions(self):
         page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
-        for index, card in enumerate(self.card_items):
-            card.setPos(self._compute_position_for_image(index, page_type))
+        for card in self.card_items:
+            card.setPos(self._compute_position_for_image(card.index.row(), page_type))
 
     def _is_valid_page_index(self, index: QModelIndex | QPersistentModelIndex):
         return index.isValid() and not index.parent().isValid() and index.row() < self.document.rowCount()
@@ -448,17 +440,27 @@ class PageScene(QGraphicsScene):
             self._update_page_number_text()
 
     def on_rows_moved(self, parent: QModelIndex, start: int, end: int, destination: QModelIndex, row: int):
-        if parent.isValid() and parent.row() == self.selected_page.row():
+        source_page_row = parent.row()
+        current_page_row = self.selected_page.row()
+        destination_page_row = destination.row()
+        if not parent.isValid():
+            # Moved pages around. Needs to update the current page text
+            self._update_page_number_text()
+            return
+        # Parent is valid, thus start:end+1 point to cards on the page source_page_row.
+        if source_page_row != current_page_row == destination_page_row:
+            # Cards moved onto the current page are treated as if they were added
+            logger.debug("Cards moved onto the currently shown page, calling card insertion handler.")
+            self.on_rows_inserted(destination, row, row + end - start)
+        elif source_page_row == current_page_row != destination_page_row:
             # Cards moved away are treated as if they were deleted
             logger.debug("Cards moved away from the currently shown page, calling card removal handler.")
             self.on_rows_removed(parent, start, end)
-        if destination.isValid() and destination.row() == self.selected_page.row():
-            # Moved in cards are treated as if they were added
-            logger.debug("Cards moved onto the currently shown page, calling card insertion handler.")
-            self.on_rows_inserted(destination, row, row+end-start)
-        if not parent.isValid() and not destination.isValid():
-            # Moved pages around. Needs to update the current page text
-            self._update_page_number_text()
+        elif source_page_row == current_page_row == destination_page_row:
+            logger.debug("Cards moved within the current page, reordering them")
+            self.update_card_positions()
+        # Remaining cases are card moves happening "off-screen", so nothing has to be done on them.
+
 
     @functools.lru_cache(None)
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:

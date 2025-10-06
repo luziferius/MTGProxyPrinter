@@ -37,6 +37,9 @@ class CardContainer:
     parent: "Page"
     card: AnyCardType
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(card={self.card})"
+
 
 class Page(list[CardContainer]):
 

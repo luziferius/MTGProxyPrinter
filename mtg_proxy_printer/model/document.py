@@ -14,20 +14,25 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import collections
+from collections import deque, Counter
 from collections.abc import Generator, Iterable
+import json
+import typing
 import enum
 import itertools
 import math
 from pathlib import Path
-import sys
-from typing import Any, Counter
+from typing import Any, Literal
 
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
     QPersistentModelIndex, QMimeData
 
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask, SingleActions
+from mtg_proxy_printer.document_controller import DocumentAction
+from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
+from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
+from mtg_proxy_printer.document_controller.move_cards import ActionMoveCardsBetweenPages, ActionMoveCardsWithinPage
 from mtg_proxy_printer.document_controller.move_page import ActionMovePage
 from mtg_proxy_printer.model.imagedb_files import ImageKey
 from mtg_proxy_printer.natsort import to_list_of_ranges
@@ -40,19 +45,9 @@ from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 
-from mtg_proxy_printer.document_controller import DocumentAction
-from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
-from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
-
-PAGE_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-PageMove"
 
 logger = get_logger(__name__)
 del get_logger
-
-if sys.version_info[:2] >= (3, 9):
-    Counter = collections.Counter
-else:
-    Counter = Counter
 
 __all__ = [
     "Document",
@@ -64,12 +59,27 @@ class DocumentColumns(enum.IntEnum):
 
 
 INVALID_INDEX = QModelIndex()
-ActionStack = collections.deque[DocumentAction]
+ActionStack = deque[DocumentAction]
 AnyIndex = QModelIndex | QPersistentModelIndex
 ItemDataRole = Qt.ItemDataRole
 Orientation = Qt.Orientation
 ItemFlag = Qt.ItemFlag
 BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
+PAGE_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-PageMove"
+CARD_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-CardMove"
+DRAG_OPERATION_TYPE = Literal["application/x-MTGProxyPrinter-PageMove"] | Literal["application/x-MTGProxyPrinter-CardMove"] | None
+
+
+class DragOperationType(typing.TypedDict):
+    type: Literal["application/x-MTGProxyPrinter-PageMove"] | Literal["application/x-MTGProxyPrinter-CardMove"]
+    source_size: typing.NotRequired[PageType]  # Size of moved cards. Prevents creation of mixed pages
+    source_count: typing.NotRequired[int]  # Number of cards moved. Prevents overflowing pages
+    source_page: typing.NotRequired[int]  # The origin page of card moves. Disables count checks for in-page moves
+
+
+class CardMoveMimeData(typing.TypedDict):
+    page: int
+    cards: list[int]
 
 
 class Document(QAbstractItemModel):
@@ -102,8 +112,8 @@ class Document(QAbstractItemModel):
             PageColumns.IsFront: self.tr("Side"),
         }
 
-        self.undo_stack: ActionStack = collections.deque()
-        self.redo_stack: ActionStack = collections.deque()
+        self.undo_stack: ActionStack = deque()
+        self.redo_stack: ActionStack = deque()
         self.save_file_path: Path | None = None
         self.card_db = card_db
         self.image_db = image_db
@@ -112,6 +122,8 @@ class Document(QAbstractItemModel):
         self.page_index_cache: dict[int, int] = {id(first_page): 0}
         self.currently_edited_page = first_page
         self.page_layout = PageLayoutSettings.create_from_settings()
+        # The last started drag operation affects the index flags() related to drag&drop.
+        self.current_drag_operation: DragOperationType = {"type": PAGE_MOVE_MIME_TYPE}
         logger.debug(f"Loaded document settings from configuration file: {self.page_layout}")
         logger.info(f"Created {self.__class__.__name__} instance")
 
@@ -248,10 +260,19 @@ class Document(QAbstractItemModel):
         flags = super().flags(index)
         if isinstance(data, CardContainer) and (index.column() in self.EDITABLE_COLUMNS or data.card.is_custom_card):
             flags |= ItemFlag.ItemIsEditable
-        if isinstance(data, Page):
-            flags |= ItemFlag.ItemIsDragEnabled  # Pages can be moved
-        if not index.isValid():
-            flags |= ItemFlag.ItemIsDropEnabled  # Only the root can accept drops to not overwrite items
+        if isinstance(data, Page|CardContainer):
+            flags |= ItemFlag.ItemIsDragEnabled  # Pages and cards can be moved
+        if (not index.isValid()  # Top level can accept any drop, both pages and cards, where the latter gets a new page
+            or (
+                isinstance(data, Page)  # Dropped onto a page.
+                and self.current_drag_operation["type"] == CARD_MOVE_MIME_TYPE  # Pages only accept cards …
+                and data.accepts_card(self.current_drag_operation["source_size"])  # that have an acceptable size, …
+                and (len(data) + self.current_drag_operation["source_count"] # and if they can fit the dropped cards
+                    <= self.page_layout.compute_page_card_capacity(self.current_drag_operation["source_size"])
+                    or self.current_drag_operation["source_page"] == index.row()
+                )
+                )):
+            flags |= ItemFlag.ItemIsDropEnabled
         return flags
 
     def setData(self, index: AnyIndex, value: Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
@@ -287,33 +308,83 @@ class Document(QAbstractItemModel):
         self.request_run_async_task.emit(SingleDownloadTask(self.image_db, action))
 
     def mimeData(self, indexes: list[QModelIndex], /) -> QMimeData:
-        """Supports encoding the row of a singular QModelIndex as QMimeData. Used for moving Pages via drag&drop."""
-        if len(indexes) != 1:
-            return QMimeData()
-        row = indexes[0].row()
-        logger.debug(f"Initiating drag for page {row}")
+        """
+        Reads model data and converts them into QMimeData used for Drag&Drop.
+        Dragging a page encodes its initial position
+        Dragging cards encodes their shared page index, and a list of card indices.
+        """
         mime_data = QMimeData()
-        mime_data.setData(PAGE_MOVE_MIME_TYPE, row.to_bytes(8))
+        if not indexes:
+            return mime_data
+
+        if not (first := indexes[0]).parent().isValid():
+            row = first.row()
+            logger.debug(f"Initiating drag for page {row}")
+            mime_data.setData(PAGE_MOVE_MIME_TYPE, row.to_bytes(8))
+            self.current_drag_operation = DragOperationType(type=PAGE_MOVE_MIME_TYPE)
+            return mime_data
+        page = first.parent().row()
+        cards = sorted(set(index.row() for index in indexes))
+        logger.debug(f"Initiating drag for {len(cards)} cards on page {page}")
+        data: CardMoveMimeData = {"page": page, "cards": cards}
+        encoded_data = json.dumps(data).encode("utf-8")
+        mime_data.setData(CARD_MOVE_MIME_TYPE, encoded_data)
+        self.current_drag_operation = DragOperationType(
+            type=CARD_MOVE_MIME_TYPE, source_count=len(cards), source_size=self.pages[page].page_type(),
+            source_page=page)
         return mime_data
 
     def dropMimeData(
             self, data: QMimeData, action: Qt.DropAction,
             row: int, column: PageColumns | DocumentColumns, parent: QModelIndex, /):
-        """Supports dropping pages moved via drag&drop. Only Page moves supported at the moment."""
+        """Supports dropping cards or pages moved via drag&drop."""
+
+        # https://doc.qt.io/qt-6/qabstractitemmodel.html#dropMimeData:
+        # "When row and column are -1 it means that the dropped data should be considered as
+        # dropped directly on parent. Usually this will mean appending the data as child items of parent.
+        # If row and column are greater than or equal zero, it means that the drop occurred just
+        # before the specified row and column in the specified parent."
         if data.hasFormat(PAGE_MOVE_MIME_TYPE):
+            # Here, parent is always invalid. row == column == -1 means the drop ended on empty space within the view.
+            # The only location with empty space is below the last page, so treat it as if the user dropped directly
+            # below the last page, and move the page to the end.
+            # If row != -1, row states the drop location, so use that.
             logger.debug(f"Received page drop onto {row=}")
-            if row == -1:  # Drop onto empty space or after last entry. Append in this case
+            if row == -1:
                 row = self.rowCount()
             source_row = int.from_bytes(data.data(PAGE_MOVE_MIME_TYPE).data())
             self.apply(ActionMovePage(source_row, row))
+        elif data.hasFormat(CARD_MOVE_MIME_TYPE):
+            # Here, parent may be valid, and there are two main cases, one of which has 2 subcases:
+            card_data: CardMoveMimeData = json.loads(data.data(CARD_MOVE_MIME_TYPE).data())
+            logger.debug(f"Received card drop onto {row=}: {card_data}")
+            # Case 1:  Cards are dropped onto an existing page, given by parent.row().
+            if parent.isValid():
+                if row == column == -1:
+                    # The drop ended on empty space within the page card table view.
+                    # Append the cards at the end of the given page
+                    row = self.rowCount(parent)
+                if parent.row() == card_data["page"]:
+                    action = ActionMoveCardsWithinPage(parent.row(), card_data["cards"], row)
+                else:
+                    action = ActionMoveCardsBetweenPages(card_data["page"], card_data["cards"], parent.row(), None)
+            else:
+                # Case 2: Cards are dropped between pages, and a new page must be inserted for the dropped cards
+                if row == column == -1:
+                    # Subcase 1: The drop ended on empty space within the view. Append a new page.
+                    row = self.rowCount()
+                # Subcase 2: Cards are moved to row on the page given by parent
+                action = ActionMoveCardsBetweenPages(card_data["page"], card_data["cards"], row, -1)
+            self.apply(action)
+
         return False  # Move complete, so signal via False that the caller does not have to remove the source rows
 
     def supportedDropActions(self, /) -> Qt.DropAction:
         return Qt.DropAction.MoveAction
 
     def mimeTypes(self, /) -> list[str]:
-        """Supported mime types. Currently only supporting Page moves"""
-        return [PAGE_MOVE_MIME_TYPE]
+        """Supported mime types."""
+        return [PAGE_MOVE_MIME_TYPE, CARD_MOVE_MIME_TYPE]
 
     @staticmethod
     def _to_index(other: QPersistentModelIndex | QModelIndex) -> QModelIndex:
@@ -376,7 +447,7 @@ class Document(QAbstractItemModel):
         return None
 
     def _get_page_preview(self, page: Page):
-        names = collections.Counter(container.card.name for container in page)
+        names = Counter(container.card.name for container in page)
         return "\n".join(self.tr(
             "%n× {name}",
             "Used to display a card name and amount of copies in the page overview. "
@@ -403,7 +474,7 @@ class Document(QAbstractItemModel):
         """
         Computes the number of pages that can be saved by compacting the document.
         """
-        cards: Counter[PageType] = collections.Counter()
+        cards: Counter[PageType] = Counter()
         for page in self.pages:
             cards[page.page_type()] += len(page)
         required_pages = (

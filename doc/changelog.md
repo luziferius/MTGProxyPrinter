@@ -2,11 +2,18 @@
 
 # Next version (in development)
 
+# New features
+
+- Full support for moving cards around via drag & drop:
+  - Drop cards onto another page to move the cards to that page
+  - Drop cards between two pages to insert a new page at that location and move the cards there
+  - Re-order cards within a page
+
 # Fixed issues
 
 - Fixed crash when trying to load a document that contains a hidden printing
   that does not have an available replacement printing.
-- Restored reporting if hidden printings were migrated to available ones during document loading 
+- Restored reporting if hidden printings were migrated to available ones or dropped during document loading 
 - Fixed crash when trying to switch a printing of an already added card
 - Fixed the slight zoom level drift that occurred when repeatedly zooming in and out in the currently shown page.
 

@@ -24,7 +24,7 @@ from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
-from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
+from mtg_proxy_printer.document_controller.move_cards import ActionMoveCardsBetweenPages
 
 from tests.helpers import create_card
 from .helpers import append_new_card_in_page, card_container_with
@@ -106,7 +106,7 @@ def test_compacting_document(document_light: Document):
     assert_that(
         action.actions,
         contains_exactly(
-            *[instance_of(ActionMoveCards)]*4,
+            *[instance_of(ActionMoveCardsBetweenPages)] * 4,
             instance_of(ActionRemovePage)
         )
     )
@@ -153,6 +153,6 @@ def test_compacting_document_with_regular_and_oversized_pages(document_light: Do
     assert_that(
         action.actions,
         contains_exactly(
-            *[instance_of(ActionMoveCards)]*2,
+            *[instance_of(ActionMoveCardsBetweenPages)] * 2,
             instance_of(ActionRemovePage))
     )

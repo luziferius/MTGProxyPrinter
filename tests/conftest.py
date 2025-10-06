@@ -60,7 +60,7 @@ def empty_save_database(request) -> sqlite3.Connection:
 
 
 @pytest.fixture
-def image_db(qtbot, tmp_path: Path):
+def image_db(qtbot, tmp_path: Path) -> ImageDatabase:
     image_db = ImageDatabase(tmp_path)
     regular = image_db.get_blank(CardSizes.REGULAR)
     large = image_db.get_blank(CardSizes.OVERSIZED)
@@ -76,15 +76,15 @@ def image_db(qtbot, tmp_path: Path):
         image_db.loaded_images[key] = large.copy()
         image_db.images_on_disk.add(key)
 
-    yield image_db
+    return image_db
 
 
 @pytest.fixture
 def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
     fill_card_database_with_json_cards(qtbot, card_db, [
         "regular_english_card", "oversized_card", "english_double_faced_card"])
-    document = Document(card_db, image_db)
-    yield document
+    return Document(card_db, image_db)
+
 
 @pytest.fixture
 def mock_imagedb():
@@ -98,13 +98,13 @@ def mock_imagedb():
     mock_image_db.get_blank = blanks.get
     return mock_image_db
 
+
 @pytest.fixture
 def document_light(qtbot, mock_imagedb) -> Document:
     mock_card_db = unittest.mock.NonCallableMagicMock()
     mock_card_db.db = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
         "carddb", check_same_thread=False)
-    document = Document(mock_card_db, mock_imagedb)
-    yield document
+    return Document(mock_card_db, mock_imagedb)
 
 
 @pytest.fixture
