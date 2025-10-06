@@ -41,8 +41,8 @@ EventType = QEvent.Type
 
 @enum.unique
 class ZoomDirection(enum.Enum):
-    IN = enum.auto()
-    OUT = enum.auto()
+    IN = 1.1
+    OUT = 1/1.1
 
     @classmethod
     def from_bool(cls, value: bool, /):
@@ -101,7 +101,7 @@ class PageRenderer(QGraphicsView):
         scene.scene_size_changed.connect(self.resizeEvent)
 
     def _perform_zoom_step(self, direction: ZoomDirection):
-        scaling_factor = 1.1 if direction is ZoomDirection.IN else 0.9
+        scaling_factor = direction.value
         if scaling_factor * self.transform().m11() > self.MAX_UI_ZOOM:
             return
         self.automatic_scaling = self.scene_fully_visible(scaling_factor)
