@@ -27,8 +27,11 @@ root_logger = logging.getLogger(PROGRAMNAME)
 LOG_FORMAT = "%(asctime)s %(levelname)s - %(name)s - %(message)s"
 LOG_DIR = data_directories.user_log_path
 LOG_DIR.mkdir(parents=True, exist_ok=True)
-#_CRASH_LOG_FILE = open(LOG_DIR / f"{PROGRAMNAME}-crashes.log", "at", encoding="utf-8")
-#faulthandler.enable(_CRASH_LOG_FILE, all_threads=True)
+try:
+    _CRASH_LOG_FILE = open(LOG_DIR / f"{PROGRAMNAME}-crashes.log", "at", encoding="utf-8")
+    faulthandler.enable(_CRASH_LOG_FILE, all_threads=True)
+except PermissionError:
+    pass
 
 __all__ = [
     "get_logger",

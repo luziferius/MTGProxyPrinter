@@ -86,4 +86,5 @@ class ActionEditCustomCard(DocumentAction):
     def as_str(self):
         return self.tr(
             "Edit custom card, set {column_header_text} to {new_value}",
-            "Undo/redo tooltip text").format(column_header_text=self.header_text, new_value=self.new_display_value)
+            "Undo/redo tooltip text"
+        ).format(column_header_text=self.header_text, new_value=self.new_display_value)

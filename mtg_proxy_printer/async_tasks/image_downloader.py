@@ -130,7 +130,7 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
         download_path = self.image_database.db_path / f"{image_path.stem}-{side}{image_path.suffix}"
         self.currently_opened_file, self.currently_opened_file_monitor = self.read_from_url(
             download_uri,
-            self.tr("Downloading '{card_name}'", "Progress bar label text").format(
+            self.tr("Downloading '{card_name}':", "Progress bar label text").format(
                 card_name=card.name))
         # Disconnect the implicitly connected signals. TODO: Rework that?
         self.currently_opened_file_monitor.io_begin.disconnect(self.task_begins)
@@ -214,7 +214,7 @@ class BatchDownloadTask(ImageDownloadTask):
         logger.info(f"Got batch DocumentAction, filling {total_cards} cards")
         self.task_begins.emit(
             total_cards,
-            self.tr("Importing deck list", "Progress bar label text"))
+            self.tr("Importing deck list:", "Progress bar label text"))
         for card in cards:
             if not self.should_run:
                 return
@@ -259,7 +259,7 @@ class ObtainMissingImagesTask(ImageDownloadTask):
                   self.image_database.get_blank(CardSizes.OVERSIZED)}
         self.task_begins.emit(
             total_cards,
-            self.tr("Fetching missing images", "Progress bar label text"))
+            self.tr("Fetching missing images:", "Progress bar label text"))
         for card_index in card_indices:
             if not self.should_run:
                 self.task_completed.emit()

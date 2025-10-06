@@ -161,7 +161,9 @@ class ApplicationUpdateCheckTask(DownloaderBase):
         return tags
 
     def _read_available_application_versions_from_mirror(self, mirror):
-        data, _ = self.read_from_url(f"{mirror}/json/tag/list/", self.tr("Application update check: "))
+        data, _ = self.read_from_url(
+            f"{mirror}/json/tag/list/",
+            self.tr("Application update check: ", "Progress bar label text"))
         items = ijson.items(data, "payload.tags.item", use_float=True)
         matches = filter(
             None,

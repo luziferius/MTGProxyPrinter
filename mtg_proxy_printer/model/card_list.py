@@ -85,12 +85,18 @@ class CardListModel(QAbstractTableModel):
     def __init__(self, document: Document, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.header = {
-            CardListColumns.Copies: self.tr("Copies"),
-            CardListColumns.CardName: self.tr("Card name"),
-            CardListColumns.Set: self.tr("Set"),
-            CardListColumns.CollectorNumber: self.tr("Collector #"),
-            CardListColumns.Language: self.tr("Language"),
-            CardListColumns.IsFront: self.tr("Side"),
+            CardListColumns.Copies: self.tr(
+                "Copies", "Table header for card lists. Number of copies that will be added"),
+            CardListColumns.CardName: self.tr(
+                "Card name", "Table header for card lists"),
+            CardListColumns.Set: self.tr(
+                "Set", "Table header for card lists. Magic set containing the card"),
+            CardListColumns.CollectorNumber: self.tr(
+                "Collector #", "Table header for card lists"),
+            CardListColumns.Language: self.tr(
+                "Language", "Table header for card lists. Card language."),
+            CardListColumns.IsFront: self.tr(
+                "Side", "Table header for card lists. Side of the card"),
         }
         self.document = document
         self.card_db = document.card_db
@@ -127,11 +133,15 @@ class CardListModel(QAbstractTableModel):
             elif column == CardListColumns.IsFront:
                 if role == ItemDataRole.EditRole:
                     return card.is_front
-                return self.tr("Front") if card.is_front else self.tr("Back")
+                return self.tr("Front", "Magic card side") if card.is_front else self.tr("Back", "Magic card side")
         if card.is_custom_card and column == CardListColumns.CardName and role == ItemDataRole.ToolTipRole:
             return get_card_image_tooltip(card.source_image_file)
         elif card.is_oversized and role == ItemDataRole.ToolTipRole:
-            return self.tr("Beware: Potentially oversized card!\nThis card may not fit in your deck.")
+            return self.tr(
+                "Beware: Potentially oversized card!\nThis card may not fit in your deck.",
+                "Tooltip shown on cards that, according to API results, have double the physical size. "
+                "The actual image may still have regular size."
+            )
         if card.is_oversized and role == ItemDataRole.DecorationRole:
             return self._oversized_icon
         return None
@@ -318,7 +328,7 @@ class CardListModel(QAbstractTableModel):
             if role == ItemDataRole.DisplayRole:
                 return self.header.get(section)
             elif role == ItemDataRole.ToolTipRole and section in self.EDITABLE_COLUMNS:
-                return self.tr("Double-click on entries to\nswitch the selected printing.")
+                return self.tr("Double-click on entries to\nswitch the selected printing.", "Tooltip text")
         return super().headerData(section, orientation, role)
 
     def clear(self):

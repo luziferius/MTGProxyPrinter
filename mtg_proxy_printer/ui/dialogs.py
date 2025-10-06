@@ -91,8 +91,8 @@ class SavePDFDialog(QFileDialog):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, "", self.get_preferred_file_name(document))
-        self.setWindowTitle(self.tr("Export as PDF"))
-        self.setNameFilter(self.tr("PDF documents (*.pdf)"))
+        self.setWindowTitle(self.tr("Export as PDF", "File dialog window title"))
+        self.setNameFilter(self.tr("PDF documents (*.pdf)", "File type filter"))
 
         if default_path := read_path("export", "export-path"):
             self.setDirectory(default_path)
@@ -136,8 +136,8 @@ class SavePNGDialog(QFileDialog):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, "", self.get_preferred_file_name(document))
-        self.setWindowTitle(self.tr("Export as PNG"))
-        self.setNameFilter(self.tr("PNG images (*.png)"))
+        self.setWindowTitle(self.tr("Export as PNG", "File dialog window title"))
+        self.setNameFilter(self.tr("PNG images (*.png)", "File type filter"))
 
         if default_path := read_path("export", "export-path"):
             self.setDirectory(default_path)
@@ -180,7 +180,7 @@ class LoadSaveDialog(QFileDialog):
         # because tr() requires to have returned from super().__init__()
         super().__init__(*args, **kwargs)
         filter_text = self.tr(
-            "MTGProxyPrinter document (*.{default_save_suffix})", "Human-readable file type name"
+            "MTGProxyPrinter document (*.{default_save_suffix})", "File type filter"
         ).format(default_save_suffix=DEFAULT_SAVE_SUFFIX)
         self.setNameFilter(filter_text)
         self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
@@ -192,7 +192,7 @@ class SaveDocumentAsDialog(LoadSaveDialog):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, **kwargs)
-        self.setWindowTitle(self.tr("Save document as …"))
+        self.setWindowTitle(self.tr("Save document as …", "File dialog window title"))
         if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
@@ -224,7 +224,7 @@ class LoadDocumentDialog(LoadSaveDialog):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, **kwargs)
-        self.setWindowTitle(self.tr("Load MTGProxyPrinter document"))
+        self.setWindowTitle(self.tr("Load MTGProxyPrinter document", "File dialog window title"))
         if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
@@ -387,7 +387,9 @@ class DocumentSettingsDialog(QDialog):
         page_config_widget.ui.show_preview_button.hide()
         page_config_widget.load_from_page_layout(document.page_layout)
         page_config_widget.setTitle(
-            self.tr("These settings only affect the current document"))
+            self.tr(
+                "These settings only affect the current document",
+                "Shown within the dialog to indicate the scope of the presented settings"))
         self._setup_button_box()
         self.accepted.connect(self.on_accept)
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -463,7 +465,8 @@ class ExportCardImagesDialog(QDialog):
     @Slot()
     def on_output_path_browse_button_clicked(self):
         logger.debug("User about to select a card image output path.")
-        if location := QFileDialog.getExistingDirectory(self, self.tr("Select card image export location")):
+        if location := QFileDialog.getExistingDirectory(self, self.tr(
+                "Select card image export location", "File dialog window title")):
             logger.info("User selected a directory path to export to.")
             self.ui.output_path.setText(location)
             self.update_ok_button_enabled_state()
@@ -511,7 +514,10 @@ class ExportCardImagesDialog(QDialog):
             except (IOError, OSError) as e:
                 logger.exception(f"Copy failed for {card.name}! Disk detached/full? Aborting.")
                 self.error_occurred.emit(
-                    self.tr("Copy failed for {card_name}! Disk detached/full? Aborting.").format(card_name=card.name))
+                    self.tr(
+                        "Copy failed for {card_name}! Disk detached/full? Aborting.",
+                        "Error message shown to the user when exporting cards to a directory fails."
+                    ).format(card_name=card.name))
                 raise RuntimeError() from e
 
     @staticmethod
@@ -540,7 +546,10 @@ class ExportCardImagesDialog(QDialog):
             except (IOError, OSError) as e:
                 logger.exception(f"Write failed for {card.name}! Disk detached/full? Aborting.")
                 self.error_occurred.emit(
-                    self.tr("Write failed for {card_name}! Disk detached/full? Aborting.").format(card_name=card.name))
+                    self.tr(
+                        "Write failed for {card_name}! Disk detached/full? Aborting.",
+                        "Error message shown to the user when exporting cards to a directory fails."
+                    ).format(card_name=card.name))
                 raise RuntimeError() from e
 
 

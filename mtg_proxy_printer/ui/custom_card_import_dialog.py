@@ -94,7 +94,8 @@ class CustomCardImportDialog(QDialog):
     def on_add_cards_clicked(self):
         logger.info("User about to add additional card images")
         default_path = getattr(data_directories, "user_pictures_dir", str(Path.home()))
-        files, _ = QFileDialog.getOpenFileNames(self, self.tr("Import custom cards"), default_path)
+        title = self.tr("Import custom cards", "File selection dialog window title")
+        files, _ = QFileDialog.getOpenFileNames(self, title, default_path)
         logger.debug(f"User selected {len(files)} paths")
         file_paths = list(map(Path, files))
         cards = self.create_cards(file_paths)

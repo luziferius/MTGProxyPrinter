@@ -104,12 +104,12 @@ class Document(QAbstractItemModel):
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.header = {
-            PageColumns.CardName: self.tr("Card name"),
-            PageColumns.Set: self.tr("Set"),
-            PageColumns.CollectorNumber: self.tr("Collector #"),
-            PageColumns.Language: self.tr("Language"),
-            PageColumns.Image: self.tr("Image"),
-            PageColumns.IsFront: self.tr("Side"),
+            PageColumns.CardName: self.tr("Card name", "Table header"),
+            PageColumns.Set: self.tr("Set", "Table header"),
+            PageColumns.CollectorNumber: self.tr("Collector #", "Table header"),
+            PageColumns.Language: self.tr("Language", "Table header"),
+            PageColumns.Image: self.tr("Image", "Table header"),
+            PageColumns.IsFront: self.tr("Side", "Table header"),
         }
 
         self.undo_stack: ActionStack = deque()
@@ -411,7 +411,9 @@ class Document(QAbstractItemModel):
         if role == ItemDataRole.DisplayRole:
             return self._get_page_preview(item)
         elif role == ItemDataRole.ToolTipRole:
-            return self.tr("Page {current}/{total}").format(current=row + 1, total=self.rowCount())
+            return self.tr(
+                "Page {current}/{total}", "Tooltip. Shown when hovering over a page in the page list"
+            ).format(current=row + 1, total=self.rowCount())
         elif role == ItemDataRole.EditRole:
             return item
         elif role == ItemDataRole.UserRole:
@@ -443,7 +445,7 @@ class Document(QAbstractItemModel):
                 return card.image_file
             elif column == PageColumns.IsFront:
                 return card.is_front if role == ItemDataRole.EditRole else (
-                    self.tr("Front") if card.is_front else self.tr("Back"))
+                    self.tr("Front", "Magic card side") if card.is_front else self.tr("Back", "Magic card side"))
         return None
 
     def _get_page_preview(self, page: Page):
@@ -505,9 +507,10 @@ class Document(QAbstractItemModel):
 
     def get_empty_card_for_size(self, size: CardSize) -> Card:
         pixmap = self.image_db.get_blank(size)
-        card = Card(
-            self.tr("Empty Placeholder"), MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, pixmap
-        )
+        name = self.tr(
+            "Empty Placeholder",
+            "Card name of the blank placeholder that can be added to keep slots on a page free.")
+        card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, pixmap)
         return card
 
     def get_card_indices_of_type(self, page_type: PageType):

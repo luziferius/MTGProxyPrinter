@@ -96,7 +96,9 @@ class KnownCardRow(QObject):
         elif column == KnownCardColumns.CollectorNumber and role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
             data = self.collector_number
         elif column == KnownCardColumns.IsHidden and role == ItemDataRole.DisplayRole:
-            data = self.tr("Yes") if self.is_hidden else self.tr("No")
+            data = self.tr("Yes", "This card is hidden by a card filter") \
+                if self.is_hidden \
+                else self.tr("No", "This card is visible and not affected by a card filter")
         elif column == KnownCardColumns.IsHidden and role == ItemDataRole.ToolTipRole and self.is_hidden:
             data = self.tr(
                 "This printing is hidden by an enabled card filter\nand is thus unavailable for printing.",
@@ -110,7 +112,9 @@ class KnownCardRow(QObject):
         elif column == KnownCardColumns.HasHighResolution and role == ItemDataRole.EditRole:
             data = self.has_high_resolution
         elif column == KnownCardColumns.HasHighResolution and role == ItemDataRole.DisplayRole:
-            data = self.tr("Yes") if self.has_high_resolution else self.tr("No")
+            data = self.tr("Yes", "This card has high-resolution images available") \
+                if self.has_high_resolution \
+                else self.tr("No", "This card only has low-resolution images available.")
         elif column == KnownCardColumns.Size and role == ItemDataRole.DisplayRole:
             data = format_size(self.size)
         elif column == KnownCardColumns.Size and role == ItemDataRole.EditRole:
@@ -131,15 +135,24 @@ class KnownCardImageModel(QAbstractTableModel):
     @property
     def header_data(self):
         return {
-            KnownCardColumns.Name: self.tr("Name"),
-            KnownCardColumns.Set: self.tr("Set"),
-            KnownCardColumns.CollectorNumber: self.tr("Collector #"),
-            KnownCardColumns.IsHidden: self.tr("Is Hidden"),
-            KnownCardColumns.IsFront: self.tr("Front/Back"),
-            KnownCardColumns.HasHighResolution: self.tr("High resolution?"),
-            KnownCardColumns.Size: self.tr("Size"),
-            KnownCardColumns.ScryfallId: self.tr("Scryfall ID"),
-            KnownCardColumns.FilesystemPath: self.tr("Path"),
+            KnownCardColumns.Name: self.tr(
+                "Name", "Table header. Card name"),
+            KnownCardColumns.Set: self.tr(
+                "Set", "Table header. Magic set name"),
+            KnownCardColumns.CollectorNumber: self.tr(
+                "Collector #", "Table header"),
+            KnownCardColumns.IsHidden: self.tr(
+                "Is Hidden", "Table header. Shows if this printing is hidden by a card filter"),
+            KnownCardColumns.IsFront: self.tr(
+                "Front/Back", "Table header. Shows if this is the front or back side of a card"),
+            KnownCardColumns.HasHighResolution: self.tr(
+                "High resolution?", "Table header. Shows if the card has high-res images"),
+            KnownCardColumns.Size: self.tr(
+                "Size", "Table header. File size in KiB/MiB"),
+            KnownCardColumns.ScryfallId: self.tr(
+                "Scryfall ID", "Table header. Shows UUID identifying this card in the Scryfall database"),
+            KnownCardColumns.FilesystemPath: self.tr(
+                "Path", "Table header. File system path"),
         }
 
     def __init__(self, card_db: CardDatabase, parent: QObject = None):
@@ -228,13 +241,17 @@ class UnknownCardRow(QObject):
         elif column == UnknownCardColumns.ScryfallId and role == ItemDataRole.ToolTipRole:
             data = get_card_image_tooltip(self.path)
         elif column == UnknownCardColumns.IsFront and role == ItemDataRole.DisplayRole:
-            data = self.tr("Front") if self.is_front else self.tr("Back")
+            data = self.tr("Front", "Magic card side") \
+                if self.is_front \
+                else self.tr("Back", "Magic card side")
         elif column == UnknownCardColumns.IsFront and role == ItemDataRole.EditRole:
             data = self.is_front
         elif column == UnknownCardColumns.HasHighResolution and role == ItemDataRole.EditRole:
             data = self.has_high_resolution
         elif column == UnknownCardColumns.HasHighResolution and role == ItemDataRole.DisplayRole:
-            data = self.tr("Yes") if self.has_high_resolution else self.tr("No")
+            data = self.tr("Yes", "Card has high-resolution images available") \
+                if self.has_high_resolution \
+                else self.tr("No", "Card only has low-resolution images available")
         elif column == UnknownCardColumns.Size and role == ItemDataRole.DisplayRole:
             data = format_size(self.size)
         elif column == UnknownCardColumns.Size and role == ItemDataRole.EditRole:
@@ -254,11 +271,16 @@ class UnknownCardImageModel(QAbstractTableModel):
     @property
     def header_data(self):
         return {
-            UnknownCardColumns.ScryfallId: self.tr("Scryfall ID"),
-            UnknownCardColumns.IsFront: self.tr("Front/Back"),
-            UnknownCardColumns.HasHighResolution: self.tr("High resolution?"),
-            UnknownCardColumns.Size: self.tr("Size"),
-            UnknownCardColumns.FilesystemPath: self.tr("Path"),
+            UnknownCardColumns.ScryfallId: self.tr(
+                "Scryfall ID", "Table header. Shows UUID identifying this card in the Scryfall database"),
+            UnknownCardColumns.IsFront: self.tr(
+                "Front/Back", "Table header. Shows if this is the front or back side of a card"),
+            UnknownCardColumns.HasHighResolution: self.tr(
+                "High resolution?", "Table header. Shows if the card has high-res images"),
+            UnknownCardColumns.Size: self.tr(
+                "Size", "Table header. File size in KiB/MiB"),
+            UnknownCardColumns.FilesystemPath: self.tr(
+                "Path", "Table header. File system path"),
         }
 
     def __init__(self, parent: QObject = None):

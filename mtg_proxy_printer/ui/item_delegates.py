@@ -93,8 +93,8 @@ class CardSideSelectionDelegate(FastComboBoxDelegate):
     """A QComboBox delegate used to switch between Front and Back face of cards"""
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
         editor = super().createEditor(parent, option, index)
-        editor.addItem(self.tr("Front"), True)
-        editor.addItem(self.tr("Back"), False)
+        editor.addItem(self.tr("Front", "Magic card side"), True)
+        editor.addItem(self.tr("Back", "Magic card side"), False)
         return editor
 
     def setModelData(self, editor: QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:

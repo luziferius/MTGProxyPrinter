@@ -84,7 +84,7 @@ class PNGRenderer(AsyncTask):
         background_color = settings["export"].get_color("png-background-color")
         number_width = len(str(page_count))
         parent = file_path.parent
-        self.task_begins.emit(page_count, self.tr("Export as PNGs"))
+        self.task_begins.emit(page_count, self.tr("Export as PNGs:", "Progress bar label text"))
         self.ui_lock_acquire.emit()
         for page_nr in range(page_count):
             file_name = f"{file_path.stem}-{str(page_nr + 1).zfill(number_width)}.png"

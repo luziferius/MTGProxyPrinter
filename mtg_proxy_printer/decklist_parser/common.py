@@ -68,7 +68,7 @@ class ParserBase(QObject):
             )
 
     def get_file_extension_filter(self) -> str:
-        everything = self.tr("All files (*)")
+        everything = self.tr("All files (*)", "File type filter")
         if not self.supported_file_types:
             return everything
         return ";;".join(

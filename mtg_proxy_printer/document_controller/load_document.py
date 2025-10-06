@@ -75,7 +75,7 @@ class ActionLoadDocument(DocumentAction):
         card_count = sum(map(len, self.loaded_cards))
         cards_total = self.tr(
             "with %n card(s) total",
-            "Undo/redo tooltip text. Will be inserted as {cards_total}", card_count
+            "Part of the undo/redo tooltip text. Will be inserted as {cards_total}", card_count
         )
         return self.tr(
             "Load document from '{save_path}',\ncontaining %n page(s) {cards_total}",

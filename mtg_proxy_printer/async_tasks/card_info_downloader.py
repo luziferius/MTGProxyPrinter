@@ -322,7 +322,9 @@ class ApiStreamTask(StreamTask):
                 "Requesting the number of available cards on Scryfall failed with a network error. "
                 "Report zero available cards.")
             self.network_error_occurred.emit(
-                self.tr("Requesting the number of available cards on Scryfall failed: \n{error}").format(error=e))
+                self.tr(
+                    "Requesting the number of available cards on Scryfall failed: \n{error}",
+                    "Error message shown in a message box").format(error=e))
             total_cards_available = 0
         logger.debug(f"Total cards currently available: {total_cards_available}")
         return total_cards_available
@@ -392,12 +394,13 @@ class DatabaseImportTask(AsyncTask):
                 logger.exception(
                     f"Error during import from file: {self.source.source}")
                 self.error_occurred.emit(self.tr(
-                    "Error during import from file:\n{path}").format(path=self.source.source))
+                    "Error during import from file:\n{path}",
+                    "Error message shown in a message box").format(path=self.source.source))
             else:
                 logger.exception(
                     f"Error during import from Scryfall: {e}")
                 self.error_occurred.emit(self.tr(
-                    "Error during update from Scryfall"))
+                    "Error during update from Scryfall", "Error message shown in a message box"))
         finally:
             self.task_completed.emit()
 
@@ -418,7 +421,9 @@ class DatabaseImportTask(AsyncTask):
             self.db.rollback()
             logger.exception(f"Error in parsing step")
             self.error_occurred.emit(
-                self.tr("Failed to parse data from Scryfall. Reported error: {error}").format(error=e))
+                self.tr(
+                    "Failed to parse data from Scryfall. Reported error: {error}",
+                    "Error message shown in a message box").format(error=e))
         finally:
             self._clear_lru_caches()
             logger.info(f"Finished import with {card_count} imported cards.")
@@ -461,7 +466,9 @@ class DatabaseImportTask(AsyncTask):
                 self.set_progress.emit(index)
         logger.info(f"Skipped {skipped_cards} cards during the import")
         logger.info("Post-processing card data")
-        self.task_begins.emit(4 + PrintingFilterUpdater.PROGRESS_STEP_COUNT, self.tr("Post-processing card data:"))
+        self.task_begins.emit(
+            4 + PrintingFilterUpdater.PROGRESS_STEP_COUNT,
+            self.tr("Post-processing card data:", "Progress bar label text"))
         self._insert_related_printings(related_printings)
         self.advance_progress.emit()
         self._clean_unused_data(face_ids)

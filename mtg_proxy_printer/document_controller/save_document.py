@@ -169,5 +169,5 @@ class ActionSaveDocument(DocumentAction):
     @functools.cached_property
     def as_str(self):
         return self.tr(
-            "Save document to '{save_file_path}'."
+            "Save document to '{save_file_path}'.", "Undo/redo tooltip text"
         ).format(save_file_path=self.file_path)

@@ -61,7 +61,7 @@ class MissingImagesManager(QObject):
         if n := self.document.missing_image_count():
             logger.warning(f"Failed to download all missing images. Still missing: {n}.")
             self.obtaining_missing_images_failed.emit(self.tr(
-                "Unable to obtain missing image(s) for %n card(s).\n"
+                "Unable to obtain %n missing card image(s).\n"
                 "These will be missing in exported or printed documents.",
                 "Warning message. A last attempt at trying to download images of cards with missing images failed.",
                 n))
