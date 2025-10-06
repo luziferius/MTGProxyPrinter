@@ -200,7 +200,10 @@ class ActionMoveCardsWithinPage(DocumentAction):
         for first, last in card_ranges:
             moved_cards = last-first+1
             if first <= target_row <= last+1:
-                # This batch of cards is currently at the correct location already, so no need to do anything further
+                # This batch of cards is currently at the correct location already.
+                # The next range has to be inserted after this range, so move the target_row,
+                # but no need to do anything further.
+                target_row = last+1
                 continue
             if last < target_row:
                 # While processing batches before the target_row, moving cards to the back will move the next ranges
