@@ -159,7 +159,10 @@ class AsyncTaskRunner(QRunnable):
         finally:
             self.task.emit_delete_recursive()
             logger.debug(f"Releasing {self.__class__.__name__} instance for completed {self.task}")
-            del AsyncTaskRunner.INSTANCES[id(self)]
+            try:
+                del AsyncTaskRunner.INSTANCES[id(self)]
+            except KeyError:
+                pass
 
     @classmethod
     def cancel_all_tasks(cls):
