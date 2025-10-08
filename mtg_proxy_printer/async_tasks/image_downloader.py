@@ -67,6 +67,8 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
         self.image_obtained.connect(image_db.on_image_obtained, QueuedConnection)
         self.should_run = True
         self.image_database = image_db
+        # Populated with the currently open file in run(). Accessed by cancel().
+        self.currently_opened_file = self.currently_opened_file_monitor = None
 
     def fetch_and_set_image(self, card: AnyCardType, progress_container: AsyncTask):
         """

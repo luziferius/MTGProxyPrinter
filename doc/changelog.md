@@ -5,7 +5,7 @@
 # New features
 
 - Full support for moving cards around via drag & drop:
-  - Drop cards onto another page to move the cards to that page
+  - Drop cards onto another page to move the cards to that page. (Only possible if all selected cards fit.)
   - Drop cards between two pages to insert a new page at that location and move the cards there
   - Re-order cards within a page
 
@@ -18,6 +18,8 @@
 - Fixed the slight zoom level drift that occurred when repeatedly zooming in and out in the currently shown page.
 - Prevent crashes that occurred when switching printings, and then deleting the card or page it is on while the
   card image download for it runs.
+- Fixed rare crash that may occur when cancelling loading a document that currently waits on a broken
+  internet connection for a card image download. 
 
 # Version 0.34.0 (2025-09-11)  <a name="v0_34_0"></a>
 
