@@ -178,8 +178,6 @@ class MainWindow(QMainWindow):
         import_task = DatabaseImportTask(data_source, carddb_path=self.card_database.db_path)
         import_task.error_occurred.connect(
             lambda: ui.action_download_card_data.setEnabled(True), BlockingQueuedConnection)
-        import_task.task_completed.connect(self.card_database.card_data_updated, QueuedConnection)
-        
         data_source.network_error_occurred.connect(
             lambda: ui.action_download_card_data.setEnabled(True), BlockingQueuedConnection)
         data_source.error_occurred.connect(

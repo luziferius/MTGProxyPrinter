@@ -169,6 +169,7 @@ class CardDatabase(QObject):
         atexit.register(close_db)
         self._exit_hook = close_db
 
+    @Slot()
     def restart_transaction(self):
         logger.info("Rolling back active read transaction")
         self.db.rollback()
