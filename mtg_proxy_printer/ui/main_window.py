@@ -62,6 +62,8 @@ TransformationMode = Qt.TransformationMode
 StandardButton = QMessageBox.StandardButton
 StandardKey = QKeySequence.StandardKey
 UiElements = list[QWidget | QAction]
+QueuedConnection = Qt.ConnectionType.QueuedConnection
+BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 # Counts the number of async tasks currently working on the document. Disable the UI while this is non-zero to ensure
 # that data doesn't change while those work.
 UI_LOCK_SEMAPHORE = 0
@@ -94,7 +96,6 @@ class MainWindow(QMainWindow):
         self._connect_document_signals(document)
         self._setup_web_action_signals(ui)
         self.language_model = language_model
-        self._setup_card_data_download_actions()
         self._setup_central_widget()
         self._setup_undo_redo_actions(document)
         self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
@@ -168,25 +169,21 @@ class MainWindow(QMainWindow):
         ui.action_compact_document.triggered.connect(lambda: document.apply(ActionCompactDocument()))
         ui.action_shuffle_document.triggered.connect(lambda: document.apply(ActionShuffleDocument()))
 
-    def _setup_card_data_download_actions(self):
-        self.ui.action_download_card_data.triggered.connect(self._update_card_data_from_scryfall)
-
     @Slot()
-    def _update_card_data_from_scryfall(self):
+    def on_action_download_card_data_triggered(self):
         logger.info("About to update the card data from Scryfall")
         ui = self.ui
         ui.action_download_card_data.setDisabled(True)
         data_source = ApiStreamTask()
-        data_source.network_error_occurred.connect(self.on_network_error_occurred)
-        data_source.network_error_occurred.connect(lambda: ui.action_download_card_data.setEnabled(True))
-        data_source.error_occurred.connect(self.on_error_occurred)
-        data_source.error_occurred.connect(lambda: ui.action_download_card_data.setEnabled(True))
-
         import_task = DatabaseImportTask(data_source, carddb_path=self.card_database.db_path)
-        import_task.error_occurred.connect(self.on_error_occurred)
-        import_task.error_occurred.connect(lambda: ui.action_download_card_data.setEnabled(True))
-
-        import_task.task_completed.connect(self.card_database.card_data_updated, Qt.ConnectionType.QueuedConnection)
+        import_task.error_occurred.connect(
+            lambda: ui.action_download_card_data.setEnabled(True), BlockingQueuedConnection)
+        import_task.task_completed.connect(self.card_database.card_data_updated, QueuedConnection)
+        
+        data_source.network_error_occurred.connect(
+            lambda: ui.action_download_card_data.setEnabled(True), BlockingQueuedConnection)
+        data_source.error_occurred.connect(
+            lambda: ui.action_download_card_data.setEnabled(True), BlockingQueuedConnection)
         self.request_run_async_task.emit(data_source)
         self.request_run_async_task.emit(import_task)
 
@@ -387,7 +384,7 @@ class MainWindow(QMainWindow):
                     "Without the data, you can only print custom cards by drag&dropping "
                     "the image files onto the main window."),
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes) == StandardButton.Yes:
-            self._update_card_data_from_scryfall()
+            self.on_action_download_card_data_triggered()
 
     @Slot()
     def on_action_save_document_triggered(self):
@@ -483,7 +480,7 @@ class MainWindow(QMainWindow):
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes
         ) == StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
-            self.ui.action_download_card_data.trigger()
+            self.on_action_download_card_data_triggered()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.ui.action_download_card_data.setEnabled(True)

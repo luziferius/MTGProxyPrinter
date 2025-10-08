@@ -34,7 +34,7 @@ import urllib.request
 from typing import Literal
 
 import ijson
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Slot
 
 from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
 from mtg_proxy_printer.http_file import MeteredSeekableHTTPFile
@@ -72,6 +72,7 @@ GZIP_COMPRESSION_FACTOR = 7.09
 # is in progress
 socket.setdefaulttimeout(5)
 QueuedConnection = Qt.ConnectionType.QueuedConnection
+BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 
 IntTuples = list[tuple[int]]
 CardStream = Generator[CardDataType, None, None]
@@ -209,12 +210,16 @@ class StreamTask(CardInfoDownloadTaskBase):
     def _enqueue_stream(self, data: CardStream):
         """Put the CardStream into the queue for downstream consumption"""
         try:
-            for batch in itertools.batched(data, self._batch_size):
+            for batch in itertools.batched(data, self._batch_size):  # type: tuple[CardDataType, ...]
                 self.queue.put(batch)
         except AttributeError:  # Cancelling closes and deletes the underlying file, causing an AttributeError in run()
             logger.info(f"{self.__class__.__name__}: Read operation cancelled")
+        except Exception as e:
+            signal = self.error_occurred if isinstance(self.source, Path) else self.network_error_occurred
+            logger.warning(f"{self.__class__.__name__}: Unexpected end of stream")
+            signal.emit(str(e))
         else:
-            logger.debug(f"{self.__class__.__name__}: Card data exhausted.")
+            logger.info(f"{self.__class__.__name__}: Card data exhausted.")
         finally:
             self.queue.put(None)
 
@@ -300,9 +305,9 @@ class ApiStreamTask(StreamTask):
         else:
             logger.debug(f"Reading from given URL {url}")
         # Ignore the monitor, because progress reporting is done in the main import loop.
-        self.open_file, _ = source, _ = self.read_from_url(url)
-        with source:
-            yield from ijson.items(source, json_path, use_float=True)
+        self.open_file, _ = self.read_from_url(url)  # type: GzipFile | MeteredSeekableHTTPFile, MeteredSeekableHTTPFile
+        with self.open_file:
+            yield from ijson.items(self.open_file, json_path, use_float=True)
 
     @functools.lru_cache(maxsize=1)
     def get_available_card_count(self) -> int:
@@ -343,6 +348,10 @@ class DatabaseImportTask(AsyncTask):
         super().__init__()
         self.carddb_path = carddb_path
         self.source = source
+        # Any error in the data source must cancel the consumer to roll back any open transaction.
+        # The most efficient way is to use the signal/slot mechanism already in place and call cancel using that.
+        source.error_occurred.connect(self.cancel, BlockingQueuedConnection)
+        source.network_error_occurred.connect(self.cancel, BlockingQueuedConnection)
         self._db = db
         self.should_run = True
         self.set_code_cache: dict[str, int] = {}
@@ -352,9 +361,10 @@ class DatabaseImportTask(AsyncTask):
     def can_cancel(self) -> bool:
         return True
 
+    @Slot()
     def cancel(self):
-        self.should_run = False
         self.source.cancel()
+        self.should_run = False
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -439,7 +449,7 @@ class DatabaseImportTask(AsyncTask):
         related_printings: list[RelatedPrintingData] = []
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
-                logger.info(f"Aborting card import after {index} cards due to user request.")
+                logger.info(f"Aborting card import after {index} cards due to user request or data erro.")
                 db.rollback()
                 return index
             if _should_skip_card(card):
@@ -465,6 +475,10 @@ class DatabaseImportTask(AsyncTask):
             if progress_report_step and not index % progress_report_step:
                 self.set_progress.emit(index)
         logger.info(f"Skipped {skipped_cards} cards during the import")
+        if not self.should_run:
+            logger.info(f"Aborting card import after {index} cards due to user request or data error.")
+            db.rollback()
+            return index
         logger.info("Post-processing card data")
         self.task_begins.emit(
             4 + PrintingFilterUpdater.PROGRESS_STEP_COUNT,
@@ -484,7 +498,10 @@ class DatabaseImportTask(AsyncTask):
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
         self.advance_progress.emit()
-        db.commit()
+        if self.should_run:
+            db.commit()
+        else:
+            db.rollback()
         self.task_completed.emit()
         return index
 

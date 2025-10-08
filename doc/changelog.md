@@ -19,7 +19,9 @@
 - Prevent crashes that occurred when switching printings, and then deleting the card or page it is on while the
   card image download for it runs.
 - Fixed rare crash that may occur when cancelling loading a document that currently waits on a broken
-  internet connection for a card image download. 
+  internet connection for a card image download.
+- Restored handling of network errors during the card data update. Interrupted internet connections
+  no longer cause partial card data updates with missing printings.
 
 # Version 0.34.0 (2025-09-11)  <a name="v0_34_0"></a>
 

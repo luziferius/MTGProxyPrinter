@@ -137,7 +137,7 @@ class MeteredSeekableHTTPFile(QObject):
         for retry in range(self.retry_limit or 1):
             try:
                 buffer = self.file.read(count)
-            except (ConnectionAbortedError, socket.timeout) as e:
+            except (ConnectionAbortedError, TimeoutError) as e:
                 last_error = e
                 self.file = self._urlopen(self.tell(), outer_retries=retry)
             except AttributeError as e:
