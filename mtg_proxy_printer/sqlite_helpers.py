@@ -207,7 +207,7 @@ if hasattr(functools, "cache"):
         """Wraps textwrap.dedent() in a cache."""
         return textwrap.dedent(text)
 else:  # Python 3.8 compatibility
-    @functools.lru_cache(None)
+    @functools.cache
     def cached_dedent(text: S) -> S:
         """Wraps textwrap.dedent() in an LRU cache."""
         return textwrap.dedent(text)

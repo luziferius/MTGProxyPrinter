@@ -462,7 +462,7 @@ class PageScene(QGraphicsScene):
         # Remaining cases are card moves happening "off-screen", so nothing has to be done on them.
 
 
-    @functools.lru_cache(None)
+    @functools.cache
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
         page_layout: PageLayoutSettings = self.document.page_layout

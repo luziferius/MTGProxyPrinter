@@ -49,17 +49,17 @@ def _setup_units() -> tuple[UnitRegistry, Quantity]:
     return registry, resolution
 
 
-@functools.lru_cache(None)
+@functools.cache
 def distance_to_rounded_px(value: Quantity) -> int:
     return round(value.to("pixel", "print").magnitude)
 
 
-@functools.lru_cache(None)
+@functools.cache
 def distance_to_px(value: Quantity) -> float:
     return value.to("pixel", "print").magnitude
 
 
-@functools.lru_cache(None)
+@functools.cache
 def distance_to_mm(value: Quantity) -> float:
     return value.to("mm", "print").magnitude
 

@@ -309,7 +309,7 @@ class ApiStreamTask(StreamTask):
         with self.open_file:
             yield from ijson.items(self.open_file, json_path, use_float=True)
 
-    @functools.lru_cache(maxsize=1)
+    @functools.cache
     def get_available_card_count(self) -> int:
         url_parameters = urllib.parse.urlencode({
             "include_multilingual": "true",
@@ -435,7 +435,6 @@ class DatabaseImportTask(AsyncTask):
                     "Failed to parse data from Scryfall. Reported error: {error}",
                     "Error message shown in a message box").format(error=e))
         finally:
-            self._clear_lru_caches()
             logger.info(f"Finished import with {card_count} imported cards.")
 
     def _populate_database(self, card_data: CardStream, *, total_count: int) -> int:
@@ -505,7 +504,7 @@ class DatabaseImportTask(AsyncTask):
         self.task_completed.emit()
         return index
 
-    @functools.lru_cache(maxsize=1)
+    @functools.cache
     def _read_printing_filters_from_db(self) -> dict[str, int]:
         return dict(self.db.execute("SELECT filter_name, filter_id FROM DisplayFilters"))
 
@@ -521,19 +520,6 @@ class DatabaseImportTask(AsyncTask):
         self._update_card_filters(printing_id, filter_data)
         new_face_ids = self._insert_card_faces(card, language_id, printing_id)
         return new_face_ids
-
-    def _clear_lru_caches(self):
-        """
-        Clears the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
-        the import. This will lead to assignment of wrong data via invalid foreign key relations.
-        To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used anymore.
-        """
-        lru_caches = filter(lambda item: hasattr(item, "cache_clear"), self.__dict__)
-        for cache in lru_caches:
-            logger.debug(str(cache.cache_info()))
-            cache.cache_clear()
-        self.set_code_cache.clear()
-        self._db = None
 
     def _clean_unused_data(self, new_face_ids: IntTuples):
         """Purges all excess data, like printings that are no longer in the import data."""
@@ -574,7 +560,7 @@ class DatabaseImportTask(AsyncTask):
                (SELECT card_id AS related_id FROM Printing WHERE scryfall_id = ?)
         """), related_printings)
 
-    @functools.lru_cache(None)
+    @functools.cache
     def _insert_language(self, language: str) -> int:
         """
         Inserts the given language into the database and returns the generated ID.
@@ -592,7 +578,7 @@ class DatabaseImportTask(AsyncTask):
                 parameters).lastrowid
         return language_id
 
-    @functools.lru_cache(None)
+    @functools.cache
     def _insert_card(self, oracle_id: UUID) -> int:
         db = self.db
         parameters = oracle_id,
@@ -628,7 +614,7 @@ class DatabaseImportTask(AsyncTask):
         set_id, = db.execute('SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_abbr,)).fetchone()
         return set_id
 
-    @functools.lru_cache(None)
+    @functools.cache
     def _insert_face_name(self, printed_name: str, language_id: int) -> int:
         """
         Insert the given, printed face name into the database, if it not already stored. Returns the integer
