@@ -158,7 +158,7 @@ class AsyncTaskRunner(QRunnable):
             self.task.run()
         finally:
             self.task.emit_delete_recursive()
-            logger.debug(f"Releasing instance {self}")
+            logger.debug(f"Releasing {self.__class__.__name__} instance for completed {self.task}")
             del AsyncTaskRunner.INSTANCES[id(self)]
 
     @classmethod
