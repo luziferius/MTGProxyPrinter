@@ -25,6 +25,7 @@ from typing import Callable
 from PySide6.QtCore import QObject, Signal, Slot, QModelIndex, Qt
 from PySide6.QtGui import QPixmap, QColorConstants
 
+from mtg_proxy_printer import BlockingQueuedConnection
 from .imagedb_files import ImageKey, CacheContent
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.http_file
@@ -44,8 +45,6 @@ PathSizeList = list[tuple[pathlib.Path, int]]
 ImageKeySet = set[ImageKey]
 IndexList = list[QModelIndex]
 OptionalPixmap = QPixmap | None
-BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
-
 
 class InitOnDiskDataTask:
     """

@@ -27,6 +27,7 @@ from typing import Any, Literal
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
     QPersistentModelIndex, QMimeData
 
+from mtg_proxy_printer import BlockingQueuedConnection
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask, SingleActions
 from mtg_proxy_printer.document_controller import DocumentAction
@@ -64,7 +65,6 @@ AnyIndex = QModelIndex | QPersistentModelIndex
 ItemDataRole = Qt.ItemDataRole
 Orientation = Qt.Orientation
 ItemFlag = Qt.ItemFlag
-BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 PAGE_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-PageMove"
 CARD_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-CardMove"
 DRAG_OPERATION_TYPE = Literal["application/x-MTGProxyPrinter-PageMove"] | Literal["application/x-MTGProxyPrinter-CardMove"] | None

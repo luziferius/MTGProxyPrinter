@@ -36,6 +36,7 @@ from typing import Literal
 import ijson
 from PySide6.QtCore import Qt, Slot
 
+from mtg_proxy_printer import BlockingQueuedConnection
 from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
 from mtg_proxy_printer.http_file import MeteredSeekableHTTPFile
 from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock, \
@@ -72,7 +73,6 @@ GZIP_COMPRESSION_FACTOR = 7.09
 # is in progress
 socket.setdefaulttimeout(5)
 QueuedConnection = Qt.ConnectionType.QueuedConnection
-BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 
 IntTuples = list[tuple[int]]
 CardStream = Generator[CardDataType, None, None]

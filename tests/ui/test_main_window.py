@@ -17,9 +17,9 @@
 from collections import Counter
 from collections.abc import Generator
 import pathlib
-import unittest.mock
+from unittest.mock import patch, MagicMock
 
-from PySide6.QtCore import QStringListModel
+from PySide6.QtCore import QStringListModel, Qt
 from PySide6.QtWidgets import QMessageBox
 from pytestqt.qtbot import QtBot
 from hamcrest import *
@@ -51,14 +51,14 @@ def _create_task_receiver(main_window: MainWindow) -> AsyncTaskReceiver:
 @pytest.fixture(params=[Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, Ui_TabbedCentralWidget])
 def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Generator[MainWindow, None, None]:
     fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
-    with unittest.mock.patch(
+    with patch(
             "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",
             return_value=request.param), \
-            unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
-            unittest.mock.patch.object(
+            patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
+            patch.object(
                 mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask, "get_scryfall_bulk_card_data_url",
-                return_value=(unittest.mock.MagicMock(), 10)), \
-            unittest.mock.patch.object(
+                return_value=(MagicMock(), 10)), \
+            patch.object(
                 mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask, "read_json_card_data_from",
                 return_value=iter([10])):
         main_window = MainWindow(card_db, document.image_db, document, QStringListModel(["en"]))
@@ -74,7 +74,7 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Ge
 def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(False)
-    with unittest.mock.patch.object(
+    with patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No), \
         qtbot.assert_not_emitted(main_window.request_run_async_task):
             main_window.show_card_data_update_available_message_box(10000)
@@ -84,7 +84,7 @@ def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtB
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
     received = _create_task_receiver(main_window)
-    with unittest.mock.patch.object(
+    with patch.object(
         mtg_proxy_printer.ui.main_window.QMessageBox,
             "question", return_value=StandardButton.Yes) as message_box:
         main_window.show_card_data_update_available_message_box(10000)
@@ -104,9 +104,11 @@ def test_action_download_card_data_is_enabled_after_network_error(qtbot: QtBot, 
     ui = main_window.ui
     receiver = _create_task_receiver(main_window)
     ui.action_download_card_data.trigger()
+    # This connection is created by Application
+    receiver.api_stream_task.network_error_occurred.connect(main_window.on_network_error_occurred)
     if ui.action_download_card_data.isEnabled():
         pytest.skip("Test setup failed")
-    with unittest.mock.patch.object(
+    with patch.object(
         mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=StandardButton.Ok
     ) as warning_box:
         receiver.api_stream_task.network_error_occurred.emit("Test reason")
@@ -120,13 +122,16 @@ def test_action_download_card_data_is_enabled_after_other_error(
     ui = main_window.ui
     receiver = _create_task_receiver(main_window)
     ui.action_download_card_data.trigger()
+    # This connection is created by Application
+    receiver.api_stream_task.error_occurred.connect(main_window.on_error_occurred)
+    receiver.database_import_task.error_occurred.connect(main_window.on_error_occurred)
     if ui.action_download_card_data.isEnabled():
         pytest.skip("Test setup failed")
     failing_task = receiver.find_task(task_raising_error)
     MB = mtg_proxy_printer.ui.main_window.QMessageBox
     Ok = StandardButton.Ok
-    with (unittest.mock.patch.object(MB, "warning", return_value=Ok) as warning_box,  # Network error
-          unittest.mock.patch.object(MB, "critical", return_value=Ok) as error_box,  # Other error
+    with (patch.object(MB, "warning", return_value=Ok) as warning_box,  # Network error
+          patch.object(MB, "critical", return_value=Ok) as error_box,  # Other error
           ):
         failing_task.error_occurred.emit("Test reason")
     assert_that(ui.action_download_card_data.isEnabled(), is_(True))
@@ -136,10 +141,10 @@ def test_action_download_card_data_is_enabled_after_other_error(
 def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
-    with unittest.mock.patch.object(
+    with patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No) as message_box, \
-        unittest.mock.patch("mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask.run") as stream_run, \
-        unittest.mock.patch("mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask.run") as import_run, \
+        patch("mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask.run") as stream_run, \
+        patch("mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask.run") as import_run, \
             qtbot.assert_not_emitted(main_window.request_run_async_task):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
@@ -151,7 +156,7 @@ def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtB
 def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtbot: QtBot, main_window: MainWindow):
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
-    with unittest.mock.patch.object(
+    with patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.Yes
             ) as message_box, \
             qtbot.wait_signal(
@@ -163,9 +168,9 @@ def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtb
 
 
 def test_accepting_application_update_offer_opens_website_in_default_browser(main_window: MainWindow):
-    with unittest.mock.patch.object(
+    with patch.object(
         mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.Yes) as message_box, \
-        unittest.mock.patch.object(
+        patch.object(
             mtg_proxy_printer.ui.main_window.QDesktopServices, "openUrl") as open_url_service:
         main_window.show_application_update_available_message_box("1.0.0-test")
         message_box.assert_called_once()
@@ -173,9 +178,9 @@ def test_accepting_application_update_offer_opens_website_in_default_browser(mai
 
 
 def test_declining_application_update_offer_does_nothing(main_window: MainWindow):
-    with unittest.mock.patch.object(
+    with patch.object(
         mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No) as message_box, \
-        unittest.mock.patch.object(
+        patch.object(
             mtg_proxy_printer.ui.main_window.QDesktopServices, "openUrl") as open_url_service:
         main_window.show_application_update_available_message_box("1.0.0-test")
         message_box.assert_called_once()
@@ -200,7 +205,7 @@ def test_creating_new_document_with_second_page_selected_works_without_raising_e
     assert_that(document.pages, has_length(2))
     with qtbot.waitSignal(document.current_page_changed):
         ui.central_widget.ui.document_view.setCurrentIndex(document.index(1, 0))  # Condition 3
-    with unittest.mock.patch.object(
+    with patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.Yes), \
             qtbot.waitSignal(document.current_page_changed):
         # Condition 4. This triggered the exception

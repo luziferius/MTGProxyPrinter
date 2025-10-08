@@ -13,8 +13,11 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import PySide6.QtCore
 
 import faulthandler
+import mtg_proxy_printer
+mtg_proxy_printer.BlockingQueuedConnection = PySide6.QtCore.Qt.ConnectionType.DirectConnection
 
 import mtg_proxy_printer.sqlite_helpers  # noqa; Ensure the conversion adapters are registered
 

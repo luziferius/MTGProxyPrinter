@@ -28,7 +28,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QIcon
 
 from mtg_proxy_printer.argument_parser import Namespace
-from mtg_proxy_printer import meta_data
+from mtg_proxy_printer import meta_data, BlockingQueuedConnection
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.carddb_migrations
 import mtg_proxy_printer.model.document
@@ -49,7 +49,6 @@ from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
-BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 
 __all__ = [
     "Application",
@@ -193,7 +192,7 @@ class Application(QApplication):
             task.request_action.connect(self.document.apply, BlockingQueuedConnection)
         if hasattr(task, "unknown_scryfall_ids_found"):
             task.unknown_scryfall_ids_found.connect(
-                self.main_window.on_document_loading_found_unknown_scryfall_ids,BlockingQueuedConnection)
+                self.main_window.on_document_loading_found_unknown_scryfall_ids, BlockingQueuedConnection)
         if task.report_progress:
             main_window.progress_bar_manager.add_task(task)
         if isinstance(task, DatabaseImportTask):

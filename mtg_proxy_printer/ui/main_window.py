@@ -22,22 +22,23 @@ from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, 
 from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, QDialog
 from PySide6.QtPrintSupport import QPrintDialog
 
+from mtg_proxy_printer import BlockingQueuedConnection
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader
-from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
-from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
-from mtg_proxy_printer.async_tasks.base import AsyncTask
-from mtg_proxy_printer.ui.custom_card_import_dialog import CustomCardImportDialog
+from mtg_proxy_printer.missing_images_manager import MissingImagesManager
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
+from mtg_proxy_printer.ui.custom_card_import_dialog import CustomCardImportDialog
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
     AboutDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog, SavePNGDialog, ExportCardImagesDialog
 from mtg_proxy_printer.ui.common import show_wizard_or_dialog
@@ -63,7 +64,6 @@ StandardButton = QMessageBox.StandardButton
 StandardKey = QKeySequence.StandardKey
 UiElements = list[QWidget | QAction]
 QueuedConnection = Qt.ConnectionType.QueuedConnection
-BlockingQueuedConnection = Qt.ConnectionType.BlockingQueuedConnection
 # Counts the number of async tasks currently working on the document. Disable the UI while this is non-zero to ensure
 # that data doesn't change while those work.
 UI_LOCK_SEMAPHORE = 0
