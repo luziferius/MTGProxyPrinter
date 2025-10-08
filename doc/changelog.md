@@ -16,6 +16,8 @@
 - Restored reporting if hidden printings were migrated to available ones or dropped during document loading 
 - Fixed crash when trying to switch a printing of an already added card
 - Fixed the slight zoom level drift that occurred when repeatedly zooming in and out in the currently shown page.
+- Prevent crashes that occurred when switching printings, and then deleting the card or page it is on while the
+  card image download for it runs.
 
 # Version 0.34.0 (2025-09-11)  <a name="v0_34_0"></a>
 

@@ -66,6 +66,7 @@ UiElements = list[QWidget | QAction]
 # that data doesn't change while those work.
 UI_LOCK_SEMAPHORE = 0
 
+
 class MainWindow(QMainWindow):
 
     request_run_async_task = Signal(AsyncTask)
@@ -192,6 +193,7 @@ class MainWindow(QMainWindow):
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> UiElements:
         ui = self.ui
         return [
+            ui.central_widget,
             ui.action_new_document,
             ui.action_save_as,
             ui.action_save_document,
@@ -203,7 +205,6 @@ class MainWindow(QMainWindow):
             ui.action_new_page,
             ui.action_add_empty_card,
             ui.action_discard_page,
-            ui.central_widget,
             ui.action_cleanup_local_image_cache,
             ui.action_print,
             ui.action_print_pdf,

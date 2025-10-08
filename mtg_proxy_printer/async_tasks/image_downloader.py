@@ -184,9 +184,20 @@ class SingleDownloadTask(ImageDownloadTask):
     @with_database_write_lock(download_semaphore)
     def run(self):
         logger.info("Got DocumentAction, filling card")
-        self.fetch_and_set_image(self.action.card, self)
-        logger.info("Obtained image, requesting apply()")
-        self.request_action.emit(self.action)
+        # Card replacement is an asynchronous task operating on a card in the model. At the time of action application,
+        # the card may have been moved, then deleted, that delete undone, or similar. It is not possible to track it
+        # using a QPersistentModelIndex through all possible edits. Especially deleting the card, even if only temporary,
+        # is problematic. So lock the UI while the app replaces a printing.
+        requires_ui_lock = isinstance(self.action, ActionReplaceCard)
+        try:
+            if requires_ui_lock:
+                self.ui_lock_acquire.emit()
+            self.fetch_and_set_image(self.action.card, self)
+            logger.info("Obtained image, requesting apply()")
+            self.request_action.emit(self.action)
+        finally:
+            if requires_ui_lock:
+                self.ui_lock_release.emit()
 
 
 class BatchDownloadTask(ImageDownloadTask):

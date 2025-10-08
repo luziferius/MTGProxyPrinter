@@ -185,8 +185,8 @@ class Application(QApplication):
     def run_async_task(self, task: AsyncTask):
         logger.debug(f"Received task to schedule: {task}")
         main_window = self.main_window
-        task.ui_lock_acquire.connect(main_window.ui_lock_acquire)
-        task.ui_lock_release.connect(main_window.ui_lock_release)
+        task.ui_lock_acquire.connect(main_window.ui_lock_acquire, BlockingQueuedConnection)
+        task.ui_lock_release.connect(main_window.ui_lock_release, BlockingQueuedConnection)
         task.error_occurred.connect(main_window.on_error_occurred)
         task.network_error_occurred.connect(main_window.on_network_error_occurred)
         if hasattr(task, "request_action"):
