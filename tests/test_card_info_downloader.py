@@ -18,6 +18,7 @@ import dataclasses
 import sqlite3
 from typing import NamedTuple
 import unittest.mock
+from unittest.mock import MagicMock
 
 from hamcrest import *
 import pytest
@@ -620,7 +621,7 @@ def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, 
 
 @pytest.mark.parametrize("exception", [sqlite3.Error, Exception])
 def test_import_works_after_network_error_during_first_try(qtbot, card_db, exception):
-    dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(card_db)
+    dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), card_db.db)
     data_raising_exception = unittest.mock.MagicMock().__iter__.side_effect = exception()
     with unittest.mock.patch("mtg_proxy_printer.async_tasks.card_info_downloader.logger.exception") as logger_mock:
         dw.populate_database(data_raising_exception)
