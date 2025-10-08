@@ -134,6 +134,10 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
             download_uri,
             self.tr("Downloading '{card_name}':", "Progress bar label text").format(
                 card_name=card.name))
+        if not self.should_run:
+            # The code may have hung on a broken network socket. In that case, return here if cancel() was run while it
+            # was unable to close the file which wasn't yet opened.
+            return None
         # Disconnect the implicitly connected signals. TODO: Rework that?
         self.currently_opened_file_monitor.io_begin.disconnect(self.task_begins)
         self.currently_opened_file_monitor.total_bytes_processed.disconnect(self.set_progress)

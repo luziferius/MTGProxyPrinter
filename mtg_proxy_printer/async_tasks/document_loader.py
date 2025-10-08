@@ -528,6 +528,8 @@ class DocumentLoader(AsyncTask):
 
     def cancel(self):
         self.should_run = False
-        if self.image_loader.currently_opened_file is not None:
-            # Force aborting the download by closing the input stream
-            self.image_loader.currently_opened_file.close()
+        if self.image_loader is not None:
+            self.image_loader.should_run = False
+            if self.image_loader.currently_opened_file is not None:
+                # Force aborting the download by closing the input stream
+                self.image_loader.currently_opened_file.close()
