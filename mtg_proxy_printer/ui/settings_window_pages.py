@@ -75,6 +75,7 @@ class PageMetadata(typing.NamedTuple):
     icon_name: OptStr
     tooltip: OptStr
 
+
 class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
 
@@ -315,9 +316,18 @@ class GeneralSettingsPage(Page):
     @Slot()
     def on_document_save_path_browse_button_clicked(self):
         logger.debug("User about to select a new default document save path.")
-        if location := QFileDialog.getExistingDirectory(self, self.tr("Select default save location")):
+        if location := QFileDialog.getExistingDirectory(
+                self, self.tr("Select default save location", "File picker title text")):
             logger.info("User selected a new default document save path.")
             self.ui.document_save_path.setText(location)
+
+    @Slot()
+    def on_custom_cards_search_path_browse_button_clicked(self):
+        logger.debug("User about to select a new custom card search path.")
+        if location := QFileDialog.getExistingDirectory(
+                self, self.tr("Select custom card search path", "File picker title text")):
+            logger.info("User selected a new custom card search path.")
+            self.ui.custom_cards_search_path.setText(location)
 
     def load(self, settings: ConfigParser):
         self._load_look_and_feel_settings(settings)
@@ -349,7 +359,7 @@ class GeneralSettingsPage(Page):
 
     def _load_path_settings(self, settings: ConfigParser):
         section = settings["default-filesystem-paths"]
-        widgets_with_settings = self._get_save_path_settings_widgets()
+        widgets_with_settings = self._get_path_settings_widgets()
         for widget, setting in widgets_with_settings:
             widget.setText(section[setting])
 
@@ -402,7 +412,7 @@ class GeneralSettingsPage(Page):
 
     def _save_path_settings(self):
         section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
-        widgets_and_settings = self._get_save_path_settings_widgets()
+        widgets_and_settings = self._get_path_settings_widgets()
         for widget, setting in widgets_and_settings:
             section[setting] = widget.text()
 
@@ -426,15 +436,16 @@ class GeneralSettingsPage(Page):
             highlight_widget(ui.preferred_language_combo_box)
 
         section = settings["default-filesystem-paths"]
-        widgets_and_settings = self._get_save_path_settings_widgets()
+        widgets_and_settings = self._get_path_settings_widgets()
         for widget, setting in widgets_and_settings:
             if section[setting] != widget.text():
                 highlight_widget(widget)
 
-    def _get_save_path_settings_widgets(self):
+    def _get_path_settings_widgets(self):
         ui = self.ui
         widgets_with_settings: list[tuple[QLineEdit, str]] = [
             (ui.document_save_path, "document-save-path"),
+            (ui.custom_cards_search_path, "custom-cards-search-path")
         ]
         return widgets_with_settings
 

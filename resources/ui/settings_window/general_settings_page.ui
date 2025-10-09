@@ -6,15 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>515</width>
-    <height>579</height>
+    <width>449</width>
+    <height>604</height>
    </rect>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0" colspan="2">
     <widget class="QGroupBox" name="look_and_feel_settings_group_box">
      <property name="title">
-      <string>Look &amp;&amp; Feel (Changing most of these require an application restart)</string>
+      <string extracomment="Settings section header">Look &amp;&amp; Feel (Changing most of these require an application restart)</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="0" column="0">
@@ -37,7 +37,7 @@
       <item row="2" column="0" colspan="2">
        <widget class="QCheckBox" name="gui_open_maximized">
         <property name="text">
-         <string>Open the main window maximized</string>
+         <string extracomment="On/off setting">Open the main window maximized</string>
         </property>
        </widget>
       </item>
@@ -50,19 +50,23 @@
          </sizepolicy>
         </property>
         <property name="toolTip">
-         <string>Horizontal adds a wide, horizontal search area above the currently edited page, and is best for taller screens, like 4:3 or 3:2.
+         <string extracomment="Tooltip for the main window layout selector. References the values by name">Horizontal adds a wide, horizontal search area above the currently edited page, and is best for taller screens, like 4:3 or 3:2.
 Columnar organizes the main window content in four columns, and is best for (ultra-)wide screens.
 Tabbed uses tabs to only show parts of the main window at a time. Best used with small screens in portrait mode (i.e. 9:16), otherwise not recommended.</string>
         </property>
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QComboBox" name="application_language_combo_box"/>
+       <widget class="QComboBox" name="application_language_combo_box">
+        <property name="toolTip">
+         <string/>
+        </property>
+       </widget>
       </item>
       <item row="3" column="0" colspan="2">
        <widget class="QCheckBox" name="wizards_open_maximized">
         <property name="text">
-         <string>Open all wizards maximized</string>
+         <string extracomment="On/off setting">Open all wizards and dialogs maximized</string>
         </property>
        </widget>
       </item>
@@ -72,7 +76,7 @@ Tabbed uses tabs to only show parts of the main window at a time. Best used with
    <item row="3" column="0" colspan="2">
     <widget class="QGroupBox" name="double_faced_cards_group_box">
      <property name="title">
-      <string>Double-faced cards</string>
+      <string extracomment="Settings section header">Double-faced cards</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_5">
       <item>
@@ -96,7 +100,7 @@ Uncheck to disable this automatism.</string>
       <string>These paths are selected by default when browsing the file system for files</string>
      </property>
      <property name="title">
-      <string>Default save paths</string>
+      <string extracomment="Settings section header">Default save paths</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
       <item row="0" column="2">
@@ -147,7 +151,7 @@ Uncheck to disable this automatism.</string>
       <string/>
      </property>
      <property name="title">
-      <string>Automatic update checks</string>
+      <string extracomment="Settings section header">Automatic update checks</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_9">
       <item>
@@ -231,16 +235,55 @@ Note: Cards in deck lists use the language as given by the deck list. To overwri
    <item row="2" column="0" colspan="2">
     <widget class="QGroupBox" name="custom_cards_group_box">
      <property name="title">
-      <string>Custom cards</string>
+      <string extracomment="Settings section header">Custom cards</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <item>
-       <widget class="QCheckBox" name="custom_cards_force_round_corners">
+     <layout class="QGridLayout" name="gridLayout_3">
+      <item row="0" column="0">
+       <widget class="QLabel" name="custom_cards_search_path_label">
+        <property name="text">
+         <string extracomment="Label next to a directory selector for custom cards">Default search path</string>
+        </property>
+        <property name="buddy">
+         <cstring>custom_cards_search_path</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="QLineEdit" name="custom_cards_search_path">
         <property name="toolTip">
-         <string>Enforce rounded corners for all imported custom cards</string>
+         <string extracomment="Tooltip text">If set, search here for custom card images</string>
+        </property>
+        <property name="inputMethodHints">
+         <set>Qt::InputMethodHint::ImhNoAutoUppercase</set>
+        </property>
+        <property name="placeholderText">
+         <string extracomment="Line editor placeholder text">Path to a directory</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="4">
+       <widget class="QPushButton" name="custom_cards_search_path_browse_button">
+        <property name="toolTip">
+         <string extracomment="Button tooltip">Browse…</string>
         </property>
         <property name="text">
-         <string>Force round corners</string>
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset theme="document-open"/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0" colspan="5">
+       <widget class="QCheckBox" name="custom_cards_force_round_corners">
+        <property name="toolTip">
+         <string extracomment="Tooltip text">Enforce rounded corners for all imported custom cards</string>
+        </property>
+        <property name="text">
+         <string extracomment="Custom card import related on/off setting.">Force round corners</string>
         </property>
        </widget>
       </item>
@@ -249,6 +292,21 @@ Note: Cards in deck lists use the language as given by the deck list. To overwri
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>preferred_language_combo_box</tabstop>
+  <tabstop>application_language_combo_box</tabstop>
+  <tabstop>add_card_widget_style_combo_box</tabstop>
+  <tabstop>gui_open_maximized</tabstop>
+  <tabstop>wizards_open_maximized</tabstop>
+  <tabstop>custom_cards_search_path</tabstop>
+  <tabstop>custom_cards_search_path_browse_button</tabstop>
+  <tabstop>custom_cards_force_round_corners</tabstop>
+  <tabstop>automatically_add_opposing_faces</tabstop>
+  <tabstop>document_save_path</tabstop>
+  <tabstop>document_save_path_browse_button</tabstop>
+  <tabstop>check_application_updates_enabled</tabstop>
+  <tabstop>check_card_data_updates_enabled</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

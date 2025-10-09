@@ -24,6 +24,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 from mtg_proxy_printer.model.card import CustomCard
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
 try:
@@ -93,7 +94,9 @@ class CustomCardImportDialog(QDialog):
     @Slot()
     def on_add_cards_clicked(self):
         logger.info("User about to add additional card images")
-        default_path = getattr(data_directories, "user_pictures_dir", str(Path.home()))
+        default_path = (settings["default-filesystem-paths"]["custom-cards-search-path"]
+                        or getattr(data_directories, "user_pictures_dir", None)
+                        or str(Path.home()))
         title = self.tr("Import custom cards", "File selection dialog window title")
         files, _ = QFileDialog.getOpenFileNames(self, title, default_path)
         logger.debug(f"User selected {len(files)} paths")

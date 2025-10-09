@@ -230,6 +230,7 @@ DOCUMENT_SETTINGS_QUANTITY_LIMITS = {
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
     "deck-list-search-path": QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory),
+    "custom-cards-search-path": QStandardPaths.locate(StandardLocation.PicturesLocation, "", LocateOption.LocateDirectory),
 }
 DEFAULT_SETTINGS["gui"] = {
     "central-widget-layout": "columnar",

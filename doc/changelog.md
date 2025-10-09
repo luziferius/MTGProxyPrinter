@@ -13,7 +13,8 @@
 
 - The default path shown for the card image export is now also set by the "Export path" setting in the "Export settings"
   It no longer always defaults to the user's Pictures directory.
-- 
+- The default search path custom cards when importing via the import dialog
+  is now configurable via the application settings.
 
 # Fixed issues
 
