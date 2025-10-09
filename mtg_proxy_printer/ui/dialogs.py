@@ -35,6 +35,7 @@ from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 
 from mtg_proxy_printer.model.imagedb_files import ImageKey
+from mtg_proxy_printer.settings import settings
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
@@ -459,7 +460,8 @@ class ExportCardImagesDialog(QDialog):
         ui.setupUi(self)
         bb = ui.button_box
         bb.button(bb.StandardButton.Ok).setEnabled(True)
-        ui.output_path.setText(mtg_proxy_printer.app_dirs.data_directories.user_pictures_dir)
+        output_path = settings["export"]["export-path"] or mtg_proxy_printer.app_dirs.data_directories.user_pictures_dir
+        ui.output_path.setText(output_path)
         self.update_ok_button_enabled_state()
 
     @Slot()

@@ -9,6 +9,12 @@
   - Drop cards between two pages to insert a new page at that location and move the cards there
   - Re-order cards within a page
 
+# Changed features
+
+- The default path shown for the card image export is now also set by the "Export path" setting in the "Export settings"
+  It no longer always defaults to the user's Pictures directory.
+- 
+
 # Fixed issues
 
 - Fixed crash when trying to load a document that contains a hidden printing
