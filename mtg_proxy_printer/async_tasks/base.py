@@ -109,7 +109,12 @@ class AsyncTask(QObject):
         Called by the AsyncTaskRunner to clean up the progress bars in the main window"""
         for item in self.inner_tasks:
             item.emit_delete_recursive()
-        self.task_deleted.emit()
+        try:
+            self.task_deleted.emit()
+        except RuntimeError:
+            # When shutdown is stalled by I/O, the task may be deleted during the emit process.
+            # Simply ignore this.
+            pass
 
     @property
     def report_progress(self) -> bool:
