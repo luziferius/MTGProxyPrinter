@@ -97,7 +97,6 @@ class DecklistDownloader(DownloaderBase):
         deck_list = deck_list.decode("utf-8")
         return deck_list
 
-    @abc.abstractmethod
     def map_to_download_url(self, decklist_url: str) -> str:
         """
         Takes a URL to a deck list and returns a download URL. By default, returns the identity.
@@ -147,9 +146,6 @@ class MTGAZoneDownloader(DecklistDownloader):
     )
     PARSER_CLASS = MTGArenaParser
     APPLICABLE_WEBSITES = "MTG Arena Zone (mtgazone.com)"
-
-    def map_to_download_url(self, decklist_url: str) -> str:
-        return decklist_url
 
     def post_process(self, data: bytes) -> str:
         decoded = super().post_process(data)
@@ -316,9 +312,6 @@ class ArchidektDownloader(DecklistDownloader):
     PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "Archidekt (archidekt.com)"
 
-    def map_to_download_url(self, decklist_url: str) -> str:
-        return decklist_url
-
     def post_process(self, data: bytes) -> str:
         decoded = super().post_process(data)
         json_str = self._get_raw_deck_list_json(decoded)
@@ -479,6 +472,10 @@ AVAILABLE_DOWNLOADERS: dict[str, Type[DecklistDownloader]] = {
 
 
 def get_downloader_class(url: str):
+    """
+    For a given URL, returns the class of a downloader supporting it.
+    Returns None for unsupported URLs.
+    """
     for downloader in AVAILABLE_DOWNLOADERS.values():
         if downloader.DECKLIST_PATH_RE.match(url) is not None:
             return downloader
