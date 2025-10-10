@@ -427,17 +427,24 @@ class PageScene(QGraphicsScene):
         if not parent.isValid() and first <= self.selected_page.row() <= last:
             logger.debug("About to delete the currently shown page. Removing the held index.")
             self.selected_page = QPersistentModelIndex()
+        elif parent.isValid() and parent.row() == self.selected_page.row():
+            # Remove the cards now, as the model indices are still valid and point to the correct cards
+            logger.debug(f"Removing cards {first} to {last} from the current page.")
+            for item in self.card_items:
+                # Identify the cards by their internal index. The list position is arbitrary.
+                # Update the positions of the remaining cards later, when their new position is known
+                if first <= item.index.row() <= last:
+                    self.removeItem(item)
+
 
     def on_rows_removed(self, parent: QModelIndex, first: int, last: int):
-        if parent.isValid() and parent.row() == self.selected_page.row():
-            logger.debug(f"Removing cards {first} to {last} from the current page.")
-            for item in self.card_items[first:last+1]:
-                self.removeItem(item)
-            self.update_card_positions()
-            self.update_card_bleeds()
-        elif not parent.isValid():
+        if not parent.isValid():
             # Page removed. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
+        if parent.isValid() and parent.row() == self.selected_page.row():
+            self.update_card_positions()
+            self.update_card_bleeds()
+
 
     def on_rows_moved(self, parent: QModelIndex, start: int, end: int, destination: QModelIndex, row: int):
         source_page_row = parent.row()
