@@ -66,9 +66,9 @@ class IsIdentifyingDeckUrlValidator(QValidator):
 
 
 class DecklistDownloader(DownloaderBase):
-    DECKLIST_PATH_RE = re.compile(r"")
-    PARSER_CLASS: Type[ParserBase] = None
-    APPLICABLE_WEBSITES: str = ""
+    DECKLIST_PATH_RE = re.compile(r"")  # Defines the acceptable download URLs. Set by subclasses
+    PARSER_CLASS: Type[ParserBase] = None  # The parser class used to parse the output deck list.
+    APPLICABLE_WEBSITES: str = ""  # Name of compatible websites for display purposes. Set by subclasses
 
     def download(self, decklist_url: str) -> str:
         """
@@ -89,14 +89,20 @@ class DecklistDownloader(DownloaderBase):
 
     @staticmethod
     def post_process(data: bytes) -> str:
-        """Takes the raw, downloaded data and post-processes them into a user-presentable string."""
+        """
+        Takes the raw, downloaded data and post-processes them into a user-presentable string.
+        Default replaces \r\n to \n and decodes bytes to str using utf-8 encoding
+        """
         deck_list = data.replace(b"\r\n", b"\n")
         deck_list = deck_list.decode("utf-8")
         return deck_list
 
     @abc.abstractmethod
     def map_to_download_url(self, decklist_url: str) -> str:
-        """Takes a URL to a deck list and returns a download URL. By default, returns the identity"""
+        """
+        Takes a URL to a deck list and returns a download URL. By default, returns the identity.
+        Can be overridden to perform site-specific mappings from front-end URL to backend API or similar.
+        """
         return decklist_url
 
 
@@ -116,8 +122,8 @@ class ScryfallDownloader(DecklistDownloader):
             search_parameters = decklist_url.split("search?", 1)[1]
             parsed_parameters = dict(urllib.parse.parse_qsl(search_parameters))
             parsed_parameters["format"] = "csv"  # Enforce CSV format
-            parsed_parameters["include_multilingual"] = "true"
-            parsed_parameters["include_extras"] = "true"
+            parsed_parameters["include_multilingual"] = "true"  # Ensure that non-English cards can be found
+            parsed_parameters["include_extras"] = "true"  # Ensure that non-traditional cards can be found
             quoted_parameters = "&".join(
                 f"{key}={urllib.parse.quote(value)}"
                 for key, value in parsed_parameters.items())
@@ -378,6 +384,14 @@ class TCGPlayerDownloader(DecklistDownloader):
         return f"https://infinite-api.tcgplayer.com/deck/magic/{deck_id}/?subDecks=true&cards=true&stats=false"
 
     def post_process(self, data: bytes) -> str:
+        """
+        TCGPlayer Infinite returns JSON with two relevant sections:
+        Path result.deck.subDecks contains a mappings from (internal_card_id: card_copies) for each deck part
+          (mainboard, sideboard, …).
+        Path result.cards contains the de-duplicated list of all cards in the deck as JSON dicts. Entries contain
+          an image URL containing the Scryfall-id, the internal_card_id also used in result.deck.subDecks
+          and some other fields.
+        """
         card_counts = self._gather_card_counts(data)
         buffer = StringIO()
         scryfall_id_re = re.compile(r"(?P<scryfall_id>[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12})")
@@ -385,6 +399,7 @@ class TCGPlayerDownloader(DecklistDownloader):
         writer.writerow(["scryfall_id", "count", "lang", "name", "set_code", "collector_number"])
         items: JSONKeyValueType = ijson.kvitems(data, "result.cards")
         # The data contains a URL to an image hosted on scryfall that contains the scryfall id
+        # The data does not contain a card language, so hard-code English
         writer.writerows(
             (scryfall_id_re.search(card_data["scryfallImageURL"])["scryfall_id"], card_counts[card_id],
              "en", card_data["name"], card_data["set"].lower(), "")
@@ -404,6 +419,10 @@ class TCGPlayerDownloader(DecklistDownloader):
 
 
 class CubeCobraDownloader(DecklistDownloader):
+    """
+    The site allows supplying custom images for cards, which people use to upload full custom magic sets.
+    This downloader does not support custom card images, so custom magic sets uploaded there are also not supported
+    """
     DECKLIST_PATH_RE = re.compile(
         r"https://(www\.)?cubecobra\.com/cube/[a-z]+/(?P<cube_name>[0-9A-Za-z-_]+).*?"
     )
