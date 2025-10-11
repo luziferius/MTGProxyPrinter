@@ -573,3 +573,6 @@ class MainWindow(QMainWindow):
         if not UI_LOCK_SEMAPHORE:
             for item in self._get_widgets_and_actions_disabled_in_loading_state():
                 item.setEnabled(True)
+        # The undo/redo buttons are part of the list above, so ensure that the state is consistent
+        self.ui.action_redo.setEnabled(bool(self.document.redo_stack))
+        self.ui.action_undo.setEnabled(bool(self.document.undo_stack))

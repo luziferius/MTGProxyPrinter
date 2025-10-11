@@ -31,6 +31,7 @@
   no longer cause partial card data updates with missing printings.
 - Fixed that new printings added by a card data update were unavailable until after an application restart.
   The new printings are again instantly available upon update completion.
+- Fixed the Redo button being clickable after loading a document, which led to a crash when clicking it.
 
 # Version 0.34.0 (2025-09-11)  <a name="v0_34_0"></a>
 
