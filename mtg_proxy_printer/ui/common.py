@@ -111,7 +111,6 @@ def highlight_widget(widgets: QWidget | Sequence[QWidget]) -> None:
         widget.setGraphicsEffect(effect)
 
 
-
 class BlockedSignals:
     """
     Context manager used to temporarily prevent any QObject-derived object from emitting Qt signals.

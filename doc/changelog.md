@@ -1,19 +1,20 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.35.0 (2025-10-11)  <a name="v0_35_0"></a>
 
 # New features
 
-- Full support for moving cards around via drag & drop:
+- Support moving cards around via drag & drop:
   - Drop cards onto another page to move the cards to that page. (Only possible if all selected cards fit.)
   - Drop cards between two pages to insert a new page at that location and move the cards there
   - Re-order cards within a page
 
 # Changed features
 
-- The default path shown for the card image export is now also set by the "Export path" setting in the "Export settings"
+- The default path shown for the card image export is now also
+  set by the "Export path" setting in the "Export settings".
   It no longer always defaults to the user's Pictures directory.
-- The default search path custom cards when importing via the import dialog
+- The default search path for custom card images, used when browsing for files from the custom card import dialog,
   is now configurable via the application settings.
 
 # Fixed issues
@@ -26,7 +27,7 @@
 - Prevent crashes that occurred when switching printings, and then deleting the card or page it is on while the
   card image download for it runs.
 - Fixed rare crash that may occur when cancelling loading a document that currently waits on a broken
-  internet connection for a card image download.
+  internet connection for a card image download to start.
 - Restored handling of network errors during the card data update. Interrupted internet connections
   no longer cause partial card data updates with missing printings.
 - Fixed that new printings added by a card data update were unavailable until after an application restart.
