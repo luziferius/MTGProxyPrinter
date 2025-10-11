@@ -47,7 +47,7 @@ class PagesData(enum.Enum):
         self.border_width = border_width
 
     REGULAR = 0, 27, 27  # Pixel values empirically determined
-    OVERSIZED = 1, 50, 28
+    OVERSIZED = 1, 50, 35
 
     @classmethod
     def from_card_size(cls, size: CardSize):
