@@ -121,7 +121,7 @@ These external libraries are used in the code. They can be installed from PyPI.
 - `PyHamcrest`
 - `cx_Freeze` (Stand-alone bundles only. Used by the installer for Windows®-based platforms.)
 - `truststore`
-- `typing_extensions` (Py < 3.11)
+- `typing_extensions` (Py < 3.13)
 
 ### System libraries
 
