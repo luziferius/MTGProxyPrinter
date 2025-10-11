@@ -188,7 +188,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
           <string> mm</string>
          </property>
          <property name="minimum">
-          <double>88.000000000000000</double>
+          <double>88.060000000000002</double>
          </property>
          <property name="maximum">
           <double>10000.000000000000000</double>
@@ -273,7 +273,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
           <string> mm</string>
          </property>
          <property name="minimum">
-          <double>126.000000000000000</double>
+          <double>126.170000000000002</double>
          </property>
          <property name="maximum">
           <double>10000.000000000000000</double>
