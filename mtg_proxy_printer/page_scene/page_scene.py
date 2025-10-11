@@ -105,6 +105,7 @@ class PageScene(QGraphicsScene):
         document.rowsInserted.connect(self.on_rows_inserted)
         document.rowsRemoved.connect(self.on_rows_removed)
         document.rowsAboutToBeRemoved.connect(self.on_rows_about_to_be_removed)
+        document.rowsAboutToBeMoved.connect(self.on_rows_about_to_be_moved)
         document.rowsMoved.connect(self.on_rows_moved)
         document.current_page_changed.connect(self.on_current_page_changed)
         document.dataChanged.connect(self.on_data_changed)
@@ -381,6 +382,7 @@ class PageScene(QGraphicsScene):
                 self.remove_cut_markers()
                 self.draw_cut_markers()
 
+    @Slot(QModelIndex, QModelIndex, list)
     def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: list[ItemDataRole]):
         parent = top_left.parent()
         if not parent.isValid() or parent.row() != self.selected_page.row() or ItemDataRole.DisplayRole not in roles:
@@ -405,6 +407,7 @@ class PageScene(QGraphicsScene):
                 current_item = card_items[row]
                 current_item.card_pixmap_item.setPixmap(index.data(ItemDataRole.DisplayRole))
 
+    @Slot(QModelIndex, int, int)
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
         if self._is_valid_page_index(parent) and parent.row() == self.selected_page.row():
             inserted_cards = last-first+1
@@ -423,6 +426,7 @@ class PageScene(QGraphicsScene):
             # Page inserted. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
 
+    @Slot(QModelIndex, int, int)
     def on_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
         if not parent.isValid() and first <= self.selected_page.row() <= last:
             logger.debug("About to delete the currently shown page. Removing the held index.")
@@ -437,6 +441,7 @@ class PageScene(QGraphicsScene):
                     self.removeItem(item)
 
 
+    @Slot(QModelIndex, int, int)
     def on_rows_removed(self, parent: QModelIndex, first: int, last: int):
         if not parent.isValid():
             # Page removed. Update the page number text, as it contains the total number of pages
@@ -445,7 +450,18 @@ class PageScene(QGraphicsScene):
             self.update_card_positions()
             self.update_card_bleeds()
 
+    @Slot(QModelIndex, int, int, QModelIndex)
+    def on_rows_about_to_be_moved(self, parent: QModelIndex, start: int, end: int, destination: QModelIndex):
+        source_page_row = parent.row()
+        current_page_row = self.selected_page.row()
+        destination_page_row = destination.row()
+        if source_page_row == current_page_row != destination_page_row:
+            # Cards moved away are treated as if they were deleted
+            logger.debug("Cards moved away from the currently shown page, calling card removal handler.")
+            self.on_rows_about_to_be_removed(parent, start, end)
 
+
+    @Slot(QModelIndex, int, int, QModelIndex, int)
     def on_rows_moved(self, parent: QModelIndex, start: int, end: int, destination: QModelIndex, row: int):
         source_page_row = parent.row()
         current_page_row = self.selected_page.row()
@@ -454,17 +470,13 @@ class PageScene(QGraphicsScene):
             # Moved pages around. Needs to update the current page text
             self._update_page_number_text()
             return
-        # Parent is valid, thus start:end+1 point to cards on the page source_page_row.
+        # Parent is valid, thus [start, end] point to cards on it
         if source_page_row != current_page_row == destination_page_row:
             # Cards moved onto the current page are treated as if they were added
             logger.debug("Cards moved onto the currently shown page, calling card insertion handler.")
             self.on_rows_inserted(destination, row, row + end - start)
-        elif source_page_row == current_page_row != destination_page_row:
-            # Cards moved away are treated as if they were deleted
-            logger.debug("Cards moved away from the currently shown page, calling card removal handler.")
-            self.on_rows_removed(parent, start, end)
-        elif source_page_row == current_page_row == destination_page_row:
-            logger.debug("Cards moved within the current page, reordering them")
+        elif source_page_row == current_page_row:
+            logger.debug("Card move affects the current page, updating positions.")
             self.update_card_positions()
         # Remaining cases are card moves happening "off-screen", so nothing has to be done on them.
 
