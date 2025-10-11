@@ -88,7 +88,7 @@ class PageConfigPreviewArea(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setPen(QColorConstants.Transparent)
         painter.setBrush(QColorConstants.Black)  # The border, as a black, rounded rectangle
-        painter.drawRoundedRect(0, 0, card_width, card_height, data.border_width, data.corner_radius)
+        painter.drawRoundedRect(0, 0, card_width, card_height, data.corner_radius, data.corner_radius)
         painter.setBrush(QColorConstants.Gray)  # The card content, as a simple, gray rectangle
         painter.drawRect(
             data.border_width, data.border_width,
