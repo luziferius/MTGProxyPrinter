@@ -55,8 +55,8 @@ def custom_a4_page_layout():
 
 
 @pytest.mark.parametrize("name, min_value", [
-    ("custom_page_height", 126),
-    ("custom_page_width", 88),
+    ("custom_page_height", 126.17),
+    ("custom_page_width", 88.06),
 ])
 def test_paper_size_spin_box_minimum_value(widget: PageConfigWidget, name: str, min_value: int):
     spinbox: QDoubleSpinBox = getattr(widget.ui, name)
@@ -139,8 +139,8 @@ ZeroMarginsSettings = {
 
 @pytest.mark.parametrize("value", [-1*mm, 0*mm, 1*mm, 200*mm, 1000*mm])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value, max_value", [
-    ("custom-page-height", "custom_page_height", 126*mm, 10000*mm),
-    ("custom-page-width", "custom_page_width", 88*mm, 10000*mm),
+    ("custom-page-height", "custom_page_height", 126.17*mm, 10000*mm),
+    ("custom-page-width", "custom_page_width", 88.06*mm, 10000*mm),
     ("margin-top", "margin_top", 0*mm, 170.85*mm),
     ("margin-bottom", "margin_bottom", 0*mm, 170.85*mm),
     ("margin-left", "margin_left", 0*mm, 121.95*mm),
@@ -193,8 +193,8 @@ def test_load_boolean_checkboxes_from_config(
 
 @pytest.mark.parametrize("value", [-1*mm, 0*mm, 1*mm, 200*mm, 1000*mm])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value, max_value", [
-    ("custom-page-height", "custom_page_height", 126*mm, 10000*mm),
-    ("custom-page-width", "custom_page_width", 88*mm, 10000*mm),
+    ("custom-page-height", "custom_page_height", 126.17*mm, 10000*mm),
+    ("custom-page-width", "custom_page_width", 88.06*mm, 10000*mm),
     ("margin-top", "margin_top", 0*mm, 170.85*mm),
     ("margin-bottom", "margin_bottom", 0*mm, 170.85*mm),
     ("margin-left", "margin_left", 0*mm, 121.95*mm),
@@ -251,8 +251,8 @@ def test_save_boolean_document_settings_to_config(
 
 @pytest.mark.parametrize("value", [0*mm, 1*mm, 200*mm, 1000*mm])
 @pytest.mark.parametrize("attribute_name, min_value, max_value", [
-    ("custom_page_height", 126*mm, 10000*mm),
-    ("custom_page_width", 88*mm, 10000*mm),
+    ("custom_page_height", 126.17*mm, 10000*mm),
+    ("custom_page_width", 88.06*mm, 10000*mm),
     ("margin_top", 0*mm, 170.85*mm),
     ("margin_bottom", 0*mm, 170.85*mm),
     ("margin_left", 0*mm, 121.95*mm),
