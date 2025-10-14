@@ -45,10 +45,13 @@ def card_db(request) -> CardDatabase:
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     with unittest.mock.patch.dict(section, settings_to_use):
         card_db = CardDatabase(":memory:", check_same_thread=False)
+    db = card_db.db
     if request.param:
-        card_db.db.execute("PRAGMA reverse_unordered_selects = TRUE")
+        db.execute("PRAGMA reverse_unordered_selects = TRUE")
     PrintingFilterUpdater(card_db, card_db.db).run()
-    return card_db
+    yield card_db
+    del card_db.db
+    db.close()
 
 
 @pytest.fixture(params=[False, True])
@@ -56,7 +59,8 @@ def empty_save_database(request) -> sqlite3.Connection:
     db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", "document-v7", check_same_thread=False)
     if request.param:
         db.execute("PRAGMA reverse_unordered_selects = TRUE")
-    return db
+    yield db
+    db.close()
 
 
 @pytest.fixture
@@ -102,9 +106,11 @@ def mock_imagedb():
 @pytest.fixture
 def document_light(qtbot, mock_imagedb) -> Document:
     mock_card_db = unittest.mock.NonCallableMagicMock()
-    mock_card_db.db = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
+    mock_card_db.db = db = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
         "carddb", check_same_thread=False)
-    return Document(mock_card_db, mock_imagedb)
+    yield Document(mock_card_db, mock_imagedb)
+    db.close()
+    del mock_card_db.db
 
 
 @pytest.fixture

@@ -353,6 +353,7 @@ class DatabaseImportTask(AsyncTask):
         source.error_occurred.connect(self.cancel, BlockingQueuedConnection)
         source.network_error_occurred.connect(self.cancel, BlockingQueuedConnection)
         self._db = db
+        self.db_created = db is None
         self.should_run = True
         self.set_code_cache: dict[str, int] = {}
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -412,6 +413,9 @@ class DatabaseImportTask(AsyncTask):
                 self.error_occurred.emit(self.tr(
                     "Error during update from Scryfall", "Error message shown in a message box"))
         finally:
+            if self.db_created:
+                self.db.close()
+                self._db = None
             self.task_completed.emit()
 
     def populate_database(self, card_data: CardStream, *, total_count: int = 0):

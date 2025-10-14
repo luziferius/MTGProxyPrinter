@@ -59,6 +59,7 @@ class CardDataUpdateCheckTask(ApiStreamTask):
         super().__init__()
         self.card_db = card_db
         self._db = db
+        self.db_created = db is None
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -112,6 +113,10 @@ class CardDataUpdateCheckTask(ApiStreamTask):
             logger.info("Card data update check cancelled.")
         except ssl.SSLError as e:
             logger.exception(f"Update check failed: {e}")
+        finally:
+            if self.db_created:
+                self.db.close()
+                self._db = None
 
 
 class ApplicationUpdateCheckTask(DownloaderBase):

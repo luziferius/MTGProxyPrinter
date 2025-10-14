@@ -185,6 +185,8 @@ def _validate_database_schema(db_path: Path):
             db_unsafe.execute(indices_query).fetchall(),
             contains_exactly(*db_known_good.execute(indices_query).fetchall()),
             "Given save file inconsistent: Unexpected indices")
+    db_known_good.close()
+    db_unsafe.close()
 
 
 def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Path):

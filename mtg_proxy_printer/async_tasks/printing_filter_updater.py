@@ -62,8 +62,8 @@ class PrintingFilterUpdater(AsyncTask):
         self.ui_update_required.connect(model.restart_transaction, QueuedConnection)
         self.ui_update_required.connect(model.card_data_updated, QueuedConnection)
         self.force_update_hidden_column = force_update_hidden_column
-        self.uses_self_opened_db_connection = not db_connection
         self._db = db_connection
+        self.db_created = db_connection is None
         self.update_ui = False
         self.should_abort = False
         logger.debug(f"Created {self.__class__.__name__} instance.")
@@ -102,14 +102,14 @@ class PrintingFilterUpdater(AsyncTask):
             self.db.rollback()
         finally:
             self.task_completed.emit()
-            if self.uses_self_opened_db_connection:
+            if self.db_created:
                 logger.debug(f"Closing {self.__class__.__name__} connection")
                 self.db.close()
                 self._db = None
 
     def store_current_printing_filters(self) -> bool:
         db = self.db
-        if self.uses_self_opened_db_connection:
+        if self.db_created:
             db.execute("BEGIN IMMEDIATE TRANSACTION\n")
         section = mtg_proxy_printer.settings.settings["card-filter"]
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
@@ -140,7 +140,7 @@ class PrintingFilterUpdater(AsyncTask):
         update_ui = filters_need_update or old_filter_removed or self.force_update_hidden_column or set_code_updated
         if update_ui:
             self._update_cached_data()
-        if self.uses_self_opened_db_connection:
+        if self.db_created:
             db.commit()
         if update_ui:
             self.ui_update_required.emit()
@@ -192,7 +192,8 @@ class PrintingFilterUpdater(AsyncTask):
         removed_filters = database_set_code_filters - settings_set_code_filters
         logger.debug(f"Hide cards in these sets: {sorted(new_filters)}")
         logger.debug(f"Show cards in these sets: {sorted(removed_filters)}")
-        self.db.execute(
+        db = self.db
+        db.execute(
             cached_dedent("""\
                     INSERT INTO DisplayFilters (filter_name, filter_active) -- store_current_printing_filters()
                       VALUES (?, ?)
@@ -204,17 +205,17 @@ class PrintingFilterUpdater(AsyncTask):
         )
         filter_id: int = self._read_optional_scalar_from_db(
             "SELECT filter_id FROM DisplayFilters WHERE filter_name = ?", ("hidden-sets",))
-        self.db.execute(
+        db.execute(
             "CREATE TEMP TABLE RemovedSetFilters(set_code TEXT NOT NULL UNIQUE); -- store_current_printing_filters()\n")
-        self.db.executemany(
+        db.executemany(
             "INSERT INTO RemovedSetFilters(set_code) VALUES (?)\n",
             ((code,) for code in removed_filters))
-        self.db.execute(
+        db.execute(
             "CREATE TEMP TABLE AddedSetFilters(set_code TEXT NOT NULL UNIQUE); -- store_current_printing_filters()\n")
-        self.db.executemany(
+        db.executemany(
             "INSERT INTO AddedSetFilters(set_code) VALUES (?)\n",
             ((code,) for code in new_filters))
-        self.db.execute(cached_dedent("""\
+        db.execute(cached_dedent("""\
                 DELETE FROM PrintingDisplayFilter -- store_current_printing_filters()
                   WHERE filter_id = ?
                   AND printing_id IN (
@@ -224,15 +225,15 @@ class PrintingFilterUpdater(AsyncTask):
                       JOIN RemovedSetFilters USING (set_code)
                   )
                 """), (filter_id,))
-        self.db.execute(cached_dedent("""\
+        db.execute(cached_dedent("""\
                 INSERT OR IGNORE INTO PrintingDisplayFilter (printing_id, filter_id) -- store_current_printing_filters()
                   SELECT printing_id, ?
                   FROM Printing
                   JOIN MTGSet USING (set_id)
                   JOIN AddedSetFilters USING (set_code)
                 """), (filter_id,))
-        self.db.execute("DROP TABLE RemovedSetFilters -- store_current_printing_filters()\n")
-        self.db.execute("DROP TABLE AddedSetFilters -- store_current_printing_filters()\n")
+        db.execute("DROP TABLE RemovedSetFilters -- store_current_printing_filters()\n")
+        db.execute("DROP TABLE AddedSetFilters -- store_current_printing_filters()\n")
 
     def get_configured_set_code_filters(self) -> set[str]:
         # The intersection removes all words that are not known set codes

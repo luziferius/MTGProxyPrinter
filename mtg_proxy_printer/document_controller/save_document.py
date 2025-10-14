@@ -68,6 +68,8 @@ class ActionSaveDocument(DocumentAction):
                   INNER JOIN pragma_freelist_count
                 """)).fetchone()[0]:
                 db.execute("VACUUM -- apply()\n")
+        db.close()
+        del db
         logger.debug("Database saved and closed.")
 
     @staticmethod
