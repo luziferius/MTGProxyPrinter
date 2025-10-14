@@ -134,9 +134,6 @@ class DocumentLoader(AsyncTask):
     def can_cancel(self) -> bool:
         return True
 
-    def cancel(self):
-        self.should_run = False
-
     def _create_card_db(self) -> CardDatabase:
         db_path = self.document.card_db.db_path
         card_db = CardDatabase(db_path, self, register_exit_hooks=False)
