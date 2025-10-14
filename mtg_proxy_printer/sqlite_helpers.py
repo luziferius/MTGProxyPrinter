@@ -164,7 +164,7 @@ def validate_database_schema(
         db_known_good = create_in_memory_database(schema_name)
     except FileNotFoundError as e:
         raise AssertionError(f"Unknown database schema version: {user_schema_version}") from e
-    tables_and_views_query = textwrap.dedent("""\
+    tables_and_views_query = cached_dedent("""\
         SELECT   s.type, s.name,
                  p.cid AS column_id, p.name AS column_name, p.type AS column_type,
                  p."notnull" AS column_not_null_constraint_enabled, p.dflt_value AS column_default_value,
@@ -175,7 +175,7 @@ def validate_database_schema(
            AND   s.name NOT LIKE 'sqlite_%'
         ORDER BY s.name, column_id
         ;""")
-    indices_query = textwrap.dedent("""\
+    indices_query = cached_dedent("""\
         -- Note: Also include the “sqlite_autoindex*” indices that are
         -- automatically created for UNIQUE and PRIMARY KEY constraints.
         SELECT   s.name AS index_name,
@@ -201,13 +201,7 @@ def validate_database_schema(
 
 S = typing.TypeVar("S", LiteralString, str)
 
-if hasattr(functools, "cache"):
-    @functools.cache
-    def cached_dedent(text: S) -> S:
-        """Wraps textwrap.dedent() in a cache."""
-        return textwrap.dedent(text)
-else:  # Python 3.8 compatibility
-    @functools.cache
-    def cached_dedent(text: S) -> S:
-        """Wraps textwrap.dedent() in an LRU cache."""
-        return textwrap.dedent(text)
+@functools.cache
+def cached_dedent(text: S) -> S:
+    """Wraps textwrap.dedent() in a cache."""
+    return textwrap.dedent(text)

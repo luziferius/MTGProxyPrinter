@@ -46,7 +46,7 @@ class PrintCountUpdater(AsyncTask):
         # Collect the data now, so that the delayed run() does not operate on a potentially modified document,
         # but can use the data from the time the document was printed/exported.
         self.data = [(item.scryfall_id, item.is_front) for item in document.get_all_image_keys_in_document()]
-        self.db_passed_in = bool(db)
+        self.db_created = db is None
         self._db = db
 
     @property
@@ -82,6 +82,6 @@ class PrintCountUpdater(AsyncTask):
         )
         db.commit()
         logger.info("Usage data written.")
-        if not self.db_passed_in:
+        if self.db_created:
             db.close()
         self._db = None

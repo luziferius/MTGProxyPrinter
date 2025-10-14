@@ -43,7 +43,7 @@ def get_logger(full_module_path: str) -> logging.Logger:
     """
     Returns a logger instance for the given module __name__.
     """
-    module_path = ".".join(full_module_path.split(".")[1:])
+    _, module_path = full_module_path.split(".", 1)
     return root_logger.getChild(module_path)
 
 
@@ -51,7 +51,6 @@ def configure_root_logger(output_stdout: bool = True):
     """
     Initialize the logging system.
     """
-    global _CRASH_LOG_FILE
     debug_settings = mtg_proxy_printer.settings.settings["debug"]
     file_log_level = debug_settings["log-level"]
     root_logger.setLevel(1)

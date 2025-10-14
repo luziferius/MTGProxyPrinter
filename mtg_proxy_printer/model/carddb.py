@@ -132,6 +132,7 @@ class CardDatabase(QObject):
         if outdated_on_disk:
             logger.warning(
                 "Refusing to load outdated database schema. Use empty in-memory database until migrations complete.")
+            db.close()
             db = open_database(":memory:", SCHEMA_NAME, check_same_thread=self._db_check_same_thread)
         logger.debug("Validating schema of the opened database")
         try:
