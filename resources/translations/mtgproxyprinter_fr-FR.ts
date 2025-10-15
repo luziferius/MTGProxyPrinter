@@ -471,7 +471,7 @@ switch the selected printing.</translation>
     <message>
       <location filename="../ui/central_widget/columnar.ui" line="158"/>
       <source>All pages:</source>
-      <translation type="unfinished">All pages:</translation>
+      <translation>Toutes les pages :</translation>
     </message>
   </context>
   <context>
@@ -889,25 +889,25 @@ like page size, margins, spacings, etc.</translation>
       <location filename="../../mtg_proxy_printer/model/document.py" line="107"/>
       <source>Card name</source>
       <comment>Table header</comment>
-      <translation type="unfinished">Card name</translation>
+      <translation>Nom de la carte</translation>
     </message>
     <message>
       <location filename="../../mtg_proxy_printer/model/document.py" line="108"/>
       <source>Set</source>
       <comment>Table header</comment>
-      <translation type="unfinished">Set</translation>
+      <translation>Extension</translation>
     </message>
     <message>
       <location filename="../../mtg_proxy_printer/model/document.py" line="109"/>
       <source>Collector #</source>
       <comment>Table header</comment>
-      <translation type="unfinished">Collector #</translation>
+      <translation>Numéro de collection</translation>
     </message>
     <message>
       <location filename="../../mtg_proxy_printer/model/document.py" line="110"/>
       <source>Language</source>
       <comment>Table header</comment>
-      <translation type="unfinished">Language</translation>
+      <translation>Langage</translation>
     </message>
     <message>
       <location filename="../../mtg_proxy_printer/model/document.py" line="111"/>
@@ -919,7 +919,7 @@ like page size, margins, spacings, etc.</translation>
       <location filename="../../mtg_proxy_printer/model/document.py" line="112"/>
       <source>Side</source>
       <comment>Table header</comment>
-      <translation type="unfinished">Side</translation>
+      <translation>Côté</translation>
     </message>
     <message>
       <location filename="../../mtg_proxy_printer/model/document.py" line="203"/>
@@ -2405,17 +2405,17 @@ You can change this later in the settings.</translation>
     <message>
       <location filename="../ui/main_window.ui" line="59"/>
       <source>Application</source>
-      <translation type="unfinished">Application</translation>
+      <translation>Application</translation>
     </message>
     <message>
       <location filename="../ui/main_window.ui" line="73"/>
       <source>Edit</source>
-      <translation type="unfinished">Edit</translation>
+      <translation>Editer</translation>
     </message>
     <message>
       <location filename="../ui/main_window.ui" line="89"/>
       <source>Web links</source>
-      <translation type="unfinished">Web links</translation>
+      <translation>Liens web</translation>
     </message>
     <message>
       <location filename="../ui/main_window.ui" line="106"/>
@@ -2566,7 +2566,7 @@ You can change this later in the settings.</translation>
     <message>
       <location filename="../ui/main_window.ui" line="302"/>
       <source>Import deck list</source>
-      <translation type="unfinished">Import deck list</translation>
+      <translation>Import d'une liste de cartes</translation>
     </message>
     <message>
       <location filename="../ui/main_window.ui" line="305"/>
@@ -2620,7 +2620,7 @@ use this to reduce the initial deck shuffling required</translation>
     <message>
       <location filename="../ui/main_window.ui" line="381"/>
       <source>Add empty card to page</source>
-      <translation type="unfinished">Add empty card to page</translation>
+      <translation>Ajouter une carte vide à la page</translation>
     </message>
     <message>
       <location filename="../ui/main_window.ui" line="384"/>
@@ -3090,7 +3090,7 @@ otherwise you need two cuts but require less precision hitting the exact middle.
       <location filename="../ui/page_config_widget.ui" line="520"/>
       <location filename="../ui/page_config_widget.ui" line="721"/>
       <source>Select a color</source>
-      <translation type="unfinished">Select a color</translation>
+      <translation>Sélectionnez une couleur</translation>
     </message>
     <message>
       <location filename="../ui/page_config_widget.ui" line="543"/>
@@ -3834,12 +3834,12 @@ If unchecked, append the cards found below to the document.</translation>
     <message>
       <location filename="../ui/add_card_widget/vertical.ui" line="35"/>
       <source>Filter set names</source>
-      <translation type="unfinished">Filter set names</translation>
+      <translation>Filtrer le nom des extensions</translation>
     </message>
     <message>
       <location filename="../ui/add_card_widget/vertical.ui" line="67"/>
       <source>Collector Number</source>
-      <translation type="unfinished">Collector Number</translation>
+      <translation>Numéro de collection</translation>
     </message>
     <message>
       <location filename="../ui/add_card_widget/vertical.ui" line="92"/>
@@ -3865,13 +3865,13 @@ If unchecked, append the cards found below to the document.</translation>
       <location filename="../ui/add_card_widget/vertical.ui" line="136"/>
       <source>Language:</source>
       <extracomment>Card language. Next to the language selection widget</extracomment>
-      <translation type="unfinished">Language:</translation>
+      <translation>Langage :</translation>
     </message>
     <message>
       <location filename="../ui/add_card_widget/vertical.ui" line="152"/>
       <source>Copies:</source>
       <extracomment>Number of copies to add. Next to the number input field</extracomment>
-      <translation type="unfinished">Copies:</translation>
+      <translation>Copies :</translation>
     </message>
   </context>
   <context>
