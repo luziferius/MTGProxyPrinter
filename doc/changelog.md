@@ -1,15 +1,21 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+- Handle invalid internal card databases at application start, instead of crashing.
+
 # Version 0.35.0 (2025-10-11)  <a name="v0_35_0"></a>
 
-# New features
+## New features
 
 - Support moving cards around via drag & drop:
   - Drop cards onto another page to move the cards to that page. (Only possible if all selected cards fit.)
   - Drop cards between two pages to insert a new page at that location and move the cards there
   - Re-order cards within a page
 
-# Changed features
+## Changed features
 
 - The default path shown for the card image export is now also
   set by the "Export path" setting in the "Export settings".
@@ -17,7 +23,7 @@
 - The default search path for custom card images, used when browsing for files from the custom card import dialog,
   is now configurable via the application settings.
 
-# Fixed issues
+## Fixed issues
 
 - Fixed crash when trying to load a document that contains a hidden printing
   that does not have an available replacement printing.
@@ -36,7 +42,7 @@
 
 # Version 0.34.0 (2025-09-11)  <a name="v0_34_0"></a>
 
-# New features
+## New features
 
 - Reorder pages: It is now possible to re-order pages via drag&drop or via the two new buttons below the page list.
 - Adding print/cut registration marks. These are placed in the top left, top right and bottom left corners of
@@ -56,7 +62,7 @@
   even if the custom cards do not have transparent corners.
   Disabling may be useful when printing borderless cards where artworks form a panorama
 
-# Changed features
+## Changed features
 
 - DFC placeholder cards are now generated with the proper corner radius.
 - Reworked handling of background tasks
@@ -64,7 +70,7 @@
   - Some long-running tasks can now be canceled explicitly. These show a cancel button next to their progress bar
   - Cancelable tasks are loading documents, importing deck lists, and updating the internal card database.
 
-# Fixed issues
+## Fixed issues
 
 - Properly set the print resolution in exported PNG images. This should improve compatibility when working with
   those images.

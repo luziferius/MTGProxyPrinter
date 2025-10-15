@@ -119,7 +119,14 @@ class CardDatabase(QObject):
         self.db_path = db_path
         self.db: sqlite3.Connection = None
         self._db_is_temporary = False
-        self.reopen_database()
+        try:
+            self.reopen_database()
+        except sqlite3.DatabaseError as e:
+            logger.exception(f"Database corrupt! Re-creating. Reported error: {e}")
+            db_path.unlink()
+            for sub_file in (f"{db_path.name}-shm", f"{db_path.name}-wal"):
+                (db_path.parent/sub_file).unlink(missing_ok=True)
+            self.reopen_database()
         self._exit_hook = None
         if db_path != ":memory:" and register_exit_hooks:
             self._register_exit_hook()
