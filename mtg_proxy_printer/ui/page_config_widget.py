@@ -14,7 +14,6 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import functools
 from functools import partial
 import math
 from typing import Any, NamedTuple
@@ -24,7 +23,8 @@ from PySide6.QtGui import QPageSize, QPageLayout, QColor
 from PySide6.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QColorDialog, \
     QLabel, QSlider, QPushButton, QComboBox
 from pint.registry import Unit, Quantity
-from mtg_proxy_printer.settings import settings
+
+from mtg_proxy_printer.settings import settings, DEFAULT_SETTINGS
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, \
@@ -60,7 +60,6 @@ def is_pint_distance(value: Any) -> bool:
     return isinstance(value, Quantity) and value.dimensionality == DISTANCE_UNIT
 
 
-
 def is_pint_angle(value: Any) -> bool:
     return isinstance(value, Quantity) and value.units == degree
 
@@ -76,6 +75,7 @@ class PageConfigWidget(QGroupBox):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigWidget()
         ui.setupUi(self)
+        self.default_settings = PageLayoutSettings.create_from_settings(DEFAULT_SETTINGS)
         self.page_layout = self._setup_page_layout(ui)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -305,34 +305,9 @@ class PageConfigWidget(QGroupBox):
         orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(UserRole)]
         return size.width() if orientation == "Portrait" else size.height()
 
-    def load_document_settings_from_config(self, new_config: ConfigParser):
-        logger.debug(f"About to load document settings from the global settings")
-        documents_section = new_config["documents"]
-        for spinbox, setting, unit in self._get_numerical_settings_widgets():
-            value = documents_section.get_quantity(setting).to(unit)
-            spinbox.setValue(value.magnitude)
-            setattr(self.page_layout, spinbox.objectName(), spinbox.value()*value.units)
-        for checkbox, setting in self._get_boolean_settings_widgets():
-            checkbox.setChecked(documents_section.getboolean(setting))
-        for line_edit, setting in self._get_string_settings_widgets():
-            line_edit.setText(documents_section[setting])
-        for label, slider, setting, _ in self._get_color_settings_widgets():  # Ignore the text display label
-            color = documents_section.get_color(setting)
-            self._show_color(label, slider, color)
-            setattr(self.page_layout, label.objectName(), color)
-
-        self._load_paper_size(documents_section["paper-size"])
-        self._load_paper_orientation(documents_section["paper-orientation"])
-        self._load_cut_marker_style(documents_section["cut-marker-style"])
-        self._load_print_registration_marks_style(documents_section["print-registration-marks-style"])
-        self.validate_paper_size_settings()
-        self.on_page_layout_changed()
-        self.page_layout_changed.emit(self.page_layout)
-        logger.debug(f"Loading from settings finished")
-
     def load_from_page_layout(self, other: PageLayoutSettings):
         """Loads the page layout from another PageLayoutSettings instance"""
-        logger.debug(f"About to load document settings from a document instance")
+        logger.debug(f"About to load document settings")
         layout = self.page_layout
         # Block change signals to not trigger the validation logic on each iteration.
         # Especially the dimensions loop may pass invalid states:
@@ -482,37 +457,9 @@ class PageConfigWidget(QGroupBox):
     def _current_print_registration_marks_style(self) -> str:
         return self.ui.print_registration_marks_style.currentData(UserRole)
 
-    @functools.singledispatchmethod
     def highlight_differing_settings(self, to_compare: ConfigParser | PageLayoutSettings):
-        pass
-
-    @highlight_differing_settings.register
-    def _(self, to_compare: ConfigParser):
-        section = to_compare["documents"]
-        for widget, setting in self._get_string_settings_widgets():
-            if widget.text() != section[setting]:
-                highlight_widget(widget)
-        for widget, setting in self._get_boolean_settings_widgets():
-            if widget.isChecked() is not section.getboolean(setting):
-                highlight_widget(widget)
-        for widget, setting, unit in self._get_numerical_settings_widgets():
-            if not math.isclose(widget.value(), section.get_quantity(setting).to(unit).magnitude):
-                highlight_widget(widget)
-        for label, slider, setting, to_highlight in self._get_color_settings_widgets():
-            attribute_name = setting.replace("-", "_")
-            if getattr(self.page_layout, attribute_name) != section.get_color(setting):
-                highlight_widget(to_highlight)
-        if self._current_page_size() != PageSizeManager.PageSize[section["paper-size"]]:
-            highlight_widget(self.ui.paper_size)
-        if self._current_page_orientation() != PageSizeManager.PageOrientation[section["paper-orientation"]]:
-            highlight_widget(self.ui.paper_orientation)
-        if self._current_cut_marker_style() != section["cut-marker-style"]:
-            highlight_widget(self.ui.cut_marker_style)
-        if self._current_print_registration_marks_style() != section["print-registration-marks-style"]:
-            highlight_widget(self.ui.print_registration_marks_style)
-
-    @highlight_differing_settings.register
-    def _(self, to_compare: PageLayoutSettings):
+        if isinstance(to_compare, ConfigParser):
+            to_compare = PageLayoutSettings.create_from_settings(to_compare)
         for line_edit, _ in self._get_string_settings_widgets():
             name = line_edit.objectName()
             if line_edit.text() != getattr(to_compare, name):

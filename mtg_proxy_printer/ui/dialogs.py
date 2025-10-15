@@ -35,7 +35,8 @@ from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 
 from mtg_proxy_printer.model.imagedb_files import ImageKey
-from mtg_proxy_printer.settings import settings
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+from mtg_proxy_printer.settings import settings, DEFAULT_SETTINGS
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
@@ -359,9 +360,9 @@ class PrintDialog(QPrintDialog):
 class ChangedSettingsHoverEventFilter(QObject):
     parent: Callable[[], "DocumentSettingsDialog"]
 
-    def __init__(self, settings: ConfigParser, parent: "DocumentSettingsDialog"):
+    def __init__(self, to_compare: PageLayoutSettings | ConfigParser, parent: "DocumentSettingsDialog"):
         super().__init__(parent)
-        self.settings = settings
+        self.settings = to_compare
 
     def eventFilter(self, object_, event: QEvent):
         event_type = event.type()
@@ -384,6 +385,7 @@ class DocumentSettingsDialog(QDialog):
         self.ui.setupUi(self)
         self.setModal(True)
         self.document = document
+        self.default_settings = PageLayoutSettings.create_from_settings(DEFAULT_SETTINGS)
         page_config_widget = self.ui.page_config_container.ui.page_config_widget
         page_config_widget.ui.show_preview_button.hide()
         page_config_widget.load_from_page_layout(document.page_layout)
@@ -421,8 +423,7 @@ class DocumentSettingsDialog(QDialog):
     @Slot()
     def restore_defaults_button_clicked(self):
         logger.info("User reverts the document settings to the values from the global configuration")
-        self.ui.page_config_container.ui.page_config_widget.load_document_settings_from_config(
-            mtg_proxy_printer.settings.settings)
+        self.ui.page_config_container.ui.page_config_widget.load_from_page_layout(self.default_settings)
         self.clear_highlight()
 
     @Slot()

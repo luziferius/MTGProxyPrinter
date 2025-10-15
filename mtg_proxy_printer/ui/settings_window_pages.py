@@ -32,6 +32,7 @@ from mtg_proxy_printer.async_tasks.card_info_downloader import FileDownloadTask,
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.async_tasks.base import AsyncTask
+from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
@@ -504,7 +505,7 @@ class DefaultDocumentLayoutSettingsPage(Page, PageConfigContainer):
         return self.ui.page_config_widget
 
     def load(self, settings: ConfigParser):
-        self.page_config_widget.load_document_settings_from_config(settings)
+        self.page_config_widget.load_from_page_layout(PageLayoutSettings.create_from_settings(settings))
 
     def save(self):
         self.page_config_widget.save_document_settings_to_config()
