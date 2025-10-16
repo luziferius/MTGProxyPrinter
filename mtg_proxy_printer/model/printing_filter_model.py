@@ -27,6 +27,7 @@ ItemDataRole = Qt.ItemDataRole
 DisplayRole = ItemDataRole.DisplayRole
 ToolTipRole = ItemDataRole.ToolTipRole
 UserRole = ItemDataRole.UserRole
+ScryfallQueryRole = ItemDataRole(UserRole.value+1)
 CheckStateRole = ItemDataRole.CheckStateRole
 CheckableItem = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable
 
@@ -37,9 +38,12 @@ def _create_header_item(ui_text: str, tooltip: str) -> ModelRow:
     return ModelRow({DisplayRole: ui_text, ToolTipRole: tooltip, CheckStateRole: None, UserRole: "",
                      ItemDataRole.TextAlignmentRole: Qt.AlignmentFlag.AlignCenter})
 
-def _create_item(ui_text: str, tooltip: str, settings_key: str) -> ModelRow:
+def _create_format_item(ui_text: str, tooltip: str, format_: str) -> ModelRow:
+    return _create_item(ui_text, tooltip, f"hide-banned-in-{format_}", f"banned:{format_}")
+
+def _create_item(ui_text: str, tooltip: str, settings_key: str, query_str: str) -> ModelRow:
     return ModelRow({DisplayRole: ui_text, ToolTipRole: tooltip, CheckStateRole: False,
-                      UserRole: settings_key})
+                      UserRole: settings_key, ScryfallQueryRole: query_str})
 
 
 class PrintingFilterModel(QAbstractListModel):
@@ -48,12 +52,12 @@ class PrintingFilterModel(QAbstractListModel):
         super().__init__(parent)
         self.items: ModelRows = [
             _create_header_item(self.tr("General filters"), self.tr("")),
-            _create_item(self.tr("Cards depicting racism"), self.tr(""), "hide-cards-depicting-racism"),
+            _create_item(self.tr("Cards depicting racism"), self.tr(""), "hide-cards-depicting-racism", "function:banned-due-to-racist-imagery"),
             _create_header_item(self.tr("Format bans: Hide bans in specific formats"), self.tr("")),
-            _create_item(self.tr("Commander"), self.tr(""), "hide-banned-in-commander"),
+            _create_item(self.tr("Commander"), self.tr(""), "hide-banned-in-commander", "banned:commander"),
         ]
 
-    def rowCount(self, /, parent: QModelIndex = ...):
+    def rowCount(self, /, parent: QModelIndex = QModelIndex()):
         return 0 if parent.isValid() else len(self.items)
 
     def columnCount(self, parent: QModelIndex, /):

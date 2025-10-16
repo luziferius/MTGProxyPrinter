@@ -21,10 +21,10 @@ import pathlib
 import typing
 from abc import abstractmethod
 
-from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt
+from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt, QModelIndex
 from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon, QColor
 from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QLineEdit, QDoubleSpinBox, \
-    QColorDialog
+    QColorDialog, QPushButton
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
@@ -33,7 +33,7 @@ from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilter
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel
+from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel, ScryfallQueryRole
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
@@ -55,6 +55,7 @@ except ModuleNotFoundError:
     Ui_PrinterSettingsPage = load_ui_from_file("settings_window/printer_settings_page")
     Ui_ExportSettingsPage = load_ui_from_file("settings_window/export_settings_page")
 
+ParsingMode = QUrl.ParsingMode
 CheckState = Qt.CheckState
 bool_to_check_state: dict[bool | None, CheckState] = {
     True: CheckState.Checked,
@@ -465,6 +466,24 @@ class HidePrintingsPage(Page):
         ui.setupUi(self)
         self.card_db = None
         ui.printing_filter_view.setModel(self.model)
+        for row in range(self.model.rowCount()):
+            index = self.model.index(row, 0)
+            if query := index.data(ScryfallQueryRole):
+                button = self._create_scryfall_query_button(query)
+                ui.printing_filter_view.setIndexWidget(index, button)
+
+    def _create_scryfall_query_button(self, query_str: str) -> QPushButton:
+        button = QPushButton(QIcon.fromTheme("globe"), "", self)
+        button.clicked.connect(partial(self.view_query_on_scryfall, query_str))
+        button.setMinimumSize(32, 32)
+        button.setMaximumSize(32, 32)
+        return button
+
+    @staticmethod
+    def view_query_on_scryfall(query: str):
+        query_url = QUrl("https://scryfall.com/search", ParsingMode.StrictMode)
+        query_url.setQuery(f"q={query}", ParsingMode.StrictMode)
+        QDesktopServices.openUrl(query_url)
 
     def load(self, settings: ConfigParser):
         ui = self.ui
