@@ -29,7 +29,8 @@ ToolTipRole = ItemDataRole.ToolTipRole
 UserRole = ItemDataRole.UserRole
 ScryfallQueryRole = ItemDataRole(UserRole.value+1)
 CheckStateRole = ItemDataRole.CheckStateRole
-CheckableItem = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable
+SectionItem = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemNeverHasChildren
+CheckableItem = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemNeverHasChildren
 
 ModelRow = dict[ItemDataRole, typing.Any]
 ModelRows = list[ModelRow]
@@ -76,7 +77,7 @@ class PrintingFilterModel(QAbstractListModel):
         return True
 
     def flags(self, index: QModelIndex, /):
-        return CheckableItem if index.data(UserRole) else Qt.ItemFlag.ItemIsEnabled
+        return CheckableItem if index.data(UserRole) else SectionItem
 
     def load_settings(self, settings: ConfigParser):
         pass
