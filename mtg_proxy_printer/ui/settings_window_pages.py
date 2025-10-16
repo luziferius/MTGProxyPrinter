@@ -33,6 +33,7 @@ from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilter
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
@@ -459,30 +460,29 @@ class HidePrintingsPage(Page):
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
+        self.model = PrintingFilterModel(self)
         self.ui = ui = Ui_HidePrintingsPage()
         ui.setupUi(self)
         self.card_db = None
+        ui.printing_filter_view.setModel(self.model)
 
     def load(self, settings: ConfigParser):
         ui = self.ui
         section = settings["card-filter"]
         ui.set_filter_settings.setPlainText(section["hidden-sets"])
-        ui.card_filter_general_settings.load_settings(section)
-        ui.card_filter_format_settings.load_settings(section)
+        self.model.load_settings(settings)
 
     def save(self):
         section = mtg_proxy_printer.settings.settings["card-filter"]
         ui = self.ui
-        ui.card_filter_general_settings.save_settings(section)
-        ui.card_filter_format_settings.save_settings(section)
+        self.model.save_settings(mtg_proxy_printer.settings.settings)
         section["hidden-sets"] = ui.set_filter_settings.toPlainText()
         self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
 
     def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]
         ui = self.ui
-        ui.card_filter_general_settings.highlight_differing_settings(settings)
-        ui.card_filter_general_settings.highlight_differing_settings(settings)
+        self.model.highlight_differing_settings(settings)
         if section["hidden-sets"] != ui.set_filter_settings.toPlainText():
             highlight_widget(ui.set_filter_settings)
 
