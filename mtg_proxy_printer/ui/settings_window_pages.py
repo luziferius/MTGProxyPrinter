@@ -466,6 +466,7 @@ class HidePrintingsPage(Page):
         ui.setupUi(self)
         self.card_db = None
         ui.printing_filter_view.setModel(self.model)
+        return
         for row in range(self.model.rowCount()):
             index = self.model.index(row, 0)
             if query := index.data(ScryfallQueryRole):
