@@ -23,11 +23,13 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
+CheckState = Qt.CheckState
 ItemDataRole = Qt.ItemDataRole
 DisplayRole = ItemDataRole.DisplayRole
 ToolTipRole = ItemDataRole.ToolTipRole
-UserRole = ItemDataRole.UserRole
-ScryfallQueryRole = ItemDataRole(UserRole.value+1)
+SettingsKeyRole = ItemDataRole.UserRole
+
+ScryfallQueryRole = ItemDataRole(SettingsKeyRole.value + 1)
 CheckStateRole = ItemDataRole.CheckStateRole
 SectionItem = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemNeverHasChildren
 CheckableItem = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemNeverHasChildren
@@ -36,15 +38,15 @@ ModelRow = dict[ItemDataRole, typing.Any]
 ModelRows = list[ModelRow]
 
 def _create_header_item(ui_text: str, tooltip: str) -> ModelRow:
-    return ModelRow({DisplayRole: ui_text, ToolTipRole: tooltip, CheckStateRole: None, UserRole: "",
+    return ModelRow({DisplayRole: ui_text, ToolTipRole: tooltip, CheckStateRole: None, SettingsKeyRole: "",
                      ItemDataRole.TextAlignmentRole: Qt.AlignmentFlag.AlignCenter})
 
 def _create_format_item(ui_text: str, tooltip: str, format_: str) -> ModelRow:
     return _create_item(ui_text, tooltip, f"hide-banned-in-{format_}", f"banned:{format_}")
 
 def _create_item(ui_text: str, tooltip: str, settings_key: str, query_str: str) -> ModelRow:
-    return ModelRow({DisplayRole: ui_text, ToolTipRole: tooltip, CheckStateRole: False,
-                      UserRole: settings_key, ScryfallQueryRole: query_str})
+    return ModelRow({DisplayRole: ui_text, ToolTipRole: tooltip, CheckStateRole: CheckState.Unchecked,
+                     SettingsKeyRole: settings_key, ScryfallQueryRole: query_str})
 
 
 class PrintingFilterModel(QAbstractListModel):
@@ -77,13 +79,27 @@ class PrintingFilterModel(QAbstractListModel):
         return True
 
     def flags(self, index: QModelIndex, /):
-        return CheckableItem if index.data(UserRole) else SectionItem
+        return CheckableItem if index.data(SettingsKeyRole) else SectionItem
 
     def load_settings(self, settings: ConfigParser):
-        pass
+        logger.debug("Loading printing filter state from settings")
+        section = settings["card-filter"]
+        for row, item in enumerate(self.items):
+            if item[CheckStateRole] is not None:
+                item[CheckStateRole] = section.get_check_state(item[SettingsKeyRole])
+        self.dataChanged.emit(
+            self.index(1, 0),  # First row isn't checkable, so skip it
+            self.index(self.rowCount()-1, 0),
+            [CheckStateRole])
+        logger.debug("Done.")
 
     def save_settings(self, settings: ConfigParser):
-        pass
+        logger.debug("Saving printing filter state to settings.")
+        section = settings["card-filter"]
+        for row, item in enumerate(self.items):
+            if item[CheckStateRole] is not None:
+                section.set_check_state(item[SettingsKeyRole],item[CheckStateRole])
+        logger.debug("Done.")
 
     def highlight_differing_settings(self, settings: ConfigParser):
         pass
