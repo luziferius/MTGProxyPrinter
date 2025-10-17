@@ -22,7 +22,14 @@
     </widget>
    </item>
    <item>
-    <widget class="QListView" name="printing_filter_view"/>
+    <widget class="QListView" name="printing_filter_view">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>5</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QLabel" name="set_filter_label">
@@ -36,6 +43,12 @@
    </item>
    <item>
     <widget class="QPlainTextEdit" name="set_filter_settings">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>3</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>Example:
 
