@@ -31,33 +31,146 @@ SettingsKeyRole = ItemDataRole.UserRole
 
 ScryfallQueryRole = ItemDataRole(SettingsKeyRole.value + 1)
 CheckStateRole = ItemDataRole.CheckStateRole
-SectionItem = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemNeverHasChildren
-CheckableItem = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemNeverHasChildren
+HeaderItemFlags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemNeverHasChildren
+SettingItemFlags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemNeverHasChildren
 
 ModelRow = dict[ItemDataRole, typing.Any]
 ModelRows = list[ModelRow]
 
-def _create_header_item(ui_text: str, tooltip: str) -> ModelRow:
+def _create_header_item(ui_text: str, tooltip: str = None) -> ModelRow:
     return ModelRow({DisplayRole: ui_text, ToolTipRole: tooltip, CheckStateRole: None, SettingsKeyRole: "",
                      ItemDataRole.TextAlignmentRole: Qt.AlignmentFlag.AlignCenter})
 
 def _create_format_item(ui_text: str, tooltip: str, format_: str) -> ModelRow:
-    return _create_item(ui_text, tooltip, f"hide-banned-in-{format_}", f"banned:{format_}")
+    return _create_item(
+        ui_text, tooltip.format(format=ui_text),
+        f"hide-banned-in-{format_}", f"banned:{format_}"
+    )
 
-def _create_item(ui_text: str, tooltip: str, settings_key: str, query_str: str) -> ModelRow:
+def _create_item(ui_text: str, tooltip: str | None, settings_key: str, scryfall_query: str | None) -> ModelRow:
     return ModelRow({DisplayRole: ui_text, ToolTipRole: tooltip, CheckStateRole: CheckState.Unchecked,
-                     SettingsKeyRole: settings_key, ScryfallQueryRole: query_str})
+                     SettingsKeyRole: settings_key, ScryfallQueryRole: scryfall_query})
 
 
 class PrintingFilterModel(QAbstractListModel):
 
     def __init__(self, parent = None):
         super().__init__(parent)
+        format_ban_tooltip = self.tr("Hide cards banned in the {format} format", "Tooltip text")
         self.items: ModelRows = [
-            _create_header_item(self.tr("General filters"), self.tr("")),
-            _create_item(self.tr("Cards depicting racism"), self.tr(""), "hide-cards-depicting-racism", "function:banned-due-to-racist-imagery"),
-            _create_header_item(self.tr("Format bans: Hide bans in specific formats"), self.tr("")),
-            _create_item(self.tr("Commander"), self.tr(""), "hide-banned-in-commander", "banned:commander"),
+            _create_header_item(
+                self.tr("General filters", "Display text. Printing filter section header"),
+                self.tr("Hide printings based on general card properties", "Tooltip text")),
+            _create_item(
+                self.tr("Hide cards depicting racism", "Display text"),
+                self.tr("Hide cards banned for depicting racism.\n\n"
+                        "Background: Some cards were banned by Wizards of the Coast,\n"
+                        "because they depict references to controversial real-world events,\n"
+                        "religion or contain combinations of card effect, name and artwork that,\n"
+                        "when viewed together, depict racism or are otherwise inappropriate.\n"
+                        "These cards are banned in all sanctioned tournament formats and several\n"
+                        "community formats like Commander, Oathbreaker and others.",
+                        "Tooltip text"),
+                "hide-cards-depicting-racism", "function:banned-due-to-racist-imagery"),
+            _create_item(
+                self.tr("Hide cards with placeholder images",
+                        "Display text"),
+                self.tr("Hide non-English cards with low-resolution,\n"
+                        "English placeholder images containing an overlay text stating\n"
+                        "“This card is not available in the selected language.”",
+                        "Tooltip text"),
+                "hide-cards-without-images", None),
+            _create_item(
+                self.tr("Hide “funny” cards",
+                        "Display text"),
+                self.tr("“Funny” cards, not legal in any constructed format.\n"
+                        "This includes silver-bordered cards, full-art Contraptions from Unstable,\n"
+                        "cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),\n"
+                        "some black-bordered promotional cards with non-standard back faces,\nand potentially others.",
+                        "Tooltip text"),
+                "hide-funny-cards", "is:funny"),
+            _create_item(
+                self.tr("Hide digital-only cards or printings",
+                        "Display text"),
+                self.tr("Hide cards and printings that are only available on digital platforms. "
+                        "This includes all kinds of digital printings.",
+                        "Tooltip text"),
+                "hide-digital-cards", "is:digital"),
+            _create_item(
+                self.tr("Hide reversible cards",
+                        "Display text"),
+                self.tr("Some single-sided cards are re-printed as two-sided, reversible cards in some "
+                        "Secret Lair releases.\nThis filter hides those.",
+                        "Tooltip text"),
+                "hide-reversible-cards", "is:reversible"),
+
+            _create_header_item(
+                self.tr("Border style", "Display text. Printing filter section header")),
+            _create_item(
+                self.tr("Hide white-bordered cards",
+                        "Display text"),
+                None,
+                "hide-white-bordered", "border:white"),
+            _create_item(
+                self.tr("Hide gold-bordered cards",
+                        "Display text"),
+                self.tr("Some “collectible” sets, like full reprints of "
+                        "tournament-winning decks were printed with golden borders.\n"
+                        "Many also have printed signatures of the involved players in "
+                        "the text box.\n\nThese are not tournament legal",
+                        "Tooltip text"),
+                "hide-gold-bordered", "border:gold"),
+            _create_item(
+                self.tr("Hide borderless cards",
+                        "Display text"),
+                self.tr("Hide cards without a defined, solid-color border.\n"
+                        "Those require higher cutting precision to get right.",
+                        "Tooltip text"),
+                "hide-borderless", "border:borderless"),
+            _create_item(
+                self.tr("Hide extended-art cards",
+                        "Display text"),
+                self.tr("Hide cards with artwork extending to the left and right card border.\n"
+                        "Similar to borderless cards, these require higher precision during the cutting process.",
+                        "Tooltip text"),
+                "hide-extended-art", "is:extended"),
+
+            _create_header_item(
+                self.tr("Non-traditional cards", "Display text. Printing filter section header")),
+            _create_item(
+                self.tr("Hide oversized cards",
+                        "Display text"),
+                self.tr("These cards are larger than regular Magic cards and can’t be included in decks.\n"
+                        "Includes Archenemy schemes, Planechase planes and\noversized commander creature or "
+                        "Planeswalker cards included in some pre-constructed Commander decks.",
+                        "Tooltip text"),
+                "hide-oversized-cards", "is:oversized"),
+            _create_item(
+                self.tr("Hide Tokens",
+                        "Display text"),
+                self.tr("The official Tokens, used to represent permanents created by card effects.\n"
+                        "Not part of deck-building. Obscure ones can be relatively rare",
+                        "Tooltip text"),
+                "hide-token", "is:token"),
+            _create_item(
+                self.tr("Hide Art Series cards",
+                        "Display text"),
+                self.tr("Artwork cards that can be found in Set Boosters or Play Boosters",
+                        "Tooltip text"),
+                "hide-art-series-cards", "layout:art-series"),
+
+            _create_header_item(self.tr("Format bans: Hide cards banned in specific formats", "Display text. Section header above MTG format ban filters")),
+            _create_format_item(self.tr("Brawl", "Display text. Magic format"), format_ban_tooltip, "brawl"),
+            _create_format_item(self.tr("Commander", "Display text. Magic format"), format_ban_tooltip, "commander"),
+            _create_format_item(self.tr("Historic", "Display text. Magic format"), format_ban_tooltip, "historic"),
+            _create_format_item(self.tr("Legacy", "Display text. Magic format"), format_ban_tooltip, "legacy"),
+            _create_format_item(self.tr("Modern", "Display text. Magic format"), format_ban_tooltip, "Modern"),
+            _create_format_item(self.tr("Oathbreaker", "Display text. Magic format"), format_ban_tooltip, "Oathbreaker"),
+            _create_format_item(self.tr("Pauper", "Display text. Magic format"), format_ban_tooltip, "Pauper"),
+            _create_format_item(self.tr("Pioneer", "Display text. Magic format"), format_ban_tooltip, "Pioneer"),
+            _create_format_item(self.tr("Standard", "Display text. Magic format"), format_ban_tooltip, "Standard"),
+            _create_format_item(self.tr("Vintage", "Display text. Magic format"), format_ban_tooltip, "Vintage"),
+
         ]
 
     def rowCount(self, /, parent: QModelIndex = QModelIndex()):
@@ -79,7 +192,7 @@ class PrintingFilterModel(QAbstractListModel):
         return True
 
     def flags(self, index: QModelIndex, /):
-        return CheckableItem if index.data(SettingsKeyRole) else SectionItem
+        return SettingItemFlags if index.data(SettingsKeyRole) else HeaderItemFlags
 
     def load_settings(self, settings: ConfigParser):
         logger.debug("Loading printing filter state from settings")
