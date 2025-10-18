@@ -506,6 +506,10 @@ class HidePrintingsPage(Page):
         if section["hidden-sets"] != ui.set_filter_settings.toPlainText():
             highlight_widget(ui.set_filter_settings)
 
+    def clear_highlight(self):
+        super().clear_highlight()
+        self.model.clear_highlight()
+
 
 class DefaultDocumentLayoutSettingsPage(Page, PageConfigContainer):
 

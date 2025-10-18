@@ -15,6 +15,7 @@
 
 import typing
 from PySide6.QtCore import QAbstractListModel, Qt, QModelIndex
+from PySide6.QtWidgets import QApplication
 
 from mtg_proxy_printer.units_and_sizes import ConfigParser
 from mtg_proxy_printer.logger import get_logger
@@ -186,6 +187,8 @@ class PrintingFilterModel(QAbstractListModel):
             return None
 
     def setData(self, index: QModelIndex, value, /, role: ItemDataRole = ItemDataRole.DisplayRole):
+        if role == CheckStateRole:
+            value = CheckState(value)
         logger.debug(f"setData({index=}, {value=}, {role=})")
         self.items[index.row()][role] = value
         self.dataChanged.emit(index, index, [role])
@@ -215,7 +218,23 @@ class PrintingFilterModel(QAbstractListModel):
         logger.debug("Done.")
 
     def highlight_differing_settings(self, settings: ConfigParser):
-        pass
+
+        section = settings["card-filter"]
+        palette = QApplication.palette()
+        highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
+        highlight_color.setAlpha(64)
+        for row, item in enumerate(self.items):
+            current_state: CheckState = item[CheckStateRole]
+            if current_state is not None and current_state != section.get_check_state(item[SettingsKeyRole]):
+                index = self.index(row, 0)
+                item[ItemDataRole.BackgroundRole] = highlight_color
+                self.dataChanged.emit(index, index, [ItemDataRole.BackgroundRole])
 
     def clear_highlight(self):
-        pass
+        for item in self.items:
+            item[ItemDataRole.BackgroundRole] = None
+        self.dataChanged.emit(
+            self.index(0, 0),
+            self.index(self.rowCount()-1, 0),
+            [ItemDataRole.BackgroundRole]
+        )
