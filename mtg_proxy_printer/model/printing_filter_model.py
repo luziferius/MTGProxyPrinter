@@ -14,7 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import typing
-from PySide6.QtCore import QAbstractListModel, Qt, QModelIndex
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 from PySide6.QtWidgets import QApplication
 
 from mtg_proxy_printer.units_and_sizes import ConfigParser
@@ -53,7 +53,7 @@ def _create_item(ui_text: str, tooltip: str | None, settings_key: str, scryfall_
                      SettingsKeyRole: settings_key, ScryfallQueryRole: scryfall_query})
 
 
-class PrintingFilterModel(QAbstractListModel):
+class PrintingFilterModel(QAbstractTableModel):
 
     def __init__(self, parent = None):
         super().__init__(parent)
@@ -177,10 +177,12 @@ class PrintingFilterModel(QAbstractListModel):
     def rowCount(self, /, parent: QModelIndex = QModelIndex()):
         return 0 if parent.isValid() else len(self.items)
 
-    def columnCount(self, parent: QModelIndex, /):
-        return 0 if parent.isValid() else 1
+    def columnCount(self, parent: QModelIndex = QModelIndex(), /):
+        return 0 if parent.isValid() else 2
 
     def data(self, index: QModelIndex, /, role: ItemDataRole = ItemDataRole.DisplayRole):
+        if index.column():
+            return None
         try:
             return self.items[index.row()][role]
         except KeyError:
@@ -195,7 +197,9 @@ class PrintingFilterModel(QAbstractListModel):
         return True
 
     def flags(self, index: QModelIndex, /):
-        return SettingItemFlags if index.data(SettingsKeyRole) else HeaderItemFlags
+        return Qt.ItemFlag.ItemNeverHasChildren if index.column() \
+            else SettingItemFlags if index.data(SettingsKeyRole) \
+            else HeaderItemFlags
 
     def load_settings(self, settings: ConfigParser):
         logger.debug("Loading printing filter state from settings")

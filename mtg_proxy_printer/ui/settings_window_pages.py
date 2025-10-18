@@ -21,10 +21,10 @@ import pathlib
 import typing
 from abc import abstractmethod
 
-from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt, QModelIndex
+from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt
 from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon, QColor
 from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QLineEdit, QDoubleSpinBox, \
-    QColorDialog, QPushButton
+    QColorDialog, QPushButton, QHeaderView
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
@@ -466,18 +466,20 @@ class HidePrintingsPage(Page):
         ui.setupUi(self)
         self.card_db = None
         ui.printing_filter_view.setModel(self.model)
-        return
+        header = ui.printing_filter_view.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(1, 32)
         for row in range(self.model.rowCount()):
             index = self.model.index(row, 0)
             if query := index.data(ScryfallQueryRole):
                 button = self._create_scryfall_query_button(query)
-                ui.printing_filter_view.setIndexWidget(index, button)
+                ui.printing_filter_view.setIndexWidget(index.siblingAtColumn(1), button)
 
     def _create_scryfall_query_button(self, query_str: str) -> QPushButton:
         button = QPushButton(QIcon.fromTheme("globe"), "", self)
         button.clicked.connect(partial(self.view_query_on_scryfall, query_str))
-        button.setMinimumSize(32, 32)
-        button.setMaximumSize(32, 32)
+        button.setToolTip(self.tr("View cards hidden by this filter on the Scryfall website.", "Tooltip text on a button next to a printing filter"))
         return button
 
     @staticmethod

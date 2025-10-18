@@ -22,13 +22,22 @@
     </widget>
    </item>
    <item>
-    <widget class="QListView" name="printing_filter_view">
+    <widget class="QTableView" name="printing_filter_view">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
        <verstretch>5</verstretch>
       </sizepolicy>
      </property>
+     <property name="editTriggers">
+      <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+     </property>
+     <attribute name="horizontalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
     </widget>
    </item>
    <item>
