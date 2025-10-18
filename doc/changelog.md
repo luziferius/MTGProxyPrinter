@@ -2,6 +2,11 @@
 
 # Next version (in development)
 
+## Changed features
+
+- Reworked the print hiding user interface in the application settings.
+  - Improved the grouping of printing filters, with closely related filters placed together 
+
 ## Fixed issues
 
 - Handle invalid internal card databases at application start, instead of crashing.
