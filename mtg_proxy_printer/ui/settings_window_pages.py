@@ -56,13 +56,6 @@ except ModuleNotFoundError:
     Ui_ExportSettingsPage = load_ui_from_file("settings_window/export_settings_page")
 
 ParsingMode = QUrl.ParsingMode
-CheckState = Qt.CheckState
-bool_to_check_state: dict[bool | None, CheckState] = {
-    True: CheckState.Checked,
-    False: CheckState.Unchecked,
-    None: CheckState.PartiallyChecked,
-}
-check_state_to_bool_str: dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 ItemDataRole = Qt.ItemDataRole
 StandardLocation = QStandardPaths.StandardLocation
@@ -349,7 +342,7 @@ class GeneralSettingsPage(Page):
     def _load_boolean_settings(self, settings: ConfigParser):
         for widget, section_name, setting in self._get_boolean_check_settings_widgets():
             section = settings[section_name]
-            widget.setCheckState(bool_to_check_state[section.getboolean(setting)])
+            widget.setCheckState(section.get_check_state(setting))
 
     def _load_cards_settings(self, settings: ConfigParser):
         section = settings["cards"]
@@ -400,7 +393,7 @@ class GeneralSettingsPage(Page):
     def _save_boolean_settings(self):
         for widget, section_name, setting in self._get_boolean_check_settings_widgets():
             section = mtg_proxy_printer.settings.settings[section_name]
-            section[setting] = check_state_to_bool_str[widget.checkState()]
+            section.set_check_state(setting, widget.checkState())
 
     def _save_look_and_feel_settings(self):
         section = mtg_proxy_printer.settings.settings["gui"]
@@ -423,7 +416,7 @@ class GeneralSettingsPage(Page):
         ui = self.ui
         for widget, section_name, setting in self._get_boolean_check_settings_widgets():
             section = settings[section_name]
-            if section[setting] != check_state_to_bool_str[widget.checkState()]:
+            if section.get_check_state(setting) != widget.checkState():
                 highlight_widget(widget)
 
         section = settings["gui"]
