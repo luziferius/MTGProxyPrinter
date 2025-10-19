@@ -39,22 +39,31 @@ ModelRow = dict[ItemDataRole, typing.Any]
 ModelRows = list[ModelRow]
 
 def _create_header_item(ui_text: str, tooltip: str = None) -> ModelRow:
+    """Create a centered, text-only header item for the PrintingFilterModel"""
     return ModelRow({DisplayRole: ui_text, ToolTipRole: tooltip, CheckStateRole: None, SettingsKeyRole: "",
                      ItemDataRole.TextAlignmentRole: Qt.AlignmentFlag.AlignCenter})
 
-def _create_format_item(ui_text: str, tooltip: str, format_: str) -> ModelRow:
+def _create_format_item(ui_text: str, tooltip: str, internal_format_key: str) -> ModelRow:
+    """Creates a PrintingFilterModel row item for MTG format ban filters"""
     return _create_item(
         ui_text, tooltip.format(format=ui_text),
-        f"hide-banned-in-{format_}", f"banned:{format_}"
+        f"hide-banned-in-{internal_format_key}", f"banned:{internal_format_key}"
     )
 
 def _create_item(ui_text: str, tooltip: str | None, settings_key: str, scryfall_query: str | None) -> ModelRow:
+    """Creates a fully customizable PrintingFilterModel row item for any kind of card filters."""
     return ModelRow({DisplayRole: ui_text, ToolTipRole: tooltip, CheckStateRole: CheckState.Unchecked,
                      SettingsKeyRole: settings_key, ScryfallQueryRole: scryfall_query})
 
 
 class PrintingFilterModel(QAbstractTableModel):
-
+    """
+    Model holding the printing filters, used by the settings window to allow the
+    user to set the hidden printings to their liking.
+    The filter entries store an on/off state editable via the ItemDataRole.CheckStateRole, which makes the UI show a 
+    checkbox that can be toggled via clicking it.
+    Changed-item highlighting uses the BackgroundRole.
+    """
     def __init__(self, parent = None):
         super().__init__(parent)
         format_ban_tooltip = self.tr("Hide cards banned in the {format} format", "Tooltip text")
@@ -160,17 +169,49 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Tooltip text"),
                 "hide-art-series-cards", "layout:art-series"),
 
-            _create_header_item(self.tr("Format bans: Hide cards banned in specific formats", "Display text. Section header above MTG format ban filters")),
-            _create_format_item(self.tr("Brawl", "Display text. Magic format"), format_ban_tooltip, "brawl"),
-            _create_format_item(self.tr("Commander", "Display text. Magic format"), format_ban_tooltip, "commander"),
-            _create_format_item(self.tr("Historic", "Display text. Magic format"), format_ban_tooltip, "historic"),
-            _create_format_item(self.tr("Legacy", "Display text. Magic format"), format_ban_tooltip, "legacy"),
-            _create_format_item(self.tr("Modern", "Display text. Magic format"), format_ban_tooltip, "Modern"),
-            _create_format_item(self.tr("Oathbreaker", "Display text. Magic format"), format_ban_tooltip, "Oathbreaker"),
-            _create_format_item(self.tr("Pauper", "Display text. Magic format"), format_ban_tooltip, "Pauper"),
-            _create_format_item(self.tr("Pioneer", "Display text. Magic format"), format_ban_tooltip, "Pioneer"),
-            _create_format_item(self.tr("Standard", "Display text. Magic format"), format_ban_tooltip, "Standard"),
-            _create_format_item(self.tr("Vintage", "Display text. Magic format"), format_ban_tooltip, "Vintage"),
+            _create_header_item(
+                self.tr("Format bans: Hide cards banned in specific formats",
+                        "Display text. Section header above MTG format ban filters")),
+            _create_format_item(
+                self.tr("Brawl", "Display text. Magic format name. Translations (if one exists) "
+                                 "should probably also include the English name like {translated name}(<english name>)"),
+                format_ban_tooltip, "brawl"),
+            _create_format_item(
+                self.tr("Commander", "Display text. Magic format name. Translations (if one exists) "
+                                 "should probably also include the English name like {translated name}(<english name>)"),
+                format_ban_tooltip, "commander"),
+            _create_format_item(
+                self.tr("Historic", "Display text. Magic format name. Translations (if one exists) "
+                                 "should probably also include the English name like {translated name}(<english name>)"),
+                format_ban_tooltip, "historic"),
+            _create_format_item(
+                self.tr("Legacy", "Display text. Magic format name. Translations (if one exists) "
+                                 "should probably also include the English name like {translated name}(<english name>)"),
+                format_ban_tooltip, "legacy"),
+            _create_format_item(
+                self.tr("Modern", "Display text. Magic format name. Translations (if one exists) "
+                                 "should probably also include the English name like {translated name}(<english name>)"),
+                format_ban_tooltip, "modern"),
+            _create_format_item(
+                self.tr("Oathbreaker", "Display text. Magic format name. Translations (if one exists) "
+                                 "should probably also include the English name like {translated name}(<english name>)"),
+                format_ban_tooltip, "oathbreaker"),
+            _create_format_item(
+                self.tr("Pauper", "Display text. Magic format name. Translations (if one exists) "
+                                 "should probably also include the English name like {translated name}(<english name>)"),
+                format_ban_tooltip, "pauper"),
+            _create_format_item(
+                self.tr("Pioneer", "Display text. Magic format name. Translations (if one exists) "
+                                 "should probably also include the English name like {translated name}(<english name>)"),
+                format_ban_tooltip, "pioneer"),
+            _create_format_item(
+                self.tr("Standard", "Display text. Magic format name. Translations (if one exists) "
+                                 "should probably also include the English name like {translated name}(<english name>)"),
+                format_ban_tooltip, "standard"),
+            _create_format_item(
+                self.tr("Vintage", "Display text. Magic format name. Translations (if one exists) "
+                                 "should probably also include the English name like {translated name}(<english name>)"),
+                format_ban_tooltip, "vintage"),
 
         ]
 
