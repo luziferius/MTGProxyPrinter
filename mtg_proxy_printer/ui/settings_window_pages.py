@@ -454,20 +454,24 @@ class HidePrintingsPage(Page):
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        self.model = PrintingFilterModel(self)
+        self.model = model = PrintingFilterModel(self)
         self.ui = ui = Ui_HidePrintingsPage()
         ui.setupUi(self)
         self.card_db = None
-        ui.printing_filter_view.setModel(self.model)
+        ui.printing_filter_view.setModel(model)
         header = ui.printing_filter_view.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(1, 32)
-        for row in range(self.model.rowCount()):
-            index = self.model.index(row, 0)
-            if query := index.data(ScryfallQueryRole):
-                button = self._create_scryfall_query_button(query)
-                ui.printing_filter_view.setIndexWidget(index.siblingAtColumn(1), button)
+
+        for column in range(1, model.columnCount(), 2):
+            header.resizeSection(column, 32)
+            header.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+
+        for column in range(0, model.columnCount(), 2):
+            header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+            for row in range(model.rowCount()):
+                index = model.index(row, column)
+                if query := index.data(ScryfallQueryRole):
+                    button = self._create_scryfall_query_button(query)
+                    ui.printing_filter_view.setIndexWidget(index.siblingAtColumn(column+1), button)
 
     def _create_scryfall_query_button(self, query_str: str) -> QPushButton:
         button = QPushButton(QIcon.fromTheme("globe"), "", self)

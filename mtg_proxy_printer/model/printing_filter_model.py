@@ -12,7 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import itertools
 import typing
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 from PySide6.QtWidgets import QApplication
@@ -32,6 +32,7 @@ SettingsKeyRole = ItemDataRole.UserRole
 
 ScryfallQueryRole = ItemDataRole(SettingsKeyRole.value + 1)
 CheckStateRole = ItemDataRole.CheckStateRole
+EmptyColumnFlags = Qt.ItemFlag.ItemNeverHasChildren
 HeaderItemFlags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemNeverHasChildren
 SettingItemFlags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemNeverHasChildren
 
@@ -67,7 +68,8 @@ class PrintingFilterModel(QAbstractTableModel):
     def __init__(self, parent = None):
         super().__init__(parent)
         format_ban_tooltip = self.tr("Hide cards banned in the {format} format", "Tooltip text")
-        self.items: ModelRows = [
+        # Notes for Multi-column mode: Store items as a list[ModelRows]
+        self.items: list[ModelRows] = [[
             _create_header_item(
                 self.tr("General filters", "Display text. Printing filter section header"),
                 self.tr("Hide printings based on general card properties", "Tooltip text")),
@@ -168,7 +170,7 @@ class PrintingFilterModel(QAbstractTableModel):
                 self.tr("Artwork cards that can be found in Set Boosters or Play Boosters",
                         "Tooltip text"),
                 "hide-art-series-cards", "layout:art-series"),
-
+            ],[
             _create_header_item(
                 self.tr("Format bans: Hide cards banned in specific formats",
                         "Display text. Section header above MTG format ban filters")),
@@ -212,74 +214,78 @@ class PrintingFilterModel(QAbstractTableModel):
                 self.tr("Vintage", "Display text. Magic format name. Translations (if one exists) "
                                  "should probably also include the English name like {translated name}(<english name>)"),
                 format_ban_tooltip, "vintage"),
-
-        ]
+        ]]
+        self.multi_column_break_index = len(self.items[0])
 
     def rowCount(self, /, parent: QModelIndex = QModelIndex()):
-        return 0 if parent.isValid() else len(self.items)
+        return 0 if parent.isValid() else max(map(len, self.items))
 
     def columnCount(self, parent: QModelIndex = QModelIndex(), /):
-        return 0 if parent.isValid() else 2
+        # Notes for Multi-column mode: Return len(self.items)*2
+        return 0 if parent.isValid() else len(self.items)*2
 
     def data(self, index: QModelIndex, /, role: ItemDataRole = ItemDataRole.DisplayRole):
-        if index.column():
+        if index.column() & 1:  # Odd columns are empty, and used to carry the Scryfall search button
             return None
         try:
-            return self.items[index.row()][role]
-        except KeyError:
+            return self.items[index.column()//2][index.row()][role]
+        except (KeyError, IndexError):
             return None
 
     def setData(self, index: QModelIndex, value, /, role: ItemDataRole = ItemDataRole.DisplayRole):
         if role == CheckStateRole:
             value = CheckState(value)
         logger.debug(f"setData({index=}, {value=}, {role=})")
-        self.items[index.row()][role] = value
+        self.items[index.column()//2][index.row()][role] = value
         self.dataChanged.emit(index, index, [role])
         return True
 
     def flags(self, index: QModelIndex, /):
-        return Qt.ItemFlag.ItemNeverHasChildren if index.column() \
+        return EmptyColumnFlags if index.column() & 1 \
             else SettingItemFlags if index.data(SettingsKeyRole) \
             else HeaderItemFlags
 
     def load_settings(self, settings: ConfigParser):
         logger.debug("Loading printing filter state from settings")
         section = settings["card-filter"]
-        for row, item in enumerate(self.items):
+        for item in itertools.chain.from_iterable(self.items):  # type: ModelRow
             if item[CheckStateRole] is not None:
                 item[CheckStateRole] = section.get_check_state(item[SettingsKeyRole])
-        self.dataChanged.emit(
-            self.index(1, 0),  # First row isn't checkable, so skip it
-            self.index(self.rowCount()-1, 0),
-            [CheckStateRole])
+        for column in range(0, self.columnCount(), 2):
+            self.dataChanged.emit(
+                self.index(1, column),  # First row isn't checkable, so skip it
+                self.index(len(self.items[column//2])-1, column),
+                [CheckStateRole])
         logger.debug("Done.")
 
     def save_settings(self, settings: ConfigParser):
         logger.debug("Saving printing filter state to settings.")
         section = settings["card-filter"]
-        for row, item in enumerate(self.items):
+        for item in itertools.chain.from_iterable(self.items):  # type: ModelRow
             if item[CheckStateRole] is not None:
                 section.set_check_state(item[SettingsKeyRole],item[CheckStateRole])
         logger.debug("Done.")
 
     def highlight_differing_settings(self, settings: ConfigParser):
-
         section = settings["card-filter"]
         palette = QApplication.palette()
         highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
         highlight_color.setAlpha(64)
-        for row, item in enumerate(self.items):
-            current_state: CheckState = item[CheckStateRole]
-            if current_state is not None and current_state != section.get_check_state(item[SettingsKeyRole]):
-                index = self.index(row, 0)
-                item[ItemDataRole.BackgroundRole] = highlight_color
-                self.dataChanged.emit(index, index, [ItemDataRole.BackgroundRole])
+        for column in range(0, self.columnCount(), 2):
+            for row, item in enumerate(self.items[column//2]):
+                current_state: CheckState = item[CheckStateRole]
+                if current_state is not None and current_state != section.get_check_state(item[SettingsKeyRole]):
+                    index = self.index(row, column)
+                    item[ItemDataRole.BackgroundRole] = highlight_color
+                    self.dataChanged.emit(index, index, [ItemDataRole.BackgroundRole])
 
     def clear_highlight(self):
-        for item in self.items:
+        for item in itertools.chain.from_iterable(self.items):
             item[ItemDataRole.BackgroundRole] = None
-        self.dataChanged.emit(
-            self.index(0, 0),
-            self.index(self.rowCount()-1, 0),
-            [ItemDataRole.BackgroundRole]
-        )
+        for column in range(0, self.columnCount(), 2):
+            self.dataChanged.emit(
+                self.index(1, column),
+                self.index(len(self.items[column//2])-1, column),
+                [ItemDataRole.BackgroundRole]
+            )
+    
