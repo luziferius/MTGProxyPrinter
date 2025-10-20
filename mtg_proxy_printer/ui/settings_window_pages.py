@@ -22,7 +22,7 @@ import typing
 from abc import abstractmethod
 
 from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt
-from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon, QColor
+from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon, QColor, QResizeEvent
 from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QLineEdit, QDoubleSpinBox, \
     QColorDialog, QPushButton, QHeaderView
 
@@ -478,6 +478,19 @@ class HidePrintingsPage(Page):
         button.clicked.connect(partial(self.view_query_on_scryfall, query_str))
         button.setToolTip(self.tr("View cards hidden by this filter on the Scryfall website.", "Tooltip text on a button next to a printing filter"))
         return button
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        super().resizeEvent(event)
+        filter_view = self.ui.printing_filter_view
+        model = self.model
+        header_width = filter_view.horizontalHeader().width()
+        filter_view_width = filter_view.width()
+        if filter_view.horizontalScrollBar().isVisible() and model.columnCount() > 2:
+            model.to_single_column_mode()
+        elif filter_view_width >= 2 * header_width and model.columnCount() == 2:
+            model.to_dual_column_mode()
+
+
 
     @staticmethod
     def view_query_on_scryfall(query: str):

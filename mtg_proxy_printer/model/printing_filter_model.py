@@ -68,7 +68,7 @@ class PrintingFilterModel(QAbstractTableModel):
     def __init__(self, parent = None):
         super().__init__(parent)
         format_ban_tooltip = self.tr("Hide cards banned in the {format} format", "Tooltip text")
-        # Notes for Multi-column mode: Store items as a list[ModelRows]
+        self.multi_column_mode = True
         self.items: list[ModelRows] = [[
             _create_header_item(
                 self.tr("General filters", "Display text. Printing filter section header"),
@@ -215,28 +215,41 @@ class PrintingFilterModel(QAbstractTableModel):
                                  "should probably also include the English name like {translated name}(<english name>)"),
                 format_ban_tooltip, "vintage"),
         ]]
-        self.multi_column_break_index = len(self.items[0])
 
     def rowCount(self, /, parent: QModelIndex = QModelIndex()):
-        return 0 if parent.isValid() else max(map(len, self.items))
+        return 0 if parent.isValid() \
+            else max(map(len, self.items)) if self.multi_column_mode \
+            else sum(map(len, self.items))
 
     def columnCount(self, parent: QModelIndex = QModelIndex(), /):
         # Notes for Multi-column mode: Return len(self.items)*2
-        return 0 if parent.isValid() else len(self.items)*2
+        return 0 if parent.isValid() \
+            else len(self.items)*2 if self.multi_column_mode \
+            else 2
 
     def data(self, index: QModelIndex, /, role: ItemDataRole = ItemDataRole.DisplayRole):
         if index.column() & 1:  # Odd columns are empty, and used to carry the Scryfall search button
             return None
+        column, row = self._find_position_in_model_data(index)
         try:
-            return self.items[index.column()//2][index.row()][role]
+            return self.items[column][row][role]
         except (KeyError, IndexError):
             return None
+
+    def _find_position_in_model_data(self, index: QModelIndex) -> tuple[int | bool, int]:
+        first_list_length = len(self.items[0])
+        row = index.row()
+        column = index.column() // 2 if self.multi_column_mode else 2 * (row > first_list_length)
+        if self.multi_column_mode and row >= first_list_length:
+            row -= first_list_length
+        return column, row
 
     def setData(self, index: QModelIndex, value, /, role: ItemDataRole = ItemDataRole.DisplayRole):
         if role == CheckStateRole:
             value = CheckState(value)
         logger.debug(f"setData({index=}, {value=}, {role=})")
-        self.items[index.column()//2][index.row()][role] = value
+        column, row = self._find_position_in_model_data(index)
+        self.items[column][row][role] = value
         self.dataChanged.emit(index, index, [role])
         return True
 
@@ -275,9 +288,7 @@ class PrintingFilterModel(QAbstractTableModel):
             for row, item in enumerate(self.items[column//2]):
                 current_state: CheckState = item[CheckStateRole]
                 if current_state is not None and current_state != section.get_check_state(item[SettingsKeyRole]):
-                    index = self.index(row, column)
-                    item[ItemDataRole.BackgroundRole] = highlight_color
-                    self.dataChanged.emit(index, index, [ItemDataRole.BackgroundRole])
+                    self.setData(self.index(row, column), highlight_color, ItemDataRole.BackgroundRole)
 
     def clear_highlight(self):
         for item in itertools.chain.from_iterable(self.items):
@@ -288,4 +299,21 @@ class PrintingFilterModel(QAbstractTableModel):
                 self.index(len(self.items[column//2])-1, column),
                 [ItemDataRole.BackgroundRole]
             )
-    
+
+    def to_single_column_mode(self):
+        first = len(self.items[0])
+        last = first + len(self.items[1])
+        self.beginInsertRows(QModelIndex(), first, last)
+        self.beginRemoveColumns(QModelIndex(),2, 3)
+        self.multi_column_mode = False
+        self.endRemoveColumns()
+        self.endInsertRows()
+
+    def to_dual_column_mode(self):
+        first = len(self.items[0])
+        last = first + len(self.items[1])
+        self.beginInsertColumns(QModelIndex(), 2, 3)
+        self.beginRemoveRows(QModelIndex(), first, last)
+        self.multi_column_mode = True
+        self.endRemoveRows()
+        self.endInsertColumns()
