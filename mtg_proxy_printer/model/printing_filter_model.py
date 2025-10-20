@@ -14,12 +14,13 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import typing
+
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication
 
 from mtg_proxy_printer.units_and_sizes import ConfigParser
 from mtg_proxy_printer.logger import get_logger
-
 
 logger = get_logger(__name__)
 del get_logger
@@ -38,10 +39,10 @@ SettingItemFlags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable |
 ModelRow = dict[ItemDataRole, typing.Any]
 ModelRows = list[ModelRow]
 
-def _create_header_item(ui_text: str, tooltip: str = None) -> ModelRow:
+def _create_header_item(header_font: QFont, ui_text: str, tooltip: str = None) -> ModelRow:
     """Create a centered, text-only header item for the PrintingFilterModel"""
     return ModelRow({DisplayRole: ui_text, ToolTipRole: tooltip, CheckStateRole: None, SettingsKeyRole: "",
-                     ItemDataRole.TextAlignmentRole: Qt.AlignmentFlag.AlignCenter})
+                     ItemDataRole.TextAlignmentRole: Qt.AlignmentFlag.AlignCenter, ItemDataRole.FontRole: header_font})
 
 def _create_format_item(ui_text: str, tooltip: str, internal_format_key: str) -> ModelRow:
     """Creates a PrintingFilterModel row item for MTG format ban filters"""
@@ -63,12 +64,17 @@ class PrintingFilterModel(QAbstractTableModel):
     The filter entries store an on/off state editable via the ItemDataRole.CheckStateRole, which makes the UI show a 
     checkbox that can be toggled via clicking it.
     Changed-item highlighting uses the BackgroundRole.
+    The settings key used to persist the value is stored via the SettingsKeyRole.
+    The Scryfall query showing the affected printings is stored via the ScryfallQueryRole.
     """
     def __init__(self, parent = None):
         super().__init__(parent)
         format_ban_tooltip = self.tr("Hide cards banned in the {format} format", "Tooltip text")
+        # TODO: This hard-codes the font. A system-wide style change should update the font with the new default
+        header_font = QApplication.font()
+        header_font.setBold(True)
         self.items: ModelRows = [
-            _create_header_item(
+            _create_header_item(header_font,
                 self.tr("General filters", "Display text. Printing filter section header"),
                 self.tr("Hide printings based on general card properties", "Tooltip text")),
             _create_item(
@@ -114,7 +120,7 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Tooltip text"),
                 "hide-reversible-cards", "is:reversible"),
 
-            _create_header_item(
+            _create_header_item(header_font,
                 self.tr("Border style", "Display text. Printing filter section header")),
             _create_item(
                 self.tr("Hide white-bordered cards",
@@ -145,7 +151,7 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Tooltip text"),
                 "hide-extended-art", "is:extended"),
 
-            _create_header_item(
+            _create_header_item(header_font,
                 self.tr("Non-traditional cards", "Display text. Printing filter section header")),
             _create_item(
                 self.tr("Hide oversized cards",
@@ -169,7 +175,7 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Tooltip text"),
                 "hide-art-series-cards", "layout:art-series"),
 
-            _create_header_item(
+            _create_header_item(header_font,
                 self.tr("Format bans: Hide cards banned in specific formats",
                         "Display text. Section header above MTG format ban filters")),
             _create_format_item(
@@ -263,7 +269,6 @@ class PrintingFilterModel(QAbstractTableModel):
         logger.debug("Done.")
 
     def highlight_differing_settings(self, settings: ConfigParser):
-
         section = settings["card-filter"]
         palette = QApplication.palette()
         highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
