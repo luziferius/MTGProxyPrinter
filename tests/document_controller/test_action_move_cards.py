@@ -640,21 +640,26 @@ def generate_test_cases_for_card_moves_between_pages():
     # Origin card order: ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
 
     # Move onto another existing page
-    yield 0, [0], 1, None, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0], 1, 3, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0], 1, 0, ["A2,A3", "A1,B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0, 2], 1, None, ["A2", "B1,B2,B3,A1,A3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [1], 1, None, ["A1,A3", "B1,B2,B3,A2", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0, 1, 2], 1, None, ["", "B1,B2,B3,A1,A2,A3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0, 1, 2], 1, 1, ["", "B1,A1,A2,A3,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 1, [0], 2, None, ["A1,A2,A3", "B2,B3", "B1", "D1,D2,D3,D4,D5,D6"]
-    yield 1, [0], 3, None, ["A1,A2,A3", "B2,B3", "", "D1,D2,D3,D4,D5,D6,B1"]
-    yield 3, [0, 2], 0, None, ["A1,A2,A3,D1,D3", "B1,B2,B3", "", "D2,D4,D5,D6"]
+    yield 0, [0], 1, None, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]  # 0
+    yield 0, [0], 1, 3, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]  # 1
+    yield 0, [0], 1, 0, ["A2,A3", "A1,B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 2
+    yield 0, [0, 2], 1, None, ["A2", "B1,B2,B3,A1,A3", "", "D1,D2,D3,D4,D5,D6"]  # 3
+    yield 0, [1], 1, None, ["A1,A3", "B1,B2,B3,A2", "", "D1,D2,D3,D4,D5,D6"]  # 4
+    yield 0, [0, 1, 2], 1, None, ["", "B1,B2,B3,A1,A2,A3", "", "D1,D2,D3,D4,D5,D6"]  # 5
+    yield 0, [0, 1, 2], 1, 1, ["", "B1,A1,A2,A3,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 6
+    yield 1, [0], 2, None, ["A1,A2,A3", "B2,B3", "B1", "D1,D2,D3,D4,D5,D6"]  # 7
+    yield 1, [0], 3, None, ["A1,A2,A3", "B2,B3", "", "D1,D2,D3,D4,D5,D6,B1"]  # 8
+    yield 3, [0, 2], 0, None, ["A1,A2,A3,D1,D3", "B1,B2,B3", "", "D2,D4,D5,D6"]  # 9
     # Move to new page before target_page
-    yield 3, [0, 2, 3, 5], 0, -1, ["D1,D3,D4,D6", "A1,A2,A3", "B1,B2,B3", "", "D2,D5"]
-    yield 3, [0, 2, 3, 5], 1, -1, ["A1,A2,A3", "D1,D3,D4,D6", "B1,B2,B3", "", "D2,D5"]
+    yield 3, [0, 2, 3, 5], 0, -1, ["D1,D3,D4,D6", "A1,A2,A3", "B1,B2,B3", "", "D2,D5"]  # 10
+    yield 3, [0, 2, 3, 5], 1, -1, ["A1,A2,A3", "D1,D3,D4,D6", "B1,B2,B3", "", "D2,D5"]  # 11
     # Move to new page at document end
-    yield 3, [0, 2, 3, 5], 4, -1, ["A1,A2,A3", "B1,B2,B3", "", "D2,D5", "D1,D3,D4,D6"]
+    yield 3, [0, 2, 3, 5], 4, -1, ["A1,A2,A3", "B1,B2,B3", "", "D2,D5", "D1,D3,D4,D6"]  # 12
+    # Move to new page before current page
+
+    yield 1, [0], 0, -1, ["B1", "A1,A2,A3", "B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 13
+    yield 1, [0], 1, -1, ["A1,A2,A3", "B1", "B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 14
+    yield 0, [0], 0, -1, ["A1", "A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 15
 
 
 @pytest.mark.parametrize(
