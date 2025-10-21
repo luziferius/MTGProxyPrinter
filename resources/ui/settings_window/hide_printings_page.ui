@@ -26,7 +26,7 @@
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
-       <verstretch>5</verstretch>
+       <verstretch>10</verstretch>
       </sizepolicy>
      </property>
      <property name="editTriggers">
