@@ -71,11 +71,14 @@ class PrintingFilterModel(QAbstractTableModel):
     """
     def __init__(self, parent = None):
         super().__init__(parent)
+        self.items = self._create_items()
+
+    def _create_items(self) -> ModelRows:
         format_ban_tooltip = self.tr("Hide cards banned in the {format} format", "Tooltip text")
         # TODO: This hard-codes the font. A system-wide style change should update the font with the new default
         header_font = QApplication.font()
         header_font.setBold(True)
-        self.items: ModelRows = [
+        return [
             _create_header_item(header_font,
                 self.tr("General filters", "Display text. Printing filter section header"),
                 self.tr("Hide printings based on general card properties", "Tooltip text")),
@@ -220,7 +223,6 @@ class PrintingFilterModel(QAbstractTableModel):
                 self.tr("Vintage", "Display text. Magic format name. Translations (if one exists) "
                                  "should probably also include the English name like {translated name}(<english name>)"),
                 format_ban_tooltip, "vintage"),
-
         ]
 
     def rowCount(self, /, parent: QModelIndex = QModelIndex()):
@@ -230,17 +232,11 @@ class PrintingFilterModel(QAbstractTableModel):
         return 0 if parent.isValid() else 2
 
     def data(self, index: QModelIndex, /, role: ItemDataRole = DisplayRole):
-        if index.column():
-            return None
-        try:
-            return self.items[index.row()][role]
-        except KeyError:
-            return None
+        return None if index.column() else self.items[index.row()].get(role, None)
 
     def setData(self, index: QModelIndex, value, /, role: ItemDataRole = DisplayRole):
         if role == CheckStateRole:
             value = CheckState(value)
-        logger.debug(f"setData({index=}, {value=}, {role=})")
         item = self.items[index.row()]
         if item[role] != value:
             item[role] = value
@@ -276,7 +272,7 @@ class PrintingFilterModel(QAbstractTableModel):
         section = settings["card-filter"]
         palette = QApplication.palette()
         highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
-        highlight_color.setAlpha(64)
+        highlight_color.setAlpha(64)  # 25% opacity, same as the highlight_widget() implementation
         for row, item in enumerate(self.items):
             current_state: CheckState = item[CheckStateRole]
             if current_state is not None and current_state != section.get_check_state(item[SettingsKeyRole]):
