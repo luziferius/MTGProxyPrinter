@@ -27,12 +27,14 @@ del get_logger
 
 CheckState = Qt.CheckState
 ItemDataRole = Qt.ItemDataRole
+BackgroundRole = ItemDataRole.BackgroundRole
 DisplayRole = ItemDataRole.DisplayRole
 ToolTipRole = ItemDataRole.ToolTipRole
 SettingsKeyRole = ItemDataRole.UserRole
+CheckStateRole = ItemDataRole.CheckStateRole
 
 ScryfallQueryRole = ItemDataRole(SettingsKeyRole.value + 1)
-CheckStateRole = ItemDataRole.CheckStateRole
+EmptyCellFlags = Qt.ItemFlag.ItemNeverHasChildren
 HeaderItemFlags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemNeverHasChildren
 SettingItemFlags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemNeverHasChildren
 
@@ -227,7 +229,7 @@ class PrintingFilterModel(QAbstractTableModel):
     def columnCount(self, parent: QModelIndex = QModelIndex(), /):
         return 0 if parent.isValid() else 2
 
-    def data(self, index: QModelIndex, /, role: ItemDataRole = ItemDataRole.DisplayRole):
+    def data(self, index: QModelIndex, /, role: ItemDataRole = DisplayRole):
         if index.column():
             return None
         try:
@@ -235,16 +237,18 @@ class PrintingFilterModel(QAbstractTableModel):
         except KeyError:
             return None
 
-    def setData(self, index: QModelIndex, value, /, role: ItemDataRole = ItemDataRole.DisplayRole):
+    def setData(self, index: QModelIndex, value, /, role: ItemDataRole = DisplayRole):
         if role == CheckStateRole:
             value = CheckState(value)
         logger.debug(f"setData({index=}, {value=}, {role=})")
-        self.items[index.row()][role] = value
-        self.dataChanged.emit(index, index, [role])
-        return True
+        item = self.items[index.row()]
+        if item[role] != value:
+            item[role] = value
+            return True
+        return False
 
     def flags(self, index: QModelIndex, /):
-        return Qt.ItemFlag.ItemNeverHasChildren if index.column() \
+        return EmptyCellFlags if index.column() \
             else SettingItemFlags if index.data(SettingsKeyRole) \
             else HeaderItemFlags
 
@@ -277,14 +281,14 @@ class PrintingFilterModel(QAbstractTableModel):
             current_state: CheckState = item[CheckStateRole]
             if current_state is not None and current_state != section.get_check_state(item[SettingsKeyRole]):
                 index = self.index(row, 0)
-                item[ItemDataRole.BackgroundRole] = highlight_color
-                self.dataChanged.emit(index, index, [ItemDataRole.BackgroundRole])
+                item[BackgroundRole] = highlight_color
+                self.dataChanged.emit(index, index, [BackgroundRole])
 
     def clear_highlight(self):
         for item in self.items:
-            item[ItemDataRole.BackgroundRole] = None
+            item[BackgroundRole] = None
         self.dataChanged.emit(
             self.index(0, 0),
             self.index(self.rowCount()-1, 0),
-            [ItemDataRole.BackgroundRole]
+            [BackgroundRole]
         )
