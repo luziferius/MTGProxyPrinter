@@ -18,7 +18,6 @@ from collections.abc import Generator
 import enum
 import functools
 import itertools
-import typing
 
 from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, QPoint, Signal, QObject, Slot, \
     QPersistentModelIndex, QModelIndex
@@ -238,7 +237,7 @@ class PageScene(QGraphicsScene):
 
     def _update_page_number_text(self):
         if self.page_number_text not in self.text_items:
-            return
+            return  # Rendering page numbers disabled, so skipping the update
         logger.debug("Updating page number text")
         page = self.selected_page.row() + 1
         total_pages = self.document.rowCount()
