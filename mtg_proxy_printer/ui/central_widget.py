@@ -57,8 +57,13 @@ class CentralWidget(QWidget):
         super().__init__(parent)
         ui_class = get_configured_central_widget_layout_class()
         logger.debug(f"Using central widget class {ui_class.__name__}")
-        self.ui = ui_class()
-        self.ui.setupUi(self)
+        self.ui = ui = ui_class()
+        ui.setupUi(self)
+        if isinstance(ui, Ui_ColumnarCentralWidget):
+            ui.central_widget_splitter.setStretchFactor(0, 2)
+            ui.central_widget_splitter.setStretchFactor(1, 5)
+            ui.central_widget_splitter.setStretchFactor(2, 9)
+            ui.central_widget_splitter.setStretchFactor(3, 9)
         self.document: Document = None
         self._currently_edited_page: int = 0
         logger.info(f"Created {self.__class__.__name__} instance.")
