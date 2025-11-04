@@ -6,157 +6,172 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>887</width>
-    <height>257</height>
+    <width>992</width>
+    <height>517</height>
    </rect>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
-   <property name="bottomMargin">
-    <number>0</number>
-   </property>
-   <item row="7" column="0">
-    <widget class="QPushButton" name="page_move_up">
-     <property name="enabled">
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <widget class="QSplitter" name="central_widget_splitter">
+     <property name="orientation">
+      <enum>Qt::Orientation::Horizontal</enum>
+     </property>
+     <property name="handleWidth">
+      <number>2</number>
+     </property>
+     <property name="childrenCollapsible">
       <bool>false</bool>
      </property>
-     <property name="text">
-      <string>Move up</string>
-     </property>
-     <property name="icon">
-      <iconset theme="arrow-up"/>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="3" colspan="2">
-    <widget class="QLabel" name="page_view_label">
-     <property name="text">
-      <string>Current page:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="2" rowspan="4">
-    <widget class="VerticalAddCardWidget" name="add_card_widget" native="true">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>5</horstretch>
-       <verstretch>1</verstretch>
-      </sizepolicy>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="4" rowspan="4">
-    <widget class="PageRenderer" name="page_renderer">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>9</horstretch>
-       <verstretch>1</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="acceptDrops">
-      <bool>false</bool>
-     </property>
-     <property name="renderHints">
-      <set>QPainter::RenderHint::Antialiasing</set>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="3">
-    <widget class="QPushButton" name="delete_selected_images_button">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="text">
-      <string>Remove selected</string>
-     </property>
-     <property name="icon">
-      <iconset theme="edit-delete"/>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="2">
-    <widget class="QLabel" name="add_card_widget_label">
-     <property name="text">
-      <string>Add new cards:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="3" rowspan="3">
-    <widget class="PageCardTableView" name="page_card_table_view">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>9</horstretch>
-       <verstretch>1</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="contextMenuPolicy">
-      <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
-     </property>
-     <property name="lineWidth">
-      <number>0</number>
-     </property>
-     <property name="dragDropMode">
-      <enum>QAbstractItemView::DragDropMode::DragDrop</enum>
-     </property>
-     <property name="defaultDropAction">
-      <enum>Qt::DropAction::MoveAction</enum>
-     </property>
-     <property name="alternatingRowColors">
-      <bool>true</bool>
-     </property>
-     <property name="selectionBehavior">
-      <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
-     </property>
-     <attribute name="verticalHeaderVisible">
-      <bool>false</bool>
-     </attribute>
-    </widget>
-   </item>
-   <item row="7" column="1">
-    <widget class="QPushButton" name="page_move_down">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="text">
-      <string>Move down</string>
-     </property>
-     <property name="icon">
-      <iconset theme="arrow-down"/>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0" rowspan="3" colspan="2">
-    <widget class="QListView" name="document_view">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>2</horstretch>
-       <verstretch>1</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="dragDropOverwriteMode">
-      <bool>false</bool>
-     </property>
-     <property name="dragDropMode">
-      <enum>QAbstractItemView::DragDropMode::DragDrop</enum>
-     </property>
-     <property name="defaultDropAction">
-      <enum>Qt::DropAction::MoveAction</enum>
-     </property>
-     <property name="alternatingRowColors">
-      <bool>true</bool>
-     </property>
-     <property name="selectionMode">
-      <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
-     </property>
-     <property name="selectionBehavior">
-      <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0" colspan="2">
-    <widget class="QLabel" name="document_view_label">
-     <property name="text">
-      <string>All pages:</string>
-     </property>
+     <widget class="QWidget" name="gridLayoutWidget">
+      <layout class="QGridLayout" name="document_view_layout">
+       <item row="2" column="0" colspan="2">
+        <widget class="QListView" name="document_view">
+         <property name="dragDropOverwriteMode">
+          <bool>false</bool>
+         </property>
+         <property name="dragDropMode">
+          <enum>QAbstractItemView::DragDropMode::DragDrop</enum>
+         </property>
+         <property name="defaultDropAction">
+          <enum>Qt::DropAction::MoveAction</enum>
+         </property>
+         <property name="alternatingRowColors">
+          <bool>true</bool>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SelectionMode::SingleSelection</enum>
+         </property>
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QPushButton" name="page_move_up">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Move up</string>
+         </property>
+         <property name="icon">
+          <iconset theme="arrow-up"/>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QPushButton" name="page_move_down">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Move down</string>
+         </property>
+         <property name="icon">
+          <iconset theme="arrow-down"/>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0" colspan="2">
+        <widget class="QLabel" name="document_view_label">
+         <property name="text">
+          <string>All pages:</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="verticalLayoutWidget_2">
+      <layout class="QVBoxLayout" name="add_card_layout">
+       <item>
+        <widget class="QLabel" name="add_card_widget_label">
+         <property name="text">
+          <string>Add new cards:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="VerticalAddCardWidget" name="add_card_widget" native="true">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="verticalLayoutWidget_3">
+      <layout class="QVBoxLayout" name="page_content_view_layout">
+       <item>
+        <widget class="QLabel" name="page_view_label">
+         <property name="text">
+          <string>Current page:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="PageCardTableView" name="page_card_table_view">
+         <property name="contextMenuPolicy">
+          <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+         </property>
+         <property name="lineWidth">
+          <number>0</number>
+         </property>
+         <property name="dragDropMode">
+          <enum>QAbstractItemView::DragDropMode::DragDrop</enum>
+         </property>
+         <property name="defaultDropAction">
+          <enum>Qt::DropAction::MoveAction</enum>
+         </property>
+         <property name="alternatingRowColors">
+          <bool>true</bool>
+         </property>
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+         </property>
+         <attribute name="verticalHeaderVisible">
+          <bool>false</bool>
+         </attribute>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="delete_selected_images_button">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Remove selected</string>
+         </property>
+         <property name="icon">
+          <iconset theme="edit-delete"/>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="verticalLayoutWidget">
+      <layout class="QVBoxLayout" name="page_renderer_layout">
+       <item>
+        <widget class="QLabel" name="page_renderer_label">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="PageRenderer" name="page_renderer">
+         <property name="acceptDrops">
+          <bool>false</bool>
+         </property>
+         <property name="renderHints">
+          <set>QPainter::RenderHint::Antialiasing</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
   </layout>

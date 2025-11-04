@@ -2,6 +2,10 @@
 
 # Next version (in development)
 
+## Changed features
+
+- The main window column widths are now adjustable, by dragging from the border between the elements.
+
 ## Fixed issues
 
 - Handle invalid internal card databases at application start, instead of crashing.
