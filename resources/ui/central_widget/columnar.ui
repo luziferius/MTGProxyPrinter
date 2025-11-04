@@ -26,12 +26,6 @@
       <layout class="QGridLayout" name="document_view_layout">
        <item row="2" column="0" colspan="2">
         <widget class="QListView" name="document_view">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-           <horstretch>2</horstretch>
-           <verstretch>1</verstretch>
-          </sizepolicy>
-         </property>
          <property name="dragDropOverwriteMode">
           <bool>false</bool>
          </property>
@@ -99,9 +93,9 @@
        <item>
         <widget class="VerticalAddCardWidget" name="add_card_widget" native="true">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-           <horstretch>5</horstretch>
-           <verstretch>1</verstretch>
+          <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
           </sizepolicy>
          </property>
         </widget>
@@ -119,12 +113,6 @@
        </item>
        <item>
         <widget class="PageCardTableView" name="page_card_table_view">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-           <horstretch>9</horstretch>
-           <verstretch>1</verstretch>
-          </sizepolicy>
-         </property>
          <property name="contextMenuPolicy">
           <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
          </property>
@@ -174,12 +162,6 @@
        </item>
        <item>
         <widget class="PageRenderer" name="page_renderer">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-           <horstretch>9</horstretch>
-           <verstretch>1</verstretch>
-          </sizepolicy>
-         </property>
          <property name="acceptDrops">
           <bool>false</bool>
          </property>
