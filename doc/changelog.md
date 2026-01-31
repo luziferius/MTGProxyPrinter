@@ -10,7 +10,9 @@
 
 - Handle invalid internal card databases at application start, instead of crashing.
 - Fixed issues, including a potential crash, when moving cards using drag&drop and dropping them in the space between
-  their current page and the previous page. This now correctly inserts a page and moves the cards there in all cases.
+  their current page and the previous page. This now correctly inserts a new page at the indicated drop position
+  and moves the cards there in all cases.
+- The custom paper size settings widgets are now correctly disabled, if a predefined paper size is used.
 
 # Version 0.35.0 (2025-10-11)  <a name="v0_35_0"></a>
 

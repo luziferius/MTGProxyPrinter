@@ -16,7 +16,6 @@
 
 from unittest.mock import patch
 
-from pint import Quantity, Unit
 from PySide6.QtWidgets import QDoubleSpinBox, QCheckBox, QLineEdit
 
 from hamcrest import *
@@ -38,6 +37,7 @@ def widget(qtbot: QtBot) -> PageConfigWidget:
     widget = PageConfigWidget()
     qtbot.addWidget(widget)
     return widget
+
 
 @pytest.fixture()
 def default_settings() -> PageLayoutSettings:
@@ -135,7 +135,6 @@ ZeroMarginsSettings = {
     "row-spacing": "0 mm",
     "column-spacing": "0 mm",
 }
-
 
 
 @pytest.mark.parametrize("value", [-1*mm, 0*mm, 1*mm, 200*mm, 1000*mm])
@@ -293,3 +292,19 @@ def test_page_capacity_updates_correctly(widget: PageConfigWidget, default_setti
     row_spacing.setValue(11)
     assert_that(page_layout.compute_page_card_capacity(), is_(9))
     assert_that(page_capacity, has_getter("text", contains_string("9")))
+
+
+def test_custom_page_size_widgets_disabled_with_preset_paper_size(
+        widget: PageConfigWidget, default_settings: PageLayoutSettings):
+    widget.load_from_page_layout(default_settings)
+    assert_that(widget.ui.custom_page_width.isEnabled(), is_(False))
+    assert_that(widget.ui.custom_page_height.isEnabled(), is_(False))
+    assert_that(widget.ui.flip_page_dimensions.isEnabled(), is_(False))
+
+
+def test_custom_page_size_widgets_disabled_with_custom_paper_size(
+        widget: PageConfigWidget, custom_a4_page_layout: PageLayoutSettings):
+    widget.load_from_page_layout(custom_a4_page_layout)
+    assert_that(widget.ui.custom_page_width.isEnabled(), is_(True))
+    assert_that(widget.ui.custom_page_height.isEnabled(), is_(True))
+    assert_that(widget.ui.flip_page_dimensions.isEnabled(), is_(True))

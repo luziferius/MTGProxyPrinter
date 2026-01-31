@@ -18,7 +18,7 @@ from functools import partial
 import math
 from typing import Any, NamedTuple
 
-from PySide6.QtCore import Slot, Qt, Signal
+from PySide6.QtCore import Slot, Qt, Signal, QTimer
 from PySide6.QtGui import QPageSize, QPageLayout, QColor
 from PySide6.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QColorDialog, \
     QLabel, QSlider, QPushButton, QComboBox
@@ -336,6 +336,8 @@ class PageConfigWidget(QGroupBox):
         self._load_paper_orientation(other.paper_orientation)
         self._load_cut_marker_style(other.cut_marker_style)
         self._load_print_registration_marks_style(other.print_registration_marks_style)
+        # Ensure that the custom paper size editor widgets are only active, iff the Custom paper size is selected
+        self.ui.paper_size.currentIndexChanged.emit(self.ui.paper_size.currentIndex())
         self.validate_paper_size_settings()
         self.on_page_layout_changed()
         self.page_layout_changed.emit(self.page_layout)
