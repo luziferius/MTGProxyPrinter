@@ -241,7 +241,7 @@ DEFAULT_SETTINGS["gui"] = {
 }
 VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "columnar", "tabbed"}
 VALID_LANGUAGES = {
-    "", "de", "en_US", "fr",
+    "", "de", "es", "en_US", "fr",
 }
 DEFAULT_SETTINGS["debug"] = {
     "cutelog-integration": "False",

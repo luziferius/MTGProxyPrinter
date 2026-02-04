@@ -138,7 +138,7 @@ def download_new_translations(args: Namespace):
 def read_translation_progress(file):
     tree = ElementTree.parse(file)
     all_translations = sum(1 for _ in tree.iterfind(".//translation"))
-    finished = all_translations -  sum(1 for _ in tree.iterfind(".//translation[@type='unfinished']"))
+    finished = all_translations - sum(1 for _ in tree.iterfind(".//translation[@type='unfinished']"))
     return math.floor(100 * finished / all_translations)
 
 

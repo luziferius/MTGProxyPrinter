@@ -94,7 +94,7 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
   <context>
     <name>ActionAddCard</name>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/document_controller/card_actions.py" line="165"/>
+      <location filename="../../mtg_proxy_printer/document_controller/card_actions.py" line="163"/>
       <source>Add {count} × {card_display_string} to page {target}</source>
       <comment>Undo/redo tooltip text. Plural form refers to {target}, not {count}. {target} can be multiple ranges of multiple pages each</comment>
       <translation>
@@ -106,7 +106,7 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
   <context>
     <name>ActionCompactDocument</name>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/document_controller/compact_document.py" line="113"/>
+      <location filename="../../mtg_proxy_printer/document_controller/compact_document.py" line="112"/>
       <source>Compact document, removing %n page(s)</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>
@@ -118,7 +118,7 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
   <context>
     <name>ActionEditCustomCard</name>
     <message>
-      <location filename="../../mtg_proxy_printer/document_controller/edit_custom_card.py" line="90"/>
+      <location filename="../../mtg_proxy_printer/document_controller/edit_custom_card.py" line="88"/>
       <source>Edit custom card, set {column_header_text} to {new_value}</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>Inoffizielle Karte bearbeiten, {column_header_text} auf {new_value} setzen</translation>
@@ -127,7 +127,7 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
   <context>
     <name>ActionEditDocumentSettings</name>
     <message>
-      <location filename="../../mtg_proxy_printer/document_controller/edit_document_settings.py" line="139"/>
+      <location filename="../../mtg_proxy_printer/document_controller/edit_document_settings.py" line="137"/>
       <source>Update document settings</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>Dokumenteneinstellungen ändern</translation>
@@ -136,7 +136,7 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
   <context>
     <name>ActionImportDeckList</name>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/document_controller/import_deck_list.py" line="82"/>
+      <location filename="../../mtg_proxy_printer/document_controller/import_deck_list.py" line="81"/>
       <source>Replace document with imported deck list containing %n card(s)</source>
       <comment>Undo/redo tooltip text. Option to delete the current document enabled.</comment>
       <translation>
@@ -145,7 +145,7 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
       </translation>
     </message>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/document_controller/import_deck_list.py" line="86"/>
+      <location filename="../../mtg_proxy_printer/document_controller/import_deck_list.py" line="85"/>
       <source>Import a deck list containing %n card(s)</source>
       <comment>Undo/redo tooltip text. Option to delete the current document disabled.</comment>
       <translation>
@@ -157,7 +157,7 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
   <context>
     <name>ActionLoadDocument</name>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/document_controller/load_document.py" line="78"/>
+      <location filename="../../mtg_proxy_printer/document_controller/load_document.py" line="77"/>
       <source>with %n card(s) total</source>
       <comment>Part of the undo/redo tooltip text. Will be inserted as {cards_total}</comment>
       <translation>
@@ -166,7 +166,7 @@ Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
       </translation>
     </message>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/document_controller/load_document.py" line="82"/>
+      <location filename="../../mtg_proxy_printer/document_controller/load_document.py" line="81"/>
       <source>Load document from &apos;{save_path}&apos;,
 containing %n page(s) {cards_total}</source>
       <comment>Undo/redo tooltip text.</comment>
@@ -181,7 +181,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionMoveCardsBetweenPages</name>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/document_controller/move_cards.py" line="144"/>
+      <location filename="../../mtg_proxy_printer/document_controller/move_cards.py" line="143"/>
       <source>Move %n card(s) from page {source_page} to {target_page}</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>
@@ -193,7 +193,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionMoveCardsWithinPage</name>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/document_controller/move_cards.py" line="260"/>
+      <location filename="../../mtg_proxy_printer/document_controller/move_cards.py" line="259"/>
       <source>Reorder %n card(s) on page {page}</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>
@@ -205,7 +205,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionMovePage</name>
     <message>
-      <location filename="../../mtg_proxy_printer/document_controller/move_page.py" line="89"/>
+      <location filename="../../mtg_proxy_printer/document_controller/move_page.py" line="87"/>
       <source>Move page {source_page} to position {target_page}</source>
       <comment>Both parameters are page numbers, like in &apos;Move page 3 to position 7&apos;</comment>
       <translation>Verschiebe Seite {source_page} nach {target_page}</translation>
@@ -214,7 +214,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionNewDocument</name>
     <message>
-      <location filename="../../mtg_proxy_printer/document_controller/new_document.py" line="73"/>
+      <location filename="../../mtg_proxy_printer/document_controller/new_document.py" line="72"/>
       <source>Create new document</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>Neues Dokument erstellen</translation>
@@ -223,7 +223,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionNewPage</name>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/document_controller/page_actions.py" line="88"/>
+      <location filename="../../mtg_proxy_printer/document_controller/page_actions.py" line="87"/>
       <source>Add page(s) {pages}</source>
       <comment>Undo/redo tooltip text. Translations should drop the %n placeholder</comment>
       <translation>
@@ -235,7 +235,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionRemoveCards</name>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/document_controller/card_actions.py" line="223"/>
+      <location filename="../../mtg_proxy_printer/document_controller/card_actions.py" line="222"/>
       <source>Remove %n card(s) from page {page_number}</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>
@@ -247,7 +247,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionRemovePage</name>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/document_controller/page_actions.py" line="189"/>
+      <location filename="../../mtg_proxy_printer/document_controller/page_actions.py" line="188"/>
       <source>%n card(s) total</source>
       <comment>Undo/redo tooltip text. The total number of cards removed. Used as {formatted_card_count}</comment>
       <translation>
@@ -256,7 +256,7 @@ mit %n Seiten {cards_total}</numerusform>
       </translation>
     </message>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/document_controller/page_actions.py" line="195"/>
+      <location filename="../../mtg_proxy_printer/document_controller/page_actions.py" line="194"/>
       <source>Remove page(s) {formatted_pages} containing {formatted_card_count}</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>
@@ -268,7 +268,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionReplaceCard</name>
     <message>
-      <location filename="../../mtg_proxy_printer/document_controller/replace_card.py" line="103"/>
+      <location filename="../../mtg_proxy_printer/document_controller/replace_card.py" line="101"/>
       <source>Replace card {old_card} on page {page_number} with {new_card}</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>Ersetze {old_card} auf Seite {page_number} durch {new_card}</translation>
@@ -277,7 +277,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionSaveDocument</name>
     <message>
-      <location filename="../../mtg_proxy_printer/document_controller/save_document.py" line="175"/>
+      <location filename="../../mtg_proxy_printer/document_controller/save_document.py" line="174"/>
       <source>Save document to &apos;{save_file_path}&apos;.</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>Dokument unter &apos;{save_file_path}&apos; speichern.</translation>
@@ -286,7 +286,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ActionShuffleDocument</name>
     <message>
-      <location filename="../../mtg_proxy_printer/document_controller/shuffle_document.py" line="99"/>
+      <location filename="../../mtg_proxy_printer/document_controller/shuffle_document.py" line="96"/>
       <source>Shuffle document</source>
       <comment>Undo/redo tooltip text</comment>
       <translation>Dokument mischen</translation>
@@ -295,7 +295,7 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>ApiStreamTask</name>
     <message>
-      <location filename="../../mtg_proxy_printer/async_tasks/card_info_downloader.py" line="332"/>
+      <location filename="../../mtg_proxy_printer/async_tasks/card_info_downloader.py" line="331"/>
       <source>Requesting the number of available cards on Scryfall failed: 
 {error}</source>
       <comment>Error message shown in a message box</comment>
@@ -403,13 +403,13 @@ mit %n Seiten {cards_total}</numerusform>
       <translation>Vorderseite</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/model/card_list.py" line="137"/>
+      <location filename="../../mtg_proxy_printer/model/card_list.py" line="136"/>
       <source>Back</source>
       <comment>Magic card side</comment>
       <translation>Rückseite</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/model/card_list.py" line="145"/>
+      <location filename="../../mtg_proxy_printer/model/card_list.py" line="141"/>
       <source>Beware: Potentially oversized card!
 This card may not fit in your deck.</source>
       <comment>Tooltip shown on cards that, according to API results, have double the physical size. The actual image may still have regular size.</comment>
@@ -417,7 +417,7 @@ This card may not fit in your deck.</source>
 Diese Karte könnte nicht in Ihr Deck passen.</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/model/card_list.py" line="332"/>
+      <location filename="../../mtg_proxy_printer/model/card_list.py" line="331"/>
       <source>Double-click on entries to
 switch the selected printing.</source>
       <comment>Tooltip text</comment>
@@ -443,32 +443,32 @@ zu wechseln.</translation>
   <context>
     <name>ColumnarCentralWidget</name>
     <message>
-      <location filename="../ui/central_widget/columnar.ui" line="23"/>
+      <location filename="../ui/central_widget/columnar.ui" line="55"/>
       <source>Move up</source>
       <translation>Schiebe hoch</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/columnar.ui" line="33"/>
+      <location filename="../ui/central_widget/columnar.ui" line="110"/>
       <source>Current page:</source>
       <translation>Aktuelle Seite:</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/columnar.ui" line="69"/>
+      <location filename="../ui/central_widget/columnar.ui" line="145"/>
       <source>Remove selected</source>
       <translation>Ausgewählte entfernen</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/columnar.ui" line="79"/>
+      <location filename="../ui/central_widget/columnar.ui" line="89"/>
       <source>Add new cards:</source>
       <translation>Karten hinzufügen:</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/columnar.ui" line="120"/>
+      <location filename="../ui/central_widget/columnar.ui" line="68"/>
       <source>Move down</source>
       <translation>Schiebe runter</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/columnar.ui" line="158"/>
+      <location filename="../ui/central_widget/columnar.ui" line="78"/>
       <source>All pages:</source>
       <translation>Alle Seiten:</translation>
     </message>
@@ -496,7 +496,7 @@ zu wechseln.</translation>
       <translation>Bilder laden</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/custom_card_import_dialog.py" line="101"/>
+      <location filename="../../mtg_proxy_printer/ui/custom_card_import_dialog.py" line="100"/>
       <source>Import custom cards</source>
       <comment>File selection dialog window title</comment>
       <translation>Inoffizielle Karten importieren</translation>
@@ -517,7 +517,7 @@ zu wechseln.</translation>
       <translation>Kartendaten von Scryfall aktualisieren:</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/async_tasks/card_info_downloader.py" line="409"/>
+      <location filename="../../mtg_proxy_printer/async_tasks/card_info_downloader.py" line="408"/>
       <source>Error during import from file:
 {path}</source>
       <comment>Error message shown in a message box</comment>
@@ -531,7 +531,7 @@ zu wechseln.</translation>
       <translation>Fehler beim Aktualisieren der Kartendaten von Scryfall</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/async_tasks/card_info_downloader.py" line="440"/>
+      <location filename="../../mtg_proxy_printer/async_tasks/card_info_downloader.py" line="439"/>
       <source>Failed to parse data from Scryfall. Reported error: {error}</source>
       <comment>Error message shown in a message box</comment>
       <translation>Fehler beim Verarbeiten der Scryfall-Daten. Fehler: {error}</translation>
@@ -546,7 +546,7 @@ zu wechseln.</translation>
   <context>
     <name>DatabaseMigrationRunner</name>
     <message>
-      <location filename="../../mtg_proxy_printer/carddb_migrations.py" line="787"/>
+      <location filename="../../mtg_proxy_printer/carddb_migrations.py" line="782"/>
       <source>Card database migration failed! Will try to re-create it from scratch.
 This will wipe any previously downloaded card data and require re-downloading it.
 Reported error message:
@@ -560,12 +560,12 @@ Fehlermeldung:
 {error_message}</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/carddb_migrations.py" line="803"/>
+      <location filename="../../mtg_proxy_printer/carddb_migrations.py" line="802"/>
       <source>Running database migrations:</source>
       <translation>Datenbankmigrationen durchführen:</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/carddb_migrations.py" line="818"/>
+      <location filename="../../mtg_proxy_printer/carddb_migrations.py" line="815"/>
       <source>Migrate to version %n:</source>
       <comment>The numeric parameter is a version number, and not countable.</comment>
       <translation>Migrieren zu Version %n:</translation>
@@ -574,49 +574,49 @@ Fehlermeldung:
   <context>
     <name>DebugSettingsPage</name>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="125"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="130"/>
       <source>Debug settings</source>
       <translation>Fehlersuche (Debug)</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="127"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="131"/>
       <source>Things useful for investigating bugs in the application</source>
       <translation>Nützliche Dinge, um Fehler in der Anwendung zu untersuchen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="180"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="185"/>
       <source>Select download location</source>
       <translation>Download-Verzeichnis auswählen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="188"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="193"/>
       <source>Selected location is not a directory</source>
       <translation>Ausgewählter Ort ist kein Verzeichnis</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="191"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="195"/>
       <source>Cannot write the card data at the given location, because it is not a directory:
 {location}</source>
       <translation>Die Kartendaten können nicht an den angegebenen Ort geschrieben werden, da es kein Verzeichnis ist:
 {location}</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="201"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="206"/>
       <source>Import previously downloaded card data obtained from Scryfall</source>
       <translation>Zuvor von Scryfall heruntergeladene Kartendaten importieren</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="203"/>
-      <source>Scryfall card data (*.json, *.json.gz)</source>
-      <translation>Scryfall-Kartendaten (*.json, *.json.gz)</translation>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="208"/>
+      <source>Scryfall card data (*.json *.json.gz)</source>
+      <translation>Scryfall-Kartendaten (*.json *.json.gz)</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="211"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="216"/>
       <source>Selected location is not a file</source>
       <translation>Ausgewählter Ort ist keine Datei</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="212"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="217"/>
       <source>Cannot find the selected file:
 {location}</source>
       <translation>Die ausgewählte Datei konnte nicht gefunden werden:
@@ -687,13 +687,13 @@ Fehlermeldung:
       <translation>Deckliste importieren</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="675"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="674"/>
       <source>Oversized cards present</source>
       <comment>Message box title. Shown when the deck list contains likely unwanted oversized cards.</comment>
       <translation>Übergroße Karten vorhanden</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="681"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="677"/>
       <source>There are %n possibly oversized cards in the deck list that may not fit into a deck, when printed out.
 
 Continue and use these cards as-is?</source>
@@ -708,13 +708,13 @@ Trotzdem mit der Deckliste fortfahren?</numerusform>
       </translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="690"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="689"/>
       <source>Incompatible file selected</source>
       <comment>Message box title. Shown when trying to parse a deck list returns no results.</comment>
       <translation>Inkompatible Datei ausgewählt</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="694"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="692"/>
       <source>Unable to parse the given deck list, no results were obtained.
 Maybe you selected the wrong deck list type?</source>
       <comment>Message box body text. Shown when trying to parse a deck list returns no results.</comment>
@@ -725,17 +725,17 @@ Vielleicht haben Sie den falschen Decklistentyp ausgewählt?</translation>
   <context>
     <name>DecklistImportSettingsPage</name>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="223"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="228"/>
       <source>Deck list import</source>
       <translation>Decklisten-Import</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="223"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="228"/>
       <source>Configure the deck list importer</source>
       <translation>Den Decklisten-Import konfigurieren</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="233"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="238"/>
       <source>Select default deck list search path</source>
       <translation>Wähle den Standardsuchpfad für Decklisten</translation>
     </message>
@@ -864,19 +864,19 @@ Bei einigen Decklistenformaten ist diese Option immer aktiviert.</translation>
   <context>
     <name>DefaultDocumentLayoutSettingsPage</name>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="513"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="494"/>
       <source>Default document settings</source>
       <translation>Standardeinstellungen für Dokumente</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="516"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="495"/>
       <source>Set the default document settings used for new documents,
 like page size, margins, spacings, etc.</source>
       <translation>Standardeinstellungen für Dokumente setzen,
 wie Papiergröße, Randabstände, Kartenabstände, usw.</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="520"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="501"/>
       <source>Default settings for new documents</source>
       <translation>Standardeinstellungen für neue Dokumente</translation>
     </message>
@@ -920,14 +920,14 @@ wie Papiergröße, Randabstände, Kartenabstände, usw.</translation>
       <translation>Seite</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/model/document.py" line="204"/>
+      <location filename="../../mtg_proxy_printer/model/document.py" line="203"/>
       <source>Double-click on entries to
 switch the selected printing.</source>
       <translation>Doppelklicken Sie auf Einträge, um den Ausdruck
 zu wechseln.</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/model/document.py" line="416"/>
+      <location filename="../../mtg_proxy_printer/model/document.py" line="415"/>
       <source>Page {current}/{total}</source>
       <comment>Tooltip. Shown when hovering over a page in the page list</comment>
       <translation>Seite {current}/{total}</translation>
@@ -945,13 +945,13 @@ zu wechseln.</translation>
       <translation>Rückseite</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/model/document.py" line="513"/>
+      <location filename="../../mtg_proxy_printer/model/document.py" line="511"/>
       <source>Empty Placeholder</source>
       <comment>Card name of the blank placeholder that can be added to keep slots on a page free.</comment>
       <translation>Leerer Platzhalter</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/model/document.py" line="456"/>
+      <location filename="../../mtg_proxy_printer/model/document.py" line="454"/>
       <source>%n× {name}</source>
       <comment>Used to display a card name and amount of copies in the page overview. Only needs translation for RTL language support</comment>
       <translation>
@@ -963,7 +963,7 @@ zu wechseln.</translation>
   <context>
     <name>DocumentAction</name>
     <message>
-      <location filename="../../mtg_proxy_printer/document_controller/_interface.py" line="113"/>
+      <location filename="../../mtg_proxy_printer/document_controller/_interface.py" line="110"/>
       <source>{first}-{last}</source>
       <comment>Inclusive, formatted number range, from first to last</comment>
       <translation>{first}-{last}</translation>
@@ -977,7 +977,7 @@ zu wechseln.</translation>
       <translation>Einstellungen des aktuellen Dokuments ändern</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/dialogs.py" line="395"/>
+      <location filename="../../mtg_proxy_printer/ui/dialogs.py" line="394"/>
       <source>These settings only affect the current document</source>
       <comment>Shown within the dialog to indicate the scope of the presented settings</comment>
       <translation>Diese Einstellungen betreffen nur das aktuelle Dokument</translation>
@@ -1027,13 +1027,13 @@ zu wechseln.</translation>
       <translation>Speicherort für Kartenbild-Export auswählen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/dialogs.py" line="523"/>
+      <location filename="../../mtg_proxy_printer/ui/dialogs.py" line="521"/>
       <source>Copy failed for {card_name}! Disk detached/full? Aborting.</source>
       <comment>Error message shown to the user when exporting cards to a directory fails.</comment>
       <translation>Kopieren von {card_name} fehlgeschlagen! Speicherziel entfernt/voll? Breche ab.</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/dialogs.py" line="555"/>
+      <location filename="../../mtg_proxy_printer/ui/dialogs.py" line="553"/>
       <source>Write failed for {card_name}! Disk detached/full? Aborting.</source>
       <comment>Error message shown to the user when exporting cards to a directory fails.</comment>
       <translation>Schreiben des Bilds von {card_name} fehlgeschlagen! Speicherziel entfernt/voll? Breche ab.</translation>
@@ -1042,22 +1042,22 @@ zu wechseln.</translation>
   <context>
     <name>ExportSettingsPage</name>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="589"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="570"/>
       <source>Export settings</source>
       <translation>Exporteinstellungen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="589"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="570"/>
       <source>Configure the PDF/PNG export</source>
       <translation>PDF/PNG-Export konfigurieren</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="629"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="610"/>
       <source>Select default export location</source>
       <translation>Standardpfad für Exporte auswählen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="639"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="620"/>
       <source>Select PNG background color</source>
       <translation>PNG-Hintergrundfarbe wählen</translation>
     </message>
@@ -1225,55 +1225,307 @@ Zum Beispiel, wenn Sie Bilder von silberrandigen Karten heruntergeladen und dann
     </message>
   </context>
   <context>
+    <name>FormatPrintingFilter</name>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="14"/>
+      <source>Hide cards banned in specific Formats</source>
+      <translation>In bestimmten Formaten gebannte Karten ausblenden</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="20"/>
+      <source>Pioneer</source>
+      <extracomment>An MTG format name</extracomment>
+      <translation>Pioneer</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="27"/>
+      <source>Modern</source>
+      <extracomment>An MTG format name</extracomment>
+      <translation>Modern</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="34"/>
+      <source>Historic</source>
+      <extracomment>An MTG format name</extracomment>
+      <translation>Historic</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="41"/>
+      <source>Vintage</source>
+      <extracomment>An MTG format name</extracomment>
+      <translation>Vintage</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="54"/>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="84"/>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="114"/>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="130"/>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="153"/>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="169"/>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="185"/>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="201"/>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="217"/>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="240"/>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="257"/>
+      <source>View cards hidden by this filter on the Scryfall website.</source>
+      <extracomment>Causes the application to open the web browser showing the affected cards</extracomment>
+      <translation>Sehen Sie sich die durch diesen Filter versteckten Karten auf Scryfall an.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="64"/>
+      <source>Penny</source>
+      <extracomment>An MTG format name</extracomment>
+      <translation>Penny</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="71"/>
+      <source>Standard</source>
+      <extracomment>An MTG format name</extracomment>
+      <translation>Standard</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="94"/>
+      <source>Pauper</source>
+      <extracomment>An MTG format name</extracomment>
+      <translation>Pauper</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="101"/>
+      <source>Commander</source>
+      <extracomment>An MTG format name</extracomment>
+      <translation>Commander</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="140"/>
+      <source>Brawl</source>
+      <extracomment>An MTG format name</extracomment>
+      <translation>Brawl</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="227"/>
+      <source>Legacy</source>
+      <extracomment>An MTG format name</extracomment>
+      <translation>Legacy</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/format_printing_filter.ui" line="250"/>
+      <source>Oathbreaker</source>
+      <extracomment>An MTG format name</extracomment>
+      <translation>Oathbreaker</translation>
+    </message>
+  </context>
+  <context>
+    <name>GeneralPrintingFilter</name>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="14"/>
+      <source>General printing filters</source>
+      <translation>Allgemeine Druckfilter</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="26"/>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="45"/>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="61"/>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="95"/>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="122"/>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="138"/>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="220"/>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="248"/>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="264"/>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="280"/>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="290"/>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="327"/>
+      <source>View cards hidden by this filter on the Scryfall website.</source>
+      <extracomment>Causes the application to open the web browser showing the affected cards</extracomment>
+      <translation>Sehen Sie sich die durch diesen Filter versteckten Karten auf Scryfall an.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="71"/>
+      <source>Hide cards without a defined, solid-color border.
+Those require higher cutting precision to get right.</source>
+      <translation>Karten ohne definierten, einfarbigen Rand ausblenden.
+Diese benötigen beim Schneiden eine höhere Präzision.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="75"/>
+      <source>Hide borderless cards</source>
+      <translation>Randlose Karten ausblenden</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="82"/>
+      <source>Hide Token cards</source>
+      <translation>Spielsteinkarten ausblenden</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="105"/>
+      <source>Some single-sided cards are re-printed as two-sided, reversible cards in some Secret Lair releases.
+This filter hides those.</source>
+      <translation>Einige einseitige Karten werden in einigen „Secret Lair“-Produkten als zweiseitige, wendbare Karten neu gedruckt.
+Dieser Filter versteckt diese.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="109"/>
+      <source>Hide reversible cards</source>
+      <translation>Umdrehbare Karten ausblenden</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="148"/>
+      <source>Hide cards and printings that are only available on digital platforms. This includes all kinds of digital printings.</source>
+      <translation>Verstecke Karten und Drucke, die nur auf digitalen Plattformen erhältlich sind, inklusive aller Arten von Digitaldrucken.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="151"/>
+      <source>Hide digital cards</source>
+      <translation>Digitale Karten ausblenden</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="158"/>
+      <source>“Funny” cards, not legal in any constructed format.
+This includes full-art Contraptions from Unstable,
+cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),
+some black-bordered promotional cards with non-standard back faces,
+and all silver-bordered cards.</source>
+      <translation>„Lustige“ Karten, nicht legal in allen konstruierten Formaten.
+Enthält Contraptions aus Unstable,
+Karten mit Eichelförmigen Sicherheitsstempeln aus Unfinity (und neueren Un-Sets),
+einige schwarzrandige Promotionkarten mit nicht standardmäßigen Rückseiten,
+und alle silberrandigen Karten.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="165"/>
+      <source>Hide “funny” cards</source>
+      <translation>„Lustige“ Karten ausblenden</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="172"/>
+      <source>These cards are larger than regular Magic cards and can’t be included in decks.
+Includes Archenemy schemes, Planechase planes and
+oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</source>
+      <translation>Diese Karten sind größer als normale Magic-Karten und können nicht in Decks enthalten sein.
+Enthält Archenemy-Schemen, Planechase-Karten und
+übergroße Kommandeur- oder Planeswalker-Karten, die in einigen vorgefertigten Commander-Decks enthalten sind.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="177"/>
+      <source>Hide oversized cards</source>
+      <translation>Übergroße Karten ausblenden</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="184"/>
+      <source>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
+Many also have printed signatures of the involved players in the text box.
+
+These are not tournament legal</source>
+      <translation>Einige „Sammler“-Sets wie vollständige Nachdrucke der Decks von Turniersiegern wurden mit goldenen Rändern verkauft.
+Viele haben auch Unterschriften der beteiligten Spieler in der Textbox gedruckt.
+
+Diese sind nicht Turnier-legal</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="190"/>
+      <source>Hide gold-bordered cards</source>
+      <translation>Goldrandinge Karten ausblenden</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="197"/>
+      <source>Hide white-bordered cards</source>
+      <translation>Weißrandige Karten ausblenden</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="204"/>
+      <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hide cards banned for depicting racism.&lt;/p&gt;&lt;p&gt;Background:&lt;/p&gt;&lt;p&gt;Some cards were banned by Wizards of the Coast, because they depict references to controversial real-world events, religion or contain combinations of card effect, name and artwork that, when viewed together, depict racism. These cards are banned in all sanctioned tournament formats and several community formats like Commander, Oathbreaker and others.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+      <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hide cards banned for depicting racism.&lt;/p&gt;&lt;p&gt;Background:&lt;/p&gt;&lt;p&gt;Some cards were banned by Wizards of the Coast, because they depict references to controversial real-world events, religion or contain combinations of card effect, name and artwork that, when viewed together, depict racism. These cards are banned in all sanctioned tournament formats and several community formats like Commander, Oathbreaker and others.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="207"/>
+      <source>Hide cards depicting racism</source>
+      <translation>Karten mit rassistischen Darstellungen ausblenden</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="230"/>
+      <source>Hide non-English cards with low-resolution,
+English placeholder images with an overlay text stating
+“This card is not available in the selected language.”</source>
+      <translation>Verstecke Platzhalter in englischer Sprache für nicht-englische Karten ohne verfügbare Bilder.
+Diese haben eine niedrige Qualität und ein Overlay-Text „Diese Karte ist nicht in der gewählten Sprache verfügbar.“.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="235"/>
+      <source>Hide cards with placeholder images</source>
+      <translation>Karten mit Platzhalter-Bildern ausblenden</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="300"/>
+      <source>Hide cards with artwork extending to the left and right card border.
+Similar to borderless cards, these require higher precision during the cutting process.</source>
+      <translation>Verstecke Karten mit Artworks, die sich bis zum linken und rechten Kartenrand erstrecken.
+Ähnlich wie randlose Karten erfordern diese während des Schneidenvorgangs eine höhere Präzision.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="304"/>
+      <source>Hide extended art cards</source>
+      <translation>Karten mit erweiterten Artworks ausblenden</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="311"/>
+      <source>Artwork cards that can be found in Set Boosters or Play Boosters</source>
+      <translation>Artwork-Karten, die in Set-Booster oder Play-Booster gefunden werden können</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="314"/>
+      <source>Hide Art Series cards</source>
+      <translation>Artwork-Karten ausblenden</translation>
+    </message>
+  </context>
+  <context>
     <name>GeneralSettingsPage</name>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="292"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="297"/>
       <source>General settings</source>
       <translation>Allgemeine Einstellungen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="299"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="304"/>
       <source>Horizontal layout</source>
       <translation>Horizontales Layout</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="300"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="305"/>
       <source>Columnar layout</source>
       <translation>Spaltenlayout</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="301"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="306"/>
       <source>Tabbed layout</source>
       <translation>Layout in Tabs</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="304"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="309"/>
       <source>System default</source>
       <translation>Standardsprache des Systems</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="305"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="310"/>
       <source>English (US) [{progress}%]</source>
       <translation>Englisch (US) [{progress}%]</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="306"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="311"/>
       <source>German [{progress}%]</source>
       <translation>Deutsch [{progress}%]</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="307"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="312"/>
       <source>French [{progress}%]</source>
       <translation>Französisch [{progress}%]</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="316"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="321"/>
       <source>Select default save location</source>
       <comment>File picker title text</comment>
       <translation>Standardspeicherort auswählen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="324"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="329"/>
       <source>Select custom card search path</source>
       <comment>File picker title text</comment>
       <translation>Suchpfad für Bilder inoffizieller Karten wählen</translation>
@@ -1485,20 +1737,14 @@ Hinweis: Decklistenimports verwenden die Sprache, wie in der Deckliste angegeben
   <context>
     <name>HidePrintingsPage</name>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="453"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="458"/>
       <source>Hide printings</source>
       <translation>Drucke verbergen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="453"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="458"/>
       <source>Hide unwanted printings</source>
       <translation>Unerwünschte Kartenvarianten verbergen</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="475"/>
-      <source>View cards hidden by this filter on the Scryfall website.</source>
-      <comment>Tooltip text on a button next to a printing filter</comment>
-      <translation>Sehen Sie sich die durch diesen Filter versteckten Karten auf Scryfall an.</translation>
     </message>
     <message>
       <location filename="../ui/settings_window/hide_printings_page.ui" line="17"/>
@@ -1506,12 +1752,12 @@ Hinweis: Decklistenimports verwenden die Sprache, wie in der Deckliste angegeben
       <translation>Diese Optionen erlauben das Verstecken unerwünschter Karten und Drucke. Diese werden so behandelt, als gäbe es sie nicht. Sie können nicht in der Kartensuche gefunden werden und werden nach Möglichkeit automatisch in geladenen Dokumenten oder importierten Decklisten ersetzt. Wenn alle Ausdrucke einer Karte versteckt sind, wird sie überhaupt nicht verfügbar sein.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/hide_printings_page.ui" line="46"/>
+      <location filename="../ui/settings_window/hide_printings_page.ui" line="33"/>
       <source>Hide specific sets: Add set codes as listed on Scryfall, for example LEA or 2X2. Separate multiple entries with spaces or line breaks. All words not matching an exact set code are ignored.</source>
       <translation>Verstecke bestimmte Sets: Füge Set-Codes hinzu, wie auf Scryfall aufgeführt, zum Beispiel LEA oder 2X2. Trennen Sie mehrere Einträge mit Leerzeichen oder Zeilenumbrüchen. Alle Wörter, die keinem exakten Code entsprechen, werden ignoriert.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/hide_printings_page.ui" line="62"/>
+      <location filename="../ui/settings_window/hide_printings_page.ui" line="43"/>
       <source>Example:
 
 LEA DDU TC13 J21</source>
@@ -1520,7 +1766,7 @@ LEA DDU TC13 J21</source>
 LEA DDU TC13 J21</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/hide_printings_page.ui" line="70"/>
+      <location filename="../ui/settings_window/hide_printings_page.ui" line="51"/>
       <source>No sets currently hidden.</source>
       <translation>Derzeit sind keine Sets versteckt.</translation>
     </message>
@@ -1650,19 +1896,19 @@ für beliebig viele Zeichen.</translation>
   <context>
     <name>KnownCardRow</name>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="100"/>
+      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="99"/>
       <source>Yes</source>
       <comment>This card is hidden by a card filter</comment>
       <translation>Ja</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="102"/>
+      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="101"/>
       <source>No</source>
       <comment>This card is visible and not affected by a card filter</comment>
       <translation>Nein</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="106"/>
+      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="104"/>
       <source>This printing is hidden by an enabled card filter
 and is thus unavailable for printing.</source>
       <comment>Tooltip for cells with hidden cards</comment>
@@ -1676,19 +1922,19 @@ versteckt und ist daher nicht verfügbar.</translation>
       <translation>Vorderseite</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="110"/>
+      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="109"/>
       <source>Back</source>
       <comment>Card side</comment>
       <translation>Rückseite</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="116"/>
+      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="115"/>
       <source>Yes</source>
       <comment>This card has high-resolution images available</comment>
       <translation>Ja</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="118"/>
+      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="117"/>
       <source>No</source>
       <comment>This card only has low-resolution images available.</comment>
       <translation>Nein</translation>
@@ -1789,7 +2035,7 @@ Aktivieren kann möglicherweise Speicherplatz auf der Festplatte und Datenvolume
       <translation>Deckliste herunterladen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="119"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="118"/>
       <source>Supported websites:
 {supported_sites}</source>
       <comment>Tooltip text</comment>
@@ -1809,13 +2055,13 @@ Aktivieren kann möglicherweise Speicherplatz auf der Festplatte und Datenvolume
       <translation>Das Auswählen einer Datei überschreibt die vorhandene Deckliste. Fortfahren?</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="177"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="176"/>
       <source>Select deck file</source>
       <comment>File selection dialog window title</comment>
       <translation>Decklisten-Datei auswählen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="187"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="186"/>
       <source>All files (*)</source>
       <comment>File type filter value</comment>
       <translation>Alle Dateien (*)</translation>
@@ -1827,7 +2073,7 @@ Aktivieren kann möglicherweise Speicherplatz auf der Festplatte und Datenvolume
       <translation>Alle unterstützten </translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="213"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="209"/>
       <source>Verify that the URL is valid, reachable, and that the deck list is set to public.
 This program cannot download private deck lists. Please note, that setting deck lists to
 public may take a minute or two to apply.</source>
@@ -1838,26 +2084,26 @@ Bitte beachten Sie, dass das Anwenden der Umstellung auf
 Öffentlich etwas dauern kann.</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="220"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="219"/>
       <source>Overwrite existing deck list?</source>
       <comment>Message box title. Shown when loading a deck list would overwrite existing text</comment>
       <translation>Vorhandene Deckliste überschreiben?</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="223"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="222"/>
       <source>Downloading a deck list will overwrite the existing deck list. Continue?</source>
       <comment>Message box body text. Shown when loading a deck list would overwrite existing text</comment>
       <translation>Das Herunterladen einer Deckliste überschreibt die vorhandene Deckliste. Fortfahren?</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="235"/>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="243"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="234"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="242"/>
       <source>Deck list download failed</source>
       <comment>Message box title. Shown when downloading failed</comment>
       <translation>Download der Deckliste fehlgeschlagen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="238"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="236"/>
       <source>Download failed with HTTP error {http_error_code}.
 
 {bad_request_msg}</source>
@@ -1867,7 +2113,7 @@ Bitte beachten Sie, dass das Anwenden der Umstellung auf
 {bad_request_msg}</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="249"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="243"/>
       <source>Download failed.
 
 Check your internet connection, verify that the URL is valid, reachable, and that the deck list is set to public. This program cannot download private deck lists. If this persists, please report a bug in the issue tracker on the homepage.</source>
@@ -1883,13 +2129,13 @@ Check your internet connection, verify that the URL is valid, reachable, and tha
       <translation>Ungültige Scryfall-Abfrage eingegeben, keine Karten gefunden</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="278"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="276"/>
       <source>Unable to read file content</source>
       <comment>Message box title. Shown when the user-selected file is unreadable.</comment>
       <translation>Dateiinhalt konnte nicht gelesen werden</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="281"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="279"/>
       <source>Unable to read the content of file {file_path} as plain text.
 Failed to load the content.</source>
       <comment>Message box body text. Shown when the user-selected file is unreadable.</comment>
@@ -1897,13 +2143,13 @@ Failed to load the content.</source>
 Fehler beim Laden des Inhalts.</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="293"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="292"/>
       <source>Load large file?</source>
       <comment>Message box title. Shown when the user-selected file is unreasonably large.</comment>
       <translation>Große Datei laden?</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="297"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="295"/>
       <source>The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyways?</source>
       <comment>Message box body text. Shown when the user-selected file is unreasonably large.</comment>
       <translation>Die ausgewählte Datei {file_path} ist mit {formatted_size} unerwartet groß. Trotzdem laden?</translation>
@@ -1912,7 +2158,7 @@ Fehler beim Laden des Inhalts.</translation>
   <context>
     <name>LoadSaveDialog</name>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/dialogs.py" line="186"/>
+      <location filename="../../mtg_proxy_printer/ui/dialogs.py" line="185"/>
       <source>MTGProxyPrinter document (*.{default_save_suffix})</source>
       <comment>File type filter</comment>
       <translation>MTGProxyPrinter-Dokument (*.{default_save_suffix})</translation>
@@ -1937,7 +2183,7 @@ Fehler beim Laden des Inhalts.</translation>
   <context>
     <name>MagicWorkstationDeckDataFormatParser</name>
     <message>
-      <location filename="../../mtg_proxy_printer/decklist_parser/re_parsers.py" line="180"/>
+      <location filename="../../mtg_proxy_printer/decklist_parser/re_parsers.py" line="179"/>
       <source>Magic Workstation Deck Data Format</source>
       <translation>Magic Workstation Deck Data (mwDeck)</translation>
     </message>
@@ -1959,20 +2205,20 @@ Fehler beim Laden des Inhalts.</translation>
 {top_entry}</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="284"/>
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="298"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="282"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="296"/>
       <source>printing</source>
       <comment>This is passed as the {action} when asking the user about compacting the document if that can save pages</comment>
       <translation>dem Drucken</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="310"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="308"/>
       <source>exporting as a PDF</source>
       <comment>This is passed as the {action} when asking the user about compacting the document if that can save pages</comment>
       <translation>dem PDF-Export</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="323"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="321"/>
       <source>exporting as a PNG image sequence</source>
       <comment>This is passed as the {action} when asking the user about compacting the document if that can save pages</comment>
       <translation>exportieren als PNG-Bildsequenz</translation>
@@ -1983,7 +2229,7 @@ Fehler beim Laden des Inhalts.</translation>
       <translation>Netzwerkfehler</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="348"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="347"/>
       <source>Operation failed, because a network error occurred.
 Check your internet connection. Reported error message:
 
@@ -1999,7 +2245,7 @@ Check your internet connection. Reported error message:
       <translation>Fehler</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="356"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="355"/>
       <source>Operation failed, because an internal error occurred.
 Reported error message:
 
@@ -2015,7 +2261,7 @@ Berichtete Fehlermeldung:
       <translation>Einsparen von Seiten möglich</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="365"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="363"/>
       <source>It is possible to save %n pages when printing this document.
 Do you want to compact the document now to minimize the page count prior to {action}?</source>
       <translation>
@@ -2031,7 +2277,7 @@ Möchten Sie das Dokument jetzt komprimieren, um die Seitenanzahl vor {action} z
       <translation>Benötigte Kartendaten von Scryfall herunterladen?</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="383"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="380"/>
       <source>This program requires downloading additional card data from Scryfall to operate the card search.
 Download the required data from Scryfall now?
 Without the data, you can only print custom cards by drag&amp;dropping the image files onto the main window.</source>
@@ -2045,7 +2291,7 @@ Ohne die Daten können Sie nur nutzererstellte Karten drucken, indem Sie die Bil
       <translation>Laden des Dokuments fehlgeschlagen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="431"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="428"/>
       <source>Loading file &quot;{failed_path}&quot; failed. The file was not recognized as a {program_name} document. If you want to load a deck list, use the &quot;{function_text}&quot; function instead.
 Reported failure reason: {reason}</source>
       <translation>Laden der Datei "{failed_path}" fehlgeschlagen. Die Datei wurde nicht als {program_name}-Dokument erkannt. Wenn Sie eine Deckliste laden möchten, verwenden Sie die "{function_text}"-Funktion stattdessen.
@@ -2057,7 +2303,7 @@ Berichteter Fehlergrund: {reason}</translation>
       <translation>Nicht verfügbare Drucke ersetzt</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="444"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="442"/>
       <source>The document contained %n unavailable printings of cards that were automatically replaced with other printings. The replaced printings are unavailable, because they match a configured card filter.</source>
       <translation>
         <numerusform>Das Dokument enthielt einen nicht verfügbaren Druck einer Karte, der automatisch durch einen anderen Druck ersetzt wurden. Der ausgetauschten Druck ist nicht verfügbar, da er mit einem konfigurierten Kartenfilter übereinstimmt.</numerusform>
@@ -2070,7 +2316,7 @@ Berichteter Fehlergrund: {reason}</translation>
       <translation>Nicht erkannte Karten im geladenen Dokument gefunden</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="453"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="451"/>
       <source>Skipped %n unrecognized cards in the loaded document. Saving the document will remove these entries permanently.
 
 The locally stored card data may be outdated or the document was tampered with.</source>
@@ -2089,7 +2335,7 @@ Die lokalen Kartendaten sind möglicherweise veraltet oder das Dokument wurde ma
       <translation>Anwendungsaktualisierung verfügbar. Website besuchen?</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="463"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="460"/>
       <source>An application update is available: Version {newer_version}
 You are currently using version {current_version}.
 
@@ -2105,7 +2351,7 @@ Die {program_name}-Webseite mit Ihrem Web-Browser besuchen, um die neue Version 
       <translation>Neue Kartendaten verfügbar</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="477"/>
+      <location filename="../../mtg_proxy_printer/ui/main_window.py" line="476"/>
       <source>There are %n new printings available on Scryfall. Update the local data now?</source>
       <translation>
         <numerusform>Es ist %n neue Karte auf Scryfall verfügbar. Lokale Daten jetzt aktualisieren?</numerusform>
@@ -2433,7 +2679,7 @@ können Sie dies verwenden, um den Aufwand beim initialen Mischen zu reduzieren<
   <context>
     <name>MissingImagesManager</name>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/missing_images_manager.py" line="67"/>
+      <location filename="../../mtg_proxy_printer/missing_images_manager.py" line="64"/>
       <source>Unable to obtain %n missing card image(s).
 These will be missing in exported or printed documents.</source>
       <comment>Warning message. A last attempt at trying to download images of cards with missing images failed.</comment>
@@ -2466,8 +2712,8 @@ Diese werden in exportierten oder gedruckten Dokumenten fehlen.</numerusform>
   <context>
     <name>PageCardTableView</name>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/ui/page_card_table_view.py" line="114"/>
-      <location filename="../../mtg_proxy_printer/ui/page_card_table_view.py" line="134"/>
+      <location filename="../../mtg_proxy_printer/ui/page_card_table_view.py" line="113"/>
+      <location filename="../../mtg_proxy_printer/ui/page_card_table_view.py" line="133"/>
       <source>Add %n copies</source>
       <comment>Context menu action: Add additional card copies to the document</comment>
       <translation>
@@ -2476,8 +2722,8 @@ Diese werden in exportierten oder gedruckten Dokumenten fehlen.</numerusform>
       </translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/page_card_table_view.py" line="122"/>
-      <location filename="../../mtg_proxy_printer/ui/page_card_table_view.py" line="140"/>
+      <location filename="../../mtg_proxy_printer/ui/page_card_table_view.py" line="120"/>
+      <location filename="../../mtg_proxy_printer/ui/page_card_table_view.py" line="139"/>
       <source>Add copies …</source>
       <comment>Context menu action: Add additional card copies to the document. User will be asked for a number</comment>
       <translation>Kopien hinzufügen …</translation>
@@ -2498,7 +2744,7 @@ Diese werden in exportierten oder gedruckten Dokumenten fehlen.</numerusform>
       <translation>Kopien hinzufügen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/page_card_table_view.py" line="163"/>
+      <location filename="../../mtg_proxy_printer/ui/page_card_table_view.py" line="162"/>
       <source>Add copies of {card_name}</source>
       <comment>Asks the user for a number. Does not need plural forms</comment>
       <translation>Kopien von {card_name} hinzufügen</translation>
@@ -2577,7 +2823,7 @@ Diese werden in exportierten oder gedruckten Dokumenten fehlen.</numerusform>
       <translation>Passer</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/page_config_widget.py" line="100"/>
+      <location filename="../../mtg_proxy_printer/ui/page_config_widget.py" line="99"/>
       <source>Silhouette cutter (Cameo-compatible)</source>
       <comment>A print/cut registration marker style</comment>
       <translation>Silhouette-Schneider (Cameo-kompatibel)</translation>
@@ -2593,7 +2839,7 @@ Diese werden in exportierten oder gedruckten Dokumenten fehlen.</numerusform>
       <translation>Schneidlinienfarbe wählen</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/ui/page_config_widget.py" line="240"/>
+      <location filename="../../mtg_proxy_printer/ui/page_config_widget.py" line="238"/>
       <source>%n regular card(s)</source>
       <comment>Display of the resulting page capacity for regular-sized cards</comment>
       <translation>
@@ -2602,7 +2848,7 @@ Diese werden in exportierten oder gedruckten Dokumenten fehlen.</numerusform>
       </translation>
     </message>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/ui/page_config_widget.py" line="244"/>
+      <location filename="../../mtg_proxy_printer/ui/page_config_widget.py" line="242"/>
       <source>%n oversized card(s)</source>
       <comment>Display of the resulting page capacity for oversized cards</comment>
       <translation>
@@ -2611,7 +2857,7 @@ Diese werden in exportierten oder gedruckten Dokumenten fehlen.</numerusform>
       </translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/page_config_widget.py" line="249"/>
+      <location filename="../../mtg_proxy_printer/ui/page_config_widget.py" line="247"/>
       <source>{regular_text}, {oversized_text}</source>
       <comment>Combination of the page capacities for regular, and oversized cards</comment>
       <translation>{regular_text}, {oversized_text}</translation>
@@ -2896,7 +3142,7 @@ Andernfalls sind zwei Schnitte erforderlich, die jedoch weniger Präzision erfor
   <context>
     <name>PageRenderer</name>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/page_renderer.py" line="70"/>
+      <location filename="../../mtg_proxy_printer/ui/page_renderer.py" line="66"/>
       <source>Use Ctrl+Mouse wheel to zoom.
 Usable keyboard shortcuts are:
 Zoom in: {zoom_in_shortcuts}
@@ -2910,7 +3156,7 @@ Zoom aus: {zoom_out_shortcuts}</translation>
   <context>
     <name>ParserBase</name>
     <message>
-      <location filename="../../mtg_proxy_printer/decklist_parser/common.py" line="72"/>
+      <location filename="../../mtg_proxy_printer/decklist_parser/common.py" line="71"/>
       <source>All files (*)</source>
       <comment>File type filter</comment>
       <translation>Alle Dateien (*)</translation>
@@ -2928,12 +3174,12 @@ Zoom aus: {zoom_out_shortcuts}</translation>
   <context>
     <name>PrinterSettingsPage</name>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="538"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="519"/>
       <source>Printer settings</source>
       <translation>Druckereinstellungen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="538"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="519"/>
       <source>Configure the printer</source>
       <translation>Drucker konfigurieren</translation>
     </message>
@@ -2987,289 +3233,9 @@ Dies sollte die Kompatibilität erhöhen, allerdings auf Kosten des Zeichnens k�
     </message>
   </context>
   <context>
-    <name>PrintingFilterModel</name>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="79"/>
-      <source>Hide cards banned in the {format} format</source>
-      <comment>Tooltip text</comment>
-      <translation>Im {format}-Format gebannte Karten ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="83"/>
-      <source>General filters</source>
-      <comment>Display text. Printing filter section header</comment>
-      <translation>Allgemeine Filter</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="84"/>
-      <source>Hide printings based on general card properties</source>
-      <comment>Tooltip text</comment>
-      <translation>Drucke aufgrund allgemeiner Karteneigenschaften ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="86"/>
-      <source>Hide cards depicting racism</source>
-      <comment>Display text</comment>
-      <translation>Karten mit rassistischen Darstellungen ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="94"/>
-      <source>Hide cards banned for depicting racism.
-
-Background: Some cards were banned by Wizards of the Coast,
-because they depict references to controversial real-world events,
-religion or contain combinations of card effect, name and artwork that,
-when viewed together, depict racism or are otherwise inappropriate.
-These cards are banned in all sanctioned tournament formats and several
-community formats like Commander, Oathbreaker and others.</source>
-      <comment>Tooltip text</comment>
-      <translation>Verstecke wegen Rassismus gebannte Karten.
-Hintergrund: Einige Karten wurden von Wizards of the Coast gebannt,
-weil sie Verweise auf umstrittene oder religiöse Ereignisse aus der
-realen Welt darstellen oder durch Kombinationen von Karteneffekten,
-Namen und Kunstwerken Rassismus darstellen.
-Diese Karten sind in allen sanktionierten Turnierformaten und
-verschiedenen Gemeinschaftsformaten wie Commander,
-Oathbreaker und anderen gebannt.</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="98"/>
-      <source>Hide cards with placeholder images</source>
-      <comment>Display text</comment>
-      <translation>Karten mit Platzhalter-Bildern ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="102"/>
-      <source>Hide non-English cards with low-resolution,
-English placeholder images containing an overlay text stating
-“This card is not available in the selected language.”</source>
-      <comment>Tooltip text</comment>
-      <translation>Verstecke Platzhalter in englischer Sprache für nicht-englische Karten ohne verfügbare Bilder.
-Diese haben eine niedrige Qualität und ein Overlay-Text „Diese Karte ist nicht in der gewählten Sprache verfügbar.“</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="106"/>
-      <source>Hide “funny” cards</source>
-      <comment>Display text</comment>
-      <translation>„Lustige“ Karten ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="111"/>
-      <source>“Funny” cards, not legal in any constructed format.
-This includes silver-bordered cards, full-art Contraptions from Unstable,
-cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),
-some black-bordered promotional cards with non-standard back faces,
-and potentially others.</source>
-      <comment>Tooltip text</comment>
-      <translation>„Lustige“ Karten, nicht legal in allen konstruierten Formaten.
-Enthält silberrandige Karten, Contraptions aus Unstable,
-Karten mit Eichelförmigen Sicherheitsstempeln aus Unfinity (und neueren Un-Sets),
-einige schwarzrandige Promotionkarten mit nicht standardmäßigen Rückseiten,
-und potentiell weitere.</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="115"/>
-      <source>Hide digital-only cards or printings</source>
-      <comment>Display text</comment>
-      <translation>Nur auf Digitalplattformen verfügbare Karten oder Drucke ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="118"/>
-      <source>Hide cards and printings that are only available on digital platforms. This includes all kinds of digital printings.</source>
-      <comment>Tooltip text</comment>
-      <translation>Verstecke Karten und Drucke, die nur auf digitalen Plattformen erhältlich sind, inklusive aller Arten von Digitaldrucken.</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="122"/>
-      <source>Hide reversible cards</source>
-      <comment>Display text</comment>
-      <translation>Umdrehbare Karten ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="125"/>
-      <source>Some single-sided cards are re-printed as two-sided, reversible cards in some Secret Lair releases.
-This filter hides those.</source>
-      <comment>Tooltip text</comment>
-      <translation>Einige einseitige Karten werden in einigen „Secret Lair“-Produkten als zweiseitige, wendbare Karten neu gedruckt.
-Dieser Filter versteckt diese.</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="129"/>
-      <source>Border style</source>
-      <comment>Display text. Printing filter section header</comment>
-      <translation>Rahmenstil</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="132"/>
-      <source>Hide white-bordered cards</source>
-      <comment>Display text</comment>
-      <translation>Weißrandige Karten ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="137"/>
-      <source>Hide gold-bordered cards</source>
-      <comment>Display text</comment>
-      <translation>Goldrandinge Karten ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="142"/>
-      <source>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
-Many also have printed signatures of the involved players in the text box.
-
-These are not tournament legal</source>
-      <comment>Tooltip text</comment>
-      <translation>Einige „Sammler“-Sets wie vollständige Nachdrucke der Decks von Turniersiegern wurden mit goldenen Rändern verkauft.
-Viele haben auch Unterschriften der beteiligten Spieler in der Textbox gedruckt.
-
-Diese sind nicht Turnier-legal</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="146"/>
-      <source>Hide borderless cards</source>
-      <comment>Display text</comment>
-      <translation>Randlose Karten ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="149"/>
-      <source>Hide cards without a defined, solid-color border.
-Those require higher cutting precision to get right.</source>
-      <comment>Tooltip text</comment>
-      <translation>Karten ohne definierten, einfarbigen Rand ausblenden.
-Diese benötigen beim Schneiden eine höhere Präzision.</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="153"/>
-      <source>Hide extended-art cards</source>
-      <comment>Display text</comment>
-      <translation>Karten mit erweiterten Artworks ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="156"/>
-      <source>Hide cards with artwork extending to the left and right card border.
-Similar to borderless cards, these require higher precision during the cutting process.</source>
-      <comment>Tooltip text</comment>
-      <translation>Verstecke Karten mit Artworks, die sich bis zum linken und rechten Kartenrand erstrecken.
-Ähnlich wie randlose Karten erfordern diese während des Schneidenvorgangs eine höhere Präzision.</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="160"/>
-      <source>Non-traditional cards</source>
-      <comment>Display text. Printing filter section header</comment>
-      <translation>Nichttraditionelle Karten</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="163"/>
-      <source>Hide oversized cards</source>
-      <comment>Display text</comment>
-      <translation>Übergroße Karten ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="167"/>
-      <source>These cards are larger than regular Magic cards and can’t be included in decks.
-Includes Archenemy schemes, Planechase planes and
-oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</source>
-      <comment>Tooltip text</comment>
-      <translation>Diese Karten sind größer als normale Magic-Karten und können nicht in Decks enthalten sein.
-Enthält Archenemy-Schemen, Planechase-Karten und
-übergroße Kommandeur- oder Planeswalker-Karten, die in einigen vorgefertigten Commander-Decks enthalten sind.</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="171"/>
-      <source>Hide Tokens</source>
-      <comment>Display text</comment>
-      <translation>Token ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="174"/>
-      <source>The official Tokens, used to represent permanents created by card effects.
-Not part of deck-building. Obscure ones can be relatively rare</source>
-      <comment>Tooltip text</comment>
-      <translation>Die offiziellen Token, die verwendet werden, um durch Karteneffekte erzeugte Permanente zu repräsentieren.
-Nicht Teil des Deckbaus</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="178"/>
-      <source>Hide Art Series cards</source>
-      <comment>Display text</comment>
-      <translation>Artwork-Karten ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="180"/>
-      <source>Artwork cards that can be found in Set Boosters or Play Boosters</source>
-      <comment>Tooltip text</comment>
-      <translation>Artwork-Karten, die in Set-Booster oder Play-Booster gefunden werden können</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="185"/>
-      <source>Format bans: Hide cards banned in specific formats</source>
-      <comment>Display text. Section header above MTG format ban filters</comment>
-      <translation>Format-Banns: In bestimmten Formaten gebannte Karten ausblenden</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="188"/>
-      <source>Brawl</source>
-      <comment>Display text. Magic format name. Translations (if one exists) should probably also include the English name like {translated name}(&lt;english name&gt;)</comment>
-      <translation>Brawl</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="192"/>
-      <source>Commander</source>
-      <comment>Display text. Magic format name. Translations (if one exists) should probably also include the English name like {translated name}(&lt;english name&gt;)</comment>
-      <translation>Commander</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="196"/>
-      <source>Historic</source>
-      <comment>Display text. Magic format name. Translations (if one exists) should probably also include the English name like {translated name}(&lt;english name&gt;)</comment>
-      <translation>Historic</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="200"/>
-      <source>Legacy</source>
-      <comment>Display text. Magic format name. Translations (if one exists) should probably also include the English name like {translated name}(&lt;english name&gt;)</comment>
-      <translation>Legacy</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="204"/>
-      <source>Modern</source>
-      <comment>Display text. Magic format name. Translations (if one exists) should probably also include the English name like {translated name}(&lt;english name&gt;)</comment>
-      <translation>Modern</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="208"/>
-      <source>Oathbreaker</source>
-      <comment>Display text. Magic format name. Translations (if one exists) should probably also include the English name like {translated name}(&lt;english name&gt;)</comment>
-      <translation>Oathbreaker</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="212"/>
-      <source>Pauper</source>
-      <comment>Display text. Magic format name. Translations (if one exists) should probably also include the English name like {translated name}(&lt;english name&gt;)</comment>
-      <translation>Pauper</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="216"/>
-      <source>Pioneer</source>
-      <comment>Display text. Magic format name. Translations (if one exists) should probably also include the English name like {translated name}(&lt;english name&gt;)</comment>
-      <translation>Pioneer</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="220"/>
-      <source>Standard</source>
-      <comment>Display text. Magic format name. Translations (if one exists) should probably also include the English name like {translated name}(&lt;english name&gt;)</comment>
-      <translation>Standard</translation>
-    </message>
-    <message>
-      <location filename="../../mtg_proxy_printer/model/printing_filter_model.py" line="224"/>
-      <source>Vintage</source>
-      <comment>Display text. Magic format name. Translations (if one exists) should probably also include the English name like {translated name}(&lt;english name&gt;)</comment>
-      <translation>Vintage</translation>
-    </message>
-  </context>
-  <context>
     <name>PrintingFilterUpdater.store_current_printing_filters()</name>
     <message>
-      <location filename="../../mtg_proxy_printer/async_tasks/printing_filter_updater.py" line="92"/>
+      <location filename="../../mtg_proxy_printer/async_tasks/printing_filter_updater.py" line="89"/>
       <source>Processing updated card filters:</source>
       <translation>Verarbeite aktualisierte Kartenfilter:</translation>
     </message>
@@ -3586,7 +3552,7 @@ Tipp: Möglicherweise möchten Sie einen Online-Editor für reguläre Ausdrücke
       <translation>Einstellungen auf das aktuelle Dokument anwenden?</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window.py" line="203"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window.py" line="202"/>
       <source>The new default settings differ from the settings used by the current document.
 Apply the new settings to the current document?</source>
       <translation>Die neuen Standardeinstellungen unterscheiden sich von den Einstellungen des aktuellen Dokuments.
@@ -3613,22 +3579,22 @@ Neue Einstellungen auf das aktuelle Dokument anwenden?</translation>
       <translation>Diese Seite</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window.py" line="249"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window.py" line="251"/>
       <source>Restore defaults for the current page or everything?</source>
       <translation>Standardwerte für die aktuelle Seite oder für alle Seiten wiederherstellen?</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window.py" line="250"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window.py" line="252"/>
       <source>Restore the settings on the current page or on all pages to their default values?</source>
       <translation>Einstellungen auf der aktuellen Seite oder auf allen Seiten auf ihre Standardwerte zurücksetzen?</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window.py" line="253"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window.py" line="255"/>
       <source>Restore everything</source>
       <translation>Alle Seiten</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/settings_window.py" line="254"/>
+      <location filename="../../mtg_proxy_printer/ui/settings_window.py" line="256"/>
       <source>Restore current page</source>
       <translation>Diese Seite</translation>
     </message>
@@ -3651,7 +3617,7 @@ Neue Einstellungen auf das aktuelle Dokument anwenden?</translation>
       <translation>Frei werdender Speicherplatz: {disk_space_freed}</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="504"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="501"/>
       <source>Beware: The card list currently contains %n potentially oversized card(s).</source>
       <comment>Warning emitted, if at least 1 card has the oversized flag set. The Scryfall server *may* still return a regular-sized image, so not *all* printings marked as oversized are actually so when fetched.</comment>
       <translation>
@@ -3660,15 +3626,15 @@ Neue Einstellungen auf das aktuelle Dokument anwenden?</translation>
       </translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="511"/>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="529"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="509"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="527"/>
       <source>Replace document content with the identified cards</source>
       <comment>Wizard Accept button tooltip, if replacing the document with the loaded list is enabled.</comment>
       <translation>Dokumenteninhalt durch identifizierte Karten ersetzen</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="517"/>
-      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="535"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="515"/>
+      <location filename="../../mtg_proxy_printer/ui/deck_import_wizard.py" line="533"/>
       <source>Append identified cards to the document</source>
       <comment>Wizard Accept button tooltip, if replacing the document with the loaded list is disabled.</comment>
       <translation>Identifizierte Karten an das Dokument anhängen</translation>
@@ -3822,25 +3788,25 @@ Wenn nicht ausgewählt, füge die unten gefundenen Karten dem Dokument an.</tran
   <context>
     <name>UnknownCardRow</name>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="245"/>
+      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="244"/>
       <source>Front</source>
       <comment>Magic card side</comment>
       <translation>Vorderseite</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="247"/>
+      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="246"/>
       <source>Back</source>
       <comment>Magic card side</comment>
       <translation>Rückseite</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="253"/>
+      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="252"/>
       <source>Yes</source>
       <comment>Card has high-resolution images available</comment>
       <translation>Ja</translation>
     </message>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="255"/>
+      <location filename="../../mtg_proxy_printer/ui/cache_cleanup_wizard.py" line="254"/>
       <source>No</source>
       <comment>Card only has low-resolution images available</comment>
       <translation>Nein</translation>
@@ -3921,7 +3887,7 @@ Wenn nicht ausgewählt, füge die unten gefundenen Karten dem Dokument an.</tran
   <context>
     <name>format_size</name>
     <message>
-      <location filename="../../mtg_proxy_printer/ui/common.py" line="185"/>
+      <location filename="../../mtg_proxy_printer/ui/common.py" line="183"/>
       <source>{size} {unit}</source>
       <comment>A formatted file size in SI bytes</comment>
       <translation>{size} {unit}</translation>

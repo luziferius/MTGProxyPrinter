@@ -2,6 +2,10 @@
 
 # Next version (in development)
 
+## New features
+
+- Added community-contributed application translation into Spanish. 
+
 ## Changed features
 
 - The main window column widths are now adjustable, by dragging from the border between the elements.
