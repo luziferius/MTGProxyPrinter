@@ -179,7 +179,9 @@ class PageScene(QGraphicsScene):
 
     @property
     def card_items(self) -> list[CardItem]:
-        return list(filter(is_card_item, self.items(SortOrder.AscendingOrder)))
+        # Sort the items to match the document. This is important for replacing cards.
+        card_items = filter(is_card_item, self.items())
+        return sorted(card_items, key=lambda item: tuple(reversed(item.scenePos().toTuple())))
 
     @property
     def cut_lines(self) -> list[QGraphicsLineItem]:

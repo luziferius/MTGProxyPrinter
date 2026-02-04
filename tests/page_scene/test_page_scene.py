@@ -16,18 +16,18 @@
 
 from collections.abc import Iterable
 import itertools
-from functools import partial
 from unittest.mock import patch
 from math import ceil
 
 from hamcrest import *
 import pytest
 
-from pint import Quantity, Unit
+from pint import Quantity
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
-from PySide6.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QPainter
-from PySide6.QtCore import QPoint
+from PySide6.QtGui import QPalette, QColorConstants, QImage, QColor, QPainter
+from PySide6.QtCore import QPoint, QPointF
 
+from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry
 from mtg_proxy_printer.page_scene.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.page_scene.items import NeighborsPresent
@@ -55,6 +55,7 @@ def page_scene(request, document_light: Document):
          patch.object(document_light.page_layout, "document_name", "Non-empty title" if enable_text_items else ""):
         scene = PageScene(document_light, render_mode)
         yield scene
+
 
 def render_scene(scene: PageScene) -> QImage:
     image = QImage(ceil(scene.width()), ceil(scene.height()), QImage.Format.Format_ARGB32)
@@ -810,3 +811,28 @@ def test_card_bleed_with_two_cards(page_scene: PageScene, column_spacing: Quanti
     assert_that(rendered.pixelColor(top_right + h_13), has_background_color)
     assert_that(rendered.pixelColor(right_center + h_13), has_background_color)
     assert_that(rendered.pixelColor(bottom_right + h_13), has_background_color)
+
+
+def test_replacing_card_does_not_affect_next_card(page_scene: PageScene):
+    """Test for issue [00acdbaf12]. Switching a card printing breaks the next card on the page."""
+    document = page_scene.document
+    # Sample positions somewhere in the card image
+    card_1_pos = page_scene._compute_position_for_image(0, PageType.REGULAR).toPoint() + QPoint(100, 100)
+    card_2_pos = page_scene._compute_position_for_image(1, PageType.REGULAR).toPoint() + QPoint(100, 100)
+    cyan_card = create_card_with_pixmap("Cyan", color=QColorConstants.Cyan)
+    magenta_card = create_card_with_pixmap("Magenta", color=QColorConstants.Magenta)
+    # Setup: Have 2 copies of a card
+    document.apply(ActionAddCard(cyan_card, 2))
+    rendered = render_scene(page_scene)
+    assert_that(rendered.pixelColor(card_1_pos), is_(equal_to(QColorConstants.Cyan)), "Setup failed")
+    assert_that(rendered.pixelColor(card_2_pos), is_(equal_to(QColorConstants.Cyan)), "Setup failed")
+    # Switch printing of the first card
+    document.apply(ActionReplaceCard(magenta_card, 0, 0))
+    rendered = render_scene(page_scene)
+    assert_that(rendered.pixelColor(card_1_pos), is_(equal_to(QColorConstants.Magenta)), "Setup failed, card not replaced")
+    assert_that(rendered.pixelColor(card_2_pos), is_(equal_to(QColorConstants.Cyan)), "Rendering broken")
+    # This breaks the rendering. The second card disappears completely
+    document.undo()
+    rendered = render_scene(page_scene)
+    assert_that(rendered.pixelColor(card_1_pos), is_(equal_to(QColorConstants.Cyan)), "Rendering broken")
+    assert_that(rendered.pixelColor(card_2_pos), is_(equal_to(QColorConstants.Cyan)), "Rendering broken")
