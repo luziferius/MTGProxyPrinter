@@ -77,7 +77,6 @@ class PageLayoutSettings:
     def draw_cut_markers(self) -> bool:
         return self.cut_marker_style != "None"
 
-
     def cut_marker_pen_style(self) -> PenStyle:
         return VALID_CUT_MARKER_STYLES[self.cut_marker_style]
 

@@ -226,6 +226,8 @@ class SettingsWindow(QDialog):
             logger.info("User resets changes made on the current page.")
             self.ui.stacked_pages.currentWidget().load(mtg_proxy_printer.settings.settings)
             self.clear_highlight()
+        else:
+            logger.info("User canceled reset")
 
     def reject(self):
         """Automatically called when the user hits the "Cancel" button or closes the settings window."""
@@ -260,4 +262,5 @@ class SettingsWindow(QDialog):
             logger.info("User reverts the current page to the default values.")
             self.ui.stacked_pages.currentWidget().load(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
             self.clear_highlight()
-        logger.debug("Loaded DEFAULT_SETTINGS.")
+        else:
+            logger.info("User canceled restoring default values.")
