@@ -205,7 +205,7 @@ class DebugSettingsPage(Page):
         location, _ = QFileDialog.getOpenFileName(
             self, self.tr("Import previously downloaded card data obtained from Scryfall"),
             QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory),
-            self.tr("Scryfall card data (*.json, *.json.gz)"))
+            self.tr("Scryfall card data (*.json *.json.gz)"))
         logger.info(f"{location=}")
         if not location:
             logger.debug("User cancelled file selection. Not importing.")
