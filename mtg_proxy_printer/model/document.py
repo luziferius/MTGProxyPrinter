@@ -22,12 +22,11 @@ import enum
 import itertools
 import math
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
     QPersistentModelIndex, QMimeData
 
-from mtg_proxy_printer import BlockingQueuedConnection
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask, SingleActions
 from mtg_proxy_printer.document_controller import DocumentAction
@@ -65,13 +64,15 @@ AnyIndex = QModelIndex | QPersistentModelIndex
 ItemDataRole = Qt.ItemDataRole
 Orientation = Qt.Orientation
 ItemFlag = Qt.ItemFlag
-PAGE_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-PageMove"
-CARD_MOVE_MIME_TYPE = "application/x-MTGProxyPrinter-CardMove"
-DRAG_OPERATION_TYPE = Literal["application/x-MTGProxyPrinter-PageMove"] | Literal["application/x-MTGProxyPrinter-CardMove"] | None
+
+
+class DragDropMimeTypes(enum.StrEnum):
+    PAGE_MOVE = "application/x-MTGProxyPrinter-PageMove"
+    CARD_MOVE = "application/x-MTGProxyPrinter-CardMove"
 
 
 class DragOperationType(typing.TypedDict):
-    type: Literal["application/x-MTGProxyPrinter-PageMove"] | Literal["application/x-MTGProxyPrinter-CardMove"]
+    type: DragDropMimeTypes
     source_size: typing.NotRequired[PageType]  # Size of moved cards. Prevents creation of mixed pages
     source_count: typing.NotRequired[int]  # Number of cards moved. Prevents overflowing pages
     source_page: typing.NotRequired[int]  # The origin page of card moves. Disables count checks for in-page moves
@@ -84,7 +85,7 @@ class CardMoveMimeData(typing.TypedDict):
 
 class Document(QAbstractItemModel):
     """
-    This holds a multi-page document that contains any number of same-size pages.
+    This holds a multipage document that contains any number of same-size pages.
     The pages hold the individual proxy images
     """
     INVALID_INDEX = INVALID_INDEX
@@ -123,7 +124,7 @@ class Document(QAbstractItemModel):
         self.currently_edited_page = first_page
         self.page_layout = PageLayoutSettings.create_from_settings()
         # The last started drag operation affects the index flags() related to drag&drop.
-        self.current_drag_operation: DragOperationType = {"type": PAGE_MOVE_MIME_TYPE}
+        self.current_drag_operation: DragOperationType = {"type": DragDropMimeTypes.PAGE_MOVE}
         logger.debug(f"Loaded document settings from configuration file: {self.page_layout}")
         logger.info(f"Created {self.__class__.__name__} instance")
 
@@ -260,17 +261,17 @@ class Document(QAbstractItemModel):
         flags = super().flags(index)
         if isinstance(data, CardContainer) and (index.column() in self.EDITABLE_COLUMNS or data.card.is_custom_card):
             flags |= ItemFlag.ItemIsEditable
-        if isinstance(data, Page|CardContainer):
+        if isinstance(data, Page | CardContainer):
             flags |= ItemFlag.ItemIsDragEnabled  # Pages and cards can be moved
         if (not index.isValid()  # Top level can accept any drop, both pages and cards, where the latter gets a new page
             or (
                 isinstance(data, Page)  # Dropped onto a page.
-                and self.current_drag_operation["type"] == CARD_MOVE_MIME_TYPE  # Pages only accept cards …
+                and self.current_drag_operation["type"] == DragDropMimeTypes.CARD_MOVE  # Pages only accept cards …
                 and data.accepts_card(self.current_drag_operation["source_size"])  # that have an acceptable size, …
-                and (len(data) + self.current_drag_operation["source_count"] # and if they can fit the dropped cards
-                    <= self.page_layout.compute_page_card_capacity(self.current_drag_operation["source_size"])
-                    or self.current_drag_operation["source_page"] == index.row()
-                )
+                and (len(data) + self.current_drag_operation["source_count"]  # and if they can fit the dropped cards
+                     <= self.page_layout.compute_page_card_capacity(self.current_drag_operation["source_size"])
+                     or self.current_drag_operation["source_page"] == index.row()
+                    )
                 )):
             flags |= ItemFlag.ItemIsDropEnabled
         return flags
@@ -320,17 +321,17 @@ class Document(QAbstractItemModel):
         if not (first := indexes[0]).parent().isValid():
             row = first.row()
             logger.debug(f"Initiating drag for page {row}")
-            mime_data.setData(PAGE_MOVE_MIME_TYPE, row.to_bytes(8))
-            self.current_drag_operation = DragOperationType(type=PAGE_MOVE_MIME_TYPE)
+            mime_data.setData(DragDropMimeTypes.PAGE_MOVE, row.to_bytes(8))
+            self.current_drag_operation = DragOperationType(type=DragDropMimeTypes.PAGE_MOVE)
             return mime_data
         page = first.parent().row()
         cards = sorted(set(index.row() for index in indexes))
         logger.debug(f"Initiating drag for {len(cards)} cards on page {page}")
         data: CardMoveMimeData = {"page": page, "cards": cards}
         encoded_data = json.dumps(data).encode("utf-8")
-        mime_data.setData(CARD_MOVE_MIME_TYPE, encoded_data)
+        mime_data.setData(DragDropMimeTypes.CARD_MOVE, encoded_data)
         self.current_drag_operation = DragOperationType(
-            type=CARD_MOVE_MIME_TYPE, source_count=len(cards), source_size=self.pages[page].page_type(),
+            type=DragDropMimeTypes.CARD_MOVE, source_count=len(cards), source_size=self.pages[page].page_type(),
             source_page=page)
         return mime_data
 
@@ -344,7 +345,7 @@ class Document(QAbstractItemModel):
         # dropped directly on parent. Usually this will mean appending the data as child items of parent.
         # If row and column are greater than or equal zero, it means that the drop occurred just
         # before the specified row and column in the specified parent."
-        if data.hasFormat(PAGE_MOVE_MIME_TYPE):
+        if data.hasFormat(DragDropMimeTypes.PAGE_MOVE):
             # Here, parent is always invalid. row == column == -1 means the drop ended on empty space within the view.
             # The only location with empty space is below the last page, so treat it as if the user dropped directly
             # below the last page, and move the page to the end.
@@ -352,11 +353,11 @@ class Document(QAbstractItemModel):
             logger.debug(f"Received page drop onto {row=}")
             if row == -1:
                 row = self.rowCount()
-            source_row = int.from_bytes(data.data(PAGE_MOVE_MIME_TYPE).data())
+            source_row = int.from_bytes(data.data(DragDropMimeTypes.PAGE_MOVE).data())
             self.apply(ActionMovePage(source_row, row))
-        elif data.hasFormat(CARD_MOVE_MIME_TYPE):
+        elif data.hasFormat(DragDropMimeTypes.CARD_MOVE):
             # Here, parent may be valid, and there are two main cases, one of which has 2 subcases:
-            card_data: CardMoveMimeData = json.loads(data.data(CARD_MOVE_MIME_TYPE).data())
+            card_data: CardMoveMimeData = json.loads(data.data(DragDropMimeTypes.CARD_MOVE).data())
             logger.debug(f"Received card drop onto {row=}: {card_data}")
             # Case 1:  Cards are dropped onto an existing page, given by parent.row().
             if parent.isValid():
@@ -384,7 +385,7 @@ class Document(QAbstractItemModel):
 
     def mimeTypes(self, /) -> list[str]:
         """Supported mime types."""
-        return [PAGE_MOVE_MIME_TYPE, CARD_MOVE_MIME_TYPE]
+        return list(DragDropMimeTypes)
 
     @staticmethod
     def _to_index(other: QPersistentModelIndex | QModelIndex) -> QModelIndex:
@@ -426,7 +427,7 @@ class Document(QAbstractItemModel):
         column = index.column()
         if index.row() >= self.rowCount(parent) or column >= self.columnCount(parent):
             logger.error(
-                f"Invalid index: {index.row()=}, { column=}, "
+                f"Invalid index: {index.row()=}, {column=}, "
                 f"{self.rowCount(parent)=}, {index.isValid()=}")
             return None
         card: AnyCardType = index.internalPointer().card
