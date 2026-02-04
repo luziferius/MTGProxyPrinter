@@ -85,3 +85,7 @@ class PrintCountUpdater(AsyncTask):
         if self.db_created:
             db.close()
         self._db = None
+
+    @property
+    def report_progress(self) -> bool:
+        return False
