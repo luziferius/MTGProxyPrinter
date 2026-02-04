@@ -14,6 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from collections.abc import Iterable
+from math import floor
 from typing import BinaryIO
 from io import BufferedIOBase
 
@@ -29,6 +30,7 @@ __all__ = [
 ]
 
 WrappedIoType = BufferedIOBase | BinaryIO
+
 
 @delegate(
     "file",
@@ -49,11 +51,16 @@ class MeteredFile(QObject):
         super().__init__(parent)
         self.file = file
         self._total_bytes_processed = 0
+        self.scaling_factor = 1 if expected_size_bytes <= 2**31-1 else (2**31-1) / expected_size_bytes
         self.expected_size_bytes = expected_size_bytes
         logger.debug(f"Created {self.__class__.__name__} instance.")
 
+    def _map_size(self, original: int) -> int:
+        """Maps the file size into the signed 32 bit range. Required for files over 2GiB"""
+        return floor(original * self.scaling_factor)
+
     def __enter__(self):
-        self.io_begin.emit(self.expected_size_bytes)
+        self.io_begin.emit(self._map_size(self.expected_size_bytes))
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool | None:
@@ -65,12 +72,12 @@ class MeteredFile(QObject):
 
     def _processed(self, byte_count: int):
         self._total_bytes_processed += byte_count
-        self.total_bytes_processed.emit(self._total_bytes_processed)
+        self.total_bytes_processed.emit(self._map_size(self._total_bytes_processed))
 
     def seek(self, __offset: int, __whence: int = None):
         self.file.seek(__offset, __whence)
         self._total_bytes_processed = __offset
-        self.total_bytes_processed.emit(self._total_bytes_processed)
+        self.total_bytes_processed.emit(self._map_size(self._total_bytes_processed))
 
     def read(self, __size: int | None = None) -> bytes:
         buffer = self.file.read(__size)
