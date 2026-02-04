@@ -8,11 +8,12 @@
 
 ## Changed features
 
-- The main window column widths are now adjustable, by dragging from the border between the elements.
+- The main window column widths are now adjustable, by dragging the separator between the elements.
 
 ## Fixed issues
 
-- Handle invalid internal card databases at application start, instead of crashing.
+- Fixed broken rendering after switching printings. This was a purely visual bug, and did not affect prints or PDFs.
+- Automatically re-create the internal card database, if it gets corrupted, instead of repeatedly crashing in that case.
 - Fixed issues, including a potential crash, when moving cards using drag&drop and dropping them in the space between
   their current page and the previous page. This now correctly inserts a new page at the indicated drop position
   and moves the cards there in all cases.
