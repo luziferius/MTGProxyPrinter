@@ -80,7 +80,7 @@ class PageMetadata(typing.NamedTuple):
 class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
 
-    def display_item(self) -> Sequence[QStandardItem]:
+    def display_item(self) -> QStandardItem:
         """Returns a list model item for this page, used to represent the page in the settings page selection UI."""
         data = self.display_metadata()
         item = QStandardItem(data.text)
@@ -91,7 +91,7 @@ class Page(QWidget):
         size = item.sizeHint()
         size.setHeight(32)
         item.setSizeHint(size)
-        return item,
+        return item
 
     @abstractmethod
     def display_metadata(self) -> PageMetadata:
