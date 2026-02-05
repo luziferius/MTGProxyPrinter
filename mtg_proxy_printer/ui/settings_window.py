@@ -14,6 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from collections.abc import Callable
+from typing import Sequence
 
 from PySide6.QtCore import QStringListModel, Signal, Qt, QItemSelectionModel, QEvent, QObject
 from PySide6.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
@@ -103,7 +104,7 @@ class SettingsWindow(QDialog):
         model = QStandardItemModel(self)
         # Create the model entries for each page, in the order they are stacked.
         stack = ui.stacked_pages
-        for page in map(stack.widget, range(ui.stacked_pages.count())):  # type: Page
+        for page in self._get_pages():
             model.appendRow(page.display_item())
         # Set the models
         ui.page_selection_list_view.setModel(model)
@@ -179,9 +180,9 @@ class SettingsWindow(QDialog):
         ui.page_selection_list_view.setHidden(is_narrow)
         ui.page_selection_combo_box.setVisible(is_narrow)
 
-    def _get_pages(self) -> list[Page]:
+    def _get_pages(self) -> Sequence[Page]:
         ui = self.ui
-        return [ui.stacked_pages.widget(index) for index in range(ui.stacked_pages.count())]
+        return map(self.ui.stacked_pages.widget, range(ui.stacked_pages.count()))
 
     def load_settings(self, settings: ConfigParser):
         logger.debug("Loading the settings")
