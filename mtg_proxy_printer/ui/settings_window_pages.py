@@ -197,7 +197,11 @@ class DebugSettingsPage(Page):
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Download card data to file {path}")
-        self.request_run_async_task.emit(FileDownloadTask(path))
+        task = FileDownloadTask(path)
+        # Failure to download re-enables the download button
+        task.error_occurred.connect(lambda: self.ui.debug_download_card_data_as_file.setEnabled(True))
+        task.network_error_occurred.connect(lambda: self.ui.debug_download_card_data_as_file.setEnabled(True))
+        self.request_run_async_task.emit(task)
 
     @Slot()
     def on_debug_import_card_data_from_file_clicked(self):
