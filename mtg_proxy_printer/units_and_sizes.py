@@ -30,9 +30,11 @@ import pint.facets.context.objects
 
 import mtg_proxy_printer.natsort
 
+
 class ToDots(pint.facets.context.objects.Transformation):
     def __call__(self, _: pint.UnitRegistry, value: Quantity, **kwargs: Any) -> Quantity:
         return value*RESOLUTION
+
 
 class ToLength(pint.facets.context.objects.Transformation):
     def __call__(self, _: pint.UnitRegistry, value: Quantity, **kwargs: Any) -> Quantity:
@@ -144,6 +146,30 @@ class CardSizes(CardSize, enum.Enum):
 
 sqlite3.register_adapter(CardSize, lambda item: item.to_save_data())
 sqlite3.register_adapter(CardSizes, lambda item: item.to_save_data())
+
+
+@enum.unique
+class CutMarkerStyle(enum.StrEnum):
+    """All valid cut marker styles. Values used in configuration and save files."""
+    NONE = "None"
+    SOLID = "Solid"
+    DOTS = "Dots"
+    DASHES = "Dashes"
+
+
+@enum.unique
+class PaperOrientation(enum.StrEnum):
+    """All valid paper orientations. Values used in configuration and save files."""
+    PORTRAIT = "Portrait"
+    LANDSCAPE = "Landscape"
+
+
+@enum.unique
+class PrintRegistrationMarkStyle(enum.StrEnum):
+    """All valid print and cut registration marker styles. Values used in configuration and save files."""
+    NONE = "None"
+    BULLSEYE = "Bullseye"
+    CUT_MARKER = "Cut marker"
 
 
 @enum.unique

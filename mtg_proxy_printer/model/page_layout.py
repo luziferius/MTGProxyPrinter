@@ -27,7 +27,8 @@ import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, distance_to_mm
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, \
+    distance_to_mm, CutMarkerStyle, PaperOrientation, PrintRegistrationMarkStyle
 if TYPE_CHECKING:
     from mtg_proxy_printer.page_scene.page_scene import RenderMode
 logger = get_logger(__name__)
@@ -37,7 +38,6 @@ PenStyle = Qt.PenStyle
 __all__ = [
     "PageLayoutSettings",
 ]
-
 
 
 def _is_quantity_setting(pair: tuple[str, Any]):
@@ -50,7 +50,7 @@ class PageLayoutSettings:
     card_bleed: Quantity = 0 * unit_registry.mm
     cut_marker_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Black)
     cut_marker_draw_above_cards: bool = False
-    cut_marker_style: str = "None"  # TODO: Can this be Literal["None", "Solid", "Dots", "Dashes"] instead of str
+    cut_marker_style: CutMarkerStyle = CutMarkerStyle.NONE
     cut_marker_width: Quantity = 0 * unit_registry.mm
     document_name: str = ""
     draw_page_numbers: bool = False
@@ -63,9 +63,9 @@ class PageLayoutSettings:
     margin_top: Quantity = 0 * unit_registry.mm
     custom_page_height: Quantity = 0 * unit_registry.mm
     custom_page_width: Quantity = 0 * unit_registry.mm
-    paper_orientation: str = "Portrait"  # TODO: Here, too. Literal["Portrait", "Landscape"] instead of str
+    paper_orientation: PaperOrientation = PaperOrientation.PORTRAIT
     paper_size: str = "Custom"
-    print_registration_marks_style: str = "None"  # TODO: Here, too.
+    print_registration_marks_style: PrintRegistrationMarkStyle = PrintRegistrationMarkStyle.NONE
     watermark_angle: Quantity = 0 * unit_registry.degree
     watermark_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Transparent)
     watermark_font_size: Quantity = 0 * unit_registry.point
@@ -115,7 +115,7 @@ class PageLayoutSettings:
             document_settings.get_quantity("card-bleed"),
             document_settings.get_color("cut-marker-color"),
             document_settings.getboolean("cut-marker-draw-above-cards"),
-            document_settings["cut-marker-style"],
+            CutMarkerStyle(document_settings["cut-marker-style"]),
             document_settings.get_quantity("cut-marker-width"),
             document_settings["default-document-name"],
             document_settings.getboolean("print-page-numbers"),
@@ -128,9 +128,9 @@ class PageLayoutSettings:
             document_settings.get_quantity("margin-top"),
             document_settings.get_quantity("custom-page-height"),
             document_settings.get_quantity("custom-page-width"),
-            document_settings["paper-orientation"],
+            PaperOrientation(document_settings["paper-orientation"]),
             document_settings["paper-size"],
-            document_settings["print-registration-marks-style"],
+            PrintRegistrationMarkStyle(document_settings["print-registration-marks-style"]),
             document_settings.get_quantity("watermark-angle"),
             document_settings.get_color("watermark-color"),
             document_settings.get_quantity("watermark-font-size"),
