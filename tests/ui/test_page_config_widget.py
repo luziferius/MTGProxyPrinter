@@ -25,7 +25,7 @@ from pytestqt.qtbot import QtBot
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
-from mtg_proxy_printer.units_and_sizes import unit_registry, Unit, Quantity
+from mtg_proxy_printer.units_and_sizes import unit_registry, Unit, Quantity, PaperOrientation
 
 from tests.hasgetter import has_getter
 from tests.helpers import quantity_close_to, quantity_between, number_between, close_to_
@@ -48,7 +48,7 @@ def default_settings() -> PageLayoutSettings:
 def custom_a4_page_layout():
     layout = PageLayoutSettings.create_from_settings()
     layout.paper_size = "Custom"
-    layout.paper_orientation = "Portrait"
+    layout.paper_orientation = PaperOrientation.PORTRAIT
     layout.custom_page_width = 210*mm
     layout.custom_page_height = 297*mm
     return layout

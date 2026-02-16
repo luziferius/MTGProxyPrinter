@@ -26,7 +26,6 @@ from PySide6.QtCore import QMarginsF, QSizeF, Qt
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
 from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, \
     distance_to_mm, CutMarkerStyle, PaperOrientation, PrintRegistrationMarkStyle
 if TYPE_CHECKING:
@@ -75,10 +74,10 @@ class PageLayoutSettings:
 
     @property
     def draw_cut_markers(self) -> bool:
-        return self.cut_marker_style != "None"
+        return self.cut_marker_style is not CutMarkerStyle.NONE
 
     def cut_marker_pen_style(self) -> PenStyle:
-        return VALID_CUT_MARKER_STYLES[self.cut_marker_style]
+        return self.cut_marker_style.to_qt_pen_style()
 
     @property
     def page_height(self) -> Quantity:
@@ -86,7 +85,7 @@ class PageLayoutSettings:
             return self.custom_page_height
         page_size = mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size]
         size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
-        value = size.height() if self.paper_orientation == "Portrait" else size.width()
+        value = size.height() if self.paper_orientation == PaperOrientation.PORTRAIT else size.width()
         return value*unit_registry.mm
 
     @page_height.setter
@@ -100,7 +99,7 @@ class PageLayoutSettings:
             return self.custom_page_width
         page_size = mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size]
         size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
-        value = size.width() if self.paper_orientation == "Portrait" else size.height()
+        value = size.width() if self.paper_orientation == PaperOrientation.PORTRAIT else size.height()
         return value*unit_registry.mm
 
     @page_width.setter

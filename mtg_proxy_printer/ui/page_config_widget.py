@@ -28,7 +28,7 @@ from mtg_proxy_printer.settings import settings, DEFAULT_SETTINGS
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, \
-    PageType, unit_registry, ConfigParser, PageSizeManager
+    PageType, unit_registry, ConfigParser, PageSizeManager, CutMarkerStyle, PrintRegistrationMarkStyle, PaperOrientation
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -85,19 +85,19 @@ class PageConfigWidget(QGroupBox):
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings.create_from_settings()
-
-        ui.cut_marker_style.addItem(self.tr("Disabled", "A cut marker style"), "None")
-        ui.cut_marker_style.addItem(self.tr("Solid lines", "A cut marker style"), "Solid")
-        ui.cut_marker_style.addItem(self.tr("Dashed lines", "A cut marker style"), "Dashes")
-        ui.cut_marker_style.addItem(self.tr("Dotted lines", "A cut marker style"), "Dots")
+        cs = CutMarkerStyle
+        ui.cut_marker_style.addItem(self.tr("Disabled", "A cut marker style"), cs.NONE)
+        ui.cut_marker_style.addItem(self.tr("Solid lines", "A cut marker style"), cs.SOLID)
+        ui.cut_marker_style.addItem(self.tr("Dashed lines", "A cut marker style"), cs.DASHES)
+        ui.cut_marker_style.addItem(self.tr("Dotted lines", "A cut marker style"), cs.DOTS)
         ui.cut_marker_style.currentIndexChanged.connect(self._on_cut_marker_style_changed)
         ui.cut_marker_style.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
-
-        ui.print_registration_marks_style.addItem(self.tr("Disabled", "A print/cut registration marker style"), "None")
-        ui.print_registration_marks_style.addItem(self.tr("Bullseye", "A print/cut registration marker style"), "Bullseye")
+        rs = PrintRegistrationMarkStyle
+        ui.print_registration_marks_style.addItem(self.tr("Disabled", "A print/cut registration marker style"), rs.NONE)
+        ui.print_registration_marks_style.addItem(self.tr("Bullseye", "A print/cut registration marker style"), rs.BULLSEYE)
         ui.print_registration_marks_style.addItem(
             self.tr("Silhouette cutter (Cameo-compatible)",
-                    "A print/cut registration marker style"), "Cut marker")
+                    "A print/cut registration marker style"), rs.CUT_MARKER)
         ui.print_registration_marks_style.currentIndexChanged.connect(self._on_print_registration_marks_style_changed)
         ui.print_registration_marks_style.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
@@ -293,7 +293,7 @@ class PageConfigWidget(QGroupBox):
         page_size: QPageSize.PageSizeId = ui.paper_size.currentData(UserRole)
         size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
         orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(UserRole)]
-        return size.height() if orientation == "Portrait" else size.width()
+        return size.height() if orientation == PaperOrientation.PORTRAIT else size.width()
 
     def _current_page_width(self) -> float:
         """Returns the current page width in mm as set via GUI elements. Used for validations"""
@@ -303,7 +303,7 @@ class PageConfigWidget(QGroupBox):
         page_size: QPageSize.PageSizeId = ui.paper_size.currentData(UserRole)
         size = QPageSize.size(page_size, QPageSize.Unit.Millimeter)
         orientation = PageSizeManager.PageOrientationReverse[ui.paper_orientation.currentData(UserRole)]
-        return size.width() if orientation == "Portrait" else size.height()
+        return size.width() if orientation == PaperOrientation.PORTRAIT else size.height()
 
     def load_from_page_layout(self, other: PageLayoutSettings):
         """Loads the page layout from another PageLayoutSettings instance"""

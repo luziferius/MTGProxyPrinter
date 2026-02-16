@@ -20,7 +20,8 @@ import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.async_tasks.document_loader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, unit_registry, StrDict
+from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, unit_registry, StrDict, CutMarkerStyle, \
+    PaperOrientation
 from mtg_proxy_printer.page_scene.page_scene import RenderMode
 
 from pint import Quantity
@@ -135,7 +136,7 @@ def test_page_layout_lt_raises_type_error_on_incompatible_types(page_layout: Pag
 
 def test_page_layout_gt(page_layout: PageLayoutSettings):
     page_layout.paper_size = "Custom"
-    page_layout.paper_orientation = "Portrait"
+    page_layout.paper_orientation = PaperOrientation.PORTRAIT
     page_layout.custom_page_width = 10 * mm
     assert_that(page_layout.compute_page_card_capacity(PageType.REGULAR), is_(0))
     assert_that(page_layout, is_not(greater_than(page_layout)))
@@ -152,8 +153,8 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
         "custom-page-width": "100 mm",
         "cut-marker-color": QColorConstants.Black.name(HexArgb),
         "cut-marker-draw-above-cards": "True",
-        "cut-marker-style": "Solid",
-        "cut-marker-width" : "0.5 mm",
+        "cut-marker-style": CutMarkerStyle.SOLID.value,
+        "cut-marker-width": "0.5 mm",
         "margin-top": "9 mm",
         "margin-bottom": "8 mm",
         "margin-left": "7 mm",
@@ -164,7 +165,7 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
         "print-sharp-corners": "True",
         "print-page-numbers": "True",
         "default-document-name": "Test",
-        "paper-orientation": "Portrait",
+        "paper-orientation": PaperOrientation.PORTRAIT.value,
         "paper-size": "Custom",
         "watermark-text": "Watermark",
         "watermark-font-size": "20 point",
@@ -178,8 +179,8 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
         "custom-page-width": "100 millimeter",
         "cut-marker-color": QColorConstants.Black.name(HexArgb),
         "cut-marker-draw-above-cards": "True",
-        "cut-marker-style": "Solid",
-        "cut-marker-width" : "0.5 millimeter",
+        "cut-marker-style": CutMarkerStyle.SOLID.value,
+        "cut-marker-width": "0.5 millimeter",
         "margin-top": "9 millimeter",
         "margin-bottom": "8 millimeter",
         "margin-left": "7 millimeter",
@@ -190,7 +191,7 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
         "print-sharp-corners": "True",
         "print-page-numbers": "True",
         "default-document-name": "Test",
-        "paper-orientation": "Portrait",
+        "paper-orientation": PaperOrientation.PORTRAIT.value,
         "paper-size": "Custom",
         "watermark-text": "Watermark",
         "watermark-font-size": "20 points",
@@ -207,7 +208,7 @@ def test_create_from_settings(values: StrDict):
         layout, has_properties(
             cut_marker_color=equal_to(QColorConstants.Black),
             cut_marker_draw_above_cards=is_(True),
-            cut_marker_style=equal_to("Solid"),
+            cut_marker_style=equal_to(CutMarkerStyle.SOLID),
             cut_marker_width=quantity_close_to(0.5*mm),
             document_name=equal_to("Test"),
             draw_page_numbers=is_(True),
@@ -220,7 +221,7 @@ def test_create_from_settings(values: StrDict):
             margin_top=quantity_close_to(9*mm),
             custom_page_height=quantity_close_to(200*mm),
             custom_page_width=quantity_close_to(100*mm),
-            paper_orientation=equal_to("Portrait"),
+            paper_orientation=equal_to(PaperOrientation.PORTRAIT),
             paper_size=equal_to("Custom"),
             watermark_text=equal_to("Watermark"),
             watermark_font_size=quantity_close_to(20*unit_registry.point),

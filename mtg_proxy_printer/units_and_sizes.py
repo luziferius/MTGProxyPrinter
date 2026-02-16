@@ -24,7 +24,7 @@ import sqlite3
 from typing import Type, NamedTuple, TypedDict, NotRequired, TypeVar, Any
 
 from pint import UnitRegistry, Quantity, Context, Unit
-from PySide6.QtCore import QSize, QObject
+from PySide6.QtCore import QSize, QObject, Qt
 from PySide6.QtGui import QPageSize, QPageLayout, QColor
 import pint.facets.context.objects
 
@@ -78,6 +78,7 @@ IntList = list[int]
 StrDict = dict[str, str]
 T = TypeVar("T")
 PageSizeId = QPageSize.PageSizeId
+PenStyle = Qt.PenStyle
 mm: Unit = unit_registry.mm
 
 
@@ -155,6 +156,14 @@ class CutMarkerStyle(enum.StrEnum):
     SOLID = "Solid"
     DOTS = "Dots"
     DASHES = "Dashes"
+
+    def to_qt_pen_style(self) -> PenStyle:
+        return {
+            CutMarkerStyle.NONE: PenStyle.NoPen,
+            CutMarkerStyle.SOLID: PenStyle.SolidLine,
+            CutMarkerStyle.DOTS: PenStyle.DotLine,
+            CutMarkerStyle.DASHES: PenStyle.DashLine,
+        }[self]
 
 
 @enum.unique
@@ -381,5 +390,5 @@ def read_page_size_enum() -> dict[str, PageSizeId]:
 class PageSizeManager(QObject):
     PageSize = read_page_size_enum()
     PageSizeReverse = {value: key for key, value in read_page_size_enum().items()}
-    PageOrientation = {item.name: item for item in QPageLayout.Orientation}
-    PageOrientationReverse = {item: item.name for item in QPageLayout.Orientation}
+    PageOrientation = {PaperOrientation(item.name): item for item in QPageLayout.Orientation}
+    PageOrientationReverse = {item: PaperOrientation(item.name) for item in QPageLayout.Orientation}

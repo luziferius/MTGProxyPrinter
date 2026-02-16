@@ -13,7 +13,7 @@ from pint import Quantity
 from mtg_proxy_printer.model.card import AnyCardType, CardCorner
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import unit_registry, RESOLUTION
+from mtg_proxy_printer.units_and_sizes import unit_registry, RESOLUTION, PrintRegistrationMarkStyle
 from mtg_proxy_printer.ui.common import RESOURCE_PATH_PREFIX
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -72,7 +72,7 @@ class BullseyeMarkItem(QGraphicsSvgItem):
         super().setPos(new)
 
     def update_visibility(self, current_style: str):
-        self.setOpacity(current_style == "Bullseye")
+        self.setOpacity(current_style == PrintRegistrationMarkStyle.BULLSEYE)
 
 
 class CutMarkSquareItem(QGraphicsRectItem):
@@ -85,7 +85,7 @@ class CutMarkSquareItem(QGraphicsRectItem):
         logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
 
     def update_visibility(self, current_style: str):
-        self.setOpacity(current_style == "Cut marker")
+        self.setOpacity(current_style == PrintRegistrationMarkStyle.CUT_MARKER)
 
 
 class CutMarkAngleItem(QGraphicsPolygonItem):
@@ -115,7 +115,7 @@ class CutMarkAngleItem(QGraphicsPolygonItem):
         super().setPos(new)
 
     def update_visibility(self, current_style: str):
-        self.setOpacity(current_style == "Cut marker")
+        self.setOpacity(current_style == PrintRegistrationMarkStyle.CUT_MARKER)
 
 
 class CardBleedItem(QGraphicsPixmapItem):

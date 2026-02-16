@@ -31,7 +31,9 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import \
-    CardSizes, ConfigParser, SectionProxy, unit_registry, T, Quantity, PageSizeManager, is_acceptable_page_size
+    CardSizes, ConfigParser, SectionProxy, unit_registry, T, Quantity, PageSizeManager, is_acceptable_page_size, \
+    CutMarkerStyle, PrintRegistrationMarkStyle, PaperOrientation
+
 StandardLocation = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
 Territory = QLocale.Country  # TODO: Adjust for PySide6
@@ -49,7 +51,6 @@ __all__ = [
     "update_stored_version_string",
     "get_boolean_card_filter_keys",
     "parse_card_set_filters",
-    "VALID_CUT_MARKER_STYLES",
 ]
 
 
@@ -169,23 +170,14 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hidden-sets": "",
 }
 
-VALID_CUT_MARKER_STYLES: defaultdict[str, PenStyle] = defaultdict(lambda: PenStyle.NoPen, {
-    "None": PenStyle.NoPen,
-    "Solid": PenStyle.SolidLine,
-    "Dots": PenStyle.DotLine,
-    "Dashes": PenStyle.DashLine,
-})
-VALID_PRINT_REGISTRATION_MARKS_STYLES: set[str] = {
-    "None", "Bullseye", "Cut marker"
-}
 DEFAULT_MARGINS = 5*mm
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed": "0 mm",
     "cut-marker-color": QColorConstants.Black.name(HexArgb),
     "cut-marker-draw-above-cards": "False",
-    "cut-marker-style": "None",
+    "cut-marker-style": CutMarkerStyle.NONE.value,
     "cut-marker-width" : "0 mm",  # Zero width means infinitesimally thin. Always drawn as 1 pixel at any zoom level
-    "paper-orientation": PageSizeManager.PageOrientationReverse[Orientation.Portrait],
+    "paper-orientation": PaperOrientation.PORTRAIT.value,
     "paper-size": get_default_paper_size(),
     "custom-page-height": "297 mm",
     "custom-page-width": "210 mm",
@@ -193,7 +185,7 @@ DEFAULT_SETTINGS["documents"] = {
     "margin-bottom": str(DEFAULT_MARGINS),
     "margin-left": str(DEFAULT_MARGINS),
     "margin-right": str(DEFAULT_MARGINS),
-    "print-registration-marks-style": "None",
+    "print-registration-marks-style": PrintRegistrationMarkStyle.NONE.value,
     "row-spacing": "0 mm",
     "column-spacing": "0 mm",
     "print-sharp-corners": "False",
@@ -414,13 +406,13 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
         else:
             raise RuntimeError(f"BUG: Unhandled key found: {key}")
 
-    if section["cut-marker-style"] not in VALID_CUT_MARKER_STYLES:
+    if section["cut-marker-style"] not in CutMarkerStyle:
         _restore_default(section, defaults, "cut-marker-style")
     if section["paper-size"] not in PageSizeManager.PageSize:
         _restore_default(section, defaults, "paper-size")
-    if section["paper-orientation"] not in PageSizeManager.PageOrientation:
+    if section["paper-orientation"] not in PaperOrientation:
         _restore_default(section, defaults, "paper-orientation")
-    if section["print-registration-marks-style"] not in VALID_PRINT_REGISTRATION_MARKS_STYLES:
+    if section["print-registration-marks-style"] not in PrintRegistrationMarkStyle:
         _restore_default(section, defaults, "print-registration-marks-style")
     # Check some semantic properties
     available_height = section.get_quantity("custom-page-height") - \
@@ -730,7 +722,9 @@ def _12_migrate_to_cut_marker_style_key(to_migrate: ConfigParser):
     section = to_migrate["documents"]
     if "cut-marker-style" in section:
         return
-    section["cut-marker-style"] = "Solid" if section.getboolean("print-cut-marker") else "None"
+    section["cut-marker-style"] = (
+        CutMarkerStyle.SOLID if section.getboolean("cut-marker-style") else CutMarkerStyle.NONE
+    ).value
     try:
         del section["print-cut-marker"]
     except KeyError:

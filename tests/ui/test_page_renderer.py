@@ -20,14 +20,17 @@ import pytest
 from hamcrest import *
 from PySide6.QtCore import QEvent
 from PySide6.QtGui import QAction
+from pytestqt.qtbot import QtBot
 
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.page_renderer import PageRenderer, ZoomDirection
 
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer."
+EventType = QEvent.Type
 
 
 @pytest.fixture
-def renderer(qtbot, document_light):
+def renderer(qtbot: QtBot, document_light: Document):
     """
     Creates a PageRenderer.
     Note: qtbot fixture parameter is required for the implicitly provided event loop. Qt segfaults without it present
@@ -38,7 +41,7 @@ def renderer(qtbot, document_light):
         yield page_renderer
 
 
-@pytest.fixture(params=[QEvent.ApplicationPaletteChange, QEvent.PaletteChange])
+@pytest.fixture(params=[EventType.ApplicationPaletteChange, EventType.PaletteChange])
 def palette_change_event(request):
     yield QEvent(request.param)
 

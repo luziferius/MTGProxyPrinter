@@ -28,7 +28,7 @@ from PySide6.QtGui import QPalette, QColorConstants, QImage, QColor, QPainter
 from PySide6.QtCore import QPoint, QPointF
 
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
-from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, CutMarkerStyle
 from mtg_proxy_printer.page_scene.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.page_scene.items import NeighborsPresent
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
@@ -99,7 +99,7 @@ def test_adding_with_card_to_filled_page_does_not_redraw_page(
 
 def test_cut_lines_not_drawn_when_disabled_and_page_empty(page_scene: PageScene):
     document = page_scene.document
-    document.page_layout.cut_marker_style = "None"
+    document.page_layout.cut_marker_style = CutMarkerStyle.NONE
     document.page_layout_changed.emit(document.page_layout)
     assert_that(
         page_scene.items(), not_(has_items(instance_of(QGraphicsLineItem)))
@@ -110,7 +110,7 @@ def test_cut_lines_not_drawn_when_disabled_and_page_empty(page_scene: PageScene)
 @pytest.mark.parametrize("size", CardSizes)
 def test_cut_lines_not_drawn_when_disabled_and_page_filled(page_scene: PageScene, size: CardSize):
     document = page_scene.document
-    document.page_layout.cut_marker_style = "None"
+    document.page_layout.cut_marker_style = CutMarkerStyle.NONE
     document.page_layout_changed.emit(document.page_layout)
     document.apply(ActionAddCard(create_card_with_pixmap("Card", size)))
     assert_that(
@@ -124,7 +124,7 @@ def test_cut_lines_property_only_lists_line_elements(
     layout = page_scene.document.page_layout
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing
-    layout.cut_marker_style = "Solid"
+    layout.cut_marker_style = CutMarkerStyle.SOLID
     page_scene.document.page_layout_changed.emit(layout)
     assert_that(
         page_scene.cut_lines, all_of(
@@ -140,7 +140,7 @@ def test_cut_lines_property_only_lists_line_elements(
     )
 
 
-@pytest.mark.parametrize("cut_marker_style", ["Solid", "Dots", "Dashes"])
+@pytest.mark.parametrize("cut_marker_style", [CutMarkerStyle.SOLID, CutMarkerStyle.DOTS, CutMarkerStyle.DASHES])
 @pytest.mark.parametrize("row_spacing", [0*mm, 1*mm])
 @pytest.mark.parametrize("column_spacing", [0*mm, 1*mm])
 # TODO: Parameter for cut helper width
@@ -223,7 +223,7 @@ def test_horizontal_cut_line_locations_when_enabled(
     document.page_layout.margin_top = margins*mm
     document.page_layout.margin_bottom = 0*mm
     document.page_layout.row_spacing = spacing*mm
-    document.page_layout.cut_marker_style = "Solid"
+    document.page_layout.cut_marker_style = CutMarkerStyle.SOLID
     document.page_layout_changed.emit(document.page_layout)
     assert_that(
         document.page_layout.compute_page_card_capacity(page_type), is_in((4, 9)),
@@ -300,7 +300,7 @@ def test_vertical_cut_line_locations_when_enabled(
     document.page_layout.margin_left = margins*mm
     document.page_layout.margin_right = 0*mm
     document.page_layout.column_spacing = spacing*mm
-    document.page_layout.cut_marker_style = "Solid"
+    document.page_layout.cut_marker_style = CutMarkerStyle.SOLID
     document.page_layout_changed.emit(document.page_layout)
     assert_that(
         document.page_layout.compute_page_card_capacity(page_type), is_in((4, 9)),

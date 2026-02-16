@@ -29,7 +29,6 @@ from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to,
 
 import mtg_proxy_printer.units_and_sizes
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardDatabase
 from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType, CustomCard
@@ -37,7 +36,7 @@ from mtg_proxy_printer.async_tasks.image_downloader import ImageDownloadTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import  PageType, CardSize, CardSizes, unit_registry, \
-    Quantity, T, UUID, OptStr
+    Quantity, T, UUID, OptStr, PaperOrientation, CutMarkerStyle, PrintRegistrationMarkStyle
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.save_file_migrations import migrate_database
@@ -471,7 +470,7 @@ class DocumentLoader(AsyncTask):
                 custom_page_width=is_distance,
                 cut_marker_color=is_color,
                 cut_marker_draw_above_cards=is_bool,
-                cut_marker_style=is_in(VALID_CUT_MARKER_STYLES),
+                cut_marker_style=is_in(mtg_proxy_printer.units_and_sizes.CutMarkerStyle),
                 cut_marker_width=is_distance,
                 margin_top=is_distance,
                 margin_bottom=is_distance,
@@ -482,9 +481,9 @@ class DocumentLoader(AsyncTask):
                 draw_sharp_corners=is_bool,
                 draw_page_numbers=is_bool,
                 document_name=instance_of(str),
-                paper_orientation=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageOrientation),
+                paper_orientation=is_in(mtg_proxy_printer.units_and_sizes.PaperOrientation),
                 paper_size=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize),
-                print_registration_marks_style=is_in(mtg_proxy_printer.settings.VALID_PRINT_REGISTRATION_MARKS_STYLES),
+                print_registration_marks_style=is_in(mtg_proxy_printer.units_and_sizes.PrintRegistrationMarkStyle),
                 watermark_angle=is_angle,
                 watermark_pos_x=is_distance,
                 watermark_pos_y=is_distance,
@@ -505,6 +504,8 @@ class DocumentLoader(AsyncTask):
             elif annotated_type is QColor:
                 if isinstance(value, str):
                     value = QColor(value)
+            elif annotated_type in (PaperOrientation, CutMarkerStyle, PrintRegistrationMarkStyle):
+                value = annotated_type(value)
             elif annotated_type is str:
                  pass
             setattr(settings, key, value)

@@ -25,7 +25,7 @@ from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
-from mtg_proxy_printer.units_and_sizes import unit_registry, Unit
+from mtg_proxy_printer.units_and_sizes import unit_registry, Unit, CutMarkerStyle
 from mtg_proxy_printer.model.card import CheckCard
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.async_tasks.document_loader import CardType
@@ -121,7 +121,7 @@ def test_subsequent_save_updates_settings(tmp_path: Path, qtbot: QtBot, document
     modified_layout.margin_left = modified_layout.margin_right= 14*mm
     modified_layout.column_spacing = modified_layout.row_spacing = 2*mm
     modified_layout.draw_page_numbers = not modified_layout.draw_page_numbers
-    modified_layout.cut_marker_style = "Dots"
+    modified_layout.cut_marker_style = CutMarkerStyle.DOTS
     modified_layout.draw_sharp_corners = not modified_layout.draw_sharp_corners
     modified_layout.document_name = "New"
 

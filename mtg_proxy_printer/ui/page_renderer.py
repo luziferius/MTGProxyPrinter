@@ -97,7 +97,8 @@ class PageRenderer(QGraphicsView):
     def set_document(self, document: Document):
         logger.info("Document instance received, creating PageScene.")
         self.document = document
-        self.setScene(scene := PageScene(document, RenderMode.ON_SCREEN, self))
+        scene = PageScene(document, RenderMode.ON_SCREEN, self)
+        self.setScene(scene)
         scene.scene_size_changed.connect(self.resizeEvent)
 
     def _perform_zoom_step(self, direction: ZoomDirection):
