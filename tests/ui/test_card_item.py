@@ -20,6 +20,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QColorConstants, QPixmap, QImage, QPainter, QColor
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene
 
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.page_scene.items import CardItem
@@ -27,8 +28,10 @@ from mtg_proxy_printer.page_scene.items import CardItem
 from tests.document_controller.helpers import append_new_card_in_page
 from tests.hasgetter import has_getter
 
+Format = QImage.Format
 
-def test_pixmap_set_in_init(qtbot, document_light):
+
+def test_pixmap_set_in_init(document_light: Document):
     card = append_new_card_in_page(document_light.pages[0], "Card")
     card.set_image_file(document_light.image_db.get_blank(CardSizes.REGULAR))
     index = document_light.index(0, PageColumns.Image, document_light.index(0, 0))
@@ -45,7 +48,7 @@ def test_pixmap_set_in_init(qtbot, document_light):
 
 
 def create_pixmap_with_transparent_corners(size: QSize) -> QPixmap:
-    image = QImage(size, QImage.Format_RGBA8888)
+    image = QImage(size, Format.Format_RGBA8888)
     image.fill(QColorConstants.Red)
     for x, y in ((0, 0), (size.width()-1, 0), (0, size.height()-1), (size.width()-1, size.height()-1)):
         image.setPixelColor(x, y, QColorConstants.Transparent)
@@ -53,10 +56,10 @@ def create_pixmap_with_transparent_corners(size: QSize) -> QPixmap:
 
 
 def paint_to_new_image(item: QGraphicsItem, size: QSize) -> QImage:
-    painted_image = QImage(size, QImage.Format_RGBA8888)
+    painted_image = QImage(size, Format.Format_RGBA8888)
     painted_image.fill(QColorConstants.White)
     painter = QPainter(painted_image)
-    painter.setRenderHint(QPainter.LosslessImageRendering)
+    painter.setRenderHint(QPainter.RenderHint.LosslessImageRendering)
     scene = QGraphicsScene(0, 0, size.width(), size.height())
     scene.addItem(item)
     scene.render(painter)
@@ -67,7 +70,7 @@ def paint_to_new_image(item: QGraphicsItem, size: QSize) -> QImage:
     (True, QColorConstants.Red),
     (False, QColorConstants.White),
 ])
-def test_corners_render_correctly_after_creation(qtbot, document_light, new_state: bool, expected_color: QColor):
+def test_corners_render_correctly_after_creation(document_light: Document, new_state: bool, expected_color: QColor):
     document_light.page_layout.draw_sharp_corners = new_state
     card = append_new_card_in_page(document_light.pages[0], "Card")
     card.set_image_file(create_pixmap_with_transparent_corners(CardSizes.REGULAR.as_qsize_px()))
@@ -87,7 +90,7 @@ def test_corners_render_correctly_after_creation(qtbot, document_light, new_stat
     (True, False, QColorConstants.White),
 ])
 def test_corner_renders_correctly_after_changing_draw_sharp_corners_option(
-        qtbot, document_light, old_state: bool, new_state: bool, expected_color: QColor):
+        document_light: Document, old_state: bool, new_state: bool, expected_color: QColor):
     document_light.page_layout.draw_sharp_corners = old_state
     card = append_new_card_in_page(document_light.pages[0], "Card")
     card_size = CardSizes.REGULAR.as_qsize_px()

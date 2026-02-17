@@ -17,17 +17,21 @@
 import pytest
 
 from PySide6.QtWidgets import QDialogButtonBox
+from pytestqt.qtbot import QtBot
+
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.dialogs import DocumentSettingsDialog
 StandardButton = QDialogButtonBox.StandardButton
 
 
-def test__init__(qtbot, document_light):
+def test__init__(document_light: Document):
     """Ensure that the dialog can be instantiated"""
     DocumentSettingsDialog(document_light)
 
 
 @pytest.mark.parametrize("button_role", [StandardButton.Save])
-def test_saving_actions_modify_document_settings(qtbot, document_light, button_role: StandardButton):
+def test_saving_actions_modify_document_settings(
+        qtbot: QtBot, document_light: Document, button_role: StandardButton):
     dialog = DocumentSettingsDialog(document_light)
     qtbot.add_widget(dialog)
     with qtbot.wait_exposed(dialog):
@@ -39,7 +43,8 @@ def test_saving_actions_modify_document_settings(qtbot, document_light, button_r
 
 
 @pytest.mark.parametrize("button_role", [StandardButton.Reset, StandardButton.Cancel, StandardButton.RestoreDefaults])
-def test_reverting_actions_do_not_alter_the_document_settings(qtbot, document_light, button_role: StandardButton):
+def test_reverting_actions_do_not_alter_the_document_settings(
+        qtbot: QtBot, document_light: Document, button_role: StandardButton):
     dialog = DocumentSettingsDialog(document_light)
     qtbot.add_widget(dialog)
     with qtbot.wait_exposed(dialog):

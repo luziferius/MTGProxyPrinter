@@ -19,8 +19,6 @@ This module contains an assortment of small helper functions used in the tests f
 """
 import itertools
 
-from PySide6.QtGui import QPixmap
-
 import hamcrest.core.base_matcher
 from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to, has_property
 
@@ -53,6 +51,7 @@ def verify_page_index_cache_is_valid(document):
         "Index of page id to page number not updated properly"
     )
 
+
 def card_container_with(card: AnyCardType, parent: Page):
     """Hamcrest matcher for a CardContainer."""
     if not isinstance(card, hamcrest.core.base_matcher.BaseMatcher):
@@ -72,6 +71,7 @@ def card_container_with_name(name: str, parent: Page):
         instance_of(CardContainer),
         has_properties({
             "card": has_property("name", equal_to(name)),
+            "parent": equal_to(parent),
         })
     )
 

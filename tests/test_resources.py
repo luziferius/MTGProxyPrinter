@@ -30,6 +30,7 @@ if os.getenv("MTGPROXYPRINTER_SKIP_RESOURCE_TESTS"):
         allow_module_level=True
     )
 
+
 def list_dir(directory: Path) -> Iterable[Path]:
     walker = os.walk(directory)
     for subdir, _, files in walker:

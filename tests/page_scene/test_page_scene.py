@@ -25,7 +25,7 @@ import pytest
 from pint import Quantity
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
 from PySide6.QtGui import QPalette, QColorConstants, QImage, QColor, QPainter
-from PySide6.QtCore import QPoint, QPointF
+from PySide6.QtCore import QPoint
 
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry
@@ -484,7 +484,7 @@ def test_sharp_corners(page_scene: PageScene, draw_sharp_corners: bool, color: Q
     right, down = QPoint(card.image_file.width()-1, 0), QPoint(0, card.image_file.height()-1)
 
     rendered = render_scene(page_scene)
-    expected_color =  color if draw_sharp_corners \
+    expected_color = color if draw_sharp_corners \
         else QColorConstants.Transparent if page_scene.render_mode == RenderMode.ON_PAPER \
         else page_scene.palette().color(ColorGroup.Active, ColorRole.Base)
     has_expected_color = is_(equal_to(expected_color))

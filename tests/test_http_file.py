@@ -16,7 +16,6 @@
 
 import socket
 import time
-import typing
 import urllib.error
 import urllib.request
 from unittest.mock import patch, MagicMock, DEFAULT
@@ -369,8 +368,8 @@ def test__urlopen_in_init_raises_exception_after_exceeded_retries(
 def test__urlopen_in_read_works_with_multiple_retries(
         retries: int, urlopen: MagicMock = None, Request: MagicMock = None):
     urlopen.side_effect = ([MagicMock(spec=http.client.HTTPResponse)]
-                                + [urllib.error.URLError("Test error")]*retries
-                                + [MagicMock(spec=http.client.HTTPResponse)])
+                           + [urllib.error.URLError("Test error")]*retries
+                           + [MagicMock(spec=http.client.HTTPResponse)])
     file = MeteredSeekableHTTPFile("")
     file.file.read.side_effect = socket.timeout
     file.read(10)
@@ -383,8 +382,8 @@ def test__urlopen_in_read_works_with_multiple_retries(
 def test__urlopen_in_read_raises_exception_when_exceeding_retries(
         retries: int, urlopen: MagicMock = None, Request: MagicMock = None):
     urlopen.side_effect = ([MagicMock(spec=http.client.HTTPResponse)]
-                                + [urllib.error.URLError("Test error")] * retries
-                                + [MagicMock(spec=http.client.HTTPResponse)])
+                           + [urllib.error.URLError("Test error")] * retries
+                           + [MagicMock(spec=http.client.HTTPResponse)])
     file = MeteredSeekableHTTPFile("")
     file.file.read.side_effect = socket.timeout
     assert_that(calling(file.read), raises(urllib.error.URLError))

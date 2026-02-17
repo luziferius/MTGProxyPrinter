@@ -37,6 +37,7 @@ def bounded_copies_spinbox(qtbot: QtBot) -> QSpinBox:
 def test_BoundedCopiesSpinboxDelegate_createEditor_returns_correct_type(bounded_copies_spinbox: QSpinBox):
     assert_that(bounded_copies_spinbox, is_(instance_of(QSpinBox)))
 
+
 def test_BoundedCopiesSpinboxDelegate_createEditor_has_correct_limits(bounded_copies_spinbox: QSpinBox):
     assert_that(bounded_copies_spinbox, has_getters(minimum=1, maximum=100))
 

@@ -139,6 +139,7 @@ def _create_applied_action(cards_to_remove: list[int], page_number: int | None) 
     action._already_applied = True
     return action
 
+
 def test_undo_restores_two_1_card_ranges(qtbot: QtBot, document_light: Document):
     page = document_light.pages[0]
     remaining = append_new_card_in_page(page, "Remaining")

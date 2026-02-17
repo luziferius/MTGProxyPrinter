@@ -30,10 +30,12 @@ def test_init_sets_parent():
     action = DocumentAction(object_ := QObject())
     assert_that(action.parent(), is_(same_instance(object_)))
 
+
 def test_apply_sets_already_applied(action: DocumentAction):
     action._already_applied = False
     action.apply(MagicMock())
     assert_that(action._already_applied, is_(True))
+
 
 def test_apply_twice_raises_exception(action: DocumentAction):
     action.apply(MagicMock())
@@ -45,10 +47,12 @@ def test_undo_sets_already_applied(action: DocumentAction):
     action.undo(MagicMock())
     assert_that(action._already_applied, is_(False))
 
+
 def test_undo_twice_raises_exception(action: DocumentAction):
     action._already_applied = True
     action.undo(MagicMock())
     assert_that(calling(action.undo).with_args(MagicMock()), raises(IllegalStateError))
+
 
 def test_apply_undo_cycles_work(action: DocumentAction):
     mock = MagicMock()

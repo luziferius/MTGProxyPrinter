@@ -16,12 +16,9 @@
 from pathlib import Path
 
 import pytest
-
-import mtg_proxy_printer.print
-from mtg_proxy_printer.model.document import Document
-
 from hamcrest import *
 
+import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog
 from mtg_proxy_printer.ui.main_window import MainWindow
 from tests.ui.test_main_window import main_window

@@ -52,6 +52,7 @@ from mtg_proxy_printer.sqlite_helpers import read_resource_text, open_database
 
 T = typing.TypeVar("T")
 
+
 def _should_skip_network_tests() -> bool:
     result = os.getenv("MTGPROXYPRINTER_RUN_NETWORK_TESTS", "0")
     try:
@@ -91,6 +92,7 @@ class AsyncTaskReceiver(QObject):
             if isinstance(task, class_):
                 return task
         return None
+
 
 def setup_logging_for_testing():
     with patch.dict(
@@ -312,7 +314,9 @@ def _fill_area(image: QImage, fill_color: QColor, pos: QPoint, width: int = 5, h
     for x, y in itertools.product(range(width), range(height)):  # type: int, int
         image.setPixelColor(pos+QPoint(x, y), fill_color)
 
-def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *, color = QColorConstants.Transparent):
+
+def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *,
+                            color: QColor = QColorConstants.Transparent):
     """
     Create a Card with the given size, and fill the pixmap with the given color.
     Each corner has a square transparent area, as a crude emulation of rounded corners.

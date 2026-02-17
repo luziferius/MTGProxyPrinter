@@ -99,6 +99,7 @@ def generate_test_cases_for_move_tests():
     yield 3, 3, "0123"
     yield 3, 4, "0123"
 
+
 @pytest.mark.parametrize("source_page, target_page, expected_order", generate_test_cases_for_move_tests())
 def test_apply_moves_page(document_with_pages: Document, source_page: int, target_page: int, expected_order: str):
     action = ActionMovePage(source_page, target_page)
@@ -107,6 +108,7 @@ def test_apply_moves_page(document_with_pages: Document, source_page: int, targe
     pages_after_move = "".join(
         _card_name_on_page(document_with_pages, page) for page in range(document_with_pages.rowCount()))
     assert_that(pages_after_move, is_(equal_to(expected_order)))
+
 
 @pytest.mark.parametrize("source_page, target_page, expected_order", generate_test_cases_for_move_tests())
 def test_apply_emits_move_signals(
@@ -121,8 +123,9 @@ def test_apply_emits_move_signals(
         with (qtbot.wait_signal(
                 (document_with_pages.rowsAboutToBeMoved, "rowsAboutToBeMoved"), timeout=10,
                 check_params_cb=move_signal_validator),
-            qtbot.wait_signal((document_with_pages.rowsMoved, "rowsMoved"), timeout=10)):
+             qtbot.wait_signal((document_with_pages.rowsMoved, "rowsMoved"), timeout=10)):
             action.apply(document_with_pages)
+
 
 @pytest.mark.parametrize("source_page, target_page", [
     (-1, -1),
@@ -152,6 +155,7 @@ def test_undo_moves_page(
         _card_name_on_page(document_with_pages, page) for page in range(document_with_pages.rowCount()))
     assert_that(pages_after_move, is_(equal_to("0123")))
 
+
 @pytest.mark.parametrize("source_page, target_page, order_after_apply", generate_test_cases_for_move_tests())
 def test_undo_emits_move_signals(
         qtbot: QtBot, document_with_pages: Document, source_page: int, target_page: int, order_after_apply: str):
@@ -171,8 +175,9 @@ def test_undo_emits_move_signals(
         with (qtbot.wait_signal(
                 (document_with_pages.rowsAboutToBeMoved, "rowsAboutToBeMoved"), timeout=10,
                 check_params_cb=move_signal_validator),
-            qtbot.wait_signal((document_with_pages.rowsMoved, "rowsMoved"), timeout=10)):
+             qtbot.wait_signal((document_with_pages.rowsMoved, "rowsMoved"), timeout=10)):
             action.undo(document_with_pages)
+
 
 @pytest.mark.parametrize("source_page, target_page", [
     (-1, -1),

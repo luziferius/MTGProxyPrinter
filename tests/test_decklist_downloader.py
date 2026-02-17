@@ -27,7 +27,6 @@ from mtg_proxy_printer.async_tasks.decklist_downloader import ScryfallDownloader
     MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader, MTGTop8Downloader, MTGAZoneDownloader, \
     CubeCobraDownloader, ManaboxDownloader
 
-
 UrlTestData = tuple[type[DecklistDownloader], str]
 
 
@@ -154,7 +153,7 @@ def test_IsIdentifyingDeckUrlValidator_validate(downloader, url: str):
     validator = IsIdentifyingDeckUrlValidator()
     assert_that(
         validator.validate(url),
-        contains_exactly(IsIdentifyingDeckUrlValidator.Acceptable, url, 0),
+        contains_exactly(IsIdentifyingDeckUrlValidator.State.Acceptable, url, 0),
     )
 
 
@@ -266,7 +265,11 @@ def test_IsIdentifyingDeckUrlValidator_validate_returns_Intermediate_or_Invalid_
     assert_that(
         validator.validate(url),
         contains_exactly(
-            any_of(IsIdentifyingDeckUrlValidator.Intermediate, IsIdentifyingDeckUrlValidator.Invalid), url, 0),
+            any_of(
+                IsIdentifyingDeckUrlValidator.State.Intermediate,
+                IsIdentifyingDeckUrlValidator.State.Invalid,
+            ),
+            url, 0),
     )
 
 

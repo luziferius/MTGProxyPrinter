@@ -14,10 +14,8 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import copy
-import typing
 import unittest.mock
 
-from pint import Unit
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QColorConstants
 

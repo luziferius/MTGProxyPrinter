@@ -427,7 +427,9 @@ def test_load_works_with_hidden_card_without_replacement(
         [(1, CardSizes.OVERSIZED)],
         [(1, 1, True, oversized_id, CardType.REGULAR)],
         PageLayoutSettings.create_from_settings())
-    with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings["card-filter"], {"hide-oversized-cards": "True",}):
+    with unittest.mock.patch.dict(
+            mtg_proxy_printer.settings.settings["card-filter"],
+            {"hide-oversized-cards": "True", }):
         PrintingFilterUpdater(
             loader.document.card_db, loader.document.card_db.db, force_update_hidden_column=True
         ).run()

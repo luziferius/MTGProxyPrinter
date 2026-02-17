@@ -47,6 +47,7 @@ def test_local_header_conforms_to_current_scryfall_return_data(url: str, header:
         header, is_(equal_to(expected)), "CSV header format changed on Tappedout"
     )
 
+
 def generate_test_cases_for_translation_and_replacement():
     yield (
         ["german_Back_to_Basics", "english_Back_to_Basics"],

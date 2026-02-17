@@ -163,9 +163,11 @@ def test_custom_card_display_string(custom_card: CustomCard):
 def test_custom_card_oracle_id_is_empty(custom_card: CustomCard):
     assert_that(custom_card.oracle_id, is_(empty()))
 
+
 @pytest.mark.parametrize("property_name", Card.__annotations__)
 def test_custom_card_has_all_card_attributes(custom_card: CustomCard, property_name: str):
     assert_that(custom_card, has_property(property_name))
+
 
 def _create_back(front: Card) -> Card:
     back = copy.copy(front)
@@ -177,10 +179,12 @@ def _create_back(front: Card) -> Card:
     back.face_number = front.face_number + 1
     return back
 
+
 @pytest.fixture()
 def check_card(card: Card) -> CheckCard:
     back = _create_back(card)
     return CheckCard(card, back)
+
 
 @pytest.fixture()
 def oversized_check_card(oversized: Card) -> CheckCard:
@@ -229,6 +233,7 @@ def test_check_card_display_string(check_card: CheckCard):
 
 def test_check_card_oracle_id_is_empty(check_card: CheckCard):
     assert_that(check_card.oracle_id, is_(check_card.front.oracle_id))
+
 
 @pytest.mark.parametrize("property_name", Card.__annotations__)
 def test_check_card_has_all_card_attributes(check_card: CheckCard, property_name: str):

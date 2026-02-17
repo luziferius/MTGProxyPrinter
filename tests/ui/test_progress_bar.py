@@ -96,9 +96,11 @@ def test_set_progress_signal_sets_progress(bar: ProgressBar, value: int):
         })
     )
 
+
 def test_task_completed_hides_itself(bar: ProgressBar):
     bar.task.task_completed.emit()
     assert_that(bar.isHidden(), is_(True))
+
 
 def test_task_begin_shows_itself(bar: ProgressBar):
     bar.task.task_completed.emit()
@@ -109,7 +111,6 @@ def test_task_begin_shows_itself(bar: ProgressBar):
         "progress_bar": has_getter("isVisible", equal_to(True)),
         "task_label": has_getter("isVisible", equal_to(True)),
     }))
-
 
 
 @pytest.fixture()

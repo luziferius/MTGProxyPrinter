@@ -17,13 +17,14 @@
 import pytest
 from hamcrest import *
 from PySide6.QtGui import QPixmap, QColorConstants
+from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
 
 @pytest.fixture
-def blank_image(qtbot) -> QPixmap:
+def blank_image(qtbot: QtBot) -> QPixmap:
     pixmap = QPixmap(CardSizes.REGULAR.as_qsize_px())
     pixmap.fill(QColorConstants.White)
     return pixmap

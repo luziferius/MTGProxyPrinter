@@ -19,7 +19,6 @@ This is a test module for the set of custom PyHamcrest matchers in tests/helpers
 """
 
 import dataclasses
-from typing import Optional
 
 import pytest
 from hamcrest import *

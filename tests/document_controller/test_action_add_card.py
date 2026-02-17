@@ -21,7 +21,7 @@ import pytest
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard
+from mtg_proxy_printer.model.card import Card, CheckCard
 from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -60,7 +60,7 @@ def document_light_3(document_light: Document) -> Document:
     return document_light
 
 
-def test_apply_without_count_adds_single_card(qtbot: QtBot, card: Card, document_light: Document):
+def test_apply_without_count_adds_single_card(card: Card, document_light: Document):
     action = ActionAddCard(card)
     page = document_light.pages[0]
     assert_that(action.apply(document_light), is_(same_instance(action)))
@@ -76,7 +76,7 @@ def test_apply_without_count_adds_single_card(qtbot: QtBot, card: Card, document
 
 @pytest.mark.parametrize("target_page", range(3))
 def test_apply_without_count_and_with_target_page_adds_single_card_to_that_page(
-        qtbot: QtBot, card: Card, document_light_3: Document, target_page: int):
+        card: Card, document_light_3: Document, target_page: int):
     action = ActionAddCard(card, target_page=target_page)
     page = document_light_3.pages[target_page]
     assert_that(action.apply(document_light_3), is_(same_instance(action)))
@@ -91,7 +91,7 @@ def test_apply_without_count_and_with_target_page_adds_single_card_to_that_page(
 
 
 def test_apply_with_check_card_adds_card_to_current_page(
-        qtbot: QtBot, card: Card, check_card: Card, document_light: Document):
+        card: Card, check_card: Card, document_light: Document):
     action1 = ActionAddCard(card)
     action2 = ActionAddCard(check_card)
     page = document_light.pages[0]
@@ -108,7 +108,7 @@ def test_apply_with_check_card_adds_card_to_current_page(
 
 
 @pytest.mark.parametrize("count", [1, 3, 9])
-def test_apply_with_count_adds_that_many_copies(qtbot: QtBot, card: Card, document_light: Document, count: int):
+def test_apply_with_count_adds_that_many_copies(card: Card, document_light: Document, count: int):
     assert_that(document_light.page_layout.compute_page_card_capacity(PageType.REGULAR), is_(greater_than_or_equal_to(count)), "Setup failed")
     action = ActionAddCard(card, count)
     page = document_light.pages[0]
@@ -127,7 +127,7 @@ def test_apply_with_count_adds_that_many_copies(qtbot: QtBot, card: Card, docume
 @pytest.mark.parametrize("count", [1, 3])
 @pytest.mark.parametrize("target_page", range(3))
 def test_apply_with_count_and_with_target_page_adds_that_many_copies_to_that_page(
-        qtbot: QtBot, card: Card, document_light_3: Document, target_page: int, count: int):
+        card: Card, document_light_3: Document, target_page: int, count: int):
     action = ActionAddCard(card, count, target_page=target_page)
     page = document_light_3.pages[target_page]
     assert_that(action.apply(document_light_3), is_(same_instance(action)))
@@ -142,7 +142,7 @@ def test_apply_with_count_and_with_target_page_adds_that_many_copies_to_that_pag
 
 
 def test_apply_with_target_page_works_while_currently_edited_page_is_full(
-        qtbot: QtBot, card: Card, document_light_3: Document):
+        card: Card, document_light_3: Document):
     document_light_3.set_currently_edited_page(document_light_3.pages[0])
     ActionAddCard(card, 9).apply(document_light_3)
     ActionAddCard(card, 2, target_page=1).apply(document_light_3)
@@ -156,7 +156,7 @@ def test_apply_with_target_page_works_while_currently_edited_page_is_full(
     )
 
 
-def test_apply_with_count_overflowing_page_adds_new_page(qtbot: QtBot, card: Card, document_light: Document):
+def test_apply_with_count_overflowing_page_adds_new_page(card: Card, document_light: Document):
     capacity = document_light.page_layout.compute_page_card_capacity()
     count = capacity * 3
     action = ActionAddCard(card, count)
@@ -173,7 +173,7 @@ def test_apply_with_count_overflowing_page_adds_new_page(qtbot: QtBot, card: Car
 
 
 def test_apply_with_count_overflowing_page_adds_cards_to_next_page_with_empty_slots(
-        qtbot: QtBot, card: Card, document_light_3: Document):
+        card: Card, document_light_3: Document):
     capacity = document_light_3.page_layout.compute_page_card_capacity()
     count = capacity + 1
     pages = document_light_3.pages

@@ -19,7 +19,7 @@ from collections.abc import Generator
 import pathlib
 from unittest.mock import patch, MagicMock
 
-from PySide6.QtCore import QStringListModel, Qt
+from PySide6.QtCore import QStringListModel
 from PySide6.QtWidgets import QMessageBox
 from pytestqt.qtbot import QtBot
 from hamcrest import *
@@ -76,11 +76,11 @@ def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, mai
     ui.action_download_card_data.setEnabled(False)
     with patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No), \
-        qtbot.assert_not_emitted(main_window.request_run_async_task):
-            main_window.show_card_data_update_available_message_box(10000)
+            qtbot.assert_not_emitted(main_window.request_run_async_task):
+        main_window.show_card_data_update_available_message_box(10000)
 
 
-def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtBot, main_window: MainWindow):
+def test_accepting_card_data_update_offer_results_in_performed_action(main_window: MainWindow):
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
     received = _create_task_receiver(main_window)
@@ -94,13 +94,13 @@ def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtB
     )
 
 
-def test_action_download_card_data_disables_itself(qtbot: QtBot, main_window: MainWindow):
+def test_action_download_card_data_disables_itself(main_window: MainWindow):
     ui = main_window.ui
     ui.action_download_card_data.trigger()
     assert_that(ui.action_download_card_data.isEnabled(), is_(False))
 
 
-def test_action_download_card_data_is_enabled_after_network_error(qtbot: QtBot, main_window: MainWindow):
+def test_action_download_card_data_is_enabled_after_network_error(main_window: MainWindow):
     ui = main_window.ui
     receiver = _create_task_receiver(main_window)
     ui.action_download_card_data.trigger()
@@ -118,7 +118,7 @@ def test_action_download_card_data_is_enabled_after_network_error(qtbot: QtBot, 
 
 @pytest.mark.parametrize("task_raising_error", [ApiStreamTask, DatabaseImportTask])
 def test_action_download_card_data_is_enabled_after_other_error(
-        qtbot: QtBot, main_window: MainWindow, task_raising_error: type[AsyncTask]):
+        main_window: MainWindow, task_raising_error: type[AsyncTask]):
     ui = main_window.ui
     receiver = _create_task_receiver(main_window)
     ui.action_download_card_data.trigger()

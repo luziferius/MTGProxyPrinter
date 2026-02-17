@@ -25,6 +25,7 @@ from tests.hasgetter import has_getters
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.print import PDFPrinter
 
+
 class AdvanceSignal(QObject):
     advance_progress = Signal()
 

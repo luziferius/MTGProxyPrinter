@@ -149,7 +149,6 @@ ZeroMarginsSettings = {
     ("column-spacing", "column_spacing", 0*mm, 10000*mm),
 ])
 def test_save_numerical_document_settings_to_config(
-        qtbot: QtBot,
         widget: PageConfigWidget, settings_name: str, attribute_name: str,
         min_value: Quantity, max_value: Quantity, value: Quantity):
     """
@@ -158,7 +157,7 @@ def test_save_numerical_document_settings_to_config(
     """
     document_settings = mtg_proxy_printer.settings.settings["documents"]
     original_value = document_settings[settings_name]
-    with patch.dict( document_settings, ZeroMarginsSettings), \
+    with patch.dict(document_settings, ZeroMarginsSettings), \
             patch.dict(document_settings, {settings_name: original_value}):
         widget.load_from_page_layout(PageLayoutSettings.create_from_settings(mtg_proxy_printer.settings.settings))
         expected = min(max(min_value, value), max_value)

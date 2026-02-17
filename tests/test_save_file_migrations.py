@@ -64,6 +64,7 @@ def test_migration_2_to_3_transforms_data():
         contains_exactly((1, 1, 1, 'abc'), (2, 1, 1, 'xyz'))
     )
 
+
 def test_migration_3_to_4_transforms_data(page_layout: PageLayoutSettings):
     db = create_save_db(3)
     cards = [(1, 1, 1, 'abc'), (2, 1, 1, 'xyz')]
@@ -75,14 +76,15 @@ def test_migration_3_to_4_transforms_data(page_layout: PageLayoutSettings):
     )
     assert_that(
         db.execute("SELECT * FROM DocumentSettings").fetchall(),
-        contains_exactly(
-        (1, page_layout.page_height.to("mm").magnitude, page_layout.page_width.to("mm").magnitude,
-         page_layout.margin_top.to("mm").magnitude, page_layout.margin_bottom.to("mm").magnitude,
-         page_layout.margin_left.to("mm").magnitude, page_layout.margin_right.to("mm").magnitude,
-         page_layout.row_spacing.to("mm").magnitude, page_layout.column_spacing.to("mm").magnitude,
-         int(page_layout.draw_cut_markers)
-         )
-    ))
+        contains_exactly((
+            1, page_layout.page_height.to("mm").magnitude, page_layout.page_width.to("mm").magnitude,
+            page_layout.margin_top.to("mm").magnitude, page_layout.margin_bottom.to("mm").magnitude,
+            page_layout.margin_left.to("mm").magnitude, page_layout.margin_right.to("mm").magnitude,
+            page_layout.row_spacing.to("mm").magnitude, page_layout.column_spacing.to("mm").magnitude,
+            int(page_layout.draw_cut_markers))
+        )
+    )
+
 
 def test_migration_4_to_5_transforms_data(page_layout: PageLayoutSettings):
     db = create_save_db(4)
@@ -106,14 +108,15 @@ def test_migration_4_to_5_transforms_data(page_layout: PageLayoutSettings):
     )
     assert_that(
         db.execute("SELECT * FROM DocumentSettings").fetchall(),
-        contains_exactly(
-        (1, page_layout.page_height.to("mm").magnitude, page_layout.page_width.to("mm").magnitude,
-         page_layout.margin_top.to("mm").magnitude+1, page_layout.margin_bottom.to("mm").magnitude-1,
-         page_layout.margin_left.to("mm").magnitude, page_layout.margin_right.to("mm").magnitude,
-         page_layout.row_spacing.to("mm").magnitude, page_layout.column_spacing.to("mm").magnitude,
-         int(not page_layout.draw_cut_markers), int(page_layout.draw_sharp_corners)
-         )
-    ))
+        contains_exactly((
+            1, page_layout.page_height.to("mm").magnitude, page_layout.page_width.to("mm").magnitude,
+            page_layout.margin_top.to("mm").magnitude+1, page_layout.margin_bottom.to("mm").magnitude-1,
+            page_layout.margin_left.to("mm").magnitude, page_layout.margin_right.to("mm").magnitude,
+            page_layout.row_spacing.to("mm").magnitude, page_layout.column_spacing.to("mm").magnitude,
+            int(not page_layout.draw_cut_markers), int(page_layout.draw_sharp_corners)
+         ))
+    )
+
 
 def test_migration_5_to_6_transforms_data(page_layout: PageLayoutSettings):
     db = create_save_db(5)
@@ -139,14 +142,15 @@ def test_migration_5_to_6_transforms_data(page_layout: PageLayoutSettings):
         contains_inanyorder(
             # Migrated
             ("page_height", page_layout.page_height.to("mm").magnitude), ("page_width", page_layout.page_width.to("mm").magnitude),
-            ("margin_top", page_layout.margin_top.to("mm").magnitude+1),("margin_bottom", page_layout.margin_bottom.to("mm").magnitude-1),
-            ("margin_left", page_layout.margin_left.to("mm").magnitude),("margin_right", page_layout.margin_right.to("mm").magnitude),
-            ("row_spacing", page_layout.row_spacing.to("mm").magnitude),("column_spacing", page_layout.column_spacing.to("mm").magnitude),
-            ("draw_cut_markers", int(not page_layout.draw_cut_markers)),("draw_sharp_corners", int(not page_layout.draw_sharp_corners)),
+            ("margin_top", page_layout.margin_top.to("mm").magnitude+1), ("margin_bottom", page_layout.margin_bottom.to("mm").magnitude-1),
+            ("margin_left", page_layout.margin_left.to("mm").magnitude), ("margin_right", page_layout.margin_right.to("mm").magnitude),
+            ("row_spacing", page_layout.row_spacing.to("mm").magnitude), ("column_spacing", page_layout.column_spacing.to("mm").magnitude),
+            ("draw_cut_markers", int(not page_layout.draw_cut_markers)), ("draw_sharp_corners", int(not page_layout.draw_sharp_corners)),
             # New
             ("document_name", page_layout.document_name), ("card_bleed", page_layout.card_bleed.to("mm").magnitude),
             ("draw_page_numbers", int(page_layout.draw_page_numbers)),
-    ))
+        )
+    )
 
 
 def test_migration_6_to_7_transforms_data(page_layout: PageLayoutSettings):
@@ -158,14 +162,14 @@ def test_migration_6_to_7_transforms_data(page_layout: PageLayoutSettings):
     # Insert slightly altered data, then pass the unaltered PageLayoutSettings.
     # This verifies that the stored data is used and not replaced with the current default settings.
     db.executemany(
-        'INSERT INTO DocumentSettings ("key", value) VALUES (?, ?)',(
+        'INSERT INTO DocumentSettings ("key", value) VALUES (?, ?)', (
             ("page_height", page_layout.page_height.to("mm").magnitude), ("page_width", page_layout.page_width.to("mm").magnitude),
-            ("margin_top", page_layout.margin_top.to("mm").magnitude+1),("margin_bottom", page_layout.margin_bottom.to("mm").magnitude-1),
-            ("margin_left", page_layout.margin_left.to("mm").magnitude),("margin_right", page_layout.margin_right.to("mm").magnitude),
-            ("row_spacing", page_layout.row_spacing.to("mm").magnitude),("column_spacing", page_layout.column_spacing.to("mm").magnitude),
+            ("margin_top", page_layout.margin_top.to("mm").magnitude+1), ("margin_bottom", page_layout.margin_bottom.to("mm").magnitude-1),
+            ("margin_left", page_layout.margin_left.to("mm").magnitude), ("margin_right", page_layout.margin_right.to("mm").magnitude),
+            ("row_spacing", page_layout.row_spacing.to("mm").magnitude), ("column_spacing", page_layout.column_spacing.to("mm").magnitude),
             ("card_bleed", page_layout.card_bleed.to("mm").magnitude),
             ("document_name", page_layout.document_name),
-            ("draw_cut_markers", int(not page_layout.draw_cut_markers)),("draw_sharp_corners", int(not page_layout.draw_sharp_corners)),
+            ("draw_cut_markers", int(not page_layout.draw_cut_markers)), ("draw_sharp_corners", int(not page_layout.draw_sharp_corners)),
             ("draw_page_numbers", int(page_layout.draw_page_numbers)),
         )
     )

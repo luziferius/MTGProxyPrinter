@@ -15,9 +15,7 @@
 
 from collections import Counter
 import itertools
-import typing
 import unittest.mock
-from unittest.mock import MagicMock
 
 from hamcrest import *
 from pytestqt.qtbot import QtBot
@@ -34,7 +32,6 @@ from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGOnlineParser, MTGArenaParser, \
     GenericRegularExpressionDeckParser
 from mtg_proxy_printer.model.card_list import CardListColumns, CardListModel, CardCounter
-from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
 from tests.helpers import fill_card_database_with_json_cards
 
@@ -367,10 +364,10 @@ def generate_test_cases_for_test_custom_re_parser_accepts_valid_re():
         powerset_without_empty = itertools.chain.from_iterable(
             itertools.combinations(iterable, r)
             for r in range(1, len(iterable) + 1))
-        return (frozenset.union(*groups) for groups in powerset_without_empty)
+        return (frozenset.union(*groups_) for groups_ in powerset_without_empty)
 
-    def generate_re(groups: frozenset[str]):
-        return " ".join(fr"(?P<{group_name}>.+)" for group_name in groups)
+    def generate_re(groups_: frozenset[str]):
+        return " ".join(fr"(?P<{group_name}>.+)" for group_name in groups_)
 
     for groups in flattened_powerset_without_empty(GenericRegularExpressionDeckParser.IDENTIFYING_GROUP_COMBINATIONS):
         yield generate_re(groups)

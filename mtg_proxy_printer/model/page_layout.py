@@ -17,7 +17,7 @@ from collections.abc import Iterable
 import dataclasses
 import itertools
 import math
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 
 from PySide6.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
 from PySide6.QtCore import QMarginsF, QSizeF, Qt
