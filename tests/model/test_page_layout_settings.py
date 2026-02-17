@@ -12,9 +12,11 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import copy
+import dataclasses
 import itertools
 import unittest.mock
+from typing import Any
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
@@ -28,6 +30,7 @@ from PySide6.QtCore import QMarginsF
 import pytest
 from hamcrest import *
 
+from tests.test_argument_parser import powerset
 from tests.hasgetter import has_getters
 from tests.helpers import quantity_close_to, close_to_
 
@@ -291,4 +294,32 @@ def test_to_save_file_data_returns_only_acceptable_types(page_layout: PageLayout
     assert_that(
         [value for key, value in dimensions],
         only_contains(instance_of(Quantity)),
+    )
+
+
+def generate_test_cases_for_test_different_attributes():
+    mm = unit_registry.mm
+    other = dataclasses.asdict(PageLayoutSettings(
+        1*mm, QColorConstants.Cyan, True, "Solid", 1*mm, "Named document", True, True,
+        1*mm, 1*mm, 10*mm, 10*mm, 10*mm, 10*mm, 400*mm, 300*mm, "Landscape", "Custom",
+        "Bullseye", 30*unit_registry.degree, QColorConstants.Green, 10*unit_registry.point, 7*mm, 7*mm, "Watermark",
+    ))
+    for item in powerset(*other.keys()):
+        if len(item) >= 3:
+            break
+        yield {key: other[key] for key in item}
+
+
+def test_different_attributes_identity(page_layout: PageLayoutSettings):
+    assert_that(page_layout.different_attributes(page_layout), is_(empty()))
+
+
+@pytest.mark.parametrize("updated_attributes", generate_test_cases_for_test_different_attributes())
+def test_different_attributes(page_layout: PageLayoutSettings, updated_attributes: dict[str, Any]):
+    other = copy.copy(page_layout)
+    for attribute in updated_attributes:
+        setattr(other, attribute, updated_attributes[attribute])
+    assert_that(
+        page_layout.different_attributes(other),
+        contains_inanyorder(*updated_attributes.keys())
     )

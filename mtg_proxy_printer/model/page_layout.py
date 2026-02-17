@@ -72,6 +72,13 @@ class PageLayoutSettings:
     watermark_pos_y: Quantity = 0 * unit_registry.mm
     watermark_text: str = ""
 
+    def different_attributes(self, other: "PageLayoutSettings") -> set[str]:
+        """Returns a set of attribute names that have different values in "other"."""
+        other_ = dataclasses.asdict(other)
+        return set(
+            key for key, value in other_.items() if getattr(self, key) != value
+        )
+
     @property
     def draw_cut_markers(self) -> bool:
         return self.cut_marker_style != "None"

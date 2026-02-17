@@ -115,6 +115,7 @@ def document_light(qtbot, mock_imagedb) -> Document:
 
 @pytest.fixture
 def page_layout() -> PageLayoutSettings:
+    """Returns a PageLayoutSettings with default settings."""
     layout = PageLayoutSettings.create_from_settings()
     defaults = PageLayoutSettings.create_from_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
     assert_that(layout, is_dataclass_equal_to(defaults))
