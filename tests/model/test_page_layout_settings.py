@@ -20,10 +20,9 @@ import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.async_tasks.document_loader
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, unit_registry, StrDict
+from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, unit_registry, StrDict, Quantity
 from mtg_proxy_printer.page_scene.page_scene import RenderMode
 
-from pint import Quantity
 from PySide6.QtGui import QPageLayout, QPageSize, QColorConstants
 from PySide6.QtCore import QMarginsF
 import pytest
@@ -34,6 +33,7 @@ from tests.helpers import quantity_close_to, close_to_
 
 mm = unit_registry.mm
 HexArgb = QColorConstants.Red.NameFormat.HexArgb
+
 
 @pytest.mark.parametrize("page_type, expected", [
     (PageType.OVERSIZED, 4),
@@ -153,7 +153,7 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
         "cut-marker-color": QColorConstants.Black.name(HexArgb),
         "cut-marker-draw-above-cards": "True",
         "cut-marker-style": "Solid",
-        "cut-marker-width" : "0.5 mm",
+        "cut-marker-width": "0.5 mm",
         "margin-top": "9 mm",
         "margin-bottom": "8 mm",
         "margin-left": "7 mm",
@@ -179,7 +179,7 @@ def test_page_layout_lt(page_layout: PageLayoutSettings):
         "cut-marker-color": QColorConstants.Black.name(HexArgb),
         "cut-marker-draw-above-cards": "True",
         "cut-marker-style": "Solid",
-        "cut-marker-width" : "0.5 millimeter",
+        "cut-marker-width": "0.5 millimeter",
         "margin-top": "9 millimeter",
         "margin-bottom": "8 millimeter",
         "margin-left": "7 millimeter",

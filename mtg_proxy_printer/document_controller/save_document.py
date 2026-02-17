@@ -62,11 +62,12 @@ class ActionSaveDocument(DocumentAction):
             self.save_settings(db, layout)
             self._clean_unused_custom_cards(db)
             db.commit()
-            if db.execute(cached_dedent("""\
-                SELECT cast(freelist_count AS real)/page_count > 0.1 AS "should vacuum" -- apply()
-                  FROM pragma_page_count
-                  INNER JOIN pragma_freelist_count
-                """)).fetchone()[0]:
+            if db.execute(cached_dedent(
+                    """\
+                    SELECT cast(freelist_count AS real)/page_count > 0.1 AS "should vacuum" -- apply()
+                      FROM pragma_page_count
+                      INNER JOIN pragma_freelist_count
+                    """)).fetchone()[0]:
                 db.execute("VACUUM -- apply()\n")
         db.close()
         del db
@@ -114,7 +115,7 @@ class ActionSaveDocument(DocumentAction):
                 if card.image_file is document.image_db.get_blank(card.size):
                     # Empty slot
                     save_file.execute(
-                        empty_slot,(page_number, slot, card.is_front, CardType.from_card(card))
+                        empty_slot, (page_number, slot, card.is_front, CardType.from_card(card))
                     )
                 elif card.is_custom_card:
                     ActionSaveDocument._save_custom_card(save_file, page_number, slot, card)
@@ -130,7 +131,8 @@ class ActionSaveDocument(DocumentAction):
         custom_card_data = (
             card.scryfall_id, card.source_image_file, card.name, card.set.name, card.set_code,
             card.collector_number, card.is_front)
-        save_file.execute(cached_dedent("""\
+        save_file.execute(
+            cached_dedent("""\
             INSERT INTO CustomCardData -- _save_custom_card()
                 (card_id, image, name, set_name, set_code, collector_number, is_front)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -149,7 +151,8 @@ class ActionSaveDocument(DocumentAction):
             custom_card_data
         )
         card_data = (page_number, slot, card.is_front, CardType.from_card(card), card.scryfall_id)
-        save_file.execute(cached_dedent("""\
+        save_file.execute(
+            cached_dedent("""\
             INSERT INTO Card (page, slot, is_front, type, custom_card_id) -- _save_custom_card()
                 VALUES (?, ?, ? ,?, ?)\n"""),
             card_data

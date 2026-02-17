@@ -18,7 +18,7 @@ from functools import partial
 import math
 from typing import Any, NamedTuple
 
-from PySide6.QtCore import Slot, Qt, Signal, QTimer
+from PySide6.QtCore import Slot, Qt, Signal
 from PySide6.QtGui import QPageSize, QPageLayout, QColor
 from PySide6.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QColorDialog, \
     QLabel, QSlider, QPushButton, QComboBox

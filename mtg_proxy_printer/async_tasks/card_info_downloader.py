@@ -58,6 +58,7 @@ __all__ = [
     "ApiStreamTask",
     "SetWackinessScore",
     "FileDownloadTask",
+    "FileStreamTask",
 ]
 
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
@@ -291,10 +292,10 @@ class ApiStreamTask(StreamTask):
 
     def read_json_card_data_from(self, url: str = None, json_path: str = "item") -> CardStream:
         """
-        Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
-        This function takes a URL pointing to the card data json array in the Scryfall API.
+        Parses the bulk card data JSON from https://scryfall.com/docs/api/bulk-data into individual objects.
+        This function takes a URL pointing to the card data JSON array in the Scryfall API.
 
-        The all cards json document is quite large (> 2.1GiB in 2024-10) and requires about 8GiB RAM to parse in one go.
+        The all cards JSON document is quite large (> 2.1GiB in 2024-10) and requires about 8GiB RAM to parse in one go.
         So use an iterative parser to generate and yield individual card objects, without having to store the whole
         document in memory.
         """
@@ -378,8 +379,8 @@ class DatabaseImportTask(AsyncTask):
         return self._db
 
     @staticmethod
-    def _consume_from_queue(queue: CardDataQueue) -> CardStream:
-        while (batch := queue.get()) is not None:
+    def _consume_from_queue(queue_: CardDataQueue) -> CardStream:
+        while (batch := queue_.get()) is not None:
             yield from batch
 
     @with_database_write_lock()
@@ -452,7 +453,7 @@ class DatabaseImportTask(AsyncTask):
         related_printings: list[RelatedPrintingData] = []
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
-                logger.info(f"Aborting card import after {index} cards due to user request or data erro.")
+                logger.info(f"Aborting card import after {index} cards due to user request or data error.")
                 db.rollback()
                 return index
             if _should_skip_card(card):

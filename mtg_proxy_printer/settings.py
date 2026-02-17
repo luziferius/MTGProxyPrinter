@@ -22,7 +22,7 @@ import re
 import typing
 import tokenize
 
-from pint import DimensionalityError, Unit
+from pint import DimensionalityError
 from PySide6.QtCore import QStandardPaths, QLocale, Qt
 from PySide6.QtGui import QPageSize, QPageLayout, QColor, QColorConstants
 from PySide6.QtPrintSupport import QPrinterInfo
@@ -31,7 +31,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import \
-    CardSizes, ConfigParser, SectionProxy, unit_registry, T, Quantity, PageSizeManager, is_acceptable_page_size
+    CardSizes, ConfigParser, SectionProxy, unit_registry, T, Quantity, Unit, PageSizeManager, is_acceptable_page_size
 StandardLocation = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
 Territory = QLocale.Country  # TODO: Adjust for PySide6
@@ -184,7 +184,7 @@ DEFAULT_SETTINGS["documents"] = {
     "cut-marker-color": QColorConstants.Black.name(HexArgb),
     "cut-marker-draw-above-cards": "False",
     "cut-marker-style": "None",
-    "cut-marker-width" : "0 mm",  # Zero width means infinitesimally thin. Always drawn as 1 pixel at any zoom level
+    "cut-marker-width": "0 mm",  # Zero width means infinitesimally thin. Always drawn as 1 pixel at any zoom level
     "paper-orientation": PageSizeManager.PageOrientationReverse[Orientation.Portrait],
     "paper-size": get_default_paper_size(),
     "custom-page-height": "297 mm",
@@ -213,7 +213,7 @@ DOCUMENT_SETTINGS_QUANTITY_LIMITS = {
     "card-bleed": DEFAULT_LENGTH_LIMIT,
     "custom-page-height": DEFAULT_LENGTH_LIMIT,
     "custom-page-width": DEFAULT_LENGTH_LIMIT,
-    "cut-marker-width" : QuantityLimits(0*mm, 10*mm, {mm}, mm),
+    "cut-marker-width": QuantityLimits(0*mm, 10*mm, {mm}, mm),
     "margin-top": DEFAULT_LENGTH_LIMIT,
     "margin-bottom": DEFAULT_LENGTH_LIMIT,
     "margin-left": DEFAULT_LENGTH_LIMIT,
@@ -397,11 +397,11 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
     if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
-    boolean_settings = {"print-sharp-corners", "print-page-numbers", "cut-marker-draw-above-cards",}
+    boolean_settings = {"print-sharp-corners", "print-page-numbers", "cut-marker-draw-above-cards", }
     string_settings = {
         "default-document-name", "paper-size", "paper-orientation", "watermark-text",
         "cut-marker-style", "print-registration-marks-style"}
-    color_settings = {"watermark-color", "cut-marker-color",}
+    color_settings = {"watermark-color", "cut-marker-color", }
     for key in section.keys():
         if key in DOCUMENT_SETTINGS_QUANTITY_LIMITS:
             _validate_quantity(section, defaults, key, DOCUMENT_SETTINGS_QUANTITY_LIMITS[key])

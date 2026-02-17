@@ -109,6 +109,7 @@ def round_off_corners(source: QImage):
     """
     source.setAlphaChannel(alpha_channel)
 
+
 @dataclasses.dataclass(unsafe_hash=True)
 class Card:
     name: str = dataclasses.field(compare=True)

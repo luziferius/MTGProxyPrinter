@@ -201,6 +201,7 @@ def validate_database_schema(
 
 S = typing.TypeVar("S", LiteralString, str)
 
+
 @functools.cache
 def cached_dedent(text: S) -> S:
     """Wraps textwrap.dedent() in a cache."""

@@ -144,6 +144,7 @@ def load_ui_from_file(name: str):
         raise RuntimeError(f"Ui compilation failed for path {file_path}") from e
     return base_type
 
+
 def load_icon(name: str) -> QIcon:
     """Loads a QIcon with the given name from the internal resources"""
     file_path = f"{RESOURCE_PATH_PREFIX}/icons/{name}"
@@ -152,6 +153,7 @@ def load_icon(name: str) -> QIcon:
         logger.error(error_message)
         raise FileNotFoundError(error_message)
     return QIcon(file_path)
+
 
 def load_file(file_path_str: str, parent: QObject = None) -> bytes:
     """Returns binary content of an arbitrary file in the Qt resources."""

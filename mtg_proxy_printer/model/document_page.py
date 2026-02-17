@@ -64,7 +64,7 @@ class Page(list[CardContainer]):
             return PageType.OVERSIZED
         return PageType.MIXED
 
-    def accepts_card(self, card: AnyCardType| PageType) -> bool:
+    def accepts_card(self, card: AnyCardType | PageType) -> bool:
         other_type = card.requested_page_type() if isinstance(card, AnyCardType) else card
         own_page_type = self.page_type()
         return other_type == own_page_type or own_page_type is PageType.UNDETERMINED

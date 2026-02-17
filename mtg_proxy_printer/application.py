@@ -23,7 +23,7 @@ import shutil
 import sys
 from tempfile import mkdtemp
 
-from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo, Qt
+from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QIcon
 

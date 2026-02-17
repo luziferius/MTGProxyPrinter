@@ -51,6 +51,7 @@ del get_logger
 
 __all__ = [
     "Document",
+    "DocumentColumns",
 ]
 
 
@@ -270,8 +271,7 @@ class Document(QAbstractItemModel):
                 and data.accepts_card(self.current_drag_operation["source_size"])  # that have an acceptable size, …
                 and (len(data) + self.current_drag_operation["source_count"]  # and if they can fit the dropped cards
                      <= self.page_layout.compute_page_card_capacity(self.current_drag_operation["source_size"])
-                     or self.current_drag_operation["source_page"] == index.row()
-                    )
+                     or self.current_drag_operation["source_page"] == index.row())
                 )):
             flags |= ItemFlag.ItemIsDropEnabled
         return flags

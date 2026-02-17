@@ -17,7 +17,7 @@ from functools import partial
 from typing import Callable
 
 from PySide6.QtCore import Slot, Qt
-from PySide6.QtWidgets import QWidget,QHBoxLayout
+from PySide6.QtWidgets import QWidget, QHBoxLayout
 
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 
@@ -37,8 +37,9 @@ __all__ = [
     "ProgressBarManager",
 ]
 
+
 class ProgressBar(QWidget):
-    def __init__(self, task: AsyncTask, parent: QWidget = None, flags=Qt.WindowType()):
+    def __init__(self, task: AsyncTask, parent: QWidget = None, flags=Qt.WindowType(0)):
         super().__init__(parent, flags)
         self.task = task
         self.ui = ui = Ui_ProgressBar()

@@ -130,7 +130,7 @@ class PageCardTableView(QTableView):
         """
         actions = [
             self._create_add_copies_action(
-                self.tr("Add %n copies","Context menu action: "
+                self.tr("Add %n copies", "Context menu action: "
                         "Add additional card copies to the document", copy_count),
                 copy_count, card)
             for copy_count in range(1, 4+add_4th)

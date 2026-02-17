@@ -121,14 +121,14 @@ class CentralWidget(QWidget):
             f"New page to select: {new_page_to_select}")
         document_view.setCurrentIndex(self.document.index(new_page_to_select, 0))
 
-    @Slot(QModelIndex,int,int)
+    @Slot(QModelIndex, int, int)
     def on_document_rows_inserted(self, parent: QModelIndex, first: int, _: int):
         if parent.isValid():  # Not interested in card additions
             return
         # When inserting after the current page, the current page can now be moved down.
         self.ui.page_move_down.setEnabled(self._currently_edited_page < first)
 
-    @Slot(QModelIndex,int,int)
+    @Slot(QModelIndex, int, int)
     def on_document_rows_removed(self, parent: QModelIndex, first: int, last: int):
         if parent.isValid():  # Not interested in card removals
             return
