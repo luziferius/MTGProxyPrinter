@@ -92,7 +92,7 @@ class Document(QAbstractItemModel):
     INVALID_INDEX = INVALID_INDEX
 
     current_page_changed = Signal(QPersistentModelIndex)
-    page_layout_changed = Signal(PageLayoutSettings)
+    page_layout_changed = Signal(PageLayoutSettings, set)
     page_type_changed = Signal(QModelIndex)
 
     action_applied = Signal(DocumentAction)

@@ -261,8 +261,8 @@ class PageScene(QGraphicsScene):
             item.update_visibility(current_style)
             item.setPos(position)
 
-    @Slot(PageLayoutSettings)
-    def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
+    @Slot(PageLayoutSettings, set)
+    def on_page_layout_changed(self, new_page_layout: PageLayoutSettings, changed_values: set[str]):
         logger.info("Applying new document settings …")
         new_page_size = self.get_document_page_size(new_page_layout)
         self._update_row_and_column_counts(self.document)

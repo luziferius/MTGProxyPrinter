@@ -12,8 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-
+import copy
 from collections.abc import Iterable
 import itertools
 from unittest.mock import patch
@@ -100,7 +99,7 @@ def test_adding_with_card_to_filled_page_does_not_redraw_page(
 def test_cut_lines_not_drawn_when_disabled_and_page_empty(page_scene: PageScene):
     document = page_scene.document
     document.page_layout.cut_marker_style = "None"
-    document.page_layout_changed.emit(document.page_layout)
+    document.page_layout_changed.emit(document.page_layout, {"cut_marker_style"})
     assert_that(
         page_scene.items(), not_(has_items(instance_of(QGraphicsLineItem)))
     )
@@ -111,7 +110,7 @@ def test_cut_lines_not_drawn_when_disabled_and_page_empty(page_scene: PageScene)
 def test_cut_lines_not_drawn_when_disabled_and_page_filled(page_scene: PageScene, size: CardSize):
     document = page_scene.document
     document.page_layout.cut_marker_style = "None"
-    document.page_layout_changed.emit(document.page_layout)
+    document.page_layout_changed.emit(document.page_layout, {"cut_marker_style"})
     document.apply(ActionAddCard(create_card_with_pixmap("Card", size)))
     assert_that(
         page_scene.items(), not_(has_items(instance_of(QGraphicsLineItem)))
@@ -125,7 +124,7 @@ def test_cut_lines_property_only_lists_line_elements(
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing
     layout.cut_marker_style = "Solid"
-    page_scene.document.page_layout_changed.emit(layout)
+    page_scene.document.page_layout_changed.emit(layout, {"row_spacing", "column_spacing", "cut_marker_style"})
     assert_that(
         page_scene.cut_lines, all_of(
             only_contains(instance_of(QGraphicsLineItem)),
@@ -150,7 +149,7 @@ def test_cut_lines_bounding_rects_cross_entire_page(
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing
     layout.cut_marker_style = cut_marker_style
-    page_scene.document.page_layout_changed.emit(layout)
+    page_scene.document.page_layout_changed.emit(layout, {"row_spacing", "column_spacing", "cut_marker_style"})
     page_width, page_height = page_scene.width(), page_scene.height()
     for index, line in enumerate(page_scene.cut_lines):
         rect = line.boundingRect()
@@ -220,13 +219,15 @@ def test_horizontal_cut_line_locations_when_enabled(
         page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_y: list):
     page_scene.render_mode |= flags
     document = page_scene.document
-    document.page_layout.margin_top = margins*mm
-    document.page_layout.margin_bottom = 0*mm
-    document.page_layout.row_spacing = spacing*mm
-    document.page_layout.cut_marker_style = "Solid"
-    document.page_layout_changed.emit(document.page_layout)
+    layout = document.page_layout
+    old = copy.copy(layout)
+    layout.margin_top = margins*mm
+    layout.margin_bottom = 0*mm
+    layout.row_spacing = spacing*mm
+    layout.cut_marker_style = "Solid"
+    document.page_layout_changed.emit(layout, old.different_attributes(layout))
     assert_that(
-        document.page_layout.compute_page_card_capacity(page_type), is_in((4, 9)),
+        layout.compute_page_card_capacity(page_type), is_in((4, 9)),
         "Test setup failed! Margins caused unexpected capacity decrease"
     )
     if page_type is not PageType.UNDETERMINED:
@@ -297,13 +298,15 @@ def test_vertical_cut_line_locations_when_enabled(
         page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_x: list[float]):
     page_scene.render_mode |= flags
     document = page_scene.document
-    document.page_layout.margin_left = margins*mm
-    document.page_layout.margin_right = 0*mm
-    document.page_layout.column_spacing = spacing*mm
-    document.page_layout.cut_marker_style = "Solid"
-    document.page_layout_changed.emit(document.page_layout)
+    layout = document.page_layout
+    old = copy.copy(layout)
+    layout.margin_left = margins*mm
+    layout.margin_right = 0*mm
+    layout.column_spacing = spacing*mm
+    layout.cut_marker_style = "Solid"
+    document.page_layout_changed.emit(layout, old.different_attributes(layout))
     assert_that(
-        document.page_layout.compute_page_card_capacity(page_type), is_in((4, 9)),
+        layout.compute_page_card_capacity(page_type), is_in((4, 9)),
         "Test setup failed! Margins caused unexpected capacity decrease"
     )
     if page_type is not PageType.UNDETERMINED:
@@ -367,12 +370,14 @@ def test__compute_position_for_image_x(
         page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_x: list[int]):
     page_scene.render_mode |= flags
     document = page_scene.document
-    document.page_layout.column_spacing = spacing*mm
-    document.page_layout.margin_left = margin*mm
-    document.page_layout.margin_right = 0*mm
-    document.page_layout_changed.emit(document.page_layout)
-    page_capacity = document.page_layout.compute_page_card_capacity(page_type)
-    row_count = document.page_layout.compute_page_row_count(page_type)
+    layout = document.page_layout
+    old = copy.copy(layout)
+    layout.column_spacing = spacing*mm
+    layout.margin_left = margin*mm
+    layout.margin_right = 0*mm
+    document.page_layout_changed.emit(layout, old.different_attributes(layout))
+    page_capacity = layout.compute_page_card_capacity(page_type)
+    row_count = layout.compute_page_row_count(page_type)
     card = create_card_with_pixmap("Something", CardSizes.for_page_type(page_type))
     document.apply(ActionAddCard(card, 1))
     x_coordinates = [page_scene._compute_position_for_image(index, page_type).x() for index in range(page_capacity)]
@@ -428,12 +433,14 @@ def test__compute_position_for_image_y(
         page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_y: list[int]):
     page_scene.render_mode |= flags
     document = page_scene.document
-    document.page_layout.row_spacing = spacing*mm
-    document.page_layout.margin_top = margin*mm
-    document.page_layout.margin_bottom = 0*mm
-    document.page_layout_changed.emit(document.page_layout)
-    page_capacity = document.page_layout.compute_page_card_capacity(page_type)
-    column_count = document.page_layout.compute_page_column_count(page_type)
+    layout = document.page_layout
+    old = copy.copy(layout)
+    layout.row_spacing = spacing*mm
+    layout.margin_top = margin*mm
+    layout.margin_bottom = 0*mm
+    document.page_layout_changed.emit(layout, old.different_attributes(layout))
+    page_capacity = layout.compute_page_card_capacity(page_type)
+    column_count = layout.compute_page_column_count(page_type)
     card = create_card_with_pixmap("Something", CardSizes.for_page_type(page_type))
     document.apply(ActionAddCard(card, 1))
     y_coordinates = [page_scene._compute_position_for_image(index, page_type).y() for index in range(page_capacity)]
@@ -475,7 +482,7 @@ def test_sharp_corners(page_scene: PageScene, draw_sharp_corners: bool, color: Q
     document = page_scene.document
     document.page_layout.draw_sharp_corners = draw_sharp_corners
     document.page_layout.card_bleed = card_bleed
-    document.page_layout_changed.emit(document.page_layout)
+    document.page_layout_changed.emit(document.page_layout, {"draw_sharp_corners", "card_bleed"})
     card = create_card_with_pixmap("Something", color=color)
     document.apply(ActionAddCard(card))
 
@@ -498,7 +505,7 @@ def test_sharp_corners(page_scene: PageScene, draw_sharp_corners: bool, color: Q
 def test_card_item_origin_equals_pixmap_origin(page_scene: PageScene, card_bleed: Quantity):
     document = page_scene.document
     document.page_layout.card_bleed = card_bleed
-    document.page_layout_changed.emit(document.page_layout)
+    document.page_layout_changed.emit(document.page_layout, {"card_bleed"})
     card = create_card_with_pixmap("Something", color=QColorConstants.Black)
     document.apply(ActionAddCard(card))
     item = page_scene.card_items[0]
@@ -547,7 +554,7 @@ def test_card_bleed_with_single_card(
     document = page_scene.document
     document.page_layout.draw_sharp_corners = draw_sharp_corners
     document.page_layout.card_bleed = card_bleed
-    document.page_layout_changed.emit(document.page_layout)
+    document.page_layout_changed.emit(document.page_layout, {"draw_sharp_corners", "card_bleed"})
     document.apply(ActionAddCard(create_card_with_pixmap("Something", color=color)))
 
     size = CardSizes.REGULAR.as_qsize_px()
@@ -642,7 +649,7 @@ def test_card_bleed_with_two_cards(page_scene: PageScene, column_spacing: Quanti
     document.page_layout.draw_sharp_corners = True
     document.page_layout.card_bleed = 1*mm
     document.page_layout.column_spacing = column_spacing
-    document.page_layout_changed.emit(document.page_layout)
+    document.page_layout_changed.emit(document.page_layout, {"draw_sharp_corners", "card_bleed", "column_spacing"})
     document.apply(ActionAddCard(create_card_with_pixmap("Left", color=QColorConstants.Black)))
     document.apply(ActionAddCard(create_card_with_pixmap("Right", color=QColorConstants.Cyan)))
 

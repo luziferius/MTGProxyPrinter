@@ -200,7 +200,7 @@ def test_creating_new_document_with_second_page_selected_works_without_raising_e
     document = main_window.document
     # Condition 1
     document.page_layout.cut_marker_style = "Solid"
-    document.page_layout_changed.emit(document.page_layout)
+    document.page_layout_changed.emit(document.page_layout, {"cut_marker_style"})
     ui.action_new_page.trigger()  # Condition 2
     assert_that(document.pages, has_length(2))
     with qtbot.waitSignal(document.current_page_changed):

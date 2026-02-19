@@ -43,7 +43,8 @@ class PageConfigContainer(QWidget):
         config_widget = ui.page_config_widget
 
         page_layout_changed = config_widget.page_layout_changed
-        page_layout_changed.connect(partial(setattr, preview_area.document, "page_layout"))
+        page_layout_changed.connect(
+            lambda layout, _: setattr(preview_area.document, "page_layout", layout))
         page_layout_changed.connect(preview_area.document.page_layout_changed)
         page_layout_changed.connect(preview_area.on_page_layout_changed)
 

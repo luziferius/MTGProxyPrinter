@@ -65,7 +65,8 @@ class ActionEditDocumentSettings(DocumentAction):
         self.old_settings = document.page_layout
         document.page_layout = self.new_settings
         if self.old_settings != self.new_settings:
-            document.page_layout_changed.emit(self.new_settings)
+            document.page_layout_changed.emit(
+                self.new_settings, self.new_settings.different_attributes(self.old_settings))
         old_capacities = self.old_settings.compute_page_card_capacity(PageType.REGULAR), \
             self.old_settings.compute_page_card_capacity(PageType.OVERSIZED)
         new_capacities = self.new_settings.compute_page_card_capacity(PageType.REGULAR), \
@@ -124,7 +125,8 @@ class ActionEditDocumentSettings(DocumentAction):
     def undo(self, document: "Document") -> Self:
         document.page_layout = self.old_settings
         if self.old_settings != self.new_settings:
-            document.page_layout_changed.emit(self.old_settings)
+            document.page_layout_changed.emit(
+                self.old_settings, self.old_settings.different_attributes(self.new_settings))
         for action in reversed(self.reflow_actions):
             action.undo(document)
         self.old_settings = None

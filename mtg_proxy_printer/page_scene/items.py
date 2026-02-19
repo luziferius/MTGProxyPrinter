@@ -291,7 +291,7 @@ class CardItem(QGraphicsItemGroup):
         return rect
 
     @Slot(PageLayoutSettings)
-    def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
+    def on_page_layout_changed(self, new_page_layout: PageLayoutSettings, changed_values: set[str]):
         for corner in self.corners:
             corner.setOpacity(new_page_layout.draw_sharp_corners)
         self._update_watermark(self.watermark_item, new_page_layout)

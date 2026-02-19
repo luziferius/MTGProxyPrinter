@@ -99,7 +99,7 @@ def test_corner_renders_correctly_after_changing_draw_sharp_corners_option(
     item = CardItem(index, document_light)
 
     document_light.page_layout.draw_sharp_corners = new_state
-    document_light.page_layout_changed.emit(document_light.page_layout)
+    document_light.page_layout_changed.emit(document_light.page_layout, {"draw_sharp_corners"})
 
     painted_item = paint_to_new_image(item, card.image_file.size())
     expected = f"{expected_color.red(), expected_color.green(), expected_color.blue()}"

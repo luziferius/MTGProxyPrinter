@@ -12,8 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-
+import copy
 from functools import partial
 import math
 from typing import Any, NamedTuple
@@ -69,7 +68,7 @@ def is_pint_point(value: Any) -> bool:
 
 
 class PageConfigWidget(QGroupBox):
-    page_layout_changed = Signal(PageLayoutSettings)
+    page_layout_changed = Signal(PageLayoutSettings, set)
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -91,7 +90,8 @@ class PageConfigWidget(QGroupBox):
         ui.cut_marker_style.addItem(self.tr("Dashed lines", "A cut marker style"), "Dashes")
         ui.cut_marker_style.addItem(self.tr("Dotted lines", "A cut marker style"), "Dots")
         ui.cut_marker_style.currentIndexChanged.connect(self._on_cut_marker_style_changed)
-        ui.cut_marker_style.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
+        ui.cut_marker_style.currentIndexChanged.connect(
+            lambda: self.page_layout_changed.emit(page_layout, {"cut_marker_style"}))
 
         ui.print_registration_marks_style.addItem(self.tr("Disabled", "A print/cut registration marker style"), "None")
         ui.print_registration_marks_style.addItem(self.tr("Bullseye", "A print/cut registration marker style"), "Bullseye")
@@ -99,7 +99,8 @@ class PageConfigWidget(QGroupBox):
             self.tr("Silhouette cutter (Cameo-compatible)",
                     "A print/cut registration marker style"), "Cut marker")
         ui.print_registration_marks_style.currentIndexChanged.connect(self._on_print_registration_marks_style_changed)
-        ui.print_registration_marks_style.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
+        ui.print_registration_marks_style.currentIndexChanged.connect(
+            lambda: self.page_layout_changed.emit(page_layout, {"print_registration_marks_style"}))
 
         for page_size_id in PageSizeManager.PageSize.values():
             ui.paper_size.addItem(QPageSize.name(page_size_id), page_size_id)
@@ -109,20 +110,24 @@ class PageConfigWidget(QGroupBox):
         ui.paper_size.currentIndexChanged.connect(self._on_paper_size_changed)
         ui.paper_size.currentIndexChanged.connect(self.validate_paper_size_settings)
         ui.paper_size.currentIndexChanged.connect(self.on_page_layout_changed)
-        ui.paper_size.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
+        ui.paper_size.currentIndexChanged.connect(
+            lambda: self.page_layout_changed.emit(page_layout, {"paper_size"}))
 
         ui.paper_orientation.currentIndexChanged.connect(self._on_paper_orientation_changed)
         ui.paper_orientation.currentIndexChanged.connect(self.validate_paper_size_settings)
         ui.paper_orientation.currentIndexChanged.connect(self.on_page_layout_changed)
-        ui.paper_orientation.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
+        ui.paper_orientation.currentIndexChanged.connect(
+            lambda: self.page_layout_changed.emit(page_layout, {"paper_orientation"}))
 
         ui.watermark_color_button.clicked.connect(self._on_watermark_color_button_clicked)
         ui.watermark_opacity.valueChanged.connect(self._on_watermark_color_opacity_changed)
-        ui.watermark_opacity.valueChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
+        ui.watermark_opacity.valueChanged.connect(
+            lambda: self.page_layout_changed.emit(page_layout, {"watermark_color"}))
 
         ui.cut_marker_color_button.clicked.connect(self._on_cut_marker_color_button_clicked)
         ui.cut_marker_opacity.valueChanged.connect(self._on_cut_marker_color_opacity_changed)
-        ui.cut_marker_opacity.valueChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
+        ui.cut_marker_opacity.valueChanged.connect(
+            lambda: self.page_layout_changed.emit(page_layout, {"cut_marker_color"}))
 
         for spinbox, _, unit in self._get_numerical_settings_widgets():
             layout_key = spinbox.objectName()
@@ -130,17 +135,17 @@ class PageConfigWidget(QGroupBox):
                 partial(self.set_numerical_page_layout_item, page_layout, layout_key, unit))
             spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
             spinbox.valueChanged[float].connect(self.on_page_layout_changed)
-            spinbox.valueChanged[float].connect(lambda: self.page_layout_changed.emit(page_layout))
+            spinbox.valueChanged[float].connect(lambda: self.page_layout_changed.emit(page_layout, {layout_key}))
 
         for checkbox, _ in self._get_boolean_settings_widgets():
             layout_key = checkbox.objectName()
             checkbox.stateChanged.connect(partial(self.set_boolean_page_layout_item, page_layout, layout_key))
-            checkbox.stateChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
+            checkbox.stateChanged.connect(lambda: self.page_layout_changed.emit(page_layout, {layout_key}))
 
         for line_edit, _ in self._get_string_settings_widgets():
             layout_key = line_edit.objectName()
             line_edit.textChanged.connect(partial(setattr, page_layout, layout_key))
-            line_edit.textChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
+            line_edit.textChanged.connect(lambda: self.page_layout_changed.emit(page_layout, {layout_key}))
         return page_layout
 
     @staticmethod
@@ -207,7 +212,7 @@ class PageConfigWidget(QGroupBox):
         selected.setAlpha(ui.watermark_opacity.value())
         self.page_layout.watermark_color = selected
         self._show_color(ui.watermark_color, ui.watermark_opacity, self.page_layout.watermark_color)
-        self.page_layout_changed.emit(self.page_layout)
+        self.page_layout_changed.emit(self.page_layout, {"watermark_color"})
 
     @Slot(int)
     def _on_cut_marker_color_opacity_changed(self, value: int):
@@ -225,7 +230,7 @@ class PageConfigWidget(QGroupBox):
         selected.setAlpha(ui.cut_marker_opacity.value())
         self.page_layout.cut_marker_color = selected
         self._show_color(ui.cut_marker_color, ui.cut_marker_opacity, selected)
-        self.page_layout_changed.emit(self.page_layout)
+        self.page_layout_changed.emit(self.page_layout, {"cut_marker_color"})
 
     @Slot()
     def on_page_layout_changed(self):
@@ -261,7 +266,7 @@ class PageConfigWidget(QGroupBox):
             ui.custom_page_height.setValue(width)
         layout.page_width, layout.page_height = layout.page_height, layout.page_width
         self.on_page_layout_changed()
-        self.page_layout_changed.emit(self.page_layout)
+        self.page_layout_changed.emit(self.page_layout, {"page_height", "page_width"})
 
     @Slot()
     def validate_paper_size_settings(self):
@@ -309,6 +314,7 @@ class PageConfigWidget(QGroupBox):
         """Loads the page layout from another PageLayoutSettings instance"""
         logger.debug(f"About to load document settings")
         layout = self.page_layout
+        old_layout = copy.copy(layout)
         # Block change signals to not trigger the validation logic on each iteration.
         # Especially the dimensions loop may pass invalid states:
         #  When loading valid margins left|right (160|5) over previous, valid (5|160),
@@ -340,7 +346,7 @@ class PageConfigWidget(QGroupBox):
         self.ui.paper_size.currentIndexChanged.emit(self.ui.paper_size.currentIndex())
         self.validate_paper_size_settings()
         self.on_page_layout_changed()
-        self.page_layout_changed.emit(self.page_layout)
+        self.page_layout_changed.emit(self.page_layout, old_layout.different_attributes(layout))
         logger.debug(f"Loading from document settings finished")
 
     @staticmethod
