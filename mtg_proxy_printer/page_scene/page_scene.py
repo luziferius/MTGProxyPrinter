@@ -278,9 +278,12 @@ class PageScene(QGraphicsScene):
             self.draw_cut_markers()
         self._compute_position_for_image.cache_clear()
         self.update_card_positions()
-        self.update_card_bleeds()
-        self._update_text_items(new_page_layout)
-        self._update_print_markers()
+        if "card_bleed" in changed_values:
+            self.update_card_bleeds()
+        if not {"document_name", "draw_page_numbers"}.isdisjoint(changed_values):
+            self._update_text_items(new_page_layout)
+        if "print_registration_marks_style" in changed_values:
+            self._update_print_markers()
 
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit

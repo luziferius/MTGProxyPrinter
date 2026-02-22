@@ -290,11 +290,13 @@ class CardItem(QGraphicsItemGroup):
         rect.setZValue(RenderLayers.CORNERS.value)
         return rect
 
-    @Slot(PageLayoutSettings)
+    @Slot(PageLayoutSettings, set)
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings, changed_values: set[str]):
-        for corner in self.corners:
-            corner.setOpacity(new_page_layout.draw_sharp_corners)
-        self._update_watermark(self.watermark_item, new_page_layout)
+        if "draw_sharp_corners" in changed_values:
+            for corner in self.corners:
+                corner.setOpacity(new_page_layout.draw_sharp_corners)
+        if any(value.startswith("watermark") for value in changed_values):
+            self._update_watermark(self.watermark_item, new_page_layout)
 
     @staticmethod
     def _update_watermark(item: QGraphicsSimpleTextItem, page_layout: PageLayoutSettings):
