@@ -144,24 +144,27 @@ def read_translation_progress(file):
 
 def get_lrelease():
     """
-    Determine the lrelease binary name. Tries to find in on $PATH, or falls back to using the PySide2-supplied binary
+    Determine the lrelease binary name. Tries to find in on $PATH first, or falls back to using the PySide6-supplied binary
     from the virtual environment.
     """
-    try:
-        subprocess.check_output(["lrelease", "-version"])
-    except FileNotFoundError:
-        print("lrelease not found on PATH. Falling back to the executable supplied by PySide2.")
-        import sys
-        exe = pathlib.Path(sys.executable)
-        venv = exe.parent.parent
-        lrelease6 = venv / "Lib" / "site-packages" / "PySide6" / "lrelease.exe"
-        if not lrelease6.is_file():
-            raise RuntimeError("No fallback lrelease executable found")
-        return lrelease6
-    else:
-        return "lrelease"
-
-
+    for choice in ["lrelease", "pyside6-lrelease"]:
+        try:
+            subprocess.check_output([choice, "-version"])
+        except FileNotFoundError:
+            continue
+        else:
+            print(f"Found on $PATH: {choice}")
+            return choice
+    print("lrelease not found on $PATH. Falling back to the executable supplied by PySide6.")
+    import sys
+    exe = pathlib.Path(sys.executable)
+    venv_bin_dir = exe.parent.parent / "Lib" / "site-packages" / "PySide6"
+    for choice in ["lrelease.exe", "lrelease"]:
+        lrelease6 = venv_bin_dir / choice
+        if lrelease6.is_file():
+            return lrelease6
+    raise RuntimeError("No fallback lrelease executable found")
+            
 def compile_translations(args: Namespace):
     """Compiles .ts files into importable, binary translation files with .qm suffix."""
     lrelease = get_lrelease()
