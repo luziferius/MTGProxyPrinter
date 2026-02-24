@@ -376,6 +376,7 @@ class GeneralSettingsPage(Page):
             (ui.automatically_add_opposing_faces, "cards", "automatically-add-opposing-faces"),
             (ui.gui_open_maximized, "gui", "gui-open-maximized"),
             (ui.wizards_open_maximized, "gui", "wizards-open-maximized"),
+            (ui.force_use_internal_icons, "gui", "force-use-internal-icons"),
             (ui.custom_cards_force_round_corners, "cards", "custom-cards-force-round-corners"),
         ]
         return widgets_with_settings
