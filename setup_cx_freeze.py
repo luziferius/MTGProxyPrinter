@@ -120,7 +120,6 @@ setup_parameters = {
             # When another MSI package with a known, installed GUID is installed, it is assumed to be an update,
             # causing the removal of the previous package, allowing smooth updates. It has to be enclosed in {}.
             "upgrade_code": "{15a9e385-f6ab-4aa4-8ef1-3f2cf5c193a8}",
-            "target_name": project_name,
             "skip_build": True,
             "install_icon": icon,
             "license_file": resource_path / "gpl-3.0.rtf"
