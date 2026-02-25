@@ -91,19 +91,20 @@ def test_textual_settings_change_signal_connection_from_config_widget_to_preview
     page_config_widget = container.ui.page_config_widget
     document = container.ui.page_config_preview_area.document
     widget: QLineEdit | QComboBox = getattr(page_config_widget.ui, widget_name)
+    original_value: str = getattr(document.page_layout, widget_name)
     if isinstance(widget, QComboBox):
         pytest.skip("Not testing choice-based configuration items")
-    original_value: str = getattr(document.page_layout, widget_name)
-    new_value = "Test"
-    with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
-        widget.setText(new_value)
-    assert_that(
-        getattr(document.page_layout, widget_name),
-        is_(new_value),
-        f"Failing widget: {widget_name}")
-    with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
-        widget.setText(original_value)
-    assert_that(
-        getattr(document.page_layout, widget_name),
-        is_(original_value),
-        f"Failing widget: {widget_name}")
+    else:
+        new_value = "Test"
+        with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
+            widget.setText(new_value)
+        assert_that(
+            getattr(document.page_layout, widget_name),
+            is_(new_value),
+            f"Failing widget: {widget_name}")
+        with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
+            widget.setText(original_value)
+        assert_that(
+            getattr(document.page_layout, widget_name),
+            is_(original_value),
+            f"Failing widget: {widget_name}")
