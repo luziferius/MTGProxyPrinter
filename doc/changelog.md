@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.35.1 (2025-02-25)  <a name="v0_35_1"></a>
 
 ## New features
 
@@ -14,6 +14,7 @@
 
 - Fixed HTTP 400 errors occurring in communication with Scryfall,
   which rendered the card data update and deck list imports from Scryfall unusable.
+  - This was caused by a policy change on the Scryfall API server. All older versions of MTGProxyPrinter cease to work.
 - Fixed broken rendering after switching printings. This was a purely visual bug, and did not affect prints or PDFs.
 - Automatically re-create the internal card database, if it gets corrupted, instead of repeatedly crashing in that case.
 - Fixed issues, including a potential crash, when moving cards using drag&drop and dropping them in the space between
