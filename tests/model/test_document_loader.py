@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -304,7 +304,6 @@ def test_protects_against_infinite_settings_data(
 def test_cancelling_loading_does_not_crash(
         loader: DocumentLoader,
         empty_save_database: sqlite3.Connection):
-    pytest.skip("Cancelling loading not yet supported again")
     document = loader.document
     create_save_database_with(
         empty_save_database,
@@ -315,7 +314,7 @@ def test_cancelling_loading_does_not_crash(
         ],
         document.page_layout
     )
-    loader.begin_loading_loop.connect(loader.cancel)
+    loader.task_begins.connect(loader.cancel)
     with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database:
         loader.run()
     open_database.assert_called_once()

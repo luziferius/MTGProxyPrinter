@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -376,6 +376,7 @@ class GeneralSettingsPage(Page):
             (ui.automatically_add_opposing_faces, "cards", "automatically-add-opposing-faces"),
             (ui.gui_open_maximized, "gui", "gui-open-maximized"),
             (ui.wizards_open_maximized, "gui", "wizards-open-maximized"),
+            (ui.force_use_internal_icons, "gui", "force-use-internal-icons"),
             (ui.custom_cards_force_round_corners, "cards", "custom-cards-force-round-corners"),
         ]
         return widgets_with_settings

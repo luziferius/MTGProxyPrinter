@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -234,6 +234,7 @@ DEFAULT_SETTINGS["default-filesystem-paths"] = {
 }
 DEFAULT_SETTINGS["gui"] = {
     "central-widget-layout": "columnar",
+    "force-use-internal-icons": "False",
     "show-toolbar": "True",
     "language": "",
     "gui-open-maximized": "True",
@@ -466,7 +467,7 @@ def _validate_gui_section(to_validate: ConfigParser, section_name: str = "gui"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
-    for key in ("show-toolbar", "gui-open-maximized", "wizards-open-maximized"):
+    for key in ("show-toolbar", "gui-open-maximized", "wizards-open-maximized", "force-use-internal-icons"):
         _validate_boolean(section, defaults, key)
     _validate_string_is_in_set(section, defaults, VALID_LANGUAGES, "language")
 

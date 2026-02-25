@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
 
 
 PROGRAMNAME = "MTGProxyPrinter"
-__version__ = "0.35.0"
-COPYRIGHT = "(C) 2020-2025 Thomas Hess"
+__version__ = "0.35.1"
+COPYRIGHT = "© 2020-2026 Thomas Hess"
 HOME_PAGE = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter"
 
 DOWNLOAD_WEB_PAGE = f"{HOME_PAGE}/uv/download.html"

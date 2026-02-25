@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -50,7 +50,10 @@ class DownloaderBase(AsyncTask):
         return data, monitor
 
     def _open_url(self, url: str, ui_hint: str) -> mtg_proxy_printer.http_file.MeteredSeekableHTTPFile:
-        headers = {"Accept-Encoding": ", ".join(supported_encodings)}
+        headers = {
+            "Accept": "*/*",
+            "Accept-Encoding": ", ".join(supported_encodings)
+        }
         response = mtg_proxy_printer.http_file.MeteredSeekableHTTPFile(url, headers, ui_hint=ui_hint)
         if (response_code := response.getcode()) >= 300:
             raise RuntimeError(f"Error from server! Error code: {response_code}")
