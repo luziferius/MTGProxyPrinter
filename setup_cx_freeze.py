@@ -38,10 +38,7 @@ project_name = re.search(
     re.M
     ).group(1)
 
-
-base = "Win32GUI" if sys.platform == "win32" else None
-
-excludes  = [
+excludes = [
     f"{main_package}.resources",  # Do not include the raw resources as individual files
     "distutils",
     "ijson.benchmark",  # Ignore the benchmark script added after ijson 3.2.3
@@ -109,7 +106,7 @@ setup_parameters = {
     "executables": [
         Executable(
             f"{main_package}/__main__.py",
-            base=base,
+            base="gui",
             target_name=project_name,
             shortcut_name=project_name,
             shortcut_dir='StartMenuFolder',
