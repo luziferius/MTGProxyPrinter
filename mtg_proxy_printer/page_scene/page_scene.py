@@ -28,7 +28,7 @@ from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.page_scene.items import RenderLayers, CutMarkerParameters, NeighborsPresent, CardItem, \
-    BullseyeMarkItem, CutMarkSquareItem, CutMarkAngleItem
+    BullseyeMarkItem, CutMarkSquareItem, CutMarkAngleItem, CutHelperLineGridItem
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, distance_to_rounded_px, CardSizes, CardSize, \
     Quantity
@@ -97,6 +97,7 @@ class PageScene(QGraphicsScene):
         self.print_markers = self._create_print_marker_items()
         self._update_print_markers()
         self._update_text_items(page_layout)
+
         if page_layout.draw_cut_markers:
             self.draw_cut_markers()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {render_mode}")
