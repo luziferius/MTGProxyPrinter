@@ -38,10 +38,7 @@ project_name = re.search(
     re.M
     ).group(1)
 
-
-base = "Win32GUI" if sys.platform == "win32" else None
-
-excludes  = [
+excludes = [
     f"{main_package}.resources",  # Do not include the raw resources as individual files
     "distutils",
     "lib2to3",
@@ -118,7 +115,7 @@ setup_parameters = {
     "executables": [
         Executable(
             f"{main_package}/__main__.py",
-            base=base,
+            base="gui",
             target_name=project_name,
             shortcut_name=project_name,
             shortcut_dir='StartMenuFolder',
@@ -132,7 +129,6 @@ setup_parameters = {
             # When another MSI package with a known, installed GUID is installed, it is assumed to be an update,
             # causing the removal of the previous package, allowing smooth updates. It has to be enclosed in {}.
             "upgrade_code": "{15a9e385-f6ab-4aa4-8ef1-3f2cf5c193a8}",
-            "target_name": project_name,
             "skip_build": True,
             "install_icon": icon,
             "license_file": resource_path / "gpl-3.0.rtf"

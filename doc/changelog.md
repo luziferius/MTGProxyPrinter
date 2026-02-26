@@ -1,5 +1,11 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+
+
 # Version 0.33.2 (2025-08-05)  <a name="v0_33_2"></a>
 
 ## Fixed issues

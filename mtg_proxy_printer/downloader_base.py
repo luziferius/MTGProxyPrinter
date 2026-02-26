@@ -56,7 +56,10 @@ class DownloaderBase(QObject):
         return data, monitor
 
     def _open_url(self, url: str, ui_hint: str) -> mtg_proxy_printer.http_file.MeteredSeekableHTTPFile:
-        headers = {"Accept-Encoding": ", ".join(supported_encodings)}
+        headers = {
+            "Accept": "*/*",
+            "Accept-Encoding": ", ".join(supported_encodings),
+        }
         response = mtg_proxy_printer.http_file.MeteredSeekableHTTPFile(url, headers, self, ui_hint=ui_hint)
         if (response_code := response.getcode()) >= 300:
             raise RuntimeError(f"Error from server! Error code: {response_code}")

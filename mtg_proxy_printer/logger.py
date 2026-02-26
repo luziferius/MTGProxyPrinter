@@ -37,7 +37,10 @@ def get_logger(full_module_path: str) -> logging.Logger:
     """
     Returns a logger instance for the given module __name__.
     """
-    module_path = ".".join(full_module_path.split(".")[1:])
+    try:
+        module_path = ".".join(full_module_path.split(".")[1:])
+    except ValueError:
+        module_path = full_module_path
     return root_logger.getChild(module_path)
 
 
