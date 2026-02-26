@@ -252,9 +252,10 @@ class Application(QApplication):
         application_icon = mtg_proxy_printer.ui.common.load_icon("MTGPP_clean.png")
         self.setWindowIcon(application_icon)
         fallback_icon_theme = QIcon.fallbackThemeName()
-        if not fallback_icon_theme:
+        if not fallback_icon_theme or settings.settings["gui"].getboolean("force-use-internal-icons"):
             logger.info(
-                "No native icon theme support or no system theme set, defaulting to internal icons."
+                "No native icon theme support, no system theme set, or icon theme override setting enabled, "
+                "defaulting to internal icons."
             )
             if not mtg_proxy_printer.ui.common.HAS_COMPILED_RESOURCES:
                 # If the compiled resources are available, the default search path ":/icons" is sufficient. Only append

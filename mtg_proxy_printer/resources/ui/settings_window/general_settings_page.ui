@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>GeneralSettingsPage</class>
  <widget class="QWidget" name="GeneralSettingsPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>428</width>
+    <height>496</height>
+   </rect>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0" colspan="2">
     <widget class="QGroupBox" name="look_and_feel_settings_group_box">
@@ -9,27 +17,17 @@
       <string>Look &amp;&amp; Feel (Changing most of these require an application restart)</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="0">
-       <widget class="QLabel" name="application_language_label">
-        <property name="text">
-         <string>Application language</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="add_card_widget_style_label">
-        <property name="text">
-         <string>Main window layout</string>
-        </property>
-        <property name="buddy">
-         <cstring>add_card_widget_style_combo_box</cstring>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0" colspan="2">
+      <item row="3" column="0" colspan="2">
        <widget class="QCheckBox" name="gui_open_maximized">
         <property name="text">
          <string>Open the main window maximized</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0" colspan="2">
+       <widget class="QCheckBox" name="wizards_open_maximized">
+        <property name="text">
+         <string>Open all wizards maximized</string>
         </property>
        </widget>
       </item>
@@ -48,13 +46,34 @@ Tabbed uses tabs to only show parts of the main window at a time. Best used with
         </property>
        </widget>
       </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="add_card_widget_style_label">
+        <property name="text">
+         <string>Main window layout</string>
+        </property>
+        <property name="buddy">
+         <cstring>add_card_widget_style_combo_box</cstring>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="1">
        <widget class="QComboBox" name="application_language_combo_box"/>
       </item>
-      <item row="3" column="0" colspan="2">
-       <widget class="QCheckBox" name="wizards_open_maximized">
+      <item row="0" column="0">
+       <widget class="QLabel" name="application_language_label">
         <property name="text">
-         <string>Open all wizards maximized</string>
+         <string>Application language</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QCheckBox" name="force_use_internal_icons">
+        <property name="toolTip">
+         <string>Use the integrated icon theme, even on systems with support for system-wide icon themes.
+Useful, if the system-supplied icons are incomplete, or broken</string>
+        </property>
+        <property name="text">
+         <string>Always use the integrated icon theme</string>
         </property>
        </widget>
       </item>
