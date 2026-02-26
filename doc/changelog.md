@@ -1,10 +1,14 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.33.3 (2026-02-26)  <a name="v0_33_3"></a>
 
 ## Fixed issues
 
-
+- Fixed HTTP 400 errors occurring in communication with Scryfall,
+  which rendered the card data update and deck list imports from Scryfall unusable.
+  - This was caused by a policy change on the Scryfall API server. All older versions of MTGProxyPrinter cease to work.
+- Added a settings option to force the application to use it's internal icon theme, even on Linux systems supporting
+  system-wide icon themes. This can help if the system-provided theme is incomplete or otherwise broken
 
 # Version 0.33.2 (2025-08-05)  <a name="v0_33_2"></a>
 
