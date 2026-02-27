@@ -348,7 +348,8 @@ class CutHelperLineGridItem(QGraphicsItemGroup):
 
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
+        if not self.document.page_layout.draw_cut_markers:
+            return
         new_page_type: PageType = selected_page.data(ItemDataRole.UserRole)
-        grid_is_visible = CardSizes.for_page_type(new_page_type) == self.grid_size \
-            and self.document.page_layout.draw_cut_markers
+        grid_is_visible = CardSizes.for_page_type(new_page_type) == self.grid_size
         self.setOpacity(float(grid_is_visible))
