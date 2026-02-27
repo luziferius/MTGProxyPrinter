@@ -20,13 +20,13 @@ import typing
 from PySide6.QtCore import QRect, QPoint, QPointF, QSize, QModelIndex, QPersistentModelIndex, Qt, Slot
 from PySide6.QtGui import QPixmap, QPen, QColorConstants, QTransform, QPolygonF
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsItemGroup, QGraphicsItem, \
-    QGraphicsSimpleTextItem, QGraphicsRectItem, QGridLayout
+    QGraphicsSimpleTextItem, QGraphicsRectItem
 from PySide6.QtSvgWidgets import QGraphicsSvgItem
 
 from mtg_proxy_printer.model.card import AnyCardType, CardCorner
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import unit_registry, RESOLUTION, Quantity, CardSize, PageType
+from mtg_proxy_printer.units_and_sizes import unit_registry, RESOLUTION, Quantity, CardSize, CardSizes, PageType
 from mtg_proxy_printer.ui.common import RESOURCE_PATH_PREFIX
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -349,4 +349,6 @@ class CutHelperLineGridItem(QGraphicsItemGroup):
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
         new_page_type: PageType = selected_page.data(ItemDataRole.UserRole)
-        pass
+        grid_is_visible = CardSizes.for_page_type(new_page_type) == self.grid_size \
+            and self.document.page_layout.draw_cut_markers
+        self.setOpacity(float(grid_is_visible))
