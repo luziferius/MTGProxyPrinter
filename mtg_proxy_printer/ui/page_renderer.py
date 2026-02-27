@@ -24,7 +24,8 @@ from PySide6.QtGui import QWheelEvent, QKeySequence, QPalette, QResizeEvent, QAc
 
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.page_scene.page_scene import RenderMode, PageScene
+from mtg_proxy_printer.page_scene.page_scene import PageScene
+from mtg_proxy_printer.page_scene.items import RenderMode
 
 logger = get_logger(__name__)
 del get_logger

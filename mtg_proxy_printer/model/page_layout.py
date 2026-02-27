@@ -29,7 +29,7 @@ from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
 from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, \
     distance_to_mm, Quantity
 if TYPE_CHECKING:
-    from mtg_proxy_printer.page_scene.page_scene import RenderMode
+    from mtg_proxy_printer.page_scene.items import RenderMode
 logger = get_logger(__name__)
 del get_logger
 PenStyle = Qt.PenStyle
