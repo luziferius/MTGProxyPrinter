@@ -15,7 +15,7 @@
 
 
 PROGRAMNAME = "MTGProxyPrinter"
-__version__ = "0.35.1"
+__version__ = "0.36.0-a0"
 COPYRIGHT = "© 2020-2026 Thomas Hess"
 HOME_PAGE = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter"
 
