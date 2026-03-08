@@ -206,7 +206,7 @@ class PageLayoutSettings:
             > other.compute_page_card_capacity(PageType.OVERSIZED)
 
     def update(self, other: Iterable[tuple[str, Any]]):
-        known_keys = set(self.__annotations__.keys())
+        known_keys = set(PageLayoutSettings.__annotations__.keys())
         for key, value in other:
             if key in known_keys:
                 setattr(self, key, value)

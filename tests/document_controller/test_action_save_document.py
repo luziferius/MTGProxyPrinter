@@ -191,7 +191,7 @@ def _validate_database_schema(db_path: Path):
 
 def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Path):
     with open_database(save_file, "document-v7") as save:
-        keys = ", ".join(map("'{}'".format, layout.__annotations__.keys()))
+        keys = ", ".join(map("'{}'".format, PageLayoutSettings.__annotations__.keys()))
         query = textwrap.dedent(f"""\
             SELECT value
               FROM DocumentSettings

@@ -384,7 +384,7 @@ def test_load_settings_from_legacy_save_file_is_successful(
     with qtbot.wait_signals([loader.load_requested, document.action_applied]), \
             qtbot.assert_not_emitted(loader.loading_file_failed):
         loader.run()
-    annotations = document.page_layout.__annotations__
+    annotations = PageLayoutSettings.__annotations__
     assert_that(
         document.page_layout,
         has_properties({

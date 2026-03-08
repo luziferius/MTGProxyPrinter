@@ -440,7 +440,7 @@ class DocumentLoader(AsyncTask):
         settings = PageLayoutSettings.create_from_settings()
         logger.debug("Reading document settings …")
         keys = ", ".join(
-            f"'{key}'" for key, value in settings.__annotations__.items() if value is not Quantity)
+            f"'{key}'" for key, value in PageLayoutSettings.__annotations__.items() if value is not Quantity)
         document_settings_query = textwrap.dedent(f"""\
             SELECT "key", value
                 FROM DocumentSettings
@@ -448,7 +448,7 @@ class DocumentLoader(AsyncTask):
             """)
         settings.update(db.execute(document_settings_query))
         keys = ", ".join(
-            f"'{key}'" for key, value in settings.__annotations__.items() if value is Quantity)
+            f"'{key}'" for key, value in PageLayoutSettings.__annotations__.items() if value is Quantity)
         document_dimensions_query = textwrap.dedent(f"""\
             SELECT "key", value
                 FROM DocumentDimensions

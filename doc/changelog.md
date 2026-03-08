@@ -1,5 +1,11 @@
 # Changelog
 
+# Version 0.35.2 (2025-08-08)  <a name="v0_35_2"></a>
+
+## Fixed issues
+
+- Fixed failure loading documents, caused by a compatibility issue with Python 3.14.
+
 # Version 0.35.1 (2025-02-25)  <a name="v0_35_1"></a>
 
 ## New features
