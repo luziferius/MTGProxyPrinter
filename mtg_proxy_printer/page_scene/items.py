@@ -16,8 +16,7 @@
 import enum
 import itertools
 import typing
-from collections.abc import Sequence
-from typing import Generator
+from collections.abc import Iterable, Generator
 
 from PySide6.QtCore import QRect, QPoint, QPointF, QSize, QModelIndex, QPersistentModelIndex, Qt, Slot
 from PySide6.QtGui import QPixmap, QPen, QColorConstants, QTransform, QPolygonF, QPalette
@@ -132,7 +131,7 @@ class CutMarkAngleItem(QGraphicsPolygonItem):
         self.setRotation(180 * bottom_left)
         logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
 
-    def setPos(self, pos: QPoint|QPointF, /):
+    def setPos(self, pos: QPoint | QPointF, /):
         bb = self.boundingRect()
         new = QPointF(
             (pos.x()+bb.width()-2*bb.width()*(not self.bottom_left)),
@@ -363,7 +362,7 @@ class CutHelperLineGridItem(QGraphicsItemGroup):
         self._create_line_items(document.page_layout, self._get_cut_helper_line_pen(document.page_layout))
         document.current_page_changed.connect(self.on_current_page_changed)
         document.page_layout_changed.connect(self.on_page_layout_changed)
-        self.setOpacity(0)
+        self.setVisible(False)
 
     def _get_cut_helper_line_pen(self, layout: PageLayoutSettings) -> QPen:
         """Returns the QPen to use for line items"""
@@ -380,7 +379,7 @@ class CutHelperLineGridItem(QGraphicsItemGroup):
     @Slot(PageLayoutSettings, set)
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings, changed_values: set[str]):
         if not new_page_layout.draw_cut_markers:
-            self.setOpacity(0)
+            self.setVisible(False)
         pen = self._get_cut_helper_line_pen(new_page_layout)
         if changed_values.intersection(self.POSITIONAL_PAGE_LAYOUT_SETTINGS):
             self._delete_line_items()
@@ -430,7 +429,7 @@ class CutHelperLineGridItem(QGraphicsItemGroup):
             return
         new_page_type: PageType = selected_page.data(ItemDataRole.UserRole)
         grid_is_visible = CardSizes.for_page_type(new_page_type) == self.grid_size
-        self.setOpacity(float(grid_is_visible))
+        self.setVisible(grid_is_visible)
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> Generator[float, None, None]:
         spacing = distance_to_rounded_px(parameters.image_spacing)
@@ -456,12 +455,12 @@ class CutHelperLineGridItem(QGraphicsItemGroup):
             if parameters.image_spacing:
                 yield pixel_position + card_size
 
-    def _draw_vertical_markers(self, pen: QPen, length: float, positions: Sequence[float]):
+    def _draw_vertical_markers(self, pen: QPen, length: float, positions: Iterable[float]):
         for column_px in positions:
             self._draw_vertical_line(pen, length, column_px)
         logger.debug(f"Vertical cut markers drawn")
 
-    def _draw_horizontal_markers(self, pen: QPen, length: float, positions: Sequence[float]):
+    def _draw_horizontal_markers(self, pen: QPen, length: float, positions: Iterable[float]):
         for row_px in positions:
             self._draw_horizontal_line(pen, length, row_px)
         logger.debug(f"Horizontal cut markers drawn")
