@@ -65,7 +65,7 @@ def _should_skip_network_tests() -> bool:
 
 
 SHOULD_SKIP_NETWORK_TESTS = _should_skip_network_tests()
-close_to_: Callable[[Real|float], Matcher[Real|float]] = functools.partial(close_to, delta=0.005)
+close_to_: Callable[[Real | float], Matcher[Real | float]] = functools.partial(close_to, delta=0.005)
 
 
 class AsyncTaskReceiver(QObject):
