@@ -68,7 +68,7 @@ macos.permissions =
 mode = onefile
 
 # specify any extra nuitka arguments
-extra_args = --quiet --noinclude-qt-translations --include-package=ijson.backends
+extra_args = --quiet --noinclude-qt-translations --include-package=ijson.backends  --include-package-data=mtg_proxy_printer
 
 [buildozer]
 
