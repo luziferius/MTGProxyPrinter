@@ -51,7 +51,6 @@ dev = [
     "pytest-cov",
     "pytest-timeout",
     "pytest-qt >= 4.5",
-    "tox >= 4.0",
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
 package = [
@@ -59,7 +58,6 @@ package = [
     "cx_Freeze >= 8.5; platform_python_implementation == 'CPython'",
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
-
 
 [project.urls]
 Homepage = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/index"
@@ -100,15 +98,15 @@ requires = [
     "wheel >= 0.45",
     "PySide6_Essentials >= 6.7.0",
     "build",
-    "pip-tools >= 7.4"
+    "pip-tools >= 7.4",
+    "tox >= 4.21",
 ]
 build-backend = "setuptools.build_meta"
 
 [tool.cxfreeze]
 
 executables = [
-    { script="mtg_proxy_printer/__main__.py", base = "gui", target_name="MTGProxyPrinter", shortcut_name="MTGProxyPrinter", shortcut_dir='StartMenuFolder', icon="resources/icons/MTGPP"}
-
+    {script="mtg_proxy_printer/__main__.py", base = "gui", target_name="MTGProxyPrinter", shortcut_name="MTGProxyPrinter", shortcut_dir='StartMenuFolder', icon="resources/icons/MTGPP"}
 ]
 [tool.cxfreeze.build_exe]
 optimize = 2
@@ -154,7 +152,6 @@ excludes = [
     "PySide6.translations.qtwebengine_locales",
     "PySide6.typesystems",
 ]
-
 [tool.cxfreeze.bdist_msi]
 # The GUID upgrade_code token is used by Windows to identify the application being installed.
 # When another MSI package with a known, installed GUID is installed, it is assumed to be an update,
@@ -162,3 +159,42 @@ excludes = [
 upgrade_code = "{15a9e385-f6ab-4aa4-8ef1-3f2cf5c193a8}"
 skip_build = true
 license_file = "resources/gpl-3.0.rtf"
+
+[tool.tox]
+
+requires = ["tox>=4.21"]
+env_list = ["unit_tests", "package"]
+
+[tool.tox.env.unit_tests]
+skip_install = true
+extras = ["dev"]
+commands = [
+    ["python", "-m", "pytest", "tests"],
+]
+
+[tool.tox.env.package]
+skip_install = true
+extras = ["package"]
+description = "Creates redistributable packages with build and cx_Freeze."
+
+commands_pre = [
+    ["python", "{toxinidir}{/}scripts{/}update_translations.py", "compile"],
+    ["python", "{toxinidir}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_importable_modules"],
+    ["python", "{toxinidir}{/}scripts{/}compile_resources.py", "compile"],
+    { replace = "if", condition = "factor.win32", then = [
+        ["python", "{toxinidir}{/}scripts{/}generate_windows_icon.py"],
+    ] },
+]
+commands = [
+    ["python", "-m", "build"],
+    { replace = "if", condition = "factor.win32", then = [
+        ["cxfreeze", "build"],
+        ["{toxinidir}{/}scripts{/}clean_windows_build.bat"],
+        ["cxfreeze", "bdist_msi", "--skip-build"],
+    ] },
+]
+commands_post = [
+    ["python", "{toxinidir}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_stubs"],
+    ["python", "{toxinidir}{/}scripts{/}compile_resources.py", "clean"],
+    ["python", "-c", "__import__('shutil').rmtree('MTGProxyPrinter.egg-info')"],
+]
