@@ -14,6 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import abc
+import time
 from collections.abc import Generator
 import enum
 import functools
@@ -207,6 +208,7 @@ class StreamTask(CardInfoDownloadTaskBase):
         self.source = source
         self.json_path = json_path
         self.queue: CardDataQueue = queue.Queue(self._queue_depth)
+        self._stream = None
 
     def _enqueue_stream(self, data: CardStream):
         """Put the CardStream into the queue for downstream consumption"""
@@ -216,9 +218,13 @@ class StreamTask(CardInfoDownloadTaskBase):
         except AttributeError:  # Cancelling closes and deletes the underlying file, causing an AttributeError in run()
             logger.info(f"{self.__class__.__name__}: Read operation cancelled")
         except Exception as e:
-            signal = self.error_occurred if isinstance(self.source, Path) else self.network_error_occurred
-            logger.warning(f"{self.__class__.__name__}: Unexpected end of stream")
-            signal.emit(str(e))
+            # Cancelling also exhausts the queue to prevent deadlocks.
+            # That exhaustion deliberately causes a "read from closed file".
+            # So suppress any error, if the stream no longer exists, as it only disappears through cancel()
+            if self._stream is not None:
+                signal = self.error_occurred if isinstance(self.source, Path) else self.network_error_occurred
+                logger.warning(f"{self.__class__.__name__}: Unexpected end of stream")
+                signal.emit(str(e))
         else:
             logger.info(f"{self.__class__.__name__}: Card data exhausted.")
         finally:
@@ -238,9 +244,20 @@ class StreamTask(CardInfoDownloadTaskBase):
         return True
 
     def cancel(self):
+        logger.debug(f"{self.__class__.__name__}: entering cancel()")
         if self.open_file is not None:
             self.open_file.close()
-            self.open_file = None
+        self.open_file = self._stream = None
+        while not self.queue.empty():
+            # Flush the queue to unblock a potentially blocked writer thread:
+            # The consumer thread stops immediately within it's currently processed batch,
+            # so may leave the producer in a deadlock waiting for a free queue slot that will never arrive.
+            try:
+                self.queue.get(block=False)
+            except queue.Empty:
+                time.sleep(0.1)
+
+        logger.debug(f"{self.__class__.__name__}: Cancel completed")
 
 
 class FileStreamTask(StreamTask):
@@ -256,7 +273,8 @@ class FileStreamTask(StreamTask):
         with self._wrap_in_metered_file(raw_file, file_size) as file:
             if file_path.suffix.casefold() == ".gz":
                 self.open_file = file = gzip.open(file, "rb")
-            yield from ijson.items(file, json_path, use_float=True)
+            self._stream = ijson.items(file, json_path, use_float=True)
+            yield from self._stream
 
     def _wrap_in_metered_file(self, raw_file, file_size: int):
         monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size)
@@ -284,7 +302,6 @@ class ApiStreamTask(StreamTask):
     This encapsulates requesting data via HTTPS, decryption, gzip stream decompression and parsing into dicts via ijson.
     It enqueues a single None as the last value after finishing the last batch.
     """
-
     def run(self):
         logger.info(f"{self.__class__.__name__}: About to stream card data in batches of {self._batch_size}")
         data = self.read_json_card_data_from(self.source, self.json_path)
@@ -308,7 +325,8 @@ class ApiStreamTask(StreamTask):
         # Ignore the monitor, because progress reporting is done in the main import loop.
         self.open_file, _ = self.read_from_url(url)  # type: GzipFile | MeteredSeekableHTTPFile, MeteredSeekableHTTPFile
         with self.open_file:
-            yield from ijson.items(self.open_file, json_path, use_float=True)
+            self._stream = ijson.items(self.open_file, json_path, use_float=True)
+            yield from self._stream
 
     @functools.cache
     def get_available_card_count(self) -> int:
