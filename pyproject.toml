@@ -103,3 +103,64 @@ requires = [
     "pip-tools >= 7.4"
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.cxfreeze]
+
+executables = [
+    { script="mtg_proxy_printer/__main__.py", base = "gui", target_name="MTGProxyPrinter", shortcut_dir='StartMenuFolder', icon="resources/icons/MTGPP_clean.png"}
+
+]
+[tool.cxfreeze.build_exe]
+optimize = 2
+packages = [
+    # Make sure that the dynamically loaded ijson backends are discovered.
+    "ijson.backends",
+]
+excludes = [
+    "distutils",
+    "ijson.benchmark",  # Ignore the benchmark script added after ijson 3.2.3
+    "importlib_metadata",
+    "lib2to3",
+    "pep517",
+    "pint.testsuite",  # Ignore the internal test suite
+    "pydoc_data",
+    "pytest",
+    "sqlite3.test",  # Ignore the internal test suite
+    "tkinter",
+    "toml",
+    # Empty package with readme and download scripts
+    "ctypes.test",
+    # Unused PySide6 components
+    "PySide6.glue",
+    "PySide6.include",
+    "PySide6.metatypes",
+    "PySide6.plugins.assetimporters",
+    "PySide6.plugins.canbus",
+    "PySide6.plugins.designer",
+    "PySide6.plugins.geometryloaders",
+    "PySide6.plugins.geoservices",
+    "PySide6.plugins.multimedia",
+    "PySide6.plugins.networkinformation",
+    "PySide6.plugins.position",
+    "PySide6.plugins.qmltooling",
+    "PySide6.plugins.scxmldatamodel",
+    "PySide6.plugins.sensors",
+    "PySide6.plugins.sqldrivers",  # Use Python native sqlite3 module instead
+    "PySide6.plugins.tls",
+    "PySide6.qml",
+    "PySide6.QtAsyncio",
+    "PySide6.resources",
+    "PySide6.scripts",
+    "PySide6.support",
+    "PySide6.translations.qtwebengine_locales",
+    "PySide6.typesystems",
+]
+
+[tool.cxfreeze.bdist_msi]
+# The GUID upgrade_code token is used by Windows to identify the application being installed.
+# When another MSI package with a known, installed GUID is installed, it is assumed to be an update,
+# causing the removal of the previous package, allowing smooth updates. It has to be enclosed in {}.
+upgrade_code = "{15a9e385-f6ab-4aa4-8ef1-3f2cf5c193a8}"
+skip_build = true
+install_icon = "resources/icons/MTGPP_clean.png"
+license_file = "resources/gpl-3.0.rtf"
