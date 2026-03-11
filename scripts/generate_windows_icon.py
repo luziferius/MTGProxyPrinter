@@ -24,7 +24,7 @@ def main():
     _ = parse_args()
     root_dir = Path(__file__).parent.parent.resolve()
     src_path = root_dir / "resources" / "icons" / "MTGPP.png"
-    dest_path = root_dir / "MTGPP.ico"
+    dest_path = src_path.with_suffix(".ico")
     with Image.open(src_path) as src:
         src.save(dest_path, "ICO")
 

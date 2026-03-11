@@ -16,10 +16,9 @@ python_command_args = [
     ["python", "-m", "piptools", "compile", "--strip-extras", "--extra", "dev", "-o", req_dev, source],
     ["python", "-m", "piptools", "compile", "--strip-extras", "--extra", "package", "-o", req_pack, source],
 ]
-Argument = str | Path
 
 
-async def run(prog: str, *args: list[Argument]):
+async def run(prog: str, *args: list[str | Path]):
     proc = await asyncio.create_subprocess_exec(
         prog, *args,
         stdin=asyncio.subprocess.DEVNULL,
