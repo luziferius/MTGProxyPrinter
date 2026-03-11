@@ -107,7 +107,7 @@ build-backend = "setuptools.build_meta"
 [tool.cxfreeze]
 
 executables = [
-    { script="mtg_proxy_printer/__main__.py", base = "gui", target_name="MTGProxyPrinter", shortcut_dir='StartMenuFolder', icon="resources/icons/MTGPP_clean.png"}
+    { script="mtg_proxy_printer/__main__.py", base = "gui", target_name="MTGProxyPrinter", shortcut_name="MTGProxyPrinter", shortcut_dir='StartMenuFolder', icon="resources/icons/MTGPP_clean.png"}
 
 ]
 [tool.cxfreeze.build_exe]
