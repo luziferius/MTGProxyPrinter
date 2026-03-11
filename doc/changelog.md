@@ -1,5 +1,12 @@
 # Changelog
 
+# Version 0.35.3 (in development)  <a name="v0_35_3"></a>
+
+## Fixed issues
+
+- Fixed application hang at exit, if a card data update was previously canceled.
+- Fixed Scryfall card data import aborting on some systems with `IncompleteRead` errors
+
 # Version 0.35.2 (2025-08-08)  <a name="v0_35_2"></a>
 
 ## Fixed issues
