@@ -107,13 +107,13 @@ build-backend = "setuptools.build_meta"
 [tool.cxfreeze]
 
 executables = [
-    { script="mtg_proxy_printer/__main__.py", base = "gui", target_name="MTGProxyPrinter", shortcut_name="MTGProxyPrinter", shortcut_dir='StartMenuFolder', icon="resources/icons/MTGPP_clean.png"}
+    { script="mtg_proxy_printer/__main__.py", base = "gui", target_name="MTGProxyPrinter", shortcut_name="MTGProxyPrinter", shortcut_dir='StartMenuFolder', icon="MTGPP.ico"}
 
 ]
 [tool.cxfreeze.build_exe]
 optimize = 2
 packages = [
-    # Make sure that the dynamically loaded ijson backends are discovered.
+    # Ensure that the dynamically loaded ijson backends are discovered.
     "ijson.backends",
 ]
 excludes = [
@@ -128,8 +128,7 @@ excludes = [
     "sqlite3.test",  # Ignore the internal test suite
     "tkinter",
     "toml",
-    # Empty package with readme and download scripts
-    "ctypes.test",
+    "ctypes.test",  # Empty package with readme and download scripts
     # Unused PySide6 components
     "PySide6.glue",
     "PySide6.include",
@@ -162,5 +161,4 @@ excludes = [
 # causing the removal of the previous package, allowing smooth updates. It has to be enclosed in {}.
 upgrade_code = "{15a9e385-f6ab-4aa4-8ef1-3f2cf5c193a8}"
 skip_build = true
-install_icon = "resources/icons/MTGPP_clean.png"
 license_file = "resources/gpl-3.0.rtf"
