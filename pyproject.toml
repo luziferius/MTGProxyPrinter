@@ -56,7 +56,7 @@ dev = [
 ]
 package = [
     "build",
-    "cx_Freeze >= 7.2; platform_python_implementation == 'CPython'",
+    "cx_Freeze >= 8.5; platform_python_implementation == 'CPython'",
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
 
