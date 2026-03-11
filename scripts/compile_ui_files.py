@@ -37,7 +37,7 @@ except ImportError:  # Python < 3.13
 import textwrap
 from pathlib import Path
 import shutil
-from typing import NamedTuple, TypeVar, Iterable, Type, Any
+from typing import NamedTuple, TypeVar, Iterable, Type, Any, Callable, Coroutine
 
 SOURCE_ROOT = Path(__file__).parent.parent  # Checkout root directory
 MAIN_PACKAGE = SOURCE_ROOT / "mtg_proxy_printer"
@@ -65,8 +65,8 @@ class Assignment(NamedTuple):
 Assignments = list[Assignment]
 
 
-class Namespace(NamedTuple):
-    full: bool
+class Namespace:
+    command: Callable[["Namespace"], Coroutine[None, None, None]]
     purge_existing: bool
 
 
@@ -76,15 +76,21 @@ def parse_args() -> Namespace:
         "or type hinting stubs. Generates type hinting stubs by default."
     )
     parser.add_argument(
-        "-f", "--full", action="store_true",
-        help="Compile UI into importable Python modules."
-    )
-    parser.add_argument(
         "-p", "--purge-existing", action="store_true",
         help="Remove any already existing compiled or generated files."
     )
-    args = parser.parse_args()
-    return args
+    commands = parser.add_subparsers(dest="command", help="Command to run:", required=True)
+    commands.add_parser(
+        "generate_importable_modules",
+        help="Generate importable Python modules. Used for packaging"
+    )
+    commands.add_parser(
+        "generate_stubs",
+        help="Generate type hinting stubs. Used for development"
+    )
+    parsed = parser.parse_args()
+    parsed.command = globals()[parsed.command]
+    return parsed
 
 
 def type_filter(any_: Iterable[Any], types: Type[T] | tuple[Type[T], ...]) -> Iterable[T]:
@@ -111,11 +117,13 @@ async def compile_ui_files(source_path: Path = UI_SOURCE_PATH):
     return asyncio.as_completed(map(compile_ui_file, source_path.rglob("*.ui")))
 
 
-async def write_full_modules(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
+async def generate_importable_modules(
+        args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
     """
     Compiles all UI files found in source_path to Python types, storing results in target_path.
 
-    Recursively finds UI files under source_path, replicates the found directory tree as a Python package hierarchy and
+    Recursively finds UI files under source_path,
+    replicates the found directory tree as a Python package hierarchy and
     populates it with the compiled Ui types.
     """
     if args.purge_existing and target_path.is_dir():
@@ -130,11 +138,12 @@ async def write_full_modules(args: Namespace, target_path: Path = TARGET_PATH, s
         (parent_dir / f"{ui_file.stem}.py").write_bytes(stdout)
 
 
-async def create_ui_type_stubs(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
+async def generate_stubs(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
     """
     Creates type hinting stubs for all UI files found in source_path, storing results in target_path.
 
-    Recursively finds UI files under source_path, replicates the found directory tree as a Python package hierarchy and
+    Recursively finds UI files under source_path,
+    replicates the found directory tree as a Python package hierarchy and
     populates it with the created type hints.
     """
     if args.purge_existing and target_path.is_dir():
@@ -254,10 +263,7 @@ def get_function_stub(function_body: ast.FunctionDef, found_class_uses: UsedClas
 
 async def main():
     args = parse_args()
-    if args.full:
-        await write_full_modules(args)
-    else:
-        await create_ui_type_stubs(args)
+    await args.command(args)
 
 
 if __name__ == "__main__":
