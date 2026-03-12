@@ -54,7 +54,8 @@ dev = [
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
 package = [
-    "build",
+    "build > 1.2.2",
+    "wheel >= 0.45",
     "cx_Freeze >= 8.5; platform_python_implementation == 'CPython'",
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
@@ -97,9 +98,8 @@ requires = [
     "setuptools >= 77",
     "wheel >= 0.45",
     "PySide6_Essentials >= 6.7.0",
-    "build",
+    "build > 1.2.2",
     "pip-tools >= 7.4",
-    "tox >= 4.21",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -160,41 +160,62 @@ upgrade_code = "{15a9e385-f6ab-4aa4-8ef1-3f2cf5c193a8}"
 skip_build = true
 license_file = "resources/gpl-3.0.rtf"
 
+
 [tool.tox]
-
 requires = ["tox>=4.21"]
-env_list = ["unit_tests", "package"]
+env_list = ["unit_tests"]
 
-[tool.tox.env.unit_tests]
-skip_install = true
+
+[tool.tox.env_run_base]
 extras = ["dev"]
+package = "deps-only"
+
+
+[tool.tox.env_pkg_base]
+skip_install = true
+extras = ["package"]
+
+commands_pre = [
+    ["python", "{tox_root}{/}scripts{/}update_translations.py", "compile"],
+    ["python", "{tox_root}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_importable_modules"],
+    ["python", "{tox_root}{/}scripts{/}compile_resources.py", "compile"],
+]
+commands_post = [
+    ["python", "{tox_root}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_stubs"],
+    ["python", "{tox_root}{/}scripts{/}compile_resources.py", "clean"],
+    ["python", "-c", "__import__('shutil').rmtree('MTGProxyPrinter.egg-info', ignore_errors=True)"],
+]
+[tool.tox.env.unit_tests]
 commands = [
     ["python", "-m", "pytest", "tests"],
 ]
 
-[tool.tox.env.package]
-skip_install = true
-extras = ["package"]
-description = "Creates redistributable packages with build and cx_Freeze."
 
-commands_pre = [
-    ["python", "{toxinidir}{/}scripts{/}update_translations.py", "compile"],
-    ["python", "{toxinidir}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_importable_modules"],
-    ["python", "{toxinidir}{/}scripts{/}compile_resources.py", "compile"],
-    { replace = "if", condition = "factor.win32", then = [
-        ["python", "{toxinidir}{/}scripts{/}generate_windows_icon.py"],
-    ] },
-]
+[tool.tox.env.pkg_wheel]
+base = ["tool.tox.env_pkg_base"]
+description = "Creates sdist and wheel packages."
 commands = [
-    ["python", "-m", "build"],
-    { replace = "if", condition = "factor.win32", then = [
-        ["cxfreeze", "build"],
-        ["{toxinidir}{/}scripts{/}clean_windows_build.bat"],
-        ["cxfreeze", "bdist_msi", "--skip-build"],
-    ] },
+    ["python", "-m", "build", "--no-isolation"],  # tox already generates an isolated environment, build can use that
 ]
-commands_post = [
-    ["python", "{toxinidir}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_stubs"],
-    ["python", "{toxinidir}{/}scripts{/}compile_resources.py", "clean"],
-    ["python", "-c", "__import__('shutil').rmtree('MTGProxyPrinter.egg-info')"],
-]
+
+[tool.tox.env.pkg_cx_freeze]
+base = ["tool.tox.env_pkg_base"]
+description = "Packages via cx_Freeze."
+
+#commands_pre = [
+#    ["python", "{tox_root}{/}scripts{/}update_translations.py", "compile"],
+#    ["python", "{tox_root}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_importable_modules"],
+#    ["python", "{tox_root}{/}scripts{/}compile_resources.py", "compile"],
+#    { replace = "if", condition = "factor.win32", then = [
+#        ["python", "{tox_root}{/}scripts{/}generate_windows_icon.py"],
+#    ] },
+#]
+#commands = [
+#    ["python", "-m", "build", "--no-isolation"],  # tox already generates an isolated environment, build can use that
+#    { replace = "if", condition = "factor.win32", then = [
+#        ["cxfreeze", "build"],
+#        ["{tox_root}{/}scripts{/}clean_windows_build.bat"],
+#        ["cxfreeze", "bdist_msi", "--skip-build"],
+#    ] },
+#]
+
