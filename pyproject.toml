@@ -193,6 +193,17 @@ commands_post = [
     ["python", "-c", "__import__('shutil').rmtree('MTGProxyPrinter.egg-info', ignore_errors=True)"],
 ]
 
+[tool.tox.env.test_cx_freeze_build]
+base = ["tool.tox.env_pkg_base"]
+allowlist_externals = [
+    "{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter",
+]
+pass_env = ["XDG_RUNTIME_DIR", "QT_QPA_PLATFORM"]
+commands = [
+    ["cxfreeze", "build", "--build-exe", "build{/}bundle_test"],
+    { replace = "if", condition = "factor.win32", then = [["{tox_root}{/}scripts{/}clean_windows_build.bat", "build{/}bundle_test"]], extend = true},
+    ["{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter", "--test-exit-on-launch"],
+]
 
 [tool.tox.env.build_wheel]
 base = ["tool.tox.env_pkg_base"]
