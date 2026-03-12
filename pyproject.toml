@@ -55,6 +55,7 @@ dev = [
 ]
 package = [
     "build > 1.2.2",
+    "pip-tools >= 7.4",
     "wheel >= 0.45",
     "cx_Freeze >= 8.5; platform_python_implementation == 'CPython'",
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
@@ -176,7 +177,7 @@ commands = [
 ]
 
 [tool.tox.env_pkg_base]
-skip_install = true
+package = "deps-only"
 extras = ["package"]
 commands_pre = [
     ["python", "{tox_root}{/}scripts{/}update_translations.py", "compile"],
