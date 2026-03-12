@@ -170,24 +170,26 @@ env_list = ["unit_tests"]
 extras = ["dev"]
 package = "deps-only"
 
+[tool.tox.env.unit_tests]
+commands = [
+    ["python", "-m", "pytest", "tests"],
+]
 
 [tool.tox.env_pkg_base]
 skip_install = true
 extras = ["package"]
-
 commands_pre = [
     ["python", "{tox_root}{/}scripts{/}update_translations.py", "compile"],
     ["python", "{tox_root}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_importable_modules"],
     ["python", "{tox_root}{/}scripts{/}compile_resources.py", "compile"],
+    { replace = "if", condition = "factor.win32", then = [
+        ["python", "{tox_root}{/}scripts{/}generate_windows_icon.py"],
+    ], extend=true },
 ]
 commands_post = [
     ["python", "{tox_root}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_stubs"],
     ["python", "{tox_root}{/}scripts{/}compile_resources.py", "clean"],
     ["python", "-c", "__import__('shutil').rmtree('MTGProxyPrinter.egg-info', ignore_errors=True)"],
-]
-[tool.tox.env.unit_tests]
-commands = [
-    ["python", "-m", "pytest", "tests"],
 ]
 
 
@@ -198,24 +200,16 @@ commands = [
     ["python", "-m", "build", "--no-isolation"],  # tox already generates an isolated environment, build can use that
 ]
 
+
 [tool.tox.env.pkg_cx_freeze]
 base = ["tool.tox.env_pkg_base"]
-description = "Packages via cx_Freeze."
+description = "Creates a stand-alone build via cx_Freeze, and the MSI installer for Windows."
 
-#commands_pre = [
-#    ["python", "{tox_root}{/}scripts{/}update_translations.py", "compile"],
-#    ["python", "{tox_root}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_importable_modules"],
-#    ["python", "{tox_root}{/}scripts{/}compile_resources.py", "compile"],
-#    { replace = "if", condition = "factor.win32", then = [
-#        ["python", "{tox_root}{/}scripts{/}generate_windows_icon.py"],
-#    ] },
-#]
-#commands = [
-#    ["python", "-m", "build", "--no-isolation"],  # tox already generates an isolated environment, build can use that
-#    { replace = "if", condition = "factor.win32", then = [
-#        ["cxfreeze", "build"],
-#        ["{tox_root}{/}scripts{/}clean_windows_build.bat"],
-#        ["cxfreeze", "bdist_msi", "--skip-build"],
-#    ] },
-#]
+commands = [
+    ["cxfreeze", "build"],
+    { replace = "if", condition = "factor.win32", then = [
+        ["{tox_root}{/}scripts{/}clean_windows_build.bat"],
+        ["cxfreeze", "bdist_msi", "--skip-build"],
+    ], extend = true },
+]
 
