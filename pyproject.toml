@@ -194,7 +194,7 @@ commands_post = [
 ]
 
 
-[tool.tox.env.pkg_wheel]
+[tool.tox.env.build_wheel]
 base = ["tool.tox.env_pkg_base"]
 description = "Creates sdist and wheel packages."
 commands = [
@@ -202,7 +202,7 @@ commands = [
 ]
 
 
-[tool.tox.env.pkg_cx_freeze]
+[tool.tox.env.build_cx_freeze]
 base = ["tool.tox.env_pkg_base"]
 description = "Creates a stand-alone build via cx_Freeze, and the MSI installer for Windows."
 

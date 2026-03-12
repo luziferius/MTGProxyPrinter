@@ -7,5 +7,5 @@ if [ ! -e "${ENVIRONMENT_NAME}" ]; then
 fi
 
 source "${ENVIRONMENT_NAME}/bin/activate"
-tox run -f py3 package
+tox run -e package_wheel,package_cx_freeze
 
