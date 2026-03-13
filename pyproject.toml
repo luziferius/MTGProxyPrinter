@@ -170,6 +170,11 @@ env_list = ["unit_tests"]
 [tool.tox.env_run_base]
 extras = ["dev"]
 package = "deps-only"
+labels = ["test"]
+description = "Runs the unit tests and integration tests"
+commands = [
+    ["python", "-m", "pytest", "tests"],
+]
 pass_env = [
     "QT_PLATFORM_PLUGIN",
     { replace = "if", condition = "factor.linux", then = [
@@ -177,9 +182,22 @@ pass_env = [
     ], extend = true}
 ]
 
-[tool.tox.env.unit_tests]
-commands = [
-    ["python", "-m", "pytest", "tests"],
+[tool.tox.env_base.python]
+base = ["tox.tool.env_run_base"]
+factors = [
+    { prefix = "py3.", start = 11, stop = 14 },
+]
+
+[tool.tox.env_base.qt]
+base = ["tox.tool.env_run_base"]
+factors = [
+    { prefix = "Qt6.", start = 7, stop = 10 },
+]
+deps = [
+    {replace = "if", condition = "factor.Qt6.7", then = ["PySide6-Essentials>=6.7,<6.8"], extend = true},
+    {replace = "if", condition = "factor.Qt6.8", then = ["PySide6-Essentials>=6.8,<6.9"], extend = true},
+    {replace = "if", condition = "factor.Qt6.9", then = ["PySide6-Essentials>=6.9,<6.10"], extend = true},
+    {replace = "if", condition = "factor.Qt6.10", then = ["PySide6-Essentials>=6.10,<6.11"], extend = true},
 ]
 
 [tool.tox.env_pkg_base]
@@ -207,6 +225,7 @@ commands_post = [
 
 [tool.tox.env.test_cx_freeze_build]
 base = ["tool.tox.env_pkg_base"]
+labels = ["test"]
 allowlist_externals = [
     "{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter",
 ]
