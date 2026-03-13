@@ -169,7 +169,7 @@ env_list = ["unit_tests"]
 [tool.tox.env_run_base]
 extras = ["dev"]
 package = "deps-only"
-labels = ["test"]
+labels = ["tests"]
 description = "Runs the unit tests and integration tests using the indicated dependency"
 commands = [
     ["python", "-m", "pytest", "tests"],
@@ -236,7 +236,7 @@ commands_post = [
 [tool.tox.env.test_cx_freeze_build]
 base = ["tool.tox.env_pkg_base"]
 description = "Build the application with cx_Freeze and verify it can launch and reach the Qt event loop."
-labels = ["test"]
+labels = ["tests"]
 allowlist_externals = ["{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter", ]
 commands = [
     ["cxfreeze", "build", "--build-exe", "build{/}bundle_test"],
