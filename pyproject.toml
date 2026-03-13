@@ -33,8 +33,7 @@ classifiers = [
 dependencies = [
     "platformdirs >= 2.6.0",
     "PySide6_Essentials >= 6.7.0",
-    "ijson >= 3.2.0",
-    "ijson >= 3.2.1; python_version >= '3.12'",
+    "ijson >= 3.2.1",
     "Pint >= 0.22",
     "delegateto == 1.5",
     "PyHamcrest >= 2",
@@ -198,6 +197,17 @@ deps = [
     {replace = "if", condition = "factor.Qt6_8", then = ["PySide6-Essentials>=6.8,<6.9"], extend = true},
     {replace = "if", condition = "factor.Qt6_9", then = ["PySide6-Essentials>=6.9,<6.10"], extend = true},
     {replace = "if", condition = "factor.Qt6_10", then = ["PySide6-Essentials>=6.10,<6.11"], extend = true},
+]
+
+[tool.tox.env_base.minimum_version]
+base = ["tox.tool.env_run_base"]
+description = "Runs the unit tests and integration tests using the oldest supported version of the indicated dependency"
+factors = ["platformdirs", "ijson", "pint", "pyhamcrest"]
+deps = [
+    {replace = "if", condition = "factor.platformdirs", then = ["platformdirs==2.6.0"], extend = true},
+    {replace = "if", condition = "factor.ijson", then = ["ijson==3.2.1"], extend = true},
+    {replace = "if", condition = "factor.pint", then = ["Pint==0.22"], extend = true},
+    {replace = "if", condition = "factor.pyhamcrest", then = ["PyHamcrest==2.0.0"], extend = true},
 ]
 
 [tool.tox.env_pkg_base]
