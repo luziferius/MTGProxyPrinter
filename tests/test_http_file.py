@@ -371,7 +371,7 @@ def test__urlopen_in_read_works_with_multiple_retries(
                            + [urllib.error.URLError("Test error")]*retries
                            + [MagicMock(spec=http.client.HTTPResponse)])
     file = MeteredSeekableHTTPFile("")
-    file.file.read.side_effect = socket.timeout
+    file.file.read.return_value = b"\0"*10
     file.read(10)
     Request.assert_called()
 
