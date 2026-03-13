@@ -225,16 +225,15 @@ commands_post = [
 
 [tool.tox.env.test_cx_freeze_build]
 base = ["tool.tox.env_pkg_base"]
+description = "Build the application with cx_Freeze and verify it can launch and reach the Qt event loop."
 labels = ["test"]
-allowlist_externals = [
-    "{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter",
-]
-
+allowlist_externals = ["{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter", ]
 commands = [
     ["cxfreeze", "build", "--build-exe", "build{/}bundle_test"],
     { replace = "if", condition = "factor.win32", then = [["{tox_root}{/}scripts{/}clean_windows_build.bat", "build{/}bundle_test"]], extend = true},
     ["{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter", "--test-exit-on-launch"],
 ]
+
 
 [tool.tox.env.build_wheel]
 base = ["tool.tox.env_pkg_base"]
