@@ -170,7 +170,12 @@ env_list = ["unit_tests"]
 [tool.tox.env_run_base]
 extras = ["dev"]
 package = "deps-only"
-
+pass_env = [
+    "QT_PLATFORM_PLUGIN",
+    { replace = "if", condition = "factor.linux", then = [
+        "XDG_RUNTIME_DIR", "DISPLAY", "WAYLAND_DISPLAY",
+    ], extend = true}
+]
 
 [tool.tox.env.unit_tests]
 commands = [
@@ -178,8 +183,14 @@ commands = [
 ]
 
 [tool.tox.env_pkg_base]
-package = "deps-only"
 extras = ["package"]
+package = "deps-only"
+pass_env = [
+    "QT_PLATFORM_PLUGIN",
+    { replace = "if", condition = "factor.linux", then = [
+        "XDG_RUNTIME_DIR", "DISPLAY", "WAYLAND_DISPLAY",
+    ], extend = true}
+]
 commands_pre = [
     ["python", "{tox_root}{/}scripts{/}update_translations.py", "compile"],
     ["python", "{tox_root}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_importable_modules"],
@@ -199,7 +210,7 @@ base = ["tool.tox.env_pkg_base"]
 allowlist_externals = [
     "{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter",
 ]
-pass_env = ["XDG_RUNTIME_DIR", "QT_QPA_PLATFORM"]
+
 commands = [
     ["cxfreeze", "build", "--build-exe", "build{/}bundle_test"],
     { replace = "if", condition = "factor.win32", then = [["{tox_root}{/}scripts{/}clean_windows_build.bat", "build{/}bundle_test"]], extend = true},
