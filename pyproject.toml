@@ -163,13 +163,14 @@ license_file = "resources/gpl-3.0.rtf"
 
 
 [tool.tox]
-requires = ["tox>=4.21"]
+requires = ["tox>=4.41"]
 env_list = ["unit_tests"]
 
 
 [tool.tox.env_run_base]
 extras = ["dev"]
 package = "deps-only"
+
 
 [tool.tox.env.unit_tests]
 commands = [
