@@ -163,7 +163,7 @@ license_file = "resources/gpl-3.0.rtf"
 
 [tool.tox]
 requires = ["tox>=4.41"]
-env_list = ["unit_tests"]
+env_list = ["unit_tests", "test_cx_freeze_build"]
 
 
 [tool.tox.env_run_base]
