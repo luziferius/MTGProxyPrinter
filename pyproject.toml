@@ -32,11 +32,11 @@ classifiers = [
 # falling back to the slow pure Python backend.
 dependencies = [
     "platformdirs >= 2.6.0",
-    "PySide6_Essentials >= 6.7.0",
+    "PySide6_Essentials >= 6.7.0, <=6.10.0",
     "ijson >= 3.2.1",
-    "Pint >= 0.22",
+    "Pint >= 0.24.4",
     "delegateto == 1.5",
-    "PyHamcrest >= 2",
+    "PyHamcrest >= 2.0.3",
     "truststore",
 ]
 
@@ -206,8 +206,8 @@ factors = ["platformdirs", "ijson", "pint", "pyhamcrest"]
 deps = [
     {replace = "if", condition = "factor.platformdirs", then = ["platformdirs==2.6.0"], extend = true},
     {replace = "if", condition = "factor.ijson", then = ["ijson==3.2.1"], extend = true},
-    {replace = "if", condition = "factor.pint", then = ["Pint==0.22"], extend = true},
-    {replace = "if", condition = "factor.pyhamcrest", then = ["PyHamcrest==2.0.0"], extend = true},
+    {replace = "if", condition = "factor.pint", then = ["Pint==0.24.4"], extend = true},
+    {replace = "if", condition = "factor.pyhamcrest", then = ["PyHamcrest==2.0.3"], extend = true},
 ]
 
 [tool.tox.env_pkg_base]
