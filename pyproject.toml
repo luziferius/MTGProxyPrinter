@@ -233,7 +233,7 @@ commands_post = [
     ["python", "-c", "__import__('shutil').rmtree('MTGProxyPrinter.egg-info', ignore_errors=True)"],
 ]
 
-[tool.tox.env_base.test_cx_freeze_build]
+[tool.tox.env_pkg_base.test_cx_freeze_build]
 base = ["tool.tox.env_pkg_base"]
 description = "Build the application with cx_Freeze and verify it can launch and reach the Qt event loop."
 labels = ["tests"]
@@ -272,6 +272,7 @@ commands = [
 
 [tool.tox.env.generate_development_environment]
 dependency_groups = ["package", "tests", "management"]
+labels = []
 package = "deps-only"
 env_dir = "venv"
 commands = [
