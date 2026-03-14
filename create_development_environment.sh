@@ -9,10 +9,8 @@ fi
 python -m venv "${ENVIRONMENT_NAME}"
 source "${ENVIRONMENT_NAME}/bin/activate"
 
-# Install including all dependencies
 echo "Installing all dependencies, including development and test requirements."
 
-python -m pip install --upgrade pip setuptools
 python -m pip install --upgrade pip setuptools
 python -m pip install wheel "tox >= 4.41"
 tox run -e generate_development_environment
