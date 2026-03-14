@@ -33,11 +33,10 @@ classifiers = [
 dependencies = [
     "platformdirs >= 2.6.0",
     "PySide6_Essentials >= 6.7.0",
-    "ijson >= 3.2.0",
-    "ijson >= 3.2.1; python_version >= '3.12'",
-    "Pint >= 0.22",
+    "ijson >= 3.2.1",
+    "Pint >= 0.24.4",
     "delegateto == 1.5",
-    "PyHamcrest >= 2",
+    "PyHamcrest >= 2.0.3",
     "truststore",
 ]
 
@@ -45,21 +44,22 @@ dynamic = [
     "version",
 ]
 
-[project.optional-dependencies]
-dev = [
+[dependency-groups]
+tests = [
     "pytest >= 6.0",
     "pytest-cov",
     "pytest-timeout",
     "pytest-qt >= 4.5",
-    "tox >= 4.0",
-    "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
 package = [
-    "build",
+    "build > 1.2.2",
+    "wheel >= 0.45",
     "cx_Freeze >= 8.5; platform_python_implementation == 'CPython'",
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
-
+management = [
+    "tox >= 4.41",
+]
 
 [project.urls]
 Homepage = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/index"
@@ -99,7 +99,186 @@ requires = [
     "setuptools >= 77",
     "wheel >= 0.45",
     "PySide6_Essentials >= 6.7.0",
-    "build",
-    "pip-tools >= 7.4"
+    "build > 1.2.2",
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.cxfreeze]
+
+executables = [
+    {script="mtg_proxy_printer/__main__.py", base = "gui", target_name="MTGProxyPrinter", shortcut_name="MTGProxyPrinter", shortcut_dir='StartMenuFolder', icon="resources/icons/MTGPP"}
+]
+[tool.cxfreeze.build_exe]
+optimize = 2
+packages = [
+    # Ensure that the dynamically loaded ijson backends are discovered.
+    "ijson.backends",
+]
+excludes = [
+    "distutils",
+    "ijson.benchmark",  # Ignore the benchmark script added after ijson 3.2.3
+    "importlib_metadata",
+    "lib2to3",
+    "pep517",
+    "pint.testsuite",  # Ignore the internal test suite
+    "pydoc_data",
+    "pytest",
+    "sqlite3.test",  # Ignore the internal test suite
+    "tkinter",
+    "toml",
+    "ctypes.test",  # Empty package with readme and download scripts
+    # Unused PySide6 components
+    "PySide6.glue",
+    "PySide6.include",
+    "PySide6.metatypes",
+    "PySide6.plugins.assetimporters",
+    "PySide6.plugins.canbus",
+    "PySide6.plugins.designer",
+    "PySide6.plugins.geometryloaders",
+    "PySide6.plugins.geoservices",
+    "PySide6.plugins.multimedia",
+    "PySide6.plugins.networkinformation",
+    "PySide6.plugins.position",
+    "PySide6.plugins.qmltooling",
+    "PySide6.plugins.scxmldatamodel",
+    "PySide6.plugins.sensors",
+    "PySide6.plugins.sqldrivers",  # Use Python native sqlite3 module instead
+    "PySide6.plugins.tls",
+    "PySide6.qml",
+    "PySide6.QtAsyncio",
+    "PySide6.resources",
+    "PySide6.scripts",
+    "PySide6.support",
+    "PySide6.translations.qtwebengine_locales",
+    "PySide6.typesystems",
+]
+[tool.cxfreeze.bdist_msi]
+# The GUID upgrade_code token is used by Windows to identify the application being installed.
+# When another MSI package with a known, installed GUID is installed, it is assumed to be an update,
+# causing the removal of the previous package, allowing smooth updates. It has to be enclosed in {}.
+upgrade_code = "{15a9e385-f6ab-4aa4-8ef1-3f2cf5c193a8}"
+skip_build = true
+license_file = "resources/gpl-3.0.rtf"
+
+
+[tool.tox]
+requires = ["tox>=4.41"]
+env_list = ["unit_tests", "test_cx_freeze_build-cx_8_6"]
+
+
+[tool.tox.env_run_base]
+dependency_groups = ["tests"]
+package = "deps-only"
+labels = ["tests"]
+description = "Runs the unit tests and integration tests using the indicated dependency"
+commands = [
+    ["python", "-m", "pytest", "tests"],
+]
+pass_env = [
+    "QT_PLATFORM_PLUGIN",
+    { replace = "if", condition = "factor.linux", then = [
+        "XDG_RUNTIME_DIR", "DISPLAY", "WAYLAND_DISPLAY",
+    ], extend = true}
+]
+
+[tool.tox.env_base.python]
+base = ["tox.tool.env_run_base"]
+factors = [
+    { prefix = "3.", start = 11, stop = 14 },
+]
+
+[tool.tox.env_base.qt]
+base = ["tox.tool.env_run_base"]
+factors = [
+    { prefix = "Qt6_", start = 7, stop = 10 },
+]
+deps = [
+    {replace = "if", condition = "factor.Qt6_7", then = ["PySide6-Essentials>=6.7,<6.8"], extend = true},
+    {replace = "if", condition = "factor.Qt6_8", then = ["PySide6-Essentials>=6.8,<6.9"], extend = true},
+    {replace = "if", condition = "factor.Qt6_9", then = ["PySide6-Essentials>=6.9,<6.10"], extend = true},
+    {replace = "if", condition = "factor.Qt6_10", then = ["PySide6-Essentials>=6.10,<6.11"], extend = true},
+]
+
+[tool.tox.env_base.minimum_version]
+base = ["tox.tool.env_run_base"]
+description = "Runs the unit tests and integration tests using the oldest supported version of the indicated dependency"
+factors = ["platformdirs", "ijson", "pint", "pyhamcrest"]
+deps = [
+    {replace = "if", condition = "factor.platformdirs", then = ["platformdirs==2.6.0"], extend = true},
+    {replace = "if", condition = "factor.ijson", then = ["ijson==3.2.1"], extend = true},
+    {replace = "if", condition = "factor.pint", then = ["Pint==0.24.4"], extend = true},
+    {replace = "if", condition = "factor.pyhamcrest", then = ["PyHamcrest==2.0.3"], extend = true},
+]
+
+[tool.tox.env_pkg_base]
+dependency_groups = ["package"]
+package = "deps-only"
+pass_env = [
+    "QT_PLATFORM_PLUGIN",
+    { replace = "if", condition = "factor.linux", then = [
+        "XDG_RUNTIME_DIR", "DISPLAY", "WAYLAND_DISPLAY",
+    ], extend = true}
+]
+commands_pre = [
+    ["python", "{tox_root}{/}scripts{/}update_translations.py", "compile"],
+    ["python", "{tox_root}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_importable_modules"],
+    ["python", "{tox_root}{/}scripts{/}compile_resources.py", "compile"],
+    { replace = "if", condition = "factor.win32", then = [
+        ["python", "{tox_root}{/}scripts{/}generate_windows_icon.py"],
+    ], extend=true },
+]
+commands_post = [
+    ["python", "{tox_root}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_stubs"],
+    ["python", "{tox_root}{/}scripts{/}compile_resources.py", "clean"],
+    ["python", "-c", "__import__('shutil').rmtree('MTGProxyPrinter.egg-info', ignore_errors=True)"],
+]
+
+[tool.tox.env_pkg_base.test_cx_freeze_build]
+base = ["tool.tox.env_pkg_base"]
+description = "Build the application with cx_Freeze and verify it can launch and reach the Qt event loop."
+labels = ["tests"]
+factors = [{ prefix = "cx_8_", start = 5, stop = 6 },]
+allowlist_externals = ["{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter", ]
+deps = [
+    {replace = "if", condition = "factor.cx_8_5", then = ["cx_Freeze>=8.5,<8.6"], extend = true},
+    {replace = "if", condition = "factor.cx_8_6", then = ["cx_Freeze>=8.6,<8.7"], extend = true},
+]
+commands = [
+    ["cxfreeze", "build", "--build-exe", "build{/}bundle_test"],
+    { replace = "if", condition = "factor.win32", then = [["{tox_root}{/}scripts{/}clean_windows_build.bat", "build{/}bundle_test"]], extend = true},
+    ["{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter", "--test-exit-on-launch"],
+]
+
+
+[tool.tox.env.build_wheel]
+base = ["tool.tox.env_pkg_base"]
+description = "Creates sdist and wheel packages."
+commands = [
+    ["python", "-m", "build", "--no-isolation"],  # tox already generates an isolated environment, build can use that
+]
+
+
+[tool.tox.env.build_cx_freeze]
+base = ["tool.tox.env_pkg_base"]
+description = "Creates a stand-alone build via cx_Freeze, and (on Windows only) also the MSI installer package."
+
+commands = [
+    ["cxfreeze", "build"],
+    { replace = "if", condition = "factor.win32", then = [
+        ["{tox_root}{/}scripts{/}clean_windows_build.bat"],
+        ["cxfreeze", "bdist_msi", "--skip-build"],
+    ], extend = true },
+]
+
+[tool.tox.env.generate_development_environment]
+dependency_groups = ["package", "tests", "management"]
+labels = []
+package = "deps-only"
+env_dir = "venv"
+commands = [
+    ["python", "{tox_root}{/}scripts{/}update_translations.py", "compile"],
+    ["python", "{tox_root}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_stubs"],
+]
+commands_pre = []
+commands_post = []
+description = "Populate the virtual environment in the repository root"
