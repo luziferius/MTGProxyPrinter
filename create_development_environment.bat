@@ -1,8 +1,16 @@
-echo "Creating virtual environment ..."
-python -m venv venv
-echo "Installing dependencies into the virtual environment ..."
-call venv\Scripts\activate.bat
+echo Creating temporary bootstrap environment
 
-python -m pip install --upgrade pip setuptools
-python -m pip install wheel "tox >= 4.41"
+python -m venv venv-tmp
+call venv-tmp\Scripts\activate.bat
+pip install "tox>=4.41"
+
+
+echo Creating virtual environment ...
 tox run -e generate_development_environment
+call venv-tmp\Scripts\deactivate.bat
+echo Deleting bootstrap environment ...
+rmdir/Q /S venv-tmp
+echo Bootstrap environment deleted
+
+call venv\Scripts\activate.bat
+echo Done!
