@@ -17,7 +17,7 @@
 import enum
 from functools import partial
 
-from PySide6.QtCore import Qt, QEvent
+from PySide6.QtCore import Qt, QEvent, Slot
 from PySide6.QtWidgets import QGraphicsView, QWidget
 from PySide6.QtGui import QWheelEvent, QKeySequence, QPalette, QResizeEvent, QAction
 
@@ -125,6 +125,7 @@ class PageRenderer(QGraphicsView):
             return
         super().wheelEvent(event)
 
+    @Slot()
     def resizeEvent(self, event: QResizeEvent = None) -> None:
         if self.automatic_scaling or self.scene_fully_visible():
             self.automatic_scaling = True
