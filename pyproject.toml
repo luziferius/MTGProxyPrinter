@@ -44,17 +44,15 @@ dynamic = [
     "version",
 ]
 
-[project.optional-dependencies]
-dev = [
+[dependency-groups]
+tests = [
     "pytest >= 6.0",
     "pytest-cov",
     "pytest-timeout",
     "pytest-qt >= 4.5",
-    "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
 package = [
     "build > 1.2.2",
-    "pip-tools >= 7.4",
     "wheel >= 0.45",
     "cx_Freeze >= 8.5; platform_python_implementation == 'CPython'",
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
@@ -99,7 +97,6 @@ requires = [
     "wheel >= 0.45",
     "PySide6_Essentials >= 6.7.0",
     "build > 1.2.2",
-    "pip-tools >= 7.4",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -167,7 +164,7 @@ env_list = ["unit_tests"]
 
 
 [tool.tox.env_run_base]
-extras = ["dev"]
+dependency_groups = ["tests"]
 package = "deps-only"
 labels = ["tests"]
 description = "Runs the unit tests and integration tests using the indicated dependency"
@@ -211,7 +208,7 @@ deps = [
 ]
 
 [tool.tox.env_pkg_base]
-extras = ["package"]
+dependency_groups = ["package"]
 package = "deps-only"
 pass_env = [
     "QT_PLATFORM_PLUGIN",
