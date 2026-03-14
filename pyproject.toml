@@ -32,7 +32,7 @@ classifiers = [
 # falling back to the slow pure Python backend.
 dependencies = [
     "platformdirs >= 2.6.0",
-    "PySide6_Essentials >= 6.7.0, <=6.10.0",
+    "PySide6_Essentials >= 6.7.0",
     "ijson >= 3.2.1",
     "Pint >= 0.24.4",
     "delegateto == 1.5",
