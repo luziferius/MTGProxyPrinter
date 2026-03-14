@@ -137,15 +137,17 @@ class MeteredSeekableHTTPFile(QObject):
         for retry in range(self.retry_limit or 1):
             try:
                 buffer = self.file.read(count)
+                buffer_length = len(buffer)
+                if buffer_length < count and self._pos+buffer_length < self.content_length:
+                    raise ConnectionAbortedError(f"Incomplete read({count}) returned {buffer_length} bytes")
             except (ConnectionAbortedError, TimeoutError) as e:
                 last_error = e
                 self.file = self._urlopen(self.tell(), outer_retries=retry)
             except AttributeError as e:
                 # underlying file deleted, probably because the app force-deleted it during shutdown.
                 self.close()
-                raise ValueError("I/o operation on deleted file.") from e
+                raise ValueError("I/O operation on deleted file.") from e
             else:
-                buffer_length = len(buffer)
                 self._store_and_report_read_progress(buffer_length)
                 return buffer
         if last_error is not None:

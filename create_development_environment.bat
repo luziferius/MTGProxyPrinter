@@ -1,12 +1,16 @@
-python -m venv venv
+echo Creating temporary bootstrap environment
+
+python -m venv venv-tmp
+call venv-tmp\Scripts\activate.bat
+pip install "tox>=4.41"
+
+
+echo Creating virtual environment ...
+tox run -e generate_development_environment
+call venv-tmp\Scripts\deactivate.bat
+echo Deleting bootstrap environment ...
+rmdir/Q /S venv-tmp
+echo Bootstrap environment deleted
 
 call venv\Scripts\activate.bat
-
-python -m pip install --upgrade pip setuptools
-python -m pip install wheel "pip-tools >= 7.4"
-
-echo Creating requirements.txt from pyproject.toml. This takes a while.
-python scripts\rebuild_requirements.py
-echo "Installing dependencies into the virtual environment"
-python -m pip install --upgrade -r requirements.txt -r requirements-dev.txt
-python scripts/compile_ui_files.py --purge-existing
+echo Done!
