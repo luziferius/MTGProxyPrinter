@@ -1,12 +1,8 @@
+echo "Creating virtual environment ..."
 python -m venv venv
-
+echo "Installing dependencies into the virtual environment ..."
 call venv\Scripts\activate.bat
 
 python -m pip install --upgrade pip setuptools
-python -m pip install wheel "pip-tools >= 7.4"
-
-echo Creating requirements.txt from pyproject.toml. This takes a while.
-python scripts\rebuild_requirements.py
-echo "Installing dependencies into the virtual environment"
-python -m pip install --upgrade -r requirements.txt -r requirements-dev.txt
-python scripts/compile_ui_files.py --purge-existing
+python -m pip install wheel "tox >= 4.41"
+tox run -e generate_development_environment

@@ -57,6 +57,9 @@ package = [
     "cx_Freeze >= 8.5; platform_python_implementation == 'CPython'",
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
+management = [
+    "tox >= 4.41",
+]
 
 [project.urls]
 Homepage = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/index"
@@ -262,3 +265,14 @@ commands = [
     ], extend = true },
 ]
 
+[tool.tox.env.generate_development_environment]
+dependency_groups = ["package", "tests", "management"]
+package = "deps-only"
+env_dir = "venv"
+commands = [
+    ["python", "{tox_root}{/}scripts{/}update_translations.py", "compile"],
+    ["python", "{tox_root}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_stubs"],
+]
+commands_pre = []
+commands_post = []
+description = "Populate the virtual environment in the repository root"
