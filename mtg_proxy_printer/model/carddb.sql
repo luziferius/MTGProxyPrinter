@@ -56,36 +56,31 @@ CREATE TABLE MTGSet (
   set_code TEXT NOT NULL UNIQUE CHECK (set_code <> ''),
   set_name TEXT NOT NULL,
   release_date TEXT NOT NULL,
-  icon_svg TEXThi CHECK (icon_svg <> '')
+  icon_svg TEXT CHECK (icon_svg <> '')
 );
 
 CREATE TABLE PrintingFace (
   printing_id INTEGER NOT NULL,
-  is_front INTEGER NOT NULL CHECK(is_front IN (TRUE, FALSE)),
+  is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
   face_name TEXT NOT NULL CHECK (face_name <> ''),
   png_image_uri TEXT NOT NULL,
   usage_count INTEGER NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
-  last_use_date INTEGER NULL,
+  last_use_timestamp INTEGER,
   PRIMARY KEY(printing_id, is_front)
 );
-
-CREATE TABLE LastImageUseTimestamps (
-  -- Used to store the last timestamp the given card face was printed or exported via PDF.
-  -- The usage count measures how often an image was part of a printed or exported document. Printing multiple copies
-  -- in a document still counts as a single use. Saving/loading is not enough to count as a "use".
-  scryfall_id TEXT NOT NULL,
-  is_front INTEGER NOT NULL,
-  PRIMARY KEY (scryfall_id, is_front)
-  FOREIGN KEY (scryfall_id, is_front) REFERENCES PrintingFace(scryfall_id, is_front)
-) WITHOUT ROWID;
 
 CREATE TABLE Card (
   card_id INTEGER NOT NULL PRIMARY KEY,
   oracle_id TEXT NOT NULL UNIQUE,
-  is_card INTEGER NOT NULL CHECK(is_front IN (TRUE, FALSE))
+  -- There are now tokens sharing names with cards, so state if this is a card that can go into a deck.
+  -- Used by the print selection in the deck list parser to always chose cards over same-name tokens
+  is_card INTEGER NOT NULL CHECK(is_card IN (TRUE, FALSE))
 );
 
 CREATE TABLE RelatedCards (
+  -- The related cards of a card are those it references or creates, and those creating or referencing it.
+  -- The relationship is modelled bi-directional for better discoverability, especially for effects
+  -- that search the library for a specific card. Given the target card, this modelling also finds the tutors.
   card_id    INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
   related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
   PRIMARY KEY (card_id, related_id),
@@ -104,7 +99,7 @@ CREATE TABLE Printing (
   -- Indicates if the card has high resolution images.
   highres_image INTEGER NOT NULL CHECK (highres_image IN (TRUE, FALSE)),
   -- Result cache for the printing filter evaluation
-  is_hidden INTEGER NOT NULL CHECK(is_front IN (TRUE, FALSE)) DEFAULT FALSE,
+  is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE,
   preference_score INTEGER NOT NULL DEFAULT 0
 );
 
