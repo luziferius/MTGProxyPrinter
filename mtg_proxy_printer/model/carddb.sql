@@ -20,7 +20,6 @@ PRAGMA journal_mode = 'wal';
 BEGIN TRANSACTION;
 
 
-
 CREATE TABLE LastDatabaseUpdate (
   -- Contains the history of all performed card data updates
   update_id           INTEGER NOT NULL PRIMARY KEY,
@@ -28,20 +27,20 @@ CREATE TABLE LastDatabaseUpdate (
   reported_card_count INTEGER NOT NULL CHECK (reported_card_count >= 0)
 );
 
-CREATE TABLE RemovedPrintings (
-  -- This is used as an archive, if scryfall ids disappear from newer card datasets
-  -- The app can use this for migration purposes, if savefiles contain them.
-  scryfall_id TEXT NOT NULL PRIMARY KEY,  -- No foreign key relationships.
-  -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
-  language TEXT NOT NULL,
-  oracle_id TEXT NOT NULL
+CREATE TABLE MigratedPrinting (
+  migration_id TEXT NOT NULL PRIMARY KEY,
+  old_scryfall_id TEXT NOT NULL,
+  new_scryfall_id TEXT,
+  performed_at INTEGER NOT NULL
 );
+CREATE INDEX MigratedPrintingLookup ON MigratedPrinting(old_scryfall_id, new_scryfall_id);
 
 CREATE TABLE DisplayFilters (
   -- Contains the available display filters and their current values
   filter_id INTEGER NOT NULL PRIMARY KEY,
   filter_name TEXT NOT NULL UNIQUE,
-  filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE))
+  filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE)),
+  choice_score INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE PrintingDisplayFilter (
@@ -56,7 +55,8 @@ CREATE TABLE MTGSet (
   set_code TEXT NOT NULL UNIQUE CHECK (set_code <> ''),
   set_name TEXT NOT NULL,
   release_date TEXT NOT NULL,
-  icon_svg TEXT CHECK (icon_svg <> '')
+  icon_svg TEXT CHECK (icon_svg <> ''),
+  set_scryfall_id TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE PrintingFace (
@@ -74,7 +74,7 @@ CREATE TABLE Card (
   oracle_id TEXT NOT NULL UNIQUE,
   -- There are now tokens sharing names with cards, so state if this is a card that can go into a deck.
   -- Used by the print selection in the deck list parser to always chose cards over same-name tokens
-  is_card INTEGER NOT NULL CHECK(is_card IN (TRUE, FALSE))
+  is_card INTEGER NOT NULL CHECK (is_card IN (TRUE, FALSE))
 );
 
 CREATE TABLE RelatedCards (
@@ -83,7 +83,7 @@ CREATE TABLE RelatedCards (
   -- that search the library for a specific card. Given the target card, this modelling also finds the tutors.
   card_id    INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
   related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
-  PRIMARY KEY (card_id, related_id),
+  PRIMARY KEY (card_id, related_id) ON CONFLICT IGNORE,
   CONSTRAINT 'No self-reference' CHECK (card_id <> related_id)
 ) WITHOUT ROWID;
 
