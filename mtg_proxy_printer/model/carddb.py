@@ -205,31 +205,34 @@ class CardDatabase(QObject):
         last_timestamp = self.get_last_card_data_update_timestamp()
         return (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.datetime.today() if last_timestamp else True
 
-    def get_all_languages(self) -> list[str]:
+    def get_all_languages(self) -> list[str]:  # PORTED TO 35
         """Returns the list of all known and visible languages, sorted ascendingly."""
         logger.debug("Reading all known languages")
-        query: LiteralString = "SELECT language FROM PrintLanguage ORDER BY language ASC -- get_all_languages()\n"
+        query: LiteralString = cached_dedent('''\
+        SELECT DISTINCT "language" -- get_all_languages()
+          FROM Printing
+          ORDER BY language ASC
+        ''')
         return self._read_scalar_list_from_db(query)
 
-    def get_card_names(self, language: str, card_name_filter: str = None) -> list[str]:
+    def get_card_names(self, language: str, card_name_filter: str = None) -> list[str]:  # PORTED TO 35
         """Returns a sorted list with all card names in the given language that match the given filter."""
         logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
+        # This DISTINCT finds all spelling variants within a language,
+        # mostly caused by typos in international printings. Other deduplication methods,
+        # like `GROUP BY card_id, language` will choose an arbitrary spelling that may or may not be correct
         query: LiteralString = cached_dedent('''\
-        SELECT card_name -- get_card_names()
-            FROM FaceName
-            JOIN PrintLanguage USING (language_id)
-            WHERE FaceName.is_hidden IS FALSE
-              AND language = ?
+        SELECT DISTINCT face_name -- get_card_names()
+          FROM Printing 
+          INNER JOIN PrintingFace USING (printing_id)
+            WHERE "language" = ?
+              AND Printing.is_hidden IS FALSE
               {name_filter}
-            ORDER BY card_name ASC
+            ORDER BY face_name ASC
         ''')
-        name_filter: LiteralString = 'AND card_name LIKE ?' if card_name_filter else ''
+        name_filter: LiteralString = 'AND face_name LIKE ?' if card_name_filter else ''
         query = query.format(name_filter=name_filter)
-
-        parameters: ParameterList = [language]
-        if card_name_filter:
-            parameters.append(f"{card_name_filter}%")
-
+        parameters = (language, f"{card_name_filter}%") if card_name_filter else (language,)
         return self._read_scalar_list_from_db(query, parameters)
 
     def get_basic_land_oracle_ids(
