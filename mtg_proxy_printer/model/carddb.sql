@@ -35,15 +35,15 @@ CREATE TABLE MigratedPrinting (
 );
 CREATE INDEX MigratedPrintingLookup ON MigratedPrinting(old_scryfall_id, new_scryfall_id);
 
-CREATE TABLE DisplayFilters (
+CREATE TABLE PrintingFilters (
   -- Contains the available display filters and their current values
   filter_id INTEGER NOT NULL PRIMARY KEY,
   filter_name TEXT NOT NULL UNIQUE,
   filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE)),
-  choice_score INTEGER NOT NULL DEFAULT 0
+  printing_preference_weight INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE TABLE PrintingDisplayFilter (
+CREATE TABLE FilterAppliesTo (
   -- Stores which filter applies to which printing.
   printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
   filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
@@ -55,6 +55,7 @@ CREATE TABLE MTGSet (
   set_code TEXT NOT NULL UNIQUE CHECK (set_code <> ''),
   set_name TEXT NOT NULL,
   release_date TEXT NOT NULL,
+  set_filter_active INTEGER NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)),
   icon_svg TEXT CHECK (icon_svg <> ''),
   set_scryfall_id TEXT NOT NULL UNIQUE
 );
