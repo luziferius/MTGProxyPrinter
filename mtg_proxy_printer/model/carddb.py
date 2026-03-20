@@ -236,8 +236,9 @@ class CardDatabase(QObject):
         return self._read_scalar_list_from_db(query, parameters)
 
     def get_basic_land_oracle_ids(
-            self, include_wastes: bool = False, include_snow_basics: bool = False) -> set[str]:
+            self, include_wastes: bool = False, include_snow_basics: bool = False) -> set[str]:  # PORTED TO 35
         """Returns the oracle ids of all Basic lands."""
+        # FIXME: This also catches basic land art series cards, like https://scryfall.com/card/aznr/21/forest-forest
         names = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']
         # Ordering matters: This order also supports Snow-Covered Wastes
         if include_wastes:
@@ -245,10 +246,12 @@ class CardDatabase(QObject):
         if include_snow_basics:
             names += [f"Snow-Covered {name}" for name in names]
         query = cached_dedent(f'''\
-            SELECT DISTINCT oracle_id -- get_basic_land_oracle_ids()
-              FROM AllPrintings
-              WHERE language = 'en'
-              AND card_name IN
+            SELECT DISTINCT oracle_id
+              FROM Card 
+              INNER JOIN Printing USING (card_id)
+              INNER JOIN PrintingFace USING (printing_id)
+              WHERE "language" = 'en' 
+              AND face_name IN 
                 ({", ".join("?"*len(names))})
         ''')
         return {item for item, in self.db.execute(query, names)}
