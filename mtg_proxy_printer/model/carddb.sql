@@ -91,6 +91,7 @@ CREATE TABLE RelatedCards (
 CREATE TABLE Printing (
   printing_id INTEGER NOT NULL PRIMARY KEY,
   set_id INTEGER NOT NULL REFERENCES MTGSet(set_id),
+  collector_number TEXT NOT NULL,
   "language" TEXT NOT NULL CHECK ("language" <> ''),
   scryfall_id TEXT NOT NULL UNIQUE,
   card_id INTEGER NOT NULL REFERENCES Card(card_id),
