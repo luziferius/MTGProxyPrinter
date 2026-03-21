@@ -226,7 +226,7 @@ class CardDatabase(QObject):
           FROM Printing 
           INNER JOIN PrintingFace USING (printing_id)
             WHERE "language" = ?
-              AND Printing.is_hidden IS FALSE
+              AND Printing.is_visible IS TRUE
               {name_filter}
             ORDER BY face_name ASC
         ''')
@@ -426,9 +426,10 @@ class CardDatabase(QObject):
                 cards.append(related_cards[0])
         return cards
 
-    def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> list[str]:
+    def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> list[str]:  # PORTED TO 35
         """
-        Finds all collector numbers matching the given filter. The result contains multiple elements, if the card
+        Finds all visible collector numbers matching the given filter parameters.
+        The result contains multiple elements, if the card
         had multiple variants with distinct collector numbers in the given set.
 
         :param card_name: Card name, matched exactly
@@ -441,20 +442,17 @@ class CardDatabase(QObject):
         # in the AddCardWidget results in a duplicated entry in the collector number selection list.
         query = cached_dedent('''\
         SELECT DISTINCT collector_number -- find_collector_numbers_matching()
-            FROM CardFace
-            JOIN Printing USING (printing_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            JOIN MTGSet USING (set_id)
-            WHERE Printing.is_hidden IS FALSE
-              AND FaceName.is_hidden IS FALSE
-              AND "language" = ?
-              AND set_code = ?
-              AND card_name = ?
+          FROM Printing
+          JOIN PrintingFace USING (printing_id)
+          JOIN MTGSet USING (set_id)
+          WHERE is_visible IS TRUE
+            AND "language" = ?
+            AND set_code = ?
+            AND face_name = ?
         ''')
         return natural_sorted(item for item, in self.db.execute(query, (language, set_code, card_name)))
 
-    def find_sets_matching(
+    def find_sets_matching(  # PORTED TO 35
             self, card_name: str, language: str, set_name_filter: str = None,
             *, is_front: bool = None) -> list[MTGSet]:
         """
@@ -468,17 +466,14 @@ class CardDatabase(QObject):
         :return: list of matching sets, as tuples (set_abbreviation, full_english_set_name)
         """
         query = cached_dedent('''\
-        SELECT DISTINCT set_code, set_name  -- find_sets_matching()
-            FROM CardFace
-            JOIN Printing USING (printing_id)
-            JOIN MTGSet USING (set_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            WHERE Printing.is_hidden IS FALSE
-              AND FaceName.is_hidden IS FALSE
-              AND "language" = ?
-              AND card_name = ?
-              AND COALESCE(is_front = ?, TRUE)
+        SELECT DISTINCT set_code, set_name--, icon_svg  -- find_sets_matching()
+          FROM Printing 
+          INNER JOIN PrintingFace USING (printing_id)
+          INNER JOIN MTGSet USING (set_id)
+          WHERE is_visible IS TRUE
+            AND "language" = ?
+            AND face_name = ?
+            AND COALESCE(is_front = ?, TRUE)
         ''')
         parameters: ParameterList = [language, card_name, is_front]
         if set_name_filter:
@@ -488,9 +483,9 @@ class CardDatabase(QObject):
         query += '    ORDER BY set_name ASC\n'
         return list(starmap(MTGSet, self.db.execute(query, parameters)))
 
-    def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
+    def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:  # PORTED TO 35
         """
-        Returns the printing identified by the scryfall_id and side.
+        Returns the printing identified by the scryfall_id and side, if it is not hidden.
         Returns None, if such printing does not exist, or if the requested printing is hidden.
 
         :param scryfall_id: UUID of the requested printing
@@ -498,23 +493,22 @@ class CardDatabase(QObject):
         :return: A Card, if it exists and is visible, None otherwise
         """
         query = cached_dedent('''\
-        SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
-            highres_image, is_oversized, face_number, is_dfc -- get_card_with_scryfall_id()
+        
+        SELECT face_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
+          is_highres_image, is_oversized, is_dfc -- get_card_with_scryfall_id()
             FROM VisiblePrintings
             WHERE scryfall_id = ? AND is_front = ?
         ''')
-        result = self.db.execute(query, (scryfall_id, is_front)).fetchone()
-        if result is None:
-            return None
-        else:
-            name, set_code, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
+        if (result := self.db.execute(query, (scryfall_id, is_front)).fetchone()) is not None:
+            name, set_code, set_name, collector_number, language, image_uri, oracle_id, is_highres_image, \
                 is_oversized, face_number, is_dfc = result
             size = CardSizes.from_bool(is_oversized)
             return Card(
                 name, MTGSet(set_code, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), size, face_number, bool(is_dfc),
+                bool(is_highres_image), size, face_number, bool(is_dfc),
             )
+        return None
 
     def get_all_cards_from_image_cache(self, cache_content: list[CacheContent]) -> ImageDatabaseCards:
         """
@@ -609,19 +603,21 @@ class CardDatabase(QObject):
         """Returns True, if the given two-letter code is a known language. Returns False otherwise."""
         query = cached_dedent('''
         SELECT EXISTS( -- is_known_language()
-            SELECT *
-            FROM PrintLanguage
+            SELECT 42
+            FROM Printing
             WHERE "language" = ?
         )
         ''')
         return bool(self._read_optional_scalar_from_db(query, (language,)))
 
-    def is_dfc(self, scryfall_id: str) -> bool:
+    def is_dfc(self, scryfall_id: str) -> bool:  # PORTED TO 35
+        # FIXME: Deprecate? The Printing has this available directly.
+        #  Add is_dfc boolean attribute to Card and populate at creation
         """Returns True, if the given card is a DFC, False otherwise."""
         # This query returns two values for DFC cards, but that does not pose any issue
         query = cached_dedent('''
         SELECT is_dfc -- is_dfc()
-          FROM AllPrintings
+          FROM Printing
           WHERE "scryfall_id" = ?
         ''')
         return bool(self._read_optional_scalar_from_db(query, (scryfall_id,)))
@@ -769,7 +765,7 @@ class CardDatabase(QObject):
         """Runs the query with the given parameters, returning a list of singular items"""
         return [item for item, in self.db.execute(query, parameters)]
 
-    def is_removed_printing(self, scryfall_id: str) -> bool:
+    def is_removed_printing(self, scryfall_id: str) -> bool:  # FIXME: Deprecated. Table no longer exists
         logger.debug(f"Query RemovedPrintings table for scryfall id {scryfall_id}")
         parameters: ParameterList = [scryfall_id,]
         query = cached_dedent("""\
