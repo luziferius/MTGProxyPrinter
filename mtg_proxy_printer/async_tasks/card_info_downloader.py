@@ -596,7 +596,7 @@ class DatabaseImportTask(AsyncTask):
             "SELECT card_id FROM Card WHERE oracle_id = ?\n",
             (oracle_id,)
         ) or db.execute(
-                "INSERT INTO Card (oracle_id, is_card) VALUES (?)\n",
+                "INSERT INTO Card (oracle_id, is_card) VALUES (?, ?)\n",
                 (oracle_id, is_card)
         ).lastrowid
         return card_id
