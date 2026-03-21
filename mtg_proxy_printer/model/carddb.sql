@@ -27,13 +27,19 @@ CREATE TABLE LastDatabaseUpdate (
   reported_card_count INTEGER NOT NULL CHECK (reported_card_count >= 0)
 );
 
-CREATE TABLE MigratedPrinting (
+CREATE TABLE RemovedPrintings (
+  scryfall_id TEXT NOT NULL PRIMARY KEY,
+  -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
+  language TEXT NOT NULL,
+  oracle_id TEXT NOT NULL
+);
+CREATE TABLE MigratedPrintings (
   migration_id TEXT NOT NULL PRIMARY KEY,
   old_scryfall_id TEXT NOT NULL,
   new_scryfall_id TEXT,
   performed_at INTEGER NOT NULL
 );
-CREATE INDEX MigratedPrintingLookup ON MigratedPrinting(old_scryfall_id, new_scryfall_id);
+CREATE INDEX MigratedPrintingsLookup ON MigratedPrintings(old_scryfall_id, new_scryfall_id);
 
 CREATE TABLE PrintingFilters (
   -- Contains the available display filters and their current values

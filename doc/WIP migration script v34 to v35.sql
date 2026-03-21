@@ -37,14 +37,13 @@ DROP TABLE MTGSet;
 ALTER TABLE MTGSet_new RENAME TO MTGSet;
 
 
-DROP TABLE RemovedPrintings;
-CREATE TABLE MigratedPrinting (
+CREATE TABLE MigratedPrintings (
   migration_id TEXT NOT NULL PRIMARY KEY,
   old_scryfall_id TEXT NOT NULL,
   new_scryfall_id TEXT,
   performed_at INTEGER NOT NULL
 );
-CREATE INDEX MigratedPrintingLookup ON MigratedPrinting(old_scryfall_id, new_scryfall_id);
+CREATE INDEX MigratedPrintingsLookup ON MigratedPrintings(old_scryfall_id, new_scryfall_id);
 
 
 CREATE TABLE Card_new (

@@ -503,11 +503,17 @@ class DatabaseImportTask(AsyncTask):
             return index
         logger.info("Post-processing card data")
         self.task_begins.emit(
-            4 + PrintingFilterUpdater.PROGRESS_STEP_COUNT,
+            5 + PrintingFilterUpdater.PROGRESS_STEP_COUNT,
             self.tr("Post-processing card data:", "Progress bar label text"))
         self._insert_related_printings(related_printings)
         self.advance_progress.emit()
         self._clean_unused_data(face_ids)
+        self.advance_progress.emit()
+        db.execute("""\
+        -- Remove previously unacceptable printings, if those were acceptable this import.
+        DELETE FROM RemovedPrintings WHERE scryfall_id IN (
+          SELECT scryfall_id FROM Printing
+        )""")
         self.advance_progress.emit()
         updater = PrintingFilterUpdater(
             CardDatabase(self.carddb_path, check_same_thread=True, register_exit_hooks=False),
