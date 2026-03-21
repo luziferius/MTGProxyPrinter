@@ -20,63 +20,6 @@ PRAGMA journal_mode = 'wal';
 BEGIN TRANSACTION;
 
 
-CREATE TABLE LastDatabaseUpdate (
-  -- Contains the history of all performed card data updates
-  update_id           INTEGER NOT NULL PRIMARY KEY,
-  update_timestamp    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  reported_card_count INTEGER NOT NULL CHECK (reported_card_count >= 0)
-);
-
-CREATE TABLE RemovedPrintings (
-  scryfall_id TEXT NOT NULL PRIMARY KEY,
-  -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
-  language TEXT NOT NULL,
-  oracle_id TEXT NOT NULL
-);
-CREATE TABLE MigratedPrintings (
-  migration_id TEXT NOT NULL PRIMARY KEY,
-  old_scryfall_id TEXT NOT NULL,
-  new_scryfall_id TEXT,
-  performed_at INTEGER NOT NULL
-);
-CREATE INDEX MigratedPrintingsLookup ON MigratedPrintings(old_scryfall_id, new_scryfall_id);
-
-CREATE TABLE PrintingFilters (
-  -- Contains the available display filters and their current values
-  filter_id INTEGER NOT NULL PRIMARY KEY,
-  filter_name TEXT NOT NULL UNIQUE,
-  filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE)),
-  printing_preference_weight INTEGER NOT NULL DEFAULT 0
-);
-
-CREATE TABLE FilterAppliesTo (
-  -- Stores which filter applies to which printing.
-  printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
-  filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
-  PRIMARY KEY (printing_id, filter_id)
-) WITHOUT ROWID;
-
-CREATE TABLE MTGSet (
-  set_id   INTEGER PRIMARY KEY NOT NULL,
-  set_code TEXT NOT NULL UNIQUE CHECK (set_code <> ''),
-  set_name TEXT NOT NULL,
-  release_date TEXT NOT NULL,
-  set_filter_active INTEGER NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
-  icon_svg TEXT CHECK (icon_svg <> ''),
-  set_scryfall_id TEXT NOT NULL UNIQUE
-);
-
-CREATE TABLE PrintingFace (
-  printing_id INTEGER NOT NULL,
-  is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
-  face_name TEXT NOT NULL CHECK (face_name <> ''),
-  png_image_uri TEXT NOT NULL,
-  usage_count INTEGER NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
-  last_use_timestamp INTEGER,
-  currently_downloaded INTEGER NOT NULL CHECK (currently_downloaded IN (TRUE, FALSE)) DEFAULT FALSE,
-  PRIMARY KEY(printing_id, is_front)
-);
-
 CREATE TABLE Card (
   card_id INTEGER NOT NULL PRIMARY KEY,
   oracle_id TEXT NOT NULL UNIQUE,
@@ -84,16 +27,6 @@ CREATE TABLE Card (
   -- Used by the print selection in the deck list parser to always chose cards over same-name tokens
   is_card INTEGER NOT NULL CHECK (is_card IN (TRUE, FALSE))
 );
-
-CREATE TABLE RelatedCards (
-  -- The related cards of a card are those it references or creates, and those creating or referencing it.
-  -- The relationship is modelled bi-directional for better discoverability, especially for effects
-  -- that search the library for a specific card. Given the target card, this modelling also finds the tutors.
-  card_id    INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
-  related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
-  PRIMARY KEY (card_id, related_id) ON CONFLICT IGNORE,
-  CONSTRAINT 'No self-reference' CHECK (card_id <> related_id)
-) WITHOUT ROWID;
 
 CREATE TABLE Printing (
   printing_id INTEGER NOT NULL PRIMARY KEY,
@@ -112,6 +45,74 @@ CREATE TABLE Printing (
   preference_score INTEGER NOT NULL DEFAULT 0,
   is_dfc INTEGER NOT NULL CHECK (is_dfc IN (TRUE, FALSE)) DEFAULT FALSE
 );
+
+CREATE TABLE RelatedCards (
+  -- The related cards of a card are those it references or creates, and those creating or referencing it.
+  -- The relationship is modelled bi-directional for better discoverability, especially for effects
+  -- that search the library for a specific card. Given the target card, this modelling also finds the tutors.
+  card_id    INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  PRIMARY KEY (card_id, related_id) ON CONFLICT IGNORE,
+  CONSTRAINT 'No self-reference' CHECK (card_id <> related_id)
+) WITHOUT ROWID;
+
+CREATE TABLE PrintingFace (
+  printing_id INTEGER NOT NULL,
+  is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
+  face_name TEXT NOT NULL CHECK (face_name <> ''),
+  png_image_uri TEXT NOT NULL,
+  usage_count INTEGER NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
+  last_use_timestamp INTEGER,
+  currently_downloaded INTEGER NOT NULL CHECK (currently_downloaded IN (TRUE, FALSE)) DEFAULT FALSE,
+  PRIMARY KEY(printing_id, is_front)
+);
+
+CREATE TABLE MTGSet (
+  set_id   INTEGER PRIMARY KEY NOT NULL,
+  set_code TEXT NOT NULL UNIQUE CHECK (set_code <> ''),
+  set_name TEXT NOT NULL,
+  release_date TEXT NOT NULL,
+  set_filter_active INTEGER NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
+  icon_svg TEXT CHECK (icon_svg <> ''),
+  set_scryfall_id TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE LastDatabaseUpdate (
+  -- Contains the history of all performed card data updates
+  update_id           INTEGER NOT NULL PRIMARY KEY,
+  update_timestamp    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  reported_card_count INTEGER NOT NULL CHECK (reported_card_count >= 0)
+);
+
+CREATE TABLE PrintingFilters (
+  -- Contains the available display filters and their current values
+  filter_id INTEGER NOT NULL PRIMARY KEY,
+  filter_name TEXT NOT NULL UNIQUE,
+  filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE)),
+  printing_preference_weight INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE FilterAppliesTo (
+  -- Stores which filter applies to which printing.
+  printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
+  filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
+  PRIMARY KEY (printing_id, filter_id)
+) WITHOUT ROWID;
+
+CREATE TABLE RemovedPrintings (
+  scryfall_id TEXT NOT NULL PRIMARY KEY,
+  -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
+  language TEXT NOT NULL,
+  oracle_id TEXT NOT NULL
+);
+
+CREATE TABLE MigratedPrintings (
+  migration_id TEXT NOT NULL PRIMARY KEY,
+  old_scryfall_id TEXT NOT NULL,
+  new_scryfall_id TEXT,
+  performed_at INTEGER NOT NULL
+);
+CREATE INDEX MigratedPrintingsLookup ON MigratedPrintings(old_scryfall_id, new_scryfall_id);
 
 CREATE VIEW EvaluatePrintingFilters AS SELECT
   printing_id,
