@@ -101,8 +101,37 @@ CREATE TABLE Printing (
   -- Indicates if the card has high resolution images.
   highres_image INTEGER NOT NULL CHECK (highres_image IN (TRUE, FALSE)),
   -- Result cache for the printing filter evaluation
-  is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE,
-  preference_score INTEGER NOT NULL DEFAULT 0
+  is_visible INTEGER NOT NULL CHECK (is_visible IN (TRUE, FALSE)) DEFAULT FALSE,
+  preference_score INTEGER NOT NULL DEFAULT 0,
+  is_dfc INTEGER NOT NULL CHECK (is_dfc IN (TRUE, FALSE)) DEFAULT FALSE
 );
+
+CREATE VIEW EvaluatePrintingFilters AS SELECT
+  printing_id,
+    coalesce(TRUE-max(filter_active), TRUE) AS is_visible,
+    coalesce(sum(printing_preference_weight), 0) AS preference_score
+FROM Printing
+  LEFT OUTER JOIN FilterAppliesTo USING (printing_id)
+  LEFT OUTER JOIN PrintingFilters USING (filter_id)
+  GROUP BY printing_id
+;
+
+CREATE VIEW AllPrintings AS SELECT
+    face_name, set_code, set_name, icon_svg, collector_number, release_date,
+    scryfall_id, png_image_uri, oracle_id, "language",
+    is_front, is_card, is_oversized, is_highres_image, is_visible, is_dfc
+  FROM Printing
+  INNER JOIN Card USING(card_id)
+  INNER JOIN PrintingFace USING (printing_id)
+  INNER JOIN MTGSet USING (set_id)
+;
+
+CREATE VIEW VisiblePrintings AS SELECT
+    face_name, set_code, set_name, icon_svg, collector_number, release_date,
+    scryfall_id, png_image_uri, oracle_id, "language",
+    is_front, is_card, is_oversized, is_highres_image, is_dfc
+  FROM AllPrintings
+  WHERE is_visible IS TRUE
+;
 
 COMMIT;
