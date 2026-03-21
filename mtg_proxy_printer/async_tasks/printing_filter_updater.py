@@ -86,9 +86,8 @@ class PrintingFilterUpdater(AsyncTask):
         logger.debug(f"Called {self.__class__.__name__}.run()")
         try:
             self.task_begins.emit(
-                self.PROGRESS_STEP_COUNT, QCoreApplication.translate(
-                    "PrintingFilterUpdater.store_current_printing_filters()",
-                    "Processing updated card filters:")
+                self.PROGRESS_STEP_COUNT, self.tr(
+                    "Processing updated card filters:", "Progress bar label text")
             )
             self.update_ui = self.store_current_printing_filters()
             if self.should_abort:
