@@ -602,28 +602,27 @@ class DatabaseImportTask(AsyncTask):
 
     def _insert_set(self, card: CardDataType) -> int:
         db = self.db
-        set_abbr = card["set"]
-        wackiness_score = _get_set_wackiness_score(card)
+        set_code = card["set"]
         db.execute(cached_dedent(
             """\
-            INSERT INTO MTGSet (set_code, set_name, set_uri, release_date, wackiness_score)
-                VALUES (?, ?, ?, ?, ?)
+            INSERT INTO MTGSet (set_code, set_name, release_date, set_scryfall_id)
+                VALUES (?, ?, ?, ?)
                 ON CONFLICT (set_code) DO
                 UPDATE SET
                   set_name = excluded.set_name,
-                  set_uri = excluded.set_uri,
                   release_date = excluded.release_date,
-                  wackiness_score  = excluded.wackiness_score
+                  set_scryfall_id  = excluded.set_scryfall_id
                 WHERE set_name <> excluded.set_name
-                  OR set_uri <> excluded.set_uri
-                  -- Wizards started to add “The List” cards to older sets, i.e. reusing the original set code for newer
-                  -- reprints of cards in that set. This greater than searches for the oldest release date for a given set
+                  -- Wizards started to add “The List” cards to older sets,
+                  -- i.e. reusing the original set code for newer
+                  -- reprints of cards in that set. This greater than
+                  -- searches for the oldest release date for a given set.
                   OR release_date > excluded.release_date
-                  OR wackiness_score <> excluded.wackiness_score
+                  OR set_scryfall_id <> excluded.set_scryfall_id
             """),
-            (set_abbr, card["set_name"], card["scryfall_set_uri"], card["released_at"], wackiness_score)
+            (set_code, card["set_name"], card["released_at"], card["set_id"])
         )
-        set_id, = db.execute('SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_abbr,)).fetchone()
+        set_id, = db.execute('SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_code,)).fetchone()
         return set_id
 
     @functools.cache
@@ -792,26 +791,6 @@ def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
         "hide-banned-in-standard": legalities.get("standard", "") == "banned",
         "hide-banned-in-vintage": legalities.get("vintage", "") == "banned",
     }
-
-
-def _get_set_wackiness_score(card: CardDataType) -> SetWackinessScore:
-    if card["oversized"]:
-        result = SetWackinessScore.OVERSIZED
-    elif card["layout"] == "art_series":
-        result = SetWackinessScore.ART_SERIES
-    elif card["digital"]:
-        result = SetWackinessScore.DIGITAL
-    elif card["border_color"] == "white":
-        result = SetWackinessScore.WHITE_BORDERED
-    elif card["set_type"] == "funny":
-        result = SetWackinessScore.FUNNY
-    elif card["border_color"] == "gold":
-        result = SetWackinessScore.GOLD_BORDERED
-    elif card["set_type"] == "promo":
-        result = SetWackinessScore.PROMOTIONAL
-    else:
-        result = SetWackinessScore.REGULAR
-    return result
 
 
 def _should_skip_card(card: CardDataType) -> bool:
