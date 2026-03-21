@@ -65,7 +65,7 @@ to_be_profiled_functions = {
         "_update_card_filters",
         "_clean_unused_data",
         "_insert_card",
-        "_handle_printing",
+        "_insert_or_update_printing",
         "_insert_face_name",
     ],
     mtg_proxy_printer.async_tasks.card_info_downloader: [

@@ -90,16 +90,6 @@ class CardFaceData(typing.NamedTuple):
     face_number: int
 
 
-class PrintingData(typing.NamedTuple):
-    """Information unique to each card printing."""
-    card_id: int
-    set_id: int
-    collector_number: str
-    is_oversized: bool
-    highres_image: bool
-    scryfall_id: UUID
-
-
 class RelatedPrintingData(typing.NamedTuple):
     printing_id: UUID
     related_id: UUID
@@ -554,7 +544,7 @@ class DatabaseImportTask(AsyncTask):
         set_code = card["set"]
         if (set_id := self.set_code_cache.get(set_code)) is None:
             self.set_code_cache[set_code] = set_id = self._insert_set(card)
-        printing_id = self._handle_printing(card, card_id, set_id)
+        printing_id = self._insert_or_update_printing(card, card_id, set_id)
         filter_data = _get_card_filter_data(card)
         self._update_card_filters(printing_id, filter_data)
         new_face_ids = self._insert_card_faces(card, printing_id)
@@ -653,53 +643,46 @@ class DatabaseImportTask(AsyncTask):
                 "INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n", parameters).lastrowid
         return face_name_id
 
-    def _handle_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
+    def _insert_or_update_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
         db = self.db
-        data = PrintingData(
-            card_id, set_id, card["collector_number"], card["oversized"], card["highres_image"], UUID(card["id"]),
-        )
-        printing_id, needs_update = self._is_printing_present(data)
-        if printing_id is None:
-            printing_id = db.execute(cached_dedent("""\
-                INSERT INTO Printing (card_id, set_id, collector_number, is_oversized, highres_image, scryfall_id)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """), data).lastrowid
-        if needs_update:
-            db.execute(
-                cached_dedent("""\
-                UPDATE Printing
-                  SET card_id = ?, set_id = ?, collector_number = ?, is_oversized = ?, highres_image = ?
-                  WHERE printing_id = ?
-                """),
-                (*data[:5], printing_id),
-            )
+        query = cached_dedent("""\
+        SELECT printing_id, ( -- _insert_or_update_printing()
+          set_id <> ?
+          OR collector_number <> ? 
+          OR language <> ?
+          OR card_id <> ?
+          OR is_oversized <> ? 
+          OR is_highres_image <> ?
+        ) AS needs_update
+        FROM Printing WHERE scryfall_id = ?
+        """)
+        parameters = (
+            set_id, card["collector_number"], card["lang"], card_id, 
+            card["oversized"], card["highres_image"], card["id"])
+        match (check_result := db.execute(query, parameters).fetchone()):
+            case None:                
+                parameters = (set_id, card["collector_number"], card["lang"], card["id"], 
+                              card_id, card["oversized"], card["highres_image"])
+                printing_id = db.execute(cached_dedent("""\
+                    INSERT INTO Printing  -- _insert_or_update_printing()
+                           (set_id, collector_number, language, scryfall_id, card_id, is_oversized, is_highres_image)
+                    VALUES (?,      ?,                ?,        ?,           ?,       ?,            ?)
+                    """), parameters).lastrowid
+            case printing_id, 1:
+                parameters = (set_id, card["collector_number"], card["lang"], card["id"],
+                              card_id, card["oversized"], card["highres_image"], printing_id)
+                db.execute(
+                    cached_dedent("""\
+                    UPDATE Printing -- _insert_or_update_printing()
+                      SET set_id = ?,collector_number = ?,language = ?,scryfall_id = ?,card_id = ?,is_oversized = ?,is_highres_image
+                      WHERE printing_id = ?
+                    """),
+                    parameters)
+            case printing_id, _:
+                pass
+            case _:
+                raise RuntimeError(f"Unexpected data: {check_result}")
         return printing_id
-
-    def _is_printing_present(self, new_data: PrintingData) -> tuple[int | None, bool]:
-        """
-        Returns tuple printing_id, needs_update for the given printing data.
-        The printing_id returns the id for the given printing, if in database, or None, if not present.
-        needs_update is True, if the printing is present and needs a database update, False otherwise.
-        """
-        db = self.db
-        printing_id, = db.execute(cached_dedent("""\
-            SELECT printing_id
-              FROM Printing
-              WHERE scryfall_id = ?
-            """), (new_data.scryfall_id,)
-        ).fetchone() or (None,)
-        needs_update = False
-        if printing_id is not None:
-            card_id, set_id, collector_number, is_oversized, highres_image = db.execute(cached_dedent("""\
-            SELECT card_id, set_id, collector_number, is_oversized, highres_image
-                FROM Printing
-                WHERE printing_id = ?
-            """), (printing_id,)).fetchone()
-            # Note: No db round-trip for the scryfall_id, since it is unique and was used to look up the printing_id.
-            db_data = PrintingData(
-                card_id, set_id, collector_number, bool(is_oversized), bool(highres_image), new_data.scryfall_id)
-            needs_update = new_data != db_data
-        return printing_id, needs_update
 
     def _insert_card_faces(self, card: CardDataType, printing_id: int) -> IntTuples:
         """Inserts all faces of the given card together with their names."""
