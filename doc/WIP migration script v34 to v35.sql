@@ -12,7 +12,7 @@ CREATE TABLE RelatedCards (
   card_id    INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
   related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
   PRIMARY KEY (card_id, related_id) ON CONFLICT IGNORE,
-  CONSTRAINT 'No self-reference' CHECK (card_id <> related_id)
+  CONSTRAINT "No self-reference" CHECK (card_id <> related_id)
 ) WITHOUT ROWID;
 INSERT INTO RelatedCards SELECT card_id, related_id FROM RelatedPrintings;
 DROP TABLE RelatedPrintings;
@@ -26,12 +26,12 @@ CREATE TABLE MTGSet_new (
   set_code TEXT NOT NULL UNIQUE CHECK (set_code <> ''),
   set_name TEXT NOT NULL,
   release_date TEXT NOT NULL,
-  set_filter_active INTEGER NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)),
+  set_filter_active INTEGER NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
   icon_svg TEXT CHECK (icon_svg <> ''),
   set_scryfall_id TEXT NOT NULL UNIQUE
 );
-INSERT INTO MTGSet_new
-  SELECT set_id, set_code, set_name, release_date, FALSE, NULL, set_code 
+INSERT INTO MTGSet_new (set_id, set_code, set_name, release_date, set_scryfall_id)
+  SELECT                set_id, set_code, set_name, release_date, set_code
   FROM MTGSet;
 DROP TABLE MTGSet;
 ALTER TABLE MTGSet_new RENAME TO MTGSet;
@@ -61,7 +61,7 @@ WITH tokens(card_id, is_card) AS (
     LEFT OUTER JOIN PrintingFilters USING (filter_id)
     WHERE filter_name = 'hide-token')
 INSERT INTO Card_new (card_id, oracle_id, is_card)
-  SELECT card_id, oracle_id, coalesce(is_card, TRUE) AS is_card
+  SELECT              card_id, oracle_id, coalesce(is_card, TRUE) AS is_card
     FROM Card
     LEFT OUTER JOIN tokens USING (card_id);
 DROP TABLE Card;
@@ -80,10 +80,13 @@ CREATE TABLE PrintingFace (
   PRIMARY KEY(printing_id, is_front)
 );
 
-INSERT INTO PrintingFace (printing_id, is_front, png_image_uri, usage_count, last_use_timestamp, face_name)
+INSERT INTO PrintingFace
+        (printing_id,    is_front,    png_image_uri,
+         usage_count,                 last_use_timestamp,
+         face_name)
   SELECT cf.printing_id, cf.is_front, cf.png_image_uri,
-    coalesce(lu.usage_count, 0), unixepoch(lu.last_use_date),
-    group_concat(card_name, ' // ' ORDER BY face_number asc) AS face_name
+         coalesce(lu.usage_count, 0), unixepoch(lu.last_use_date) AS last_use_timestamp,
+         group_concat(card_name, ' // ' ORDER BY face_number asc) AS face_name
   FROM CardFace AS cf
   JOIN Printing USING (printing_id)
   LEFT OUTER JOIN LastImageUseTimestamps AS lu USING (scryfall_id, is_front)
@@ -105,11 +108,14 @@ CREATE TABLE Printing_new (
   is_highres_image INTEGER NOT NULL CHECK (is_highres_image IN (TRUE, FALSE)),
   -- Result cache for the printing filter evaluation
   is_visible INTEGER NOT NULL CHECK(is_visible IN (TRUE, FALSE)) DEFAULT TRUE,
-  preference_score INTEGER NOT NULL DEFAULT 0
+  preference_score INTEGER NOT NULL DEFAULT 0,
+  is_dfc INTEGER NOT NULL CHECK (is_dfc IN (TRUE, FALSE)) DEFAULT FALSE
 );
-INSERT INTO Printing_new (printing_id, set_id, collector_number, scryfall_id, card_id, is_oversized, is_highres_image, is_visible, "language")
-  SELECT printing_id, set_id, collector_number, scryfall_id, card_id, is_oversized, highres_image, TRUE-Printing.is_hidden,
-  "language"
+INSERT INTO Printing_new
+        (printing_id, set_id, collector_number, scryfall_id, card_id, is_oversized,
+         is_highres_image, is_visible,              "language")
+  SELECT printing_id, set_id, collector_number, scryfall_id, card_id, is_oversized,
+         highres_image,    TRUE-Printing.is_hidden, "language"
     FROM Printing
     INNER JOIN CardFace USING(printing_id)
     INNER JOIN FaceName USING(face_name_id)
@@ -133,7 +139,7 @@ FROM Printing
   LEFT OUTER JOIN FilterAppliesTo USING (printing_id)
   LEFT OUTER JOIN PrintingFilters USING (filter_id)
   GROUP BY printing_id
-
+;
 CREATE VIEW AllPrintings AS SELECT 
     face_name, set_code, set_name, icon_svg, collector_number, release_date,
     scryfall_id, png_image_uri, oracle_id, "language",
@@ -152,7 +158,9 @@ CREATE VIEW VisiblePrintings AS SELECT
   WHERE is_visible IS TRUE
 ;
 
-COMMIT;
-ANALYZE;
-VACUUM;
 PRAGMA user_version = 35;
+PRAGMA foreign_keys = 1;
+PRAGMA integrity_check;
+ANALYZE;
+COMMIT;
+VACUUM;
