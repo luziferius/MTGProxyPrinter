@@ -539,10 +539,11 @@ class DatabaseImportTask(AsyncTask):
 
     def _parse_single_printing(self, card: CardDataType):
         oracle_id = _get_oracle_id(card)
-        card_id = self._insert_card(oracle_id)
-        set_id = self.set_code_cache.get(card["set"])
-        if set_id is None:
-            self.set_code_cache[card["set"]] = set_id = self._insert_set(card)
+        is_card = card["layout"] not in {"art_series", "token"}
+        card_id = self._insert_card(oracle_id, is_card)
+        set_code = card["set"]
+        if (set_id := self.set_code_cache.get(set_code)) is None:
+            self.set_code_cache[set_code] = set_id = self._insert_set(card)
         printing_id = self._handle_printing(card, card_id, set_id)
         filter_data = _get_card_filter_data(card)
         self._update_card_filters(printing_id, filter_data)
@@ -589,13 +590,14 @@ class DatabaseImportTask(AsyncTask):
         """), related_printings)
 
     @functools.cache
-    def _insert_card(self, oracle_id: UUID) -> int:
+    def _insert_card(self, oracle_id: UUID, is_card: bool) -> int:
         db = self.db
-        parameters = oracle_id,
-        if result := db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", parameters).fetchone():
+        if result := db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", (oracle_id,)).fetchone():
             card_id, = result
         else:
-            card_id = db.execute("INSERT INTO Card (oracle_id) VALUES (?)\n", parameters).lastrowid
+            card_id = db.execute(
+                "INSERT INTO Card (oracle_id, is_card) VALUES (?)\n",
+                (oracle_id, is_card)).lastrowid
         return card_id
 
     def _insert_set(self, card: CardDataType) -> int:
