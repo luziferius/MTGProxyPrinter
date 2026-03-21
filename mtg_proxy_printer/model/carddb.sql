@@ -100,7 +100,7 @@ CREATE TABLE Printing (
   -- so store this to be able to warn the user
   is_oversized INTEGER NOT NULL CHECK (is_oversized IN (TRUE, FALSE)),
   -- Indicates if the card has high resolution images.
-  highres_image INTEGER NOT NULL CHECK (highres_image IN (TRUE, FALSE)),
+  is_highres_image INTEGER NOT NULL CHECK (is_highres_image IN (TRUE, FALSE)),
   -- Result cache for the printing filter evaluation
   is_visible INTEGER NOT NULL CHECK (is_visible IN (TRUE, FALSE)) DEFAULT TRUE,
   preference_score INTEGER NOT NULL DEFAULT 0,
@@ -116,6 +116,7 @@ FROM Printing
   LEFT OUTER JOIN FilterAppliesTo USING (printing_id)
 	LEFT OUTER JOIN PrintingFilters USING (filter_id)
 	GROUP BY printing_id
+;
 
 CREATE VIEW AllPrintings AS SELECT
     face_name, set_code, set_name, icon_svg, collector_number, release_date,
