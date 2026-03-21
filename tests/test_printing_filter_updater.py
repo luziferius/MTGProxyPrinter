@@ -63,9 +63,9 @@ def test_store_current_printing_filters_updates_value_in_database(card_db: CardD
     settings_to_use[settings_key] = str(not section.getboolean(settings_key))
     updater = PrintingFilterUpdater(card_db, card_db.db)
     with unittest.mock.patch.dict(section, settings_to_use):
-        assert_that(updater._filters_in_db_differ_from_settings(section), is_(True))
+        assert_that(updater._changed_or_new_filters(section), is_(True))
         updater.run()
-        assert_that(updater._filters_in_db_differ_from_settings(section), is_(False))
+        assert_that(updater._changed_or_new_filters(section), is_(False))
 
 
 @pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.get_boolean_card_filter_keys())
@@ -77,7 +77,7 @@ def test_filters_in_db_differ_from_settings_with_changed_boolean_settings_return
     settings_to_use[settings_key] = str(not section.getboolean(settings_key))
     with unittest.mock.patch.dict(section, settings_to_use):
         assert_that(
-            updater._filters_in_db_differ_from_settings(section),
+            updater._changed_or_new_filters(section),
             is_(True)
         )
 
@@ -88,6 +88,6 @@ def test_filters_in_db_differ_from_settings_with_unchanged_settings_returns_fals
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     with unittest.mock.patch.dict(section, settings_to_use):
         assert_that(
-            updater._filters_in_db_differ_from_settings(section),
+            updater._changed_or_new_filters(section),
             is_(False)
         )
