@@ -538,7 +538,6 @@ class DatabaseImportTask(AsyncTask):
         return dict(self.db.execute("SELECT filter_name, filter_id FROM DisplayFilters"))
 
     def _parse_single_printing(self, card: CardDataType):
-        language_id = self._insert_language(card["lang"])
         oracle_id = _get_oracle_id(card)
         card_id = self._insert_card(oracle_id)
         set_id = self.set_code_cache.get(card["set"])
@@ -547,7 +546,7 @@ class DatabaseImportTask(AsyncTask):
         printing_id = self._handle_printing(card, card_id, set_id)
         filter_data = _get_card_filter_data(card)
         self._update_card_filters(printing_id, filter_data)
-        new_face_ids = self._insert_card_faces(card, language_id, printing_id)
+        new_face_ids = self._insert_card_faces(card, printing_id)
         return new_face_ids
 
     def _clean_unused_data(self, new_face_ids: IntTuples):
@@ -588,24 +587,6 @@ class DatabaseImportTask(AsyncTask):
           FROM (SELECT card_id FROM Printing WHERE scryfall_id = ?),
                (SELECT card_id AS related_id FROM Printing WHERE scryfall_id = ?)
         """), related_printings)
-
-    @functools.cache
-    def _insert_language(self, language: str) -> int:
-        """
-        Inserts the given language into the database and returns the generated ID.
-        If the language is already present, just return the ID.
-        """
-        db = self.db
-        parameters = language,
-        if result := db.execute(
-                'SELECT language_id FROM PrintLanguage WHERE "language" = ?\n',
-                parameters).fetchone():
-            language_id, = result
-        else:
-            language_id = db.execute(
-                'INSERT INTO PrintLanguage("language") VALUES (?)\n',
-                parameters).lastrowid
-        return language_id
 
     @functools.cache
     def _insert_card(self, oracle_id: UUID) -> int:
@@ -707,7 +688,7 @@ class DatabaseImportTask(AsyncTask):
             needs_update = new_data != db_data
         return printing_id, needs_update
 
-    def _insert_card_faces(self, card: CardDataType, language_id: int, printing_id: int) -> IntTuples:
+    def _insert_card_faces(self, card: CardDataType, printing_id: int) -> IntTuples:
         """Inserts all faces of the given card together with their names."""
         db = self.db
         face_ids: IntTuples = []
