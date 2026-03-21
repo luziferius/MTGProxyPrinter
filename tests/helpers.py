@@ -120,7 +120,7 @@ def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.Card
     # Explicitly share the in-memory database connection
     dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), card_db.db, ":memory:")
     section = mtg_proxy_printer.settings.settings["card-filter"]
-    with qtbot.assertNotEmitted(dw.error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
+    with qtbot.assert_not_emitted(dw.error_occurred), qtbot.assert_not_emitted(dw.network_error_occurred):
         settings_to_use = update_database_printing_filters(card_db, filter_settings)
         with patch.dict(section, settings_to_use):
 
@@ -139,7 +139,7 @@ def update_database_printing_filters(
     return settings_to_use
 
 
-@functools.lru_cache()
+@functools.cache
 def load_json(name: str) -> CardDataType:
     data = read_resource_text("tests.json_samples", f"{name}.json")
     return json.loads(data)
