@@ -67,6 +67,7 @@ CREATE TABLE PrintingFace (
   png_image_uri TEXT NOT NULL,
   usage_count INTEGER NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
   last_use_timestamp INTEGER,
+  currently_downloaded INTEGER NOT NULL CHECK (currently_downloaded IN (TRUE, FALSE)) DEFAULT FALSE,
   PRIMARY KEY(printing_id, is_front)
 );
 
@@ -101,20 +102,20 @@ CREATE TABLE Printing (
   -- Indicates if the card has high resolution images.
   highres_image INTEGER NOT NULL CHECK (highres_image IN (TRUE, FALSE)),
   -- Result cache for the printing filter evaluation
-  is_visible INTEGER NOT NULL CHECK (is_visible IN (TRUE, FALSE)) DEFAULT FALSE,
+  is_visible INTEGER NOT NULL CHECK (is_visible IN (TRUE, FALSE)) DEFAULT TRUE,
   preference_score INTEGER NOT NULL DEFAULT 0,
   is_dfc INTEGER NOT NULL CHECK (is_dfc IN (TRUE, FALSE)) DEFAULT FALSE
 );
 
 CREATE VIEW EvaluatePrintingFilters AS SELECT
   printing_id,
-    coalesce(TRUE-max(filter_active), TRUE) AS is_visible,
-    coalesce(sum(printing_preference_weight), 0) AS preference_score
+	coalesce(TRUE-(max(filter_active) OR set_filter_active), TRUE) AS is_visible,
+	coalesce(sum(printing_preference_weight), 0) AS preference_score
 FROM Printing
+  INNER JOIN MTGSet USING (set_id)
   LEFT OUTER JOIN FilterAppliesTo USING (printing_id)
-  LEFT OUTER JOIN PrintingFilters USING (filter_id)
-  GROUP BY printing_id
-;
+	LEFT OUTER JOIN PrintingFilters USING (filter_id)
+	GROUP BY printing_id
 
 CREATE VIEW AllPrintings AS SELECT
     face_name, set_code, set_name, icon_svg, collector_number, release_date,
