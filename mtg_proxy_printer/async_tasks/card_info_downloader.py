@@ -15,7 +15,7 @@
 
 import abc
 import time
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 import enum
 import functools
 import gzip
@@ -32,7 +32,7 @@ import typing
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Literal
+from typing import Literal, LiteralString, Any
 
 import ijson
 from PySide6.QtCore import Qt, Slot
@@ -401,6 +401,16 @@ class DatabaseImportTask(AsyncTask):
         while (batch := queue_.get()) is not None:
             yield from batch
 
+    def _read_optional_scalar_from_db(self, query: LiteralString, parameters: Sequence[Any] = ()):
+        """
+        Runs the query with the given parameters that is expected to return either a singular value or None,
+        and returns the result
+        """
+        if result := self.db.execute(query, parameters).fetchone():
+            return result[0]
+        else:
+            return None
+
     @with_database_write_lock()
     def run(self):
         item_count = self.source.item_count
@@ -592,12 +602,13 @@ class DatabaseImportTask(AsyncTask):
     @functools.cache
     def _insert_card(self, oracle_id: UUID, is_card: bool) -> int:
         db = self.db
-        if result := db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", (oracle_id,)).fetchone():
-            card_id, = result
-        else:
-            card_id = db.execute(
+        card_id = self._read_optional_scalar_from_db(
+            "SELECT card_id FROM Card WHERE oracle_id = ?\n",
+            (oracle_id,)
+        ) or db.execute(
                 "INSERT INTO Card (oracle_id, is_card) VALUES (?)\n",
-                (oracle_id, is_card)).lastrowid
+                (oracle_id, is_card)
+        ).lastrowid
         return card_id
 
     def _insert_set(self, card: CardDataType) -> int:
@@ -622,8 +633,9 @@ class DatabaseImportTask(AsyncTask):
             """),
             (set_code, card["set_name"], card["released_at"], card["set_id"])
         )
-        set_id, = db.execute('SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_code,)).fetchone()
-        return set_id
+        return self._read_optional_scalar_from_db(
+            'SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_code,)
+        )
 
     @functools.cache
     def _insert_face_name(self, printed_name: str, language_id: int) -> int:
