@@ -534,8 +534,11 @@ class DatabaseImportTask(AsyncTask):
         return index
 
     @functools.cache
-    def _read_printing_filters_from_db(self) -> dict[str, int]:
-        return dict(self.db.execute("SELECT filter_name, filter_id FROM DisplayFilters"))
+    def _read_available_printing_filters_from_db(self) -> dict[str, int]:
+        """
+        Returns all defined filters as a mapping from string key to internal filter_id.
+        """
+        return dict(self.db.execute("SELECT filter_name, filter_id FROM PrintingFilters"))
 
     def _parse_single_printing(self, card: CardDataType):
         oracle_id = _get_oracle_id(card)
@@ -546,8 +549,8 @@ class DatabaseImportTask(AsyncTask):
             self.set_code_cache[set_code] = set_id = self._insert_set(card)
         printing_id = self._insert_or_update_printing(card, card_id, set_id)
         filter_data = _get_card_filter_data(card)
-        self._update_card_filters(printing_id, filter_data)
-        new_face_ids = self._insert_card_faces(card, printing_id)
+        self._insert_or_update_card_filters(printing_id, filter_data)
+        new_face_ids = self._insert_printing_faces(card, printing_id)
         return new_face_ids
 
     def _clean_unused_data(self, new_face_ids: IntTuples):
@@ -684,7 +687,7 @@ class DatabaseImportTask(AsyncTask):
                 raise RuntimeError(f"Unexpected data: {check_result}")
         return printing_id
 
-    def _insert_card_faces(self, card: CardDataType, printing_id: int) -> IntTuples:
+    def _insert_printing_faces(self, card: CardDataType, printing_id: int) -> IntTuples:
         """Inserts all faces of the given card together with their names."""
         db = self.db
         face_ids: IntTuples = []
@@ -712,25 +715,25 @@ class DatabaseImportTask(AsyncTask):
                 face_ids.append(card_face_id)
         return face_ids
 
-    def _update_card_filters(self, printing_id: int, filter_data: dict[str, bool]):
-        printing_filter_ids = self._read_printing_filters_from_db()
+    def _insert_or_update_card_filters(self, printing_id: int, filter_data: dict[str, bool]):
+        printing_filter_ids = self._read_available_printing_filters_from_db()
         db = self.db
         active_printing_filters = set(
             (printing_id, printing_filter_ids[filter_name])
             for filter_name, filter_applies in filter_data.items() if filter_applies
         )
         stored_printing_filters: set[tuple[int, int]] = set(db.execute(
-            "SELECT printing_id, filter_id FROM PrintingDisplayFilter WHERE printing_id = ?",
+            "SELECT printing_id, filter_id FROM FilterAppliesTo WHERE printing_id = ?",
             (printing_id,)
         ))
         if new := (active_printing_filters - stored_printing_filters):
             db.executemany(
-                "INSERT INTO PrintingDisplayFilter (printing_id, filter_id) VALUES (?, ?)",
+                "INSERT INTO FilterAppliesTo (printing_id, filter_id) VALUES (?, ?)",
                 new
             )
         if removed := (stored_printing_filters - active_printing_filters):
             db.executemany(
-                "DELETE FROM PrintingDisplayFilter WHERE printing_id = ? AND filter_id = ?",
+                "DELETE FROM FilterAppliesTo WHERE printing_id = ? AND filter_id = ?",
                 removed
             )
 
