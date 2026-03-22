@@ -468,7 +468,6 @@ class DatabaseImportTask(AsyncTask):
         progress_report_step = total_count // 1000
         skipped_cards = 0
         index = 0
-        face_ids: IntTuples = []
         related_printings: list[RelatedPrintingData] = []
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
@@ -488,7 +487,7 @@ class DatabaseImportTask(AsyncTask):
                     ;"""), (card["id"], card["lang"], _get_oracle_id(card)))
                 continue
             try:
-                face_ids += self._parse_single_printing(card)
+                self._parse_single_printing(card)
                 related_printings += _get_related_cards(card)
             except Exception as e:
                 logger.exception(f"Error while parsing card at position {index}. {card=}")
@@ -506,9 +505,9 @@ class DatabaseImportTask(AsyncTask):
         self.task_begins.emit(
             5 + PrintingFilterUpdater.PROGRESS_STEP_COUNT,
             self.tr("Post-processing card data:", "Progress bar label text"))
-        self._insert_related_printings(related_printings)
+        self._insert_related_cards(related_printings)
         self.advance_progress.emit()
-        self._clean_unused_data(face_ids)
+        self._clean_unused_data()
         self.advance_progress.emit()
         db.execute("""\
         -- Remove previously unacceptable printings, if those were acceptable this import.
@@ -551,47 +550,30 @@ class DatabaseImportTask(AsyncTask):
         printing_id = self._insert_or_update_printing(card, card_id, set_id)
         filter_data = _get_card_filter_data(card)
         self._insert_or_update_card_filters(printing_id, filter_data)
-        new_face_ids = self._insert_or_update_printing_faces(card, printing_id)
-        return new_face_ids
+        self._insert_or_update_printing_faces(card, printing_id)
 
-    def _clean_unused_data(self, new_face_ids: IntTuples):
+    def _clean_unused_data(self):
         """Purges all excess data, like printings that are no longer in the import data."""
-        # Note: No cleanup for RelatedPrintings needed, as that is cleaned automatically by the database engine
         db = self.db
-        db_face_ids = frozenset(db.execute("SELECT card_face_id FROM CardFace\n"))
-        excess_face_ids = db_face_ids.difference(new_face_ids)
-        logger.info(f"Removing {len(excess_face_ids)} no longer existing card faces")
-        db.executemany("DELETE FROM CardFace WHERE card_face_id = ?\n", excess_face_ids)
-        db.execute("DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT CardFace.face_name_id FROM CardFace)\n")
-        db.execute("DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n")
-        db.execute('DELETE FROM MTGSet WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
-        db.execute("DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n")
-        db.execute(cached_dedent("""\
-        DELETE FROM PrintLanguage
-            WHERE language_id NOT IN (
-              SELECT FaceName.language_id
-              FROM FaceName
-            )
-        """))
 
-    def _insert_related_printings(self, related_printings: list[RelatedPrintingData]):
+    def _insert_related_cards(self, related_cards: list[RelatedPrintingData]):
         db = self.db
-        logger.debug(f"Inserting related printings data. {len(related_printings)} entries")
-        db.execute("DELETE FROM RelatedPrintings")
-        # Implementation note on "OR IGNORE below":
-        # On all cards with related printings, the related cards array also includes the identity/self reference.
+        logger.debug(f"Inserting related cards data. {len(related_cards)} entries")
+        db.execute("DELETE FROM RelatedCards")
+        # Implementation note on "INSERT OR IGNORE" below:
+        # On all cards with related cards, the related cards array also includes the identity/self reference.
         # For the relation, Scryfall uses the print-identifying scryfall id.
         # But on some cards, the self-reference is given by another printing.
         # So for example, the etched foil printing refers to itself in the related cards list by the regular printing.
         # And because the related card object only contains the scryfall id as the identification, the parser step
         # cannot identify these cases.
-        # If it happens, the entry should be ignored during the insert.
+        # If it happens, the constraint attached to table is violated, and the entry should be ignored during the insert.
         db.executemany(cached_dedent("""\
-        INSERT OR IGNORE INTO RelatedPrintings (card_id, related_id)
+        INSERT OR IGNORE INTO RelatedCards (card_id, related_id)
           SELECT card_id, related_id
           FROM (SELECT card_id FROM Printing WHERE scryfall_id = ?),
                (SELECT card_id AS related_id FROM Printing WHERE scryfall_id = ?)
-        """), related_printings)
+        """), related_cards)
 
     @functools.cache
     def _insert_card(self, oracle_id: UUID, is_card: bool) -> int:
@@ -677,47 +659,34 @@ class DatabaseImportTask(AsyncTask):
                 raise RuntimeError(f"Unexpected data: {check_result}")
         return printing_id
 
-    def _insert_or_update_printing_faces(self, card: CardDataType, printing_id: int) -> IntTuples:
+    def _insert_or_update_printing_faces(self, card: CardDataType, printing_id: int):
         """Inserts all faces of the given card together with their names."""
         db = self.db
         face_ids: IntTuples = []
         check_query = cached_dedent("""\
         SELECT (face_name <> ? OR png_image_uri <> ?) AS needs_update -- _insert_or_update_printing_faces()
+          FROM PrintingFace
           WHERE printing_id = ? 
             AND is_front = ?
         """)
         for face in _get_card_faces(card):
-            check_parameters = face.printed_face_name, face.image_uri, printing_id, face.is_front
-            match self._read_optional_scalar_from_db(check_query, check_parameters):
+            parameters = face.printed_face_name, face.image_uri, printing_id, face.is_front
+            match self._read_optional_scalar_from_db(check_query, parameters):
                 case None:
-                    pass  # TODO
+                    db.execute(cached_dedent("""\
+                    INSERT INTO PrintingFace (face_name, png_image_uri, printing_id, is_front)
+                      VALUES                 (?,         ?,             ?,           ?)
+                      """), parameters)
                 case 1:
-                    pass  # TODO
+                    db.execute(cached_dedent("""\
+                    UPDATE PrintingFace
+                      SET   face_name = ?, png_image_uri = ? 
+                      WHERE printing_id = ? AND is_front = ?
+                      """), parameters)
                 case 0:
                     continue  # Everything already present and up-to-date
                 case _:
                     raise RuntimeError(f"Unexpected data retuned from query: {check_query}")
-            card_face_id: tuple[int] | None = db.execute(
-                "SELECT card_face_id FROM CardFace WHERE face_name_id = ? AND printing_id = ? AND is_front = ?\n",
-                (face_name_id, printing_id, face.is_front)).fetchone()
-            if card_face_id is None:
-                card_face_id = db.execute(
-                    cached_dedent("""\
-                    INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
-                        VALUES (?, ?, ?, ?, ?)
-                    """),
-                    (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
-                ).lastrowid,
-            elif db.execute(
-                    "SELECT png_image_uri <> ? OR face_number <> ? FROM CardFace WHERE card_face_id = ?\n",
-                    (face.image_uri, face.face_number, card_face_id[0])).fetchone()[0]:
-                db.execute(
-                    "UPDATE CardFace SET png_image_uri = ?, face_number = ? WHERE card_face_id = ?\n",
-                    (face.image_uri, face.face_number, card_face_id[0]),
-                )
-            if card_face_id is not None:
-                face_ids.append(card_face_id)
-        return face_ids
 
     def _insert_or_update_card_filters(self, printing_id: int, filter_data: dict[str, bool]):
         printing_filter_ids = self._read_available_printing_filters_from_db()
