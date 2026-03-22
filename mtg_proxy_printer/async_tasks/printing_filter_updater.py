@@ -178,7 +178,7 @@ class PrintingFilterUpdater(AsyncTask):
     def _update_set_code_filters_in_db(self) -> bool:
         old_set_filter_in_db = self.get_mtgset_filters_enabled_in_db()
         new_set_filter_in_config = self.get_configured_set_code_filters()
-        if new_set_filter_in_config != old_set_filter_in_db:
+        if new_set_filter_in_config == old_set_filter_in_db:
             logger.debug("Set code filters unchanged.")
             return False
         logger.info("Set code filter changed in the settings, update the database.")
