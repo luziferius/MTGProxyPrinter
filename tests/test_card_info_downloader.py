@@ -47,9 +47,9 @@ class DatabasePrintingData(NamedTuple):
 
 class DatabaseCardFaceData(NamedTuple):
     """Rows stored in the CardFace relation"""
+    face_name: str
     image_uri: str
     is_front: bool
-    face_number: int
 
 
 class DatabaseSetData(NamedTuple):
@@ -136,11 +136,12 @@ class TestCaseData:
         if faces := card.get("card_faces"):
             result = []
             for face in faces:
-                name = face.get("printed_name", face["name"])
+                name = face.get("printed_name") or face["name"]
                 images = card.get("image_uris") or face["image_uris"]
                 result.append(FaceData(name, (png_uri := images["png"]), "/front/" in png_uri))
             return result
-        return [FaceData(card.get("printed_name", card["name"]), card["image_uris"]["png"], True)]
+        else:
+            return [FaceData(card.get("printed_name", card["name"]), card["image_uris"]["png"], True)]
 
     @property
     def set(self) -> DatabaseSetData:
@@ -154,11 +155,10 @@ class TestCaseData:
     def db_set(self):
         return self.set
 
-    def db_card_face(self) -> list[DatabaseCardFaceData]:
+    def db_printing_face(self) -> list[DatabaseCardFaceData]:
         return [
-            DatabaseCardFaceData(
-                face.image_uri, face.is_front, face_number)
-            for face_number, face in enumerate(self.face_data)
+            DatabaseCardFaceData(face.name, face.image_uri, face.is_front)
+            for face in self.face_data
         ]
 
     def db_all_printings(self) -> list[DatabaseVisiblePrintingsData]:
@@ -230,25 +230,31 @@ def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *,
     assert_that(
         data, contains_exactly(test_case.db_printing()),
         f"Printing relation contains unexpected data: {data}")
+
     assert_that(
-        bool(card_db.db.execute(
+        card_db.db.execute(
             "SELECT is_visible FROM Printing WHERE scryfall_id = ?\n",
-            (test_case.scryfall_id,)).fetchone()[0]),
-        is_(is_visible)
+            (test_case.scryfall_id,)).fetchall(),
+        contains_exactly(contains_exactly(is_visible)),
+        "Wrong Printing visibility"
     )
 
 
 def _assert_printing_face_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks png_image_uri, is_front, face_number"""
-    data: Sequence[DatabaseCardFaceData] = [
-        DatabaseCardFaceData()
-        for _
-        in card_db.db.execute("SELECT png_image_uri, is_front FROM PrintingFace")
+    data: Sequence[tuple[str, str, bool, int, int | None, int]] = [
+        (face_name, png_image_uri, bool(is_front), usage_count, last_use_timestamp, currently_downloaded)
+        for face_name, png_image_uri, is_front, usage_count, last_use_timestamp, currently_downloaded
+        in card_db.db.execute("""\
+        SELECT face_name, png_image_uri, is_front, usage_count, last_use_timestamp, currently_downloaded
+          FROM PrintingFace""")
     ]
+    expected = [contains_exactly(*face, 0, none(), 0) for face in test_case.db_printing_face()]
     assert_that(
         data,
-        contains_inanyorder(*test_case.db_card_face()),
-        f"CardFace relation contains unexpected data: {data}")
+        contains_inanyorder(*expected),
+        f"CardFace relation contains unexpected data: {data}"
+    )
 
 
 def _assert_visible_printings_contains(card_db: CardDatabase, test_case: TestCaseData):
@@ -303,7 +309,7 @@ def test_test_case_data():
             "face_data": contains_exactly(
                 FaceData("Atraxa, Praetors' Voice", "https://cards.scryfall.io/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True)
             ),
-            "set": DatabaseSetData("oc16", "Commander 2016 Oversized", "https://scryfall.com/sets/oc16?utm_source=api", "2016-11-11")
+            "set": DatabaseSetData("oc16", "Commander 2016 Oversized", round(datetime.datetime.fromisoformat("2016-11-11").timestamp()), UUID("caa8f8c4-d0bf-4848-9c66-e2fcabd1585c"))
         })
     )
 

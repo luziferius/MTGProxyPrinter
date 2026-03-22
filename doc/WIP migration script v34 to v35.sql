@@ -31,7 +31,7 @@ CREATE TABLE MTGSet_new (
   set_scryfall_id TEXT NOT NULL UNIQUE
 );
 INSERT INTO MTGSet_new (set_id, set_code, set_name, release_date,            set_scryfall_id)
-  SELECT                set_id, set_code, set_name, unixepoch(release_date), set_code
+  SELECT                set_id, set_code, set_name, unixepoch(release_date, 'utc'), set_code
   FROM MTGSet;
 DROP TABLE MTGSet;
 ALTER TABLE MTGSet_new RENAME TO MTGSet;
@@ -84,7 +84,7 @@ INSERT INTO PrintingFace
          usage_count,                 last_use_timestamp,
          face_name)
   SELECT cf.printing_id, cf.is_front, cf.png_image_uri,
-         coalesce(lu.usage_count, 0), unixepoch(lu.last_use_date) AS last_use_timestamp,
+         coalesce(lu.usage_count, 0), unixepoch(lu.last_use_date, 'utc') AS last_use_timestamp,
          group_concat(card_name, ' // ' ORDER BY face_number asc) AS face_name
   FROM CardFace AS cf
   JOIN Printing USING (printing_id)
