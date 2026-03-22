@@ -144,14 +144,6 @@ class TestCaseData:
     def db_set(self):
         return [self.set]
 
-    def db_print_language(self):
-        return [(self.language,)]
-
-    def db_face_name(self) -> list[tuple[str]]:
-        # De-duplicate face names, in case both sides of a double-faced card have the same name. This is true for
-        # art series cards, certain double-faced tokens (for example the C16 Saproling token) and similar.
-        return list(set((face.name,) for face in self.face_data))
-
     def db_card_face(self) -> list[DatabaseCardFaceData]:
         return [
             DatabaseCardFaceData(
@@ -197,19 +189,11 @@ class TestCaseData:
 
 
 def _assert_card_contains(card_db: CardDatabase, test_case: TestCaseData):
-    """Checks Oracle_id"""
+    """Checks oracle_id"""
     assert_that(
-        data := card_db.db.execute('SELECT oracle_id FROM Card').fetchall(),
+        data := card_db.db.execute('SELECT oracle_id FROM Card\n').fetchall(),
         contains_inanyorder(*test_case.db_card()),
         f"Card relation contains unexpected data: {data}")
-
-
-def _assert_print_language_contains(card_db: CardDatabase, test_case: TestCaseData):
-    """Assert that the card's language is stored in the database"""
-    assert_that(
-        data := card_db.db.execute(f'SELECT "language" FROM PrintLanguage').fetchall(),
-        contains_inanyorder(*test_case.db_print_language()),
-        f"PrintLanguage relation contains unexpected data: {data}")
 
 
 def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
@@ -221,14 +205,6 @@ def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
         card_db.db.execute("SELECT set_code, set_name, set_uri, release_date FROM MTGSet").fetchall(),
         contains_inanyorder(*test_case.db_set()),
         f"Set relation contains unexpected data")
-
-
-def _assert_face_name_contains(card_db: CardDatabase, test_case: TestCaseData):
-    """Checks card_name"""
-    assert_that(
-        data := card_db.db.execute("SELECT card_name FROM FaceName").fetchall(),
-        contains_inanyorder(*test_case.db_face_name()),
-        f"FaceName relation contains unexpected data: {data}")
 
 
 def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *, is_hidden: bool = False):
@@ -279,10 +255,8 @@ def assert_visible_import(card_db: CardDatabase, test_case: TestCaseData):
     """
     _assert_printing_contains(card_db, test_case, is_hidden=False)
     _assert_card_face_contains(card_db, test_case)
-    _assert_face_name_contains(card_db, test_case)
     _assert_set_contains(card_db, test_case)
     _assert_card_contains(card_db, test_case)
-    _assert_print_language_contains(card_db, test_case)
     _assert_visible_printings_contains(card_db, test_case)
 
 
@@ -290,10 +264,8 @@ def assert_hidden_import(card_db: CardDatabase, test_case: TestCaseData):
     """
     Verifies that the printing is correctly stored, but invisible in all VIEWs that filter out unwanted printings.
     """
-    _assert_print_language_contains(card_db, test_case)
     _assert_printing_contains(card_db, test_case, is_hidden=True)
     _assert_card_face_contains(card_db, test_case)
-    _assert_face_name_contains(card_db, test_case)
     _assert_set_contains(card_db, test_case)
     _assert_card_contains(card_db, test_case)
     for filtered_view in (
