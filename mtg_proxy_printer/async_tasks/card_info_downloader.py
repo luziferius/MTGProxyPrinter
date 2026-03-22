@@ -555,6 +555,12 @@ class DatabaseImportTask(AsyncTask):
     def _clean_unused_data(self):
         """Purges all excess data, like printings that are no longer in the import data."""
         db = self.db
+        db.execute("DELETE FROM MTGSet WHERE MTGSet.set_id NOT IN (SELECT Printing.set_id FROM Printing)")
+        db.execute("DELETE FROM Card WHERE Card.card_id NOT IN (SELECT Printing.card_id FROM Printing)")
+        db.execute(cached_dedent("""\
+        DELETE FROM Printing WHERE Printing.printing_id NOT IN (
+          SELECT PrintingFace.printing_id FROM PrintingFace)
+          """))
 
     def _insert_related_cards(self, related_cards: list[RelatedPrintingData]):
         db = self.db
@@ -590,65 +596,76 @@ class DatabaseImportTask(AsyncTask):
     def _insert_set(self, card: CardDataType) -> int:
         db = self.db
         set_code = card["set"]
-        db.execute(cached_dedent(
-            """\
-            INSERT INTO MTGSet (set_code, set_name, release_date, set_scryfall_id)
-                VALUES (?, ?, unixepoch(?, 'utc'), ?)
-                ON CONFLICT (set_code) DO
-                UPDATE SET
-                  set_name = excluded.set_name,
-                  release_date = excluded.release_date,
-                  set_scryfall_id  = excluded.set_scryfall_id
-                WHERE set_name <> excluded.set_name
-                  -- Wizards started to add “The List” cards to older sets,
-                  -- i.e. reusing the original set code for newer
-                  -- reprints of cards in that set. This greater than
-                  -- searches for the oldest release date for a given set.
-                  OR release_date > unixepoch(excluded.release_date, 'utc')
-                  OR set_scryfall_id <> excluded.set_scryfall_id
-            """),
-            (set_code, card["set_name"], card["released_at"], card["set_id"])
-        )
-        return self._read_optional_scalar_from_db(
-            'SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_code,)
-        )
+        query = cached_dedent("""\
+        SELECT set_ID, ( -- _insert_set()
+          set_name <> ?
+          OR release_date > unixepoch(?, 'utc')
+          OR set_scryfall_id <> ?
+        ) AS needs_update
+        FROM MTGSet WHERE set_code = ?
+        """)
+        parameters = [ card["set_name"], card["released_at"], card["set_id"], set_code]
+        check_result = db.execute(query, parameters).fetchone()
+        match check_result:
+            case set_id, 0:
+                pass  # Already present and nothing changed
+            case None:
+                set_id = db.execute(cached_dedent("""\
+                        INSERT INTO MTGSet  -- _insert_set()
+                               (set_name, release_date,        set_scryfall_id, set_code)
+                        VALUES (?,        unixepoch(?, 'utc'), ?,               ?)
+                        ON CONFLICT (set_scryfall_id) DO UPDATE 
+                          SET set_code = excluded.set_code 
+                          WHERE set_scryfall_id = excluded.set_scryfall_id
+                        """), parameters).lastrowid
+            case set_id, 1:
+                parameters[-1] = set_id
+                db.execute(
+                    cached_dedent("""\
+                            UPDATE MTGSet -- _insert_set()
+                              SET (set_name, release_date,        set_scryfall_id)
+                                = (?,        unixepoch(?, 'utc'), ?)
+                              WHERE set_id = ?
+                            """),
+                    parameters)
+            case _:
+                raise RuntimeError(f"Unexpected data: {check_result}")
+        return set_id
 
     def _insert_or_update_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
         db = self.db
         is_dfc = "card_faces" in card and "image_uris" not in card
         query = cached_dedent("""\
         SELECT printing_id, ( -- _insert_or_update_printing()
-          set_id <> ?
-          OR collector_number <> ? 
-          OR language <> ?
-          OR card_id <> ?
-          OR is_oversized <> ? 
-          OR is_highres_image <> ?
-          OR is_dfc <> ?
-        ) AS needs_update
-        FROM Printing WHERE scryfall_id = ?
+              set_id <> ?
+              OR collector_number <> ? 
+              OR language <> ?
+              OR card_id <> ?
+              OR is_oversized <> ? 
+              OR is_highres_image <> ?
+              OR is_dfc <> ?
+          ) AS needs_update
+          FROM Printing
+          WHERE scryfall_id = ?
         """)
-        parameters = (
-            set_id, card["collector_number"], card["lang"], card_id, 
-            card["oversized"], card["highres_image"], is_dfc, card["id"])
+        parameters = [
+            set_id, card["collector_number"], card["lang"], card_id,
+            card["oversized"], card["highres_image"], is_dfc, card["id"]]
         check_result = db.execute(query, parameters).fetchone()
         match check_result:
             case None:                
-                parameters = (set_id, card["collector_number"], card["lang"], card["id"], 
-                              card_id, card["oversized"], card["highres_image"], is_dfc)
                 printing_id = db.execute(cached_dedent("""\
                 INSERT INTO Printing  -- _insert_or_update_printing()
-                       (set_id, collector_number, language, scryfall_id, card_id, is_oversized, is_highres_image, is_dfc)
-                VALUES (?,      ?,                ?,        ?,           ?,       ?,            ?,                ?)
+                       (set_id, collector_number, language, card_id, is_oversized, is_highres_image, is_dfc, scryfall_id)
+                VALUES (?,      ?,                ?,        ?,       ?,            ?,                ?,      ?)
                 """), parameters).lastrowid
             case printing_id, 1:
-                parameters = (set_id, card["collector_number"], card["lang"], card["id"],
-                              card_id, card["oversized"], card["highres_image"], is_dfc, printing_id)
+                parameters.append(printing_id)
                 db.execute(
                     cached_dedent("""\
                     UPDATE Printing -- _insert_or_update_printing()
-                      SET set_id = ?, collector_number = ?, language = ?, scryfall_id = ?,
-                      card_id = ?, is_oversized = ?, is_highres_image, is_dfc = ?
+                      SET (set_id, collector_number, language, card_id, is_oversized, is_highres_image, is_dfc, scryfall_id)
+                        = (?,      ?,                ?,        ?,       ?,            ?,                ?,      ?)
                       WHERE printing_id = ?
                     """),
                     parameters)
@@ -661,7 +678,6 @@ class DatabaseImportTask(AsyncTask):
     def _insert_or_update_printing_faces(self, card: CardDataType, printing_id: int):
         """Inserts all faces of the given card together with their names."""
         db = self.db
-        face_ids: IntTuples = []
         check_query = cached_dedent("""\
         SELECT (face_name <> ? OR png_image_uri <> ?) AS needs_update -- _insert_or_update_printing_faces()
           FROM PrintingFace
