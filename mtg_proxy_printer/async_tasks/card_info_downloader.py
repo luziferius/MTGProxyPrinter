@@ -593,7 +593,7 @@ class DatabaseImportTask(AsyncTask):
         db.execute(cached_dedent(
             """\
             INSERT INTO MTGSet (set_code, set_name, release_date, set_scryfall_id)
-                VALUES (?, ?, ?, ?)
+                VALUES (?, ?, unixepoch(?), ?)
                 ON CONFLICT (set_code) DO
                 UPDATE SET
                   set_name = excluded.set_name,
@@ -604,7 +604,7 @@ class DatabaseImportTask(AsyncTask):
                   -- i.e. reusing the original set code for newer
                   -- reprints of cards in that set. This greater than
                   -- searches for the oldest release date for a given set.
-                  OR release_date > excluded.release_date
+                  OR release_date > unixepoch(excluded.release_date)
                   OR set_scryfall_id <> excluded.set_scryfall_id
             """),
             (set_code, card["set_name"], card["released_at"], card["set_id"])
@@ -612,7 +612,6 @@ class DatabaseImportTask(AsyncTask):
         return self._read_optional_scalar_from_db(
             'SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_code,)
         )
-
 
     def _insert_or_update_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
         db = self.db
@@ -676,13 +675,13 @@ class DatabaseImportTask(AsyncTask):
                     db.execute(cached_dedent("""\
                     INSERT INTO PrintingFace (face_name, png_image_uri, printing_id, is_front)
                       VALUES                 (?,         ?,             ?,           ?)
-                      """), parameters)
+                    """), parameters)
                 case 1:
                     db.execute(cached_dedent("""\
                     UPDATE PrintingFace
                       SET   face_name = ?, png_image_uri = ? 
                       WHERE printing_id = ? AND is_front = ?
-                      """), parameters)
+                    """), parameters)
                 case 0:
                     continue  # Everything already present and up-to-date
                 case _:

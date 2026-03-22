@@ -15,7 +15,9 @@
 
 
 import dataclasses
+import datetime
 import sqlite3
+from collections.abc import Sequence
 from typing import NamedTuple
 import unittest.mock
 from unittest.mock import MagicMock
@@ -36,9 +38,11 @@ from .helpers import assert_model_is_empty, fill_card_database_with_json_card, l
 class DatabasePrintingData(NamedTuple):
     """Rows stored in the Printing relation"""
     collector_number: str
+    language: str
     scryfall_id: UUID
     is_oversized: bool
-    highres_image: bool
+    is_highres_image: bool
+    is_dfc: bool
 
 
 class DatabaseCardFaceData(NamedTuple):
@@ -52,8 +56,8 @@ class DatabaseSetData(NamedTuple):
     """Row data stored in the Set relation"""
     set_code: str
     set_name: str
-    set_uri: str
-    release_date: str
+    release_date: int
+    set_scryfall_id: UUID
 
 
 class DatabaseVisiblePrintingsData(NamedTuple):
@@ -118,6 +122,11 @@ class TestCaseData:
         return card.get("oracle_id") or card["card_faces"][0]["oracle_id"]
 
     @property
+    def is_dfc(self) -> bool:
+        card = self.json_dict
+        return "card_faces" in card and "image_uris" not in card
+
+    @property
     def is_oversized(self) -> bool:
         return self.json_dict["oversized"]
 
@@ -136,13 +145,14 @@ class TestCaseData:
     @property
     def set(self) -> DatabaseSetData:
         card = self.json_dict
-        return DatabaseSetData(card["set"], card["set_name"], card["scryfall_set_uri"], card["released_at"])
+        release_date = round(datetime.datetime.fromisoformat(card["released_at"]).timestamp())
+        return DatabaseSetData(card["set"], card["set_name"], release_date, card["set_id"])
 
-    def db_card(self) -> list[tuple[str]]:
-        return [(self.oracle_id,)]
+    def db_card(self) -> tuple[str]:
+        return self.oracle_id,
 
     def db_set(self):
-        return [self.set]
+        return self.set
 
     def db_card_face(self) -> list[DatabaseCardFaceData]:
         return [
@@ -159,10 +169,9 @@ class TestCaseData:
             for face in self.face_data
         ]
 
-    def db_printing(self) -> list[DatabasePrintingData]:
-        return [
-            DatabasePrintingData(self.collector_number, self.scryfall_id, self.is_oversized, self.highres_image)
-        ]
+    def db_printing(self) -> DatabasePrintingData:
+        return DatabasePrintingData(
+            self.collector_number, self.language, self.scryfall_id, self.is_oversized, self.highres_image, self.is_dfc)
 
     def as_card(self, face_id: int = 1) -> Card:
         cd = self.json_dict
@@ -190,9 +199,9 @@ class TestCaseData:
 
 def _assert_card_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks oracle_id"""
+    data: Sequence[tuple[str]] = card_db.db.execute('SELECT oracle_id FROM Card\n').fetchall()
     assert_that(
-        data := card_db.db.execute('SELECT oracle_id FROM Card\n').fetchall(),
-        contains_inanyorder(*test_case.db_card()),
+        data,contains_exactly(test_case.db_card()),
         f"Card relation contains unexpected data: {data}")
 
 
@@ -201,36 +210,43 @@ def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
     Asserts that the card's set is stored in the database.
     Checks columns set_code, set_name, set_uri, release_date
     """
+    data: Sequence[DatabaseSetData] = card_db.db.execute(
+        "SELECT set_code, set_name, release_date, set_scryfall_id FROM MTGSet\n").fetchall()
     assert_that(
-        card_db.db.execute("SELECT set_code, set_name, set_uri, release_date FROM MTGSet").fetchall(),
-        contains_inanyorder(*test_case.db_set()),
-        f"Set relation contains unexpected data")
+        data, contains_exactly(test_case.db_set()),
+        "Set relation contains unexpected data")
 
 
-def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *, is_hidden: bool = False):
+def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *, is_visible: bool = True):
     """Checks collector_number, scryfall_id, is_oversized, highres_image"""
+    data: Sequence[DatabasePrintingData] = [
+        DatabasePrintingData(collector_number, language, scryfall_id, bool(is_oversized), bool(is_highres_image), bool(is_dfc))
+        for collector_number, language, scryfall_id, is_oversized, is_highres_image, is_dfc
+        in card_db.db.execute("""\
+        SELECT collector_number, language, scryfall_id, 
+               is_oversized, is_highres_image, is_dfc
+          FROM Printing""")
+    ]
     assert_that(
-        data := [
-            (collector_number, scryfall_id, bool(is_oversized), bool(highres_image))
-            for collector_number, scryfall_id, is_oversized, highres_image
-            in card_db.db.execute(
-                "SELECT collector_number, scryfall_id, is_oversized, highres_image FROM Printing")
-         ],
-        contains_inanyorder(*test_case.db_printing()),
+        data, contains_exactly(test_case.db_printing()),
         f"Printing relation contains unexpected data: {data}")
-    for item in data:
-        assert_that(
-            bool(card_db.db.execute(
-                "SELECT is_hidden FROM Printing WHERE scryfall_id = ?\n",
-                (item[1],)).fetchone()[0]),
-            is_(is_hidden)
-        )
-
-
-def _assert_card_face_contains(card_db: CardDatabase, test_case: TestCaseData, relation_name: str = "CardFace"):
-    """Checks png_image_uri, is_front, face_number"""
     assert_that(
-        data := card_db.db.execute(f"SELECT png_image_uri, is_front, face_number FROM {relation_name}").fetchall(),
+        bool(card_db.db.execute(
+            "SELECT is_visible FROM Printing WHERE scryfall_id = ?\n",
+            (test_case.scryfall_id,)).fetchone()[0]),
+        is_(is_visible)
+    )
+
+
+def _assert_printing_face_contains(card_db: CardDatabase, test_case: TestCaseData):
+    """Checks png_image_uri, is_front, face_number"""
+    data: Sequence[DatabaseCardFaceData] = [
+        DatabaseCardFaceData()
+        for _
+        in card_db.db.execute("SELECT png_image_uri, is_front FROM PrintingFace")
+    ]
+    assert_that(
+        data,
         contains_inanyorder(*test_case.db_card_face()),
         f"CardFace relation contains unexpected data: {data}")
 
@@ -253,8 +269,8 @@ def assert_visible_import(card_db: CardDatabase, test_case: TestCaseData):
     """
     Verifies that the printing is both correctly stored, and visible in all VIEWs that filter out unwanted printings.
     """
-    _assert_printing_contains(card_db, test_case, is_hidden=False)
-    _assert_card_face_contains(card_db, test_case)
+    _assert_printing_contains(card_db, test_case, is_visible=True)
+    _assert_printing_face_contains(card_db, test_case)
     _assert_set_contains(card_db, test_case)
     _assert_card_contains(card_db, test_case)
     _assert_visible_printings_contains(card_db, test_case)
@@ -264,8 +280,8 @@ def assert_hidden_import(card_db: CardDatabase, test_case: TestCaseData):
     """
     Verifies that the printing is correctly stored, but invisible in all VIEWs that filter out unwanted printings.
     """
-    _assert_printing_contains(card_db, test_case, is_hidden=True)
-    _assert_card_face_contains(card_db, test_case)
+    _assert_printing_contains(card_db, test_case, is_visible=False)
+    _assert_printing_face_contains(card_db, test_case)
     _assert_set_contains(card_db, test_case)
     _assert_card_contains(card_db, test_case)
     for filtered_view in (

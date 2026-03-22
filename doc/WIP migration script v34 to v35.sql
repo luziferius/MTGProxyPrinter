@@ -25,13 +25,13 @@ CREATE TABLE MTGSet_new (
   set_id   INTEGER PRIMARY KEY NOT NULL,
   set_code TEXT NOT NULL UNIQUE CHECK (set_code <> ''),
   set_name TEXT NOT NULL,
-  release_date TEXT NOT NULL,
+  release_date INTEGER NOT NULL,
   set_filter_active INTEGER NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
   icon_svg TEXT CHECK (icon_svg <> ''),
   set_scryfall_id TEXT NOT NULL UNIQUE
 );
-INSERT INTO MTGSet_new (set_id, set_code, set_name, release_date, set_scryfall_id)
-  SELECT                set_id, set_code, set_name, release_date, set_code
+INSERT INTO MTGSet_new (set_id, set_code, set_name, release_date,            set_scryfall_id)
+  SELECT                set_id, set_code, set_name, unixepoch(release_date), set_code
   FROM MTGSet;
 DROP TABLE MTGSet;
 ALTER TABLE MTGSet_new RENAME TO MTGSet;

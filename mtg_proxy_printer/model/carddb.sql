@@ -71,7 +71,7 @@ CREATE TABLE MTGSet (
   set_id   INTEGER PRIMARY KEY NOT NULL,
   set_code TEXT NOT NULL UNIQUE CHECK (set_code <> ''),
   set_name TEXT NOT NULL,
-  release_date TEXT NOT NULL,
+  release_date INTEGER NOT NULL,
   set_filter_active INTEGER NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
   icon_svg TEXT CHECK (icon_svg <> ''),
   set_scryfall_id TEXT NOT NULL UNIQUE

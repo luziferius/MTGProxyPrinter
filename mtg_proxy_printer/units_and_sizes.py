@@ -21,7 +21,7 @@ import enum
 import functools
 import re
 import sqlite3
-from typing import Type, NamedTuple, TypedDict, NotRequired, TypeVar, Any
+from typing import Type, NamedTuple, TypedDict, NotRequired, TypeVar, Any, TYPE_CHECKING
 
 from pint import UnitRegistry, Context
 from PySide6.QtCore import QSize, QObject
@@ -75,7 +75,7 @@ unit_registry, RESOLUTION = _setup_units()
 DEFAULT_SAVE_SUFFIX = "mtgproxies"
 
 # typing shortcuts
-ShouldBeUUID = WEB_URI = API_URI = str
+WEB_URI = API_URI = str
 Colors = list[str]
 StringSet = set[str]
 OptStr = str | None
@@ -121,6 +121,12 @@ class UUID(str):
         if cls.uuid_re.fullmatch(new):
             return new
         raise ValueError(f"Not a proper UUID: '{new}'")
+
+
+if TYPE_CHECKING:
+    ShouldBeUUID = UUID
+else:
+    ShouldBeUUID = str
 
 
 class CardSize(NamedTuple):
