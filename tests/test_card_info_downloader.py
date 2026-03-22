@@ -62,15 +62,19 @@ class DatabaseSetData(NamedTuple):
 
 class DatabaseVisiblePrintingsData(NamedTuple):
     """Row retrieved via VisiblePrintings view"""
-    name: str
-    set_code: str
-    language: str
-    collector_number: str
-    scryfall_id: UUID
-    highres_image: bool
-    image_uri: str
+    face_name: str
     is_front: bool
+    set_code: str
+    set_name: str
+    collector_number: str
+    release_date: int
+    scryfall_id: UUID
+    image_uri: str
+    oracle_id: UUID
+    language: str
     is_oversized: bool
+    is_highres_image: bool
+    is_dfc: bool
 
 
 @dataclasses.dataclass(frozen=True)
@@ -162,10 +166,13 @@ class TestCaseData:
         ]
 
     def db_all_printings(self) -> list[DatabaseVisiblePrintingsData]:
+        set_ = self.set
         return [
             DatabaseVisiblePrintingsData(
-                face.name, self.set.set_code, self.language, self.collector_number, self.scryfall_id,
-                self.highres_image, face.image_uri, face.is_front, self.is_oversized)
+                face.name, face.is_front, set_.set_code, set_.set_name, self.collector_number, set_.release_date,
+                self.scryfall_id,
+                face.image_uri, self.oracle_id, self.language, self.is_oversized, self.highres_image, self.is_dfc
+            )
             for face in self.face_data
         ]
 
@@ -260,15 +267,18 @@ def _assert_printing_face_contains(card_db: CardDatabase, test_case: TestCaseDat
 def _assert_visible_printings_contains(card_db: CardDatabase, test_case: TestCaseData):
     """
     Checks
-      card_name, set_code, "language", collector_number, scryfall_id,
-      highres_image, png_image_uri, is_front, is_oversized
+      face_name, set_code, set_name, collector_number, release_date, scryfall_id,
+      png_image_uri, oracle_id, "language", is_front, is_oversized, is_highres_image, is_dfc
     """
+    data = card_db.db.execute('''\
+    SELECT face_name, is_front, set_code, set_name, collector_number, release_date, scryfall_id, 
+     png_image_uri, oracle_id, "language", is_oversized, is_highres_image, is_dfc
+      FROM VisiblePrintings
+    ''').fetchall()
     assert_that(
-        data := card_db.db.execute(
-            'SELECT card_name, set_code, "language", collector_number, scryfall_id, highres_image, '
-            'png_image_uri, is_front, is_oversized FROM VisiblePrintings').fetchall(),
-        contains_inanyorder(*test_case.db_all_printings()),
-        f"VisiblePrintings relation contains unexpected data: {data}")
+        data, contains_inanyorder(*test_case.db_all_printings()),
+        f"VisiblePrintings relation contains unexpected data: {data}"
+    )
 
 
 def assert_visible_import(card_db: CardDatabase, test_case: TestCaseData):
