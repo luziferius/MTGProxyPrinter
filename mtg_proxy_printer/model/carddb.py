@@ -755,10 +755,12 @@ class CardDatabase(QObject):
         Runs the query with the given parameters that is expected to return either a singular value or None,
         and returns the result
         """
-        if result := self.db.execute(query, parameters).fetchone():
-            return result[0]
-        else:
-            return None
+        match self.db.execute(query, parameters).fetchone():
+            case result,:
+                return result
+            case _, *_:
+                raise RuntimeError(f"BUG: {query} result was not a scalar")
+        return None
 
     def _read_scalar_list_from_db(
             self, query: LiteralString, parameters: Sequence[Any] = ()) -> list[Any]:
