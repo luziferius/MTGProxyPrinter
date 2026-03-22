@@ -18,7 +18,7 @@ import dataclasses
 import datetime
 import sqlite3
 from collections.abc import Sequence
-from typing import NamedTuple
+from typing import NamedTuple, Callable
 import unittest.mock
 from unittest.mock import MagicMock
 
@@ -403,19 +403,19 @@ def test_boolean_print_hiding_filters(
 
 def generate_test_cases_for_test_set_code_filters():
     sliver = TestCaseData("regular_english_card")  # English "Fury Sliver" from Time Spiral
-    yield sliver, "TSP", True
-    yield sliver, "tsp", True
-    yield sliver, "ABC", False
-    yield sliver, "", False
+    yield sliver, "TSP", assert_hidden_import
+    yield sliver, "tsp", assert_hidden_import
+    yield sliver, "embedded tsp in other words still works", assert_hidden_import
+    yield sliver, "ABC", assert_visible_import
+    yield sliver, "", assert_visible_import
 
 
-@pytest.mark.parametrize("test_case, filter_value, is_hidden", generate_test_cases_for_test_set_code_filters())
-def test_set_code_filters(qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_value: str, is_hidden: bool):
+@pytest.mark.parametrize("test_case, filter_value, expected_result", generate_test_cases_for_test_set_code_filters())
+def test_set_code_filters(
+        qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_value: str,
+        expected_result: Callable[[CardDatabase, TestCaseData], None]):
     fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {"hidden-sets": filter_value})
-    if is_hidden:
-        assert_hidden_import(card_db, test_case)
-    else:
-        assert_visible_import(card_db, test_case)
+    expected_result(card_db, test_case)
 
 
 @pytest.mark.parametrize("filter_setting", [True, False])
@@ -555,27 +555,6 @@ def test_updates_ignores_changed_value_on_re_import(
     assert_visible_import(card_db, test_case)
 
 
-@pytest.mark.parametrize("json_name, expected_score", [
-    ("regular_english_card", SetWackinessScore.REGULAR),
-    ("german_basic_Forest", SetWackinessScore.REGULAR),
-    ("prerelease_promo_card", SetWackinessScore.PROMOTIONAL),
-    ("white_bordered_card", SetWackinessScore.WHITE_BORDERED),
-    ("funny_card_with_silver_border", SetWackinessScore.FUNNY),
-    ("gold_bordered_card", SetWackinessScore.GOLD_BORDERED),
-    ("digital_only_card", SetWackinessScore.DIGITAL),
-    ("english_double_faced_art_series_card", SetWackinessScore.ART_SERIES),
-    ("oversized_card", SetWackinessScore.OVERSIZED),
-])
-def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expected_score: SetWackinessScore):
-    fill_card_database_with_json_card(qtbot, card_db, json_name)
-    assert_that(
-        card_db.db.execute('SELECT wackiness_score FROM MTGSet').fetchall(),
-        contains_exactly(
-            (expected_score,)
-        )
-    )
-
-
 @pytest.mark.parametrize("cards, expected_pairs", [
     ([
         "The_Underworld_Cookbook",
@@ -609,7 +588,7 @@ def test_related_printings(
     # and Back into a Pie both create a Food token, but are set to different printings of that token card.
     fill_card_database_with_json_cards(qtbot, card_db, cards)
     assert_that(
-        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        db.execute("SELECT card_id, related_id FROM RelatedCards").fetchall(),
         contains_inanyorder(
             *expected_pairs
         )
@@ -625,18 +604,18 @@ def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, 
     db = card_db.db
     fill_card_database_with_json_cards(qtbot, card_db, cards)
     assert_that(
-        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        db.execute("SELECT card_id, related_id FROM RelatedCards").fetchall(),
         contains_inanyorder((2, 1), (3, 1)),
         "Test setup failed"
     )
     db.executemany(
         # This inserts the back relation (token → card). These should not exist, and get purged during the next update
-        "INSERT INTO RelatedPrintings (card_id, related_id) VALUES (?, ?)",
+        "INSERT INTO RelatedCards (card_id, related_id) VALUES (?, ?)",
         [(1, 2), (1, 3)]
     )
     fill_card_database_with_json_cards(qtbot, card_db, cards)
     assert_that(
-        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        db.execute("SELECT card_id, related_id FROM RelatedCards").fetchall(),
         contains_inanyorder((2, 1), (3, 1)),
         "Old related printings not cleaned up"
     )

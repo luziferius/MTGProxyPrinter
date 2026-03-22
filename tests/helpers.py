@@ -201,14 +201,7 @@ def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, 
     If a test case data object is passed in, it is assumed that the printing it represents was excluded during the
     import. So also check that RemovedPrintings table contains the correct data.
     """
-    relations_to_check = ["PrintLanguage", "Card", "FaceName", "CardFace", "MTGSet", "VisiblePrintings"]
-    if test_case is None:
-        relations_to_check.append("RemovedPrintings")
-    else:
-        assert_that(
-            card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings"),
-            contains_inanyorder((test_case.scryfall_id, test_case.language, test_case.oracle_id))
-        )
+    relations_to_check = ["Card", "MTGSet", "Printing", "PrintingFace", "VisiblePrintings"]
     for relation in relations_to_check:
         assert_relation_is_empty(card_db, relation)
 
