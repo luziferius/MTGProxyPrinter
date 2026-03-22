@@ -120,8 +120,8 @@ class PrintingFilterUpdater(AsyncTask):
             logger.info("Printing filters added or changed in the settings, update the database.")
             db.executemany(
                 cached_dedent("""\
-                    INSERT INTO DisplayFilters (filter_name, filter_active) -- store_current_printing_filters()
-                      VALUES (?, ?)
+                    INSERT INTO PrintingFilters (filter_name, filter_active) -- store_current_printing_filters()
+                      VALUES                    (?,           ?)
                       ON CONFLICT (filter_name) DO UPDATE
                         SET filter_active = excluded.filter_active
                     """),
@@ -136,7 +136,7 @@ class PrintingFilterUpdater(AsyncTask):
         self.advance_progress.emit()
         self._update_cached_data()
         self.advance_progress.emit()
-        update_ui |= changed_or_new_filters or self.force_update_hidden_column
+        update_ui |= bool(changed_or_new_filters) or self.force_update_hidden_column
         if self.db_connection_self_opened:
             db.commit()
         if update_ui:
