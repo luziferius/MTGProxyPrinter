@@ -137,15 +137,34 @@ class TestCaseData:
     @property
     def face_data(self) -> list[FaceData]:
         card = self.json_dict
-        if faces := card.get("card_faces"):
-            result = []
-            for face in faces:
-                name = face.get("printed_name") or face["name"]
-                images = card.get("image_uris") or face["image_uris"]
-                result.append(FaceData(name, (png_uri := images["png"]), "/front/" in png_uri))
-            return result
-        else:
-            return [FaceData(card.get("printed_name", card["name"]), card["image_uris"]["png"], True)]
+        card_name = card.get("printed_name") or card["name"]
+        match card:
+            case {"card_faces": [{"image_uris": {"png": first_image}, "printed_name": f}, {"image_uris": {"png": second_image}, "printed_name": b}]}:
+                # non-English DFC
+                return [
+                    FaceData(f, first_image, "/front/" in first_image),
+                    FaceData(b, second_image, "/front/" in second_image),
+                ]
+            case {"card_faces": [{"image_uris": {"png": first_image}, "name": f}, {"image_uris": {"png": second_image}, "name": b}]}:
+                # English DFC
+                return [
+                    FaceData(f, first_image, "/front/" in first_image),
+                    FaceData(b, second_image, "/front/" in second_image),
+                ]
+            # Single-sided cards have a top-level "image_uris" key.
+            case {"card_faces": [{"printed_name": f}, {"printed_name": b}], "image_uris": {"png": first_image}}:
+                # Non-English names
+                # card_faces array without image_uris: Split card, Adventure, Omen, etc…
+                return [FaceData(f"{f} // {b}", first_image, True)]
+            case {"card_faces": [{"name": f}, {"name": b}], "image_uris": {"png": first_image}}:
+                # English names
+                # card_faces array without image_uris: Split card, Adventure, Omen, etc…
+                return [FaceData(f"{f} // {b}", first_image, True)]
+            case {"image_uris": {"png": first_image}}:
+                # Regular card
+                return [FaceData(card_name, first_image, True)]
+            case _:
+                raise RuntimeError(f"Unexpected structure in case {self.json_name}")
 
     @property
     def set(self) -> DatabaseSetData:
