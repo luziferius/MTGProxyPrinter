@@ -61,7 +61,7 @@ to_be_profiled_functions = {
         "_populate_database",
         "_parse_single_printing",
         "_insert_set",
-        "_insert_printing_faces",
+        "_insert_or_update_printing_faces",
         "_insert_or_update_card_filters",
         "_clean_unused_data",
         "_insert_card",

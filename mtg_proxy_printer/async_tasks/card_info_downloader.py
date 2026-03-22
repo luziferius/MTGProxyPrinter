@@ -87,7 +87,6 @@ class CardFaceData(typing.NamedTuple):
     printed_face_name: str
     image_uri: str
     is_front: bool
-    face_number: int
 
 
 class RelatedPrintingData(typing.NamedTuple):
@@ -552,7 +551,7 @@ class DatabaseImportTask(AsyncTask):
         printing_id = self._insert_or_update_printing(card, card_id, set_id)
         filter_data = _get_card_filter_data(card)
         self._insert_or_update_card_filters(printing_id, filter_data)
-        new_face_ids = self._insert_printing_faces(card, printing_id)
+        new_face_ids = self._insert_or_update_printing_faces(card, printing_id)
         return new_face_ids
 
     def _clean_unused_data(self, new_face_ids: IntTuples):
@@ -632,21 +631,6 @@ class DatabaseImportTask(AsyncTask):
             'SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_code,)
         )
 
-    @functools.cache
-    def _insert_face_name(self, printed_name: str, language_id: int) -> int:
-        """
-        Insert the given, printed face name into the database, if it not already stored. Returns the integer
-        PRIMARY KEY face_name_id, used to reference the inserted face name.
-        """
-        db = self.db
-        parameters = (printed_name, language_id)
-        if result := db.execute(
-                "SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n", parameters).fetchone():
-            face_name_id, = result
-        else:
-            face_name_id = db.execute(
-                "INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n", parameters).lastrowid
-        return face_name_id
 
     def _insert_or_update_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
         db = self.db
@@ -693,12 +677,26 @@ class DatabaseImportTask(AsyncTask):
                 raise RuntimeError(f"Unexpected data: {check_result}")
         return printing_id
 
-    def _insert_printing_faces(self, card: CardDataType, printing_id: int) -> IntTuples:
+    def _insert_or_update_printing_faces(self, card: CardDataType, printing_id: int) -> IntTuples:
         """Inserts all faces of the given card together with their names."""
         db = self.db
         face_ids: IntTuples = []
+        check_query = cached_dedent("""\
+        SELECT (face_name <> ? OR png_image_uri <> ?) AS needs_update -- _insert_or_update_printing_faces()
+          WHERE printing_id = ? 
+            AND is_front = ?
+        """)
         for face in _get_card_faces(card):
-            face_name_id = self._insert_face_name(face.printed_face_name, language_id)
+            check_parameters = face.printed_face_name, face.image_uri, printing_id, face.is_front
+            match self._read_optional_scalar_from_db(check_query, check_parameters):
+                case None:
+                    pass  # TODO
+                case 1:
+                    pass  # TODO
+                case 0:
+                    continue  # Everything already present and up-to-date
+                case _:
+                    raise RuntimeError(f"Unexpected data retuned from query: {check_query}")
             card_face_id: tuple[int] | None = db.execute(
                 "SELECT card_face_id FROM CardFace WHERE face_name_id = ? AND printing_id = ? AND is_front = ?\n",
                 (face_name_id, printing_id, face.is_front)).fetchone()
@@ -833,9 +831,8 @@ def _get_card_faces(card: CardDataType) -> Generator[CardFaceData, None, None]:
             # The API does not expose which side a face is, so get that
             # detail using the directory structure in the URI. This is kind of a hack, though.
             "/front/" in image_uri,
-            face_number
         )
-        for face_number, face in enumerate(faces)
+        for face in faces
     )
 
 
