@@ -95,7 +95,7 @@ CREATE TABLE PrintingFilters (
 CREATE TABLE FilterAppliesTo (
   -- Stores which filter applies to which printing.
   printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
-  filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
+  filter_id      INTEGER NOT NULL REFERENCES PrintingFilters (filter_id) ON DELETE CASCADE,
   PRIMARY KEY (printing_id, filter_id)
 ) WITHOUT ROWID;
 
