@@ -774,34 +774,48 @@ def _should_skip_card(card: CardDataType) -> bool:
     )
 
 
-def _get_card_faces(card: CardDataType) -> Generator[CardFaceData, None, None]:
+def _get_card_faces(card: CardDataType) -> list[CardFaceData]:
     """
-    Yields a CardFaceData object for each face found in the card object.
+    Returns a CardFaceData object for each side found in the card object.
     The printed name falls back to the English name, if the card has no printed_name key.
 
-    Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
-    this function builds a "card_face" object providing only the required information from the card object itself.
+    Returns 2 faces for DFCs, and one for single-faced cards.
+    Cards with multiple faces per side use the "Face 1 // Face 2" notation.
     """
-    faces = card.get("card_faces") or [
-        FaceDataType(
-            printed_name=_get_card_name(card),
-            image_uris=card["image_uris"],
-            name=card["name"],
-            object=card["object"],
-            mana_cost=card["mana_cost"],
-        )
-    ]
-    return (
-        CardFaceData(
-            _get_card_name(face),
-            image_uri := (face.get("image_uris") or card["image_uris"])["png"],
-            # (image_uri := self._get_png_image_uri(card, face)),
-            # The API does not expose which side a face is, so get that
-            # detail using the directory structure in the URI. This is kind of a hack, though.
-            "/front/" in image_uri,
-        )
-        for face in faces
-    )
+    card_name = card.get("printed_name") or card["name"]
+    # Non-English cards use "printed_name" (and have English fallbacks in "name"),
+    # while English cards only use "name", and do not have "printed_name" present.
+    #
+    # English cards with multiple faces have a combined, top-level name "Face1 // Face2".
+    # Non-English cards do not have a localized equivalent, and thus require
+    # to build it manually from the individual values.
+    match card:
+        # DFCs have "image_uris" keys within card_faces
+        case {"card_faces": [
+                {"image_uris": {"png": first_image}, "printed_name": f},
+                {"image_uris": {"png": second_image}, "printed_name": b}]}:
+            return [
+                CardFaceData(f, first_image, "/front/" in first_image),
+                CardFaceData(b, second_image, "/front/" in second_image),
+            ]
+        case {"card_faces": [
+                {"image_uris": {"png": first_image}, "name": f},
+                {"image_uris": {"png": second_image}, "name": b}]}:
+            return [
+                CardFaceData(f, first_image, "/front/" in first_image),
+                CardFaceData(b, second_image, "/front/" in second_image),
+            ]
+        # Single-sided cards have a top-level "image_uris" key.
+        # Of those, Cards with multiple faces per side still have image_uris: Split cards, Adventure, Omen, etc…
+        case {"card_faces": [{"printed_name": f}, {"printed_name": b}], "image_uris": {"png": first_image}}:
+            return [CardFaceData(f"{f} // {b}", first_image, True)]
+        case {"card_faces": _, "image_uris": {"png": first_image}}:
+            return [CardFaceData(card_name, first_image, True)]
+        # No "card_faces" means regular, single-sided card
+        case {"image_uris": {"png": first_image}}:
+            return [CardFaceData(card_name, first_image, True)]
+        case _:
+            raise RuntimeError(f"Unexpected structure in card {card}")
 
 
 def _get_oracle_id(card: CardDataType) -> UUID:
