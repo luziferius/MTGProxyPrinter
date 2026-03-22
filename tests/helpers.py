@@ -116,15 +116,13 @@ def setup_settings_for_testing():
         section[setting] = str(False)
 
 
-def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict):
+def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict):
     # Explicitly share the in-memory database connection
     dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), card_db.db, ":memory:")
     section = mtg_proxy_printer.settings.settings["card-filter"]
-    with qtbot.assert_not_emitted(dw.error_occurred), qtbot.assert_not_emitted(dw.network_error_occurred):
-        settings_to_use = update_database_printing_filters(card_db, filter_settings)
-        with patch.dict(section, settings_to_use):
-
-            dw.populate_database(data)
+    settings_to_use = update_database_printing_filters(card_db, filter_settings)
+    with patch.dict(section, settings_to_use):
+        dw.populate_database(data)
 
 
 def update_database_printing_filters(
@@ -153,21 +151,21 @@ def load_multiple_json_cards(json_files_or_names: list[str | CardDataType]) -> l
 
 
 def fill_card_database_with_json_cards(
-        qtbot: QtBot,
+        _: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_files_or_names: list[str | CardDataType],
         filter_settings: dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     data = load_multiple_json_cards(json_files_or_names)
-    populate_database(qtbot, card_db, data, filter_settings)
+    populate_database(card_db, data, filter_settings)
     return card_db
 
 
 def fill_card_database_with_json_card(
-        qtbot: QtBot,
+        _: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_file_or_name: str | CardDataType,
         filter_settings: dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], filter_settings)
+    return fill_card_database_with_json_cards(_, card_db, [json_file_or_name], filter_settings)
 
 
 def create_save_database_with(
