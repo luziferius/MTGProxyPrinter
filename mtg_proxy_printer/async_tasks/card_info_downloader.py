@@ -648,6 +648,7 @@ class DatabaseImportTask(AsyncTask):
 
     def _insert_or_update_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
         db = self.db
+        is_dfc = "card_faces" in card and "image_uris" not in card
         query = cached_dedent("""\
         SELECT printing_id, ( -- _insert_or_update_printing()
           set_id <> ?
@@ -656,33 +657,36 @@ class DatabaseImportTask(AsyncTask):
           OR card_id <> ?
           OR is_oversized <> ? 
           OR is_highres_image <> ?
+          OR is_dfc <> ?
         ) AS needs_update
         FROM Printing WHERE scryfall_id = ?
         """)
         parameters = (
             set_id, card["collector_number"], card["lang"], card_id, 
-            card["oversized"], card["highres_image"], card["id"])
-        match (check_result := db.execute(query, parameters).fetchone()):
+            card["oversized"], card["highres_image"], is_dfc, card["id"])
+        check_result = db.execute(query, parameters).fetchone()
+        match check_result:
             case None:                
                 parameters = (set_id, card["collector_number"], card["lang"], card["id"], 
-                              card_id, card["oversized"], card["highres_image"])
+                              card_id, card["oversized"], card["highres_image"], is_dfc)
                 printing_id = db.execute(cached_dedent("""\
-                    INSERT INTO Printing  -- _insert_or_update_printing()
-                           (set_id, collector_number, language, scryfall_id, card_id, is_oversized, is_highres_image)
-                    VALUES (?,      ?,                ?,        ?,           ?,       ?,            ?)
-                    """), parameters).lastrowid
+                INSERT INTO Printing  -- _insert_or_update_printing()
+                       (set_id, collector_number, language, scryfall_id, card_id, is_oversized, is_highres_image, is_dfc)
+                VALUES (?,      ?,                ?,        ?,           ?,       ?,            ?,                ?)
+                """), parameters).lastrowid
             case printing_id, 1:
                 parameters = (set_id, card["collector_number"], card["lang"], card["id"],
-                              card_id, card["oversized"], card["highres_image"], printing_id)
+                              card_id, card["oversized"], card["highres_image"], is_dfc, printing_id)
                 db.execute(
                     cached_dedent("""\
                     UPDATE Printing -- _insert_or_update_printing()
-                      SET set_id = ?,collector_number = ?,language = ?,scryfall_id = ?,card_id = ?,is_oversized = ?,is_highres_image
+                      SET set_id = ?, collector_number = ?, language = ?, scryfall_id = ?,
+                      card_id = ?, is_oversized = ?, is_highres_image, is_dfc = ?
                       WHERE printing_id = ?
                     """),
                     parameters)
-            case printing_id, _:
-                pass
+            case printing_id, 0:
+                pass  # Already present and nothing changed
             case _:
                 raise RuntimeError(f"Unexpected data: {check_result}")
         return printing_id
