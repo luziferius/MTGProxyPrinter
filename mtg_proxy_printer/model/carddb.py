@@ -504,7 +504,7 @@ class CardDatabase(QObject):
             return None
         return Card(
             name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
-            collector_number=row["collector_number"], language=row["language"],scryfall_id=scryfall_id,
+            collector_number=row["collector_number"], language=row["language"], scryfall_id=scryfall_id,
             is_front=is_front, oracle_id=row["oracle_id"], image_uri=row["png_image_uri"],
             highres_image=bool(row["is_highres_image"]), size=CardSizes.from_bool(row["is_oversized"]),
             is_dfc=bool(row["is_dfc"])
@@ -755,12 +755,13 @@ class CardDatabase(QObject):
         Runs the query with the given parameters that is expected to return either a singular value or None,
         and returns the result
         """
-        match self.db.execute(query, parameters).fetchone():
-            case result,:
+        match tuple(self.db.execute(query, parameters).fetchone()):
+            case result, :
                 return result
+            case None:
+                return None
             case _, *_:
                 raise RuntimeError(f"BUG: {query} result was not a scalar")
-        return None
 
     def _read_scalar_list_from_db(
             self, query: LiteralString, parameters: Sequence[Any] = ()) -> list[Any]:

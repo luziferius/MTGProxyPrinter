@@ -143,6 +143,7 @@ def test_guess_language_from_name(qtbot, card_db: CardDatabase, name: str, expec
     ("en", True),
     ("de", True),
     ("es", True),
+    ("fu", False),
     ("", False),
     ("Unknown", False),
 ])
