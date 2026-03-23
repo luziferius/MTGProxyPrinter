@@ -467,7 +467,7 @@ class CardDatabase(QObject):
         :return: list of matching sets, as tuples (set_abbreviation, full_english_set_name)
         """
         query = cached_dedent('''\
-        SELECT DISTINCT set_code, set_name--, icon_svg  -- find_sets_matching()
+        SELECT DISTINCT set_code, set_name, icon_svg  -- find_sets_matching()
           FROM Printing 
           INNER JOIN PrintingFace USING (printing_id)
           INNER JOIN MTGSet USING (set_id)
