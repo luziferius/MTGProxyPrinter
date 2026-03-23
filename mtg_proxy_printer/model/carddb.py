@@ -247,11 +247,11 @@ class CardDatabase(QObject):
             names += [f"Snow-Covered {name}" for name in names]
         query = cached_dedent(f'''\
             SELECT DISTINCT oracle_id
-              FROM Card 
+              FROM Card
               INNER JOIN Printing USING (card_id)
               INNER JOIN PrintingFace USING (printing_id)
-              WHERE "language" = 'en' 
-              AND face_name IN 
+              WHERE "language" = 'en'
+              AND face_name IN
                 ({", ".join("?"*len(names))})
         ''')
         return {item for item, in self.db.execute(query, names)}
