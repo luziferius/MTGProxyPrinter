@@ -297,12 +297,10 @@ class CardDatabase(QObject):
          :param order_by_print_count: Enable sorting the result list by the recorded print count. Defaults to False
         """
         query = cached_dedent('''\
-        SELECT face_name, set_code, set_name, collector_number, png_image_uri, scryfall_id, is_front,
-                oracle_id, highres_image, is_oversized, language, is_dfc -- get_cards_from_data()
+        SELECT face_name, set_code, set_name, icon_svg, collector_number, png_image_uri, scryfall_id, is_front,
+                oracle_id, is_highres_image, is_oversized, language, is_dfc -- get_cards_from_data()
             FROM VisiblePrintings
         ''')
-        if order_by_print_count:
-            query += '    LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)\n'
         where_clause = ['    WHERE TRUE']
         where_parameters = []
         if card.language:
@@ -328,10 +326,10 @@ class CardDatabase(QObject):
             where_parameters.append(card.oracle_id)
         where_clause.append("")  # Insert final newline after joining
         query += "\n    ".join(where_clause)
-        order_by_terms = ["is_token ASC"]
+        order_by_terms = ["is_card DESC"]
         if order_by_print_count:
-            order_by_terms.append("LastImageUseTimestamps.usage_count DESC NULLS LAST")
-        order_by_terms.append("highres_image DESC")
+            order_by_terms.append("usage_count DESC NULLS LAST")
+        order_by_terms.append("is_highres_image DESC")
         order_by_terms.append("release_date DESC")
         query += "ORDER BY " + "\n    ,".join(order_by_terms)
         return self._get_cards_from_data(query, where_parameters)
@@ -341,12 +339,11 @@ class CardDatabase(QObject):
         preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
         query = cached_dedent('''\
         -- get_replacement_card_for_unknown_printing()
-        SELECT card_name, set_code, set_name, collector_number, png_image_uri,
-               VisiblePrintings.scryfall_id, is_front, oracle_id, highres_image,
-               is_oversized, face_number, VisiblePrintings.language, is_dfc
+        SELECT face_name, set_code, set_name, icon_svg, collector_number, png_image_uri,
+               VisiblePrintings.scryfall_id AS scryfall_id, is_front, oracle_id, is_highres_image,
+               is_oversized, VisiblePrintings.language AS language, is_dfc
             FROM RemovedPrintings
             JOIN VisiblePrintings USING (oracle_id)
-            LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)
             WHERE RemovedPrintings.scryfall_id = ?
             AND is_front = ?
             ORDER BY
@@ -354,25 +351,25 @@ class CardDatabase(QObject):
                (4*(VisiblePrintings.language == RemovedPrintings.language) +
                 2*(VisiblePrintings.language == ?) +
                   (VisiblePrintings.language == 'en')) DESC NULLS LAST,
-                wackiness_score ASC,
                 release_date DESC
         ''')
         if order_by_print_count:
-            query += '        , LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
+            query += '        , usage_count DESC NULLS LAST\n'
         # Break any remaining ties by preferring high resolution images over low resolution images
-        query += '        , VisiblePrintings.highres_image DESC\n'
+        query += '        , VisiblePrintings.is_highres_image DESC\n'
         return self._get_cards_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
 
     def _get_cards_from_data(self, query, parameters) -> CardList:
         cursor = self.db.execute(query, parameters)
         return [
             Card(
-                name, MTGSet(set_code, set_name), collector_number,
-                language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), CardSizes.from_bool(is_oversized), bool(is_dfc),
+                name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
+                collector_number=row["collector_number"], language=row["language"],
+                scryfall_id=row["scryfall_id"], is_front=bool(row["is_front"]),  oracle_id=row["oracle_id"],
+                image_uri=row["png_image_uri"], highres_image=bool(row["is_highres_image"]),
+                size=CardSizes.from_bool(row["is_oversized"]), is_dfc=bool(row["is_dfc"]),
             )
-            for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
-            is_oversized, language, is_dfc in cursor
+            for row in cursor
         ]
 
     def find_related_cards(self, card: Card) -> CardList:
@@ -394,14 +391,14 @@ class CardDatabase(QObject):
             WHERE oracle_id = ?),
           related_oracle_ids(related_id) AS (
             SELECT related_id
-              FROM RelatedPrintings
+              FROM RelatedCards
               JOIN source_oracle_id USING (card_id)
             UNION  -- Deduplicate to break infinite recursion on cross-referenced cards
-            SELECT RelatedPrintings.related_id
-              FROM RelatedPrintings
-              JOIN related_oracle_ids ON RelatedPrintings.card_id = related_oracle_ids.related_id
+            SELECT RelatedCards.related_id
+              FROM RelatedCards
+              JOIN related_oracle_ids ON RelatedCards.card_id = related_oracle_ids.related_id
               -- Do not include the initial input card in the output dataset
-              WHERE RelatedPrintings.related_id NOT IN (SELECT source_oracle_id.card_id FROM source_oracle_id)
+              WHERE RelatedCards.related_id NOT IN (SELECT source_oracle_id.card_id FROM source_oracle_id)
         )
         SELECT oracle_id
           FROM Card
@@ -471,10 +468,8 @@ class CardDatabase(QObject):
           FROM Printing 
           INNER JOIN PrintingFace USING (printing_id)
           INNER JOIN MTGSet USING (set_id)
-          WHERE is_visible IS TRUE
-            AND "language" = ?
-            AND face_name = ?
-            AND COALESCE(is_front = ?, TRUE)
+          WHERE (is_visible, "language", face_name, is_front)
+              = (TRUE,       ?,          ?,         COALESCE(?, TRUE))
         ''')
         parameters: ParameterList = [language, card_name, is_front]
         if set_name_filter:
@@ -498,7 +493,7 @@ class CardDatabase(QObject):
         SELECT face_name, set_code, set_name, icon_svg, collector_number, "language", png_image_uri, oracle_id,
           is_highres_image, is_oversized, is_dfc -- get_card_with_scryfall_id()
             FROM VisiblePrintings
-            WHERE scryfall_id = ? AND is_front = ?
+            WHERE (scryfall_id, is_front) = (?, ?)
         ''')
         if (row := cursor.execute(query, (scryfall_id, is_front)).fetchone()) is None:
             return None
@@ -533,8 +528,8 @@ class CardDatabase(QObject):
         db.executemany(
             cached_dedent("""\
             INSERT INTO ImagesOnDisk -- get_all_cards_from_image_cache()
-              (scryfall_id, is_front, highres_on_disk, absolute_path)
-              VALUES (?, ?, ?, ?)"""),
+                     (scryfall_id, is_front, highres_on_disk, absolute_path)
+              VALUES (?,           ?,        ?,               ?)"""),
             map(dataclasses.astuple, cache_content)
         )
         known_images_query = cached_dedent('''\
@@ -695,11 +690,8 @@ class CardDatabase(QObject):
           SELECT language
             FROM Card
             JOIN Printing USING (card_id)
-            JOIN CardFace USING (printing_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            WHERE oracle_id = ?
-              AND Printing.is_hidden IS FALSE
+            WHERE (is_visible, oracle_id)
+                = (TRUE,       ?)
           )
           ORDER BY language ASC;
         """)
@@ -711,20 +703,15 @@ class CardDatabase(QObject):
         Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
         """
         query = cached_dedent("""\
-        SELECT DISTINCT set_code, set_name FROM ( -- get_available_sets_for_card()
-          SELECT set_code, set_name, release_date
+        SELECT DISTINCT set_code, set_name, icon_svg FROM ( -- get_available_sets_for_card()
+          SELECT set_code, set_name, icon_svg, release_date
           FROM MTGSet
           JOIN Printing USING (set_id)
           JOIN Card USING (card_id)
-          JOIN CardFace USING (printing_id)
-          JOIN FaceName USING (face_name_id)
-          JOIN PrintLanguage USING (language_id)
-          WHERE Printing.is_hidden IS FALSE
-            AND FaceName.is_hidden IS FALSE
-            AND oracle_id = ?
-            AND language = ?
+          WHERE (is_visible, oracle_id, language)
+              = (TRUE,       ?,         ?)
           UNION ALL
-          SELECT set_code, set_name, release_date
+          SELECT set_code, set_name, icon_svg, release_date
             FROM MTGSet
             WHERE set_code = ?
           )
@@ -745,14 +732,8 @@ class CardDatabase(QObject):
             FROM MTGSet
             JOIN Printing USING (set_id)
             JOIN Card USING (card_id)
-            JOIN CardFace USING (printing_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            WHERE Printing.is_hidden IS FALSE
-              AND FaceName.is_hidden IS FALSE
-              AND oracle_id = ?
-              AND set_code = ?
-              AND language = ?
+            WHERE (is_visible, oracle_id, set_code, language) 
+                = (TRUE,       ?,         ?,        ?)
           )
         """)
         parameters: ParameterList = [card.collector_number, card.oracle_id, card.set_code, card.language]
@@ -795,9 +776,10 @@ class CardDatabase(QObject):
         """
         query = cached_dedent("""\
         SELECT last_use_date < ? AS last_use_was_before_threshold -- cards_not_used_since()
-            FROM LastImageUseTimestamps
-            WHERE scryfall_id = ?
-              AND is_front = ?
+            FROM PrintingFace
+            INNER JOIN Printing USING (printing_id)
+            WHERE (scryfall_id, is_front) 
+                = (?,           ?)
         """)
         cards_not_used_since = []
         for index, (scryfall_id, is_front) in enumerate(keys):
@@ -817,9 +799,10 @@ class CardDatabase(QObject):
         query = cached_dedent("""\
         SELECT NOT EXISTS ( -- cards_used_less_often_then()
             SELECT scryfall_id
-            FROM LastImageUseTimestamps
-            WHERE scryfall_id = ?
-              AND is_front = ?
+            FROM PrintingFace
+            INNER JOIN Printing USING (printing_id)
+            WHERE (scryfall_id, is_front) 
+                = (?,           ?)
               AND usage_count >= ?
             ) AS hit
         """)
