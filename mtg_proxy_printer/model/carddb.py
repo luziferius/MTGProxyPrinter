@@ -842,7 +842,7 @@ class CardDatabase(QObject):
             return result
         return to_translate
 
-    def _translate_card(self, card: Card, language_override: str) -> OptionalCard:
+    def _translate_card(self, card: Card, target_language: str) -> OptionalCard:
         """
         Tries to translate the given card into the given language.
         If the card is not available in the requested language, None is returned.
@@ -856,26 +856,28 @@ class CardDatabase(QObject):
         # This was chosen as a performance optimization,
         # because card translation can take considerable time during a deck list import.
         query = cached_dedent("""\
-        SELECT card_name, set_code, set_name, collector_number, -- _translate_card()
-               scryfall_id, png_image_uri, highres_image,
-               is_oversized, face_number, is_dfc,
-               MAX((set_code = ?) + (collector_number = ?)) AS similarity
-            FROM VisiblePrintings
-            WHERE oracle_id = ? AND language = ? AND is_front = ?
+        SELECT -- _translate_card()
+            face_name, set_code, set_name, icon_svg, collector_number, png_image_uri,
+            is_highres_image, is_oversized, is_dfc, scryfall_id,
+            MAX((set_code = ?) + (collector_number = ?)) AS similarity
+          FROM VisiblePrintings
+          WHERE (oracle_id, language, is_front) 
+              = (?,         ?,        ?) 
         """)
-        parameters: ParameterList = [card.set.code, card.collector_number, card.oracle_id, language_override, card.is_front]
+        parameters: ParameterList = [
+            card.set.code, card.collector_number, card.oracle_id, target_language, card.is_front
+        ]
         # Because of the aggregate function used, no hit will result in a single row consisting of only NULL values.
-        result = self.db.execute(query, parameters).fetchone()
-        name, set_code, set_name, collector_number, scryfall_id, image_uri, highres_image, \
-            is_oversized, face_number, is_dfc, similarity = result
-        if similarity is None:
-            logger.debug(f"Found no translations to {language_override} for card '{card.name}'.")
+        row = self.db.execute(query, parameters).fetchone()
+        if row["similarity"] is None:
+            logger.debug(f"Found no translations to {target_language} for card '{card.name}'.")
             return None
-        size = CardSizes.from_bool(is_oversized)
         return Card(
-            name, MTGSet(set_code, set_name), collector_number,
-            language_override, scryfall_id, card.is_front, card.oracle_id, image_uri,
-            bool(highres_image), size, face_number, bool(is_dfc),
+            name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
+            collector_number=row["collector_number"], language=target_language, scryfall_id=row["scryfall_id"],
+            is_front=card.is_front, oracle_id=card.oracle_id, image_uri=row["png_image_uri"],
+            highres_image=bool(row["is_highres_image"]), size=CardSizes.from_bool(row["is_oversized"]),
+            is_dfc=bool(row["is_dfc"])
         )
 
     def get_custom_card(
@@ -883,7 +885,7 @@ class CardDatabase(QObject):
             size: CardSize, is_front: bool, image: bytes) -> CustomCard:
         card = CustomCard(
             name, MTGSet(set_code, set_name), collector_number, "en",
-            is_front, "", True, size, 1 + (not is_front), False, image)
+            is_front, "", True, size, False, image)
         custom_card_id = card.scryfall_id
         card = self.custom_cards.get(custom_card_id, card)
         self.custom_cards[custom_card_id] = card
