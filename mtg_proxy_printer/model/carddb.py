@@ -625,46 +625,54 @@ class CardDatabase(QObject):
     def translate_card_name(self, card_data: CardIdentificationData | Card, target_language: str,
                             include_hidden_names: bool = False) -> str | None:
         """
-        Translates a card into the target_language. Uses the language in the card data as the source language, if given.
+        Translates a card name into the target_language.
+        Uses the language in the card data as the source language, if given.
         If not, card names across all languages are searched.
 
+        Can take the source scryfall id or source set code as an optional disambiguation in case
+        that a translation is ambiguous. As an example, “Duress” is translated to “Zwang” in German, except for
+        the one time in the 6th Edition set, where the English “Coercion” was also translated to “Zwang”.
+        So given “Zwang” in German without further context, it may mean one of two cards.
+        If no context is given, because these translation mistakes are outliers,
+        this query performs a majority vote, as that is the most likely expected
+        result. But if context is given by the scryfall id or the set code, the exact, set-specific
+        translation is returned.
+
+        :param card_data: A Card or CardIdentificationData. Accesses the name, language, scryfall_id and set_code fields
+        :param target_language: Target language to translate to
+        :param include_hidden_names: If True, can look at hidden printings.
+          If False, translation can fail if the only potential results are from hidden printings.
         :return: String with the translated card name, or None, if either unknown or unavailable in the target language.
         """
-        # Implementation note: First two query parameters may be None/NULL and can be used as a disambiguation in case
-        # that a translation is ambiguous. As an example, “Duress” is translated to “Zwang” in German, except for
-        # the one time in the 6th Edition set, where the English “Coercion” was also translated to “Zwang”.
-        # So given “Zwang” in German without further context, it may mean one of two cards.
-        # So if no context is given, this query performs a majority vote, because that is the most likely expected
-        # result. But if context is given, either by the scryfall id or the set code, the exact, set-specific
-        # translation is returned.
+        # TODO: Can the common table expression use the card_id instead of the oracle_id?
+        #  The AllPrintings/VisiblePrintings views need the card_id then.
+        #  Using the Card table integer primary key should be faster than using the string oracle_id
         card_view: LiteralString = "AllPrintings" if include_hidden_names else "VisiblePrintings"
         query = cached_dedent("""\
         WITH  -- translate_card_name()
           source_context (source_scryfall_id, source_set_code) AS (SELECT ?, ?),
-          source_oracle_id (oracle_id, face_number, source_score, source_set_code) AS (
-            SELECT oracle_id, face_number,
+          source_oracle_id (oracle_id, is_front, source_score, source_set_code) AS (
+            SELECT oracle_id, is_front,
                 (SELECT count() FROM Card)
                   * (COALESCE(scryfall_id = source_scryfall_id, 0)
                      OR COALESCE(set_code = source_set_code, 0))
                   + count(oracle_id) AS source_score,
                 set_code AS source_set_code
-            FROM FaceName
-            JOIN PrintLanguage USING (language_id)
-            JOIN CardFace USING (face_name_id)
+            FROM PrintingFace
             JOIN Printing USING (printing_id)
             JOIN Card USING (card_id)
             JOIN MTGSet USING (set_id)
             JOIN source_context ON (
                COALESCE(set_code = source_set_code, TRUE) AND
                COALESCE(scryfall_id = source_scryfall_id, TRUE))
-            WHERE card_name = ? AND COALESCE("language" = ?, TRUE)
-            GROUP BY oracle_id, face_number
+            WHERE face_name = ? AND COALESCE("language" = ?, TRUE)
+            GROUP BY oracle_id, is_front
             )
-        SELECT card_name
+        SELECT face_name
           FROM source_oracle_id
-          JOIN {card_view} USING (oracle_id, face_number)
+          JOIN {card_view} USING (oracle_id, is_front)
           WHERE language = ?
-          GROUP BY card_name
+          GROUP BY face_name
           -- Some localized names were updated to fix typos and similar, so prefer the newest, matched name
           ORDER BY source_score DESC, set_code = source_set_code DESC, release_date DESC
           LIMIT 1
@@ -760,7 +768,7 @@ class CardDatabase(QObject):
                 return row[0]
             case None:
                 return None
-            case row, :
+            case row, :  # Fallback if the row_factory is unset. Normally dead code, but has no runtime overhead
                 return row
             case _:
                 raise RuntimeError(f"BUG: {query} result was not a scalar")
