@@ -611,23 +611,21 @@ class DatabaseImportTask(AsyncTask):
                 pass  # Already present and nothing changed
             case None:
                 set_id = db.execute(cached_dedent("""\
-                        INSERT INTO MTGSet  -- _insert_or_update_set()
-                               (set_name, release_date,        set_scryfall_id, set_code)
-                        VALUES (?,        unixepoch(?, 'utc'), ?,               ?)
-                        ON CONFLICT (set_scryfall_id) DO UPDATE 
-                          SET set_code = excluded.set_code 
-                          WHERE set_scryfall_id = excluded.set_scryfall_id
-                        """), parameters).lastrowid
+                INSERT INTO MTGSet  -- _insert_or_update_set()
+                       (set_name, release_date,        set_scryfall_id, set_code)
+                VALUES (?,        unixepoch(?, 'utc'), ?,               ?)
+                ON CONFLICT (set_scryfall_id) DO UPDATE 
+                  SET set_code = excluded.set_code 
+                  WHERE set_scryfall_id = excluded.set_scryfall_id
+                """), parameters).lastrowid
             case set_id, 1:
                 parameters[-1] = set_id
-                db.execute(
-                    cached_dedent("""\
-                            UPDATE MTGSet -- _insert_or_update_set()
-                              SET (set_name, release_date,        set_scryfall_id)
-                                = (?,        unixepoch(?, 'utc'), ?)
-                              WHERE set_id = ?
-                            """),
-                    parameters)
+                db.execute(cached_dedent("""\
+                UPDATE MTGSet -- _insert_or_update_set()
+                  SET (set_name, release_date,        set_scryfall_id)
+                    = (?,        unixepoch(?, 'utc'), ?)
+                  WHERE set_id = ?
+                """), parameters)
             case _:
                 raise RuntimeError(f"Unexpected data: {check_result}")
         return set_id
@@ -661,14 +659,12 @@ class DatabaseImportTask(AsyncTask):
                 """), parameters).lastrowid
             case printing_id, 1:
                 parameters.append(printing_id)
-                db.execute(
-                    cached_dedent("""\
-                    UPDATE Printing -- _insert_or_update_printing()
-                      SET (set_id, collector_number, language, card_id, is_oversized, is_highres_image, is_dfc, scryfall_id)
-                        = (?,      ?,                ?,        ?,       ?,            ?,                ?,      ?)
-                      WHERE printing_id = ?
-                    """),
-                    parameters)
+                db.execute(cached_dedent("""\
+                UPDATE Printing -- _insert_or_update_printing()
+                  SET (set_id, collector_number, language, card_id, is_oversized, is_highres_image, is_dfc, scryfall_id)
+                    = (?,      ?,                ?,        ?,       ?,            ?,                ?,      ?)
+                  WHERE printing_id = ?
+                """), parameters)
             case printing_id, 0:
                 pass  # Already present and nothing changed
             case _:
