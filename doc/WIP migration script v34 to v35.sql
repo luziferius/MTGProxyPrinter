@@ -142,7 +142,7 @@ FROM Printing
 CREATE VIEW AllPrintings AS SELECT 
     face_name, set_code, set_name, icon_svg, collector_number, release_date,
     scryfall_id, png_image_uri, oracle_id, "language",
-    is_front, is_card, is_oversized, is_highres_image, is_visible, is_dfc
+    is_front, is_card, is_oversized, is_highres_image, is_visible, is_dfc, usage_count
   FROM Printing
   INNER JOIN Card USING(card_id)
   INNER JOIN PrintingFace USING (printing_id)
@@ -152,7 +152,7 @@ CREATE VIEW AllPrintings AS SELECT
 CREATE VIEW VisiblePrintings AS SELECT 
     face_name, set_code, set_name, icon_svg, collector_number, release_date,
     scryfall_id, png_image_uri, oracle_id, "language",
-    is_front, is_card, is_oversized, is_highres_image, is_dfc
+    is_front, is_card, is_oversized, is_highres_image, is_dfc, usage_count
   FROM AllPrintings
   WHERE is_visible IS TRUE
 ;
