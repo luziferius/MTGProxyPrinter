@@ -524,8 +524,10 @@ class DatabaseImportTask(AsyncTask):
 
     def _parse_single_printing(self, card: CardDataType):
         oracle_id = _get_oracle_id(card)
-        is_card = card["layout"] not in {"art_series", "token"}
-        card_id = self._insert_card(oracle_id, is_card)
+        is_card = not(
+                card["layout"] in {"art_series", "double_faced_token", "token", "vanguard"}
+                or card["set_type"] == "token")
+        card_id = self._insert_or_update_card(oracle_id, is_card)
         set_code = card["set"]
         if (set_id := self.set_code_cache.get(set_code)) is None:
             self.set_code_cache[set_code] = set_id = self._insert_or_update_set(card)
@@ -564,15 +566,34 @@ class DatabaseImportTask(AsyncTask):
         """), related_cards)
 
     @functools.cache
-    def _insert_card(self, oracle_id: UUID, is_card: bool) -> int:
+    def _insert_or_update_card(self, oracle_id: UUID, is_card: bool) -> int:
         db = self.db
-        card_id = self._read_optional_scalar_from_db(
-            "SELECT card_id FROM Card WHERE oracle_id = ?\n",
-            (oracle_id,)
-        ) or db.execute(
-                "INSERT INTO Card (oracle_id, is_card) VALUES (?, ?)\n",
-                (oracle_id, is_card)
-        ).lastrowid
+        query = cached_dedent("""\
+        SELECT card_id, ( -- _insert_or_update_card()
+          is_card <> ?
+        ) AS needs_update
+        FROM Card WHERE oracle_id = ?
+        """)
+        parameters = [is_card, oracle_id]
+        check_result = db.execute(query, parameters).fetchone()
+        match check_result:
+            case card_id, 0:
+                pass  # Already present and nothing changed
+            case None:
+                card_id = db.execute(cached_dedent("""\
+                INSERT INTO Card  -- _insert_or_update_card()
+                       (is_card, oracle_id)
+                VALUES (?,       ?)
+                """), parameters).lastrowid
+            case card_id, 1:
+                parameters[-1] = card_id
+                db.execute(cached_dedent("""\
+                UPDATE Card -- _insert_or_update_card()
+                  SET is_card = ?
+                  WHERE card_id = ?
+                """), parameters)
+            case _:
+                raise RuntimeError(f"Unexpected data: {check_result}")
         return card_id
 
     def _insert_or_update_set(self, card: CardDataType) -> int:

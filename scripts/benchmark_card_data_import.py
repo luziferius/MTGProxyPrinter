@@ -64,7 +64,7 @@ to_be_profiled_functions = {
         "_insert_or_update_printing_faces",
         "_insert_or_update_card_filters",
         "_clean_unused_data",
-        "_insert_card",
+        "_insert_or_update_card",
         "_insert_or_update_printing",
         "_read_optional_scalar_from_db",
     ],
