@@ -16,7 +16,6 @@
 import abc
 import time
 from collections.abc import Generator, Sequence
-import enum
 import functools
 import gzip
 import itertools
@@ -57,7 +56,6 @@ __all__ = [
     "CardInfoDownloadTaskBase",
     "DatabaseImportTask",
     "ApiStreamTask",
-    "SetWackinessScore",
     "FileDownloadTask",
     "FileStreamTask",
 ]
@@ -92,22 +90,6 @@ class CardFaceData(typing.NamedTuple):
 class RelatedPrintingData(typing.NamedTuple):
     printing_id: UUID
     related_id: UUID
-
-
-@enum.unique
-class SetWackinessScore(int, enum.Enum):
-    """
-    Used to order multiple printing choices, when automatically determining a printing choice.
-    Lower values have higher priority, so that the choice is steered towards normal cards.
-    """
-    REGULAR = 0
-    PROMOTIONAL = 1  # Pre-release or planeswalker stamp. Extended/full art versions
-    WHITE_BORDERED = 2  # Old core sets. Some folks dislike the white border
-    FUNNY = 3  # Non-tournament legal
-    GOLD_BORDERED = 4  # Tournament-memorabilia printed with golden border and signed by players
-    DIGITAL = 5  # MTG Arena/Online cards. Especially Arena cards aren't pleasantly looking when printed
-    ART_SERIES = 8  # Not playable
-    OVERSIZED = 10  # Not playable
 
 
 class CardInfoDownloadTaskBase(DownloaderBase):
