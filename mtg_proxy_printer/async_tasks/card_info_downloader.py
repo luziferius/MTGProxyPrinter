@@ -752,7 +752,7 @@ def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
         "hide-white-bordered": card["border_color"] == "white",
         "hide-gold-bordered": card["border_color"] == "gold",
         "hide-borderless": card["border_color"] == "borderless",
-        "hide-extended-art": "extendedart" in card.get("frame_effects", tuple()),
+        "hide-extended-art": "extendedart" in card.get("frame_effects", ()),
         # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
         "hide-reversible-cards": card["layout"] == "reversible_card",
         # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
