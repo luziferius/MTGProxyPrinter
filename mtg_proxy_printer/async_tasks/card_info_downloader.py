@@ -546,7 +546,7 @@ class DatabaseImportTask(AsyncTask):
         card_id = self._insert_card(oracle_id, is_card)
         set_code = card["set"]
         if (set_id := self.set_code_cache.get(set_code)) is None:
-            self.set_code_cache[set_code] = set_id = self._insert_set(card)
+            self.set_code_cache[set_code] = set_id = self._insert_or_update_set(card)
         printing_id = self._insert_or_update_printing(card, card_id, set_id)
         filter_data = _get_card_filter_data(card)
         self._insert_or_update_card_filters(printing_id, filter_data)
@@ -593,11 +593,11 @@ class DatabaseImportTask(AsyncTask):
         ).lastrowid
         return card_id
 
-    def _insert_set(self, card: CardDataType) -> int:
+    def _insert_or_update_set(self, card: CardDataType) -> int:
         db = self.db
         set_code = card["set"]
         query = cached_dedent("""\
-        SELECT set_ID, ( -- _insert_set()
+        SELECT set_ID, ( -- _insert_or_update_set()
           set_name <> ?
           OR release_date > unixepoch(?, 'utc')
           OR set_scryfall_id <> ?
@@ -611,7 +611,7 @@ class DatabaseImportTask(AsyncTask):
                 pass  # Already present and nothing changed
             case None:
                 set_id = db.execute(cached_dedent("""\
-                        INSERT INTO MTGSet  -- _insert_set()
+                        INSERT INTO MTGSet  -- _insert_or_update_set()
                                (set_name, release_date,        set_scryfall_id, set_code)
                         VALUES (?,        unixepoch(?, 'utc'), ?,               ?)
                         ON CONFLICT (set_scryfall_id) DO UPDATE 
@@ -622,7 +622,7 @@ class DatabaseImportTask(AsyncTask):
                 parameters[-1] = set_id
                 db.execute(
                     cached_dedent("""\
-                            UPDATE MTGSet -- _insert_set()
+                            UPDATE MTGSet -- _insert_or_update_set()
                               SET (set_name, release_date,        set_scryfall_id)
                                 = (?,        unixepoch(?, 'utc'), ?)
                               WHERE set_id = ?
@@ -730,10 +730,10 @@ def _get_related_cards(card: CardDataType):
     if card["layout"].endswith("token"):
         # Tokens are never sources, as that would pull all cards creating that token
         return
-    card_id = UUID(card["id"])
+    card_id = card["id"]
     is_dungeon = card.get("type_line") == "Dungeon"
     for related_card in card.get("all_parts", []):
-        related_id = UUID(related_card["id"])
+        related_id = related_card["id"]
         related_is_token = related_card["component"].endswith("token")
         # No self reference allowed. And the implication is_dungeon ⇒ related_is_token must be True.
         # I.e. If the source is a Dungeon, then it may link with tokens only, and nothing else.
@@ -842,10 +842,10 @@ def _get_oracle_id(card: CardDataType) -> UUID:
     card object does not contain the oracle_id.
     """
     try:
-        return UUID(card["oracle_id"])
+        return card["oracle_id"]
     except KeyError:
         first_face = card["card_faces"][0]
-        return UUID(first_face["oracle_id"])
+        return first_face["oracle_id"]
 
 
 def _get_card_name(card_or_face: CardOrFace) -> str:
