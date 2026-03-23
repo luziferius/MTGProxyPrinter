@@ -56,6 +56,7 @@ CORNER_MASKS = {
 class MTGSet:
     code: str
     name: str
+    svg_icon: str = None
 
     def data(self, role: ItemDataRole):
         """data getter used for Qt Model API based access"""

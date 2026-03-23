@@ -209,16 +209,16 @@ class TestCaseData:
             image_uris = cd.get("image_uris") or face["image_uris"]
             last_image_uris = cd.get("image_uris") or cd["card_faces"][-1]["image_uris"]
             return Card(
-                face.get("printed_name") or face["name"], card_set,
-                cd["collector_number"],  cd["lang"], cd["id"], "/front/" in image_uris["png"], oracle_id,
-                image_uris["png"], cd["highres_image"],
-                size, "/back/" in last_image_uris["png"], None
+                name=face.get("printed_name") or face["name"], set=card_set, collector_number=cd["collector_number"],
+                language=cd["lang"], scryfall_id=cd["id"], is_front="/front/" in image_uris["png"],
+                oracle_id=oracle_id, image_uri=image_uris["png"], highres_image=cd["highres_image"],
+                size=size, is_dfc="/back/" in last_image_uris["png"]
             )
         return Card(
-            cd.get("printed_name") or cd["name"], card_set,
-            cd["collector_number"],  cd["lang"], cd["id"], True, oracle_id,
-            cd["image_uris"]["png"], cd["highres_image"],
-            size, False, None
+            name=cd.get("printed_name") or cd["name"], set=card_set, collector_number=cd["collector_number"],
+            language=cd["lang"], scryfall_id=cd["id"], is_front=True,
+            oracle_id=oracle_id, image_uri=cd["image_uris"]["png"], highres_image=cd["highres_image"],
+            size=size, is_dfc=False
         )
 
 

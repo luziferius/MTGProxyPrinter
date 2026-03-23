@@ -135,12 +135,14 @@ class CardDatabase(QObject):
     def reopen_database(self) -> None:
         logger.info(f"About to open card database from {self.db_path}")
         db = open_database(self.db_path, SCHEMA_NAME, check_same_thread=self._db_check_same_thread)
+        db.row_factory = sqlite3.Row
         outdated_on_disk = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, SCHEMA_NAME) > 0
         if outdated_on_disk:
             logger.warning(
                 "Refusing to load outdated database schema. Use empty in-memory database until migrations complete.")
             db.close()
             db = open_database(":memory:", SCHEMA_NAME, check_same_thread=self._db_check_same_thread)
+            db.row_factory = sqlite3.Row
         logger.debug("Validating schema of the opened database")
         try:
             validate_database_schema(
@@ -491,23 +493,22 @@ class CardDatabase(QObject):
         :param is_front: Side of the printing. True returns the front, False returns the back, if it exists.
         :return: A Card, if it exists and is visible, None otherwise
         """
+        cursor = self.db.cursor()
         query = cached_dedent('''\
-        
-        SELECT face_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
+        SELECT face_name, set_code, set_name, icon_svg, collector_number, "language", png_image_uri, oracle_id,
           is_highres_image, is_oversized, is_dfc -- get_card_with_scryfall_id()
             FROM VisiblePrintings
             WHERE scryfall_id = ? AND is_front = ?
         ''')
-        if (result := self.db.execute(query, (scryfall_id, is_front)).fetchone()) is not None:
-            name, set_code, set_name, collector_number, language, image_uri, oracle_id, is_highres_image, \
-                is_oversized, is_dfc = result
-            size = CardSizes.from_bool(is_oversized)
-            return Card(
-                name, MTGSet(set_code, set_name), collector_number,
-                language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(is_highres_image), size, bool(is_dfc),
-            )
-        return None
+        if (row := cursor.execute(query, (scryfall_id, is_front)).fetchone()) is None:
+            return None
+        return Card(
+            name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
+            collector_number=row["collector_number"], language=row["language"],scryfall_id=scryfall_id,
+            is_front=is_front, oracle_id=row["oracle_id"], image_uri=row["png_image_uri"],
+            highres_image=bool(row["is_highres_image"]), size=CardSizes.from_bool(row["is_oversized"]),
+            is_dfc=bool(row["is_dfc"])
+        )
 
     def get_all_cards_from_image_cache(self, cache_content: list[CacheContent]) -> ImageDatabaseCards:
         """
