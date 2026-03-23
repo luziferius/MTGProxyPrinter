@@ -590,9 +590,9 @@ class CardDatabase(QObject):
         """Guesses the card language from the card name. Returns None, if no result was found."""
         query = cached_dedent('''\
         SELECT "language" -- guess_language_from_name()
-            FROM FaceName
-            JOIN PrintLanguage USING (language_id)
-            WHERE card_name = ?
+            FROM PrintingFace
+            INNER JOIN Printing USING (printing_id)
+            WHERE face_name = ?
             -- Assume English by default to not match other languages in case their entry misses the proper
             -- localisation and uses the English name as a fallback.
             ORDER BY "language" = 'en' DESC;
@@ -755,12 +755,14 @@ class CardDatabase(QObject):
         Runs the query with the given parameters that is expected to return either a singular value or None,
         and returns the result
         """
-        match tuple(self.db.execute(query, parameters).fetchone()):
-            case result, :
-                return result
+        match self.db.execute(query, parameters).fetchone():
+            case sqlite3.Row() as row:
+                return row[0]
             case None:
                 return None
-            case _, *_:
+            case row, :
+                return row
+            case _:
                 raise RuntimeError(f"BUG: {query} result was not a scalar")
 
     def _read_scalar_list_from_db(
