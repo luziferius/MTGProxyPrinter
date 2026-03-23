@@ -700,8 +700,13 @@ def test_is_removed_printing(
 def test_get_basic_land_oracle_ids(
         qtbot, card_db: CardDatabase,
         include_wastes: bool, include_snow_basics: bool, expected_oracle_ids: list[str]):
-    fill_card_database_with_json_cards(
-        qtbot, card_db, ["english_basic_Forest", "english_basic_Wastes", "english_basic_Snow_Forest"])
+    cards_to_load = [
+        # Basic lands
+        "english_basic_Forest", "english_basic_Wastes", "english_basic_Snow_Forest",
+        # Not basic lands, even if one matches by the English name
+        "basic_land_art_series_card", "regular_english_card",
+    ]
+    fill_card_database_with_json_cards(qtbot, card_db, cards_to_load)
     assert_that(
         card_db.get_basic_land_oracle_ids(include_wastes, include_snow_basics),
         contains_inanyorder(*expected_oracle_ids)
