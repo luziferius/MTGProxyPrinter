@@ -342,9 +342,7 @@ class DocumentLoader(AsyncTask):
                 logger.info("Unable to find suitable replacement card. Skipping it.")
                 return None
             migrated = True
-        # To obtain the back side, use the scryfall id of the returned front, not the one in the input data.
-        # This ensures that the matching back face is loaded, if the front was migrated.
-        back = self.card_db.get_card_with_scryfall_id(front.scryfall_id, False)
+        back = self.card_db.get_opposing_face(front)
         if back is None:
             logger.error(
                 "Unable to find suitable replacement card for the DFC back. This should not happen. Skipping it.")

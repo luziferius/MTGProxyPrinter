@@ -443,10 +443,8 @@ class CardDatabase(QObject):
           FROM Printing
           JOIN PrintingFace USING (printing_id)
           JOIN MTGSet USING (set_id)
-          WHERE is_visible IS TRUE
-            AND "language" = ?
-            AND set_code = ?
-            AND face_name = ?
+          WHERE (is_visible, "language", set_code, face_name)
+              = (TRUE,       ?,          ?,        ?)
         ''')
         return natural_sorted(item for item, in self.db.execute(query, (language, set_code, card_name)))
 
@@ -606,10 +604,7 @@ class CardDatabase(QObject):
         return bool(self._read_optional_scalar_from_db(query, (language,)))
 
     def is_dfc(self, scryfall_id: str) -> bool:  # PORTED TO 35
-        # FIXME: Deprecate? The Printing has this available directly.
-        #  Add is_dfc boolean attribute to Card and populate at creation
-        """Returns True, if the given card is a DFC, False otherwise."""
-        # This query returns two values for DFC cards, but that does not pose any issue
+        """Returns True, if the given scryfall_id belongs to a double-faced card, False otherwise."""
         query = cached_dedent('''
         SELECT is_dfc -- is_dfc()
           FROM Printing
