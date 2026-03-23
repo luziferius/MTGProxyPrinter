@@ -212,13 +212,13 @@ class TestCaseData:
                 face.get("printed_name") or face["name"], card_set,
                 cd["collector_number"],  cd["lang"], cd["id"], "/front/" in image_uris["png"], oracle_id,
                 image_uris["png"], cd["highres_image"],
-                size, face_id, "/back/" in last_image_uris["png"], None
+                size, "/back/" in last_image_uris["png"], None
             )
         return Card(
             cd.get("printed_name") or cd["name"], card_set,
             cd["collector_number"],  cd["lang"], cd["id"], True, oracle_id,
             cd["image_uris"]["png"], cd["highres_image"],
-            size, 0, False, None
+            size, False, None
         )
 
 

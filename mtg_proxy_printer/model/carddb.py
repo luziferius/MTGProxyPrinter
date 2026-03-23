@@ -295,8 +295,8 @@ class CardDatabase(QObject):
          :param order_by_print_count: Enable sorting the result list by the recorded print count. Defaults to False
         """
         query = cached_dedent('''\
-        SELECT card_name, set_code, set_name, collector_number, png_image_uri, scryfall_id, is_front,
-                oracle_id, highres_image, is_oversized, face_number, language, is_dfc -- get_cards_from_data()
+        SELECT face_name, set_code, set_name, collector_number, png_image_uri, scryfall_id, is_front,
+                oracle_id, highres_image, is_oversized, language, is_dfc -- get_cards_from_data()
             FROM VisiblePrintings
         ''')
         if order_by_print_count:
@@ -307,7 +307,7 @@ class CardDatabase(QObject):
             where_clause.append(f'AND "language" = ?')
             where_parameters.append(card.language)
         if card.name:
-            where_clause.append(f'AND card_name = ?')
+            where_clause.append(f'AND face_name = ?')
             where_parameters.append(card.name)
         if card.set_code:
             where_clause.append(f'AND set_code = ?')
@@ -329,7 +329,6 @@ class CardDatabase(QObject):
         order_by_terms = ["is_token ASC"]
         if order_by_print_count:
             order_by_terms.append("LastImageUseTimestamps.usage_count DESC NULLS LAST")
-        order_by_terms.append("wackiness_score ASC")
         order_by_terms.append("highres_image DESC")
         order_by_terms.append("release_date DESC")
         query += "ORDER BY " + "\n    ,".join(order_by_terms)
@@ -368,10 +367,10 @@ class CardDatabase(QObject):
             Card(
                 name, MTGSet(set_code, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), CardSizes.from_bool(is_oversized), face_number, bool(is_dfc),
+                bool(highres_image), CardSizes.from_bool(is_oversized), bool(is_dfc),
             )
             for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
-            is_oversized, face_number, language, is_dfc in cursor
+            is_oversized, language, is_dfc in cursor
         ]
 
     def find_related_cards(self, card: Card) -> CardList:
@@ -501,12 +500,12 @@ class CardDatabase(QObject):
         ''')
         if (result := self.db.execute(query, (scryfall_id, is_front)).fetchone()) is not None:
             name, set_code, set_name, collector_number, language, image_uri, oracle_id, is_highres_image, \
-                is_oversized, face_number, is_dfc = result
+                is_oversized, is_dfc = result
             size = CardSizes.from_bool(is_oversized)
             return Card(
                 name, MTGSet(set_code, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(is_highres_image), size, face_number, bool(is_dfc),
+                bool(is_highres_image), size, bool(is_dfc),
             )
         return None
 
