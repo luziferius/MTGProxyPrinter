@@ -135,14 +135,12 @@ class CardDatabase(QObject):
     def reopen_database(self) -> None:
         logger.info(f"About to open card database from {self.db_path}")
         db = open_database(self.db_path, SCHEMA_NAME, check_same_thread=self._db_check_same_thread)
-        db.row_factory = sqlite3.Row
         outdated_on_disk = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, SCHEMA_NAME) > 0
         if outdated_on_disk:
             logger.warning(
                 "Refusing to load outdated database schema. Use empty in-memory database until migrations complete.")
             db.close()
             db = open_database(":memory:", SCHEMA_NAME, check_same_thread=self._db_check_same_thread)
-            db.row_factory = sqlite3.Row
         logger.debug("Validating schema of the opened database")
         try:
             validate_database_schema(
@@ -155,6 +153,7 @@ class CardDatabase(QObject):
             self.db.rollback()
             self.db.close()
         self.db = db
+        db.row_factory = sqlite3.Row
         self._db_is_temporary = outdated_on_disk
         self.begin_transaction()
         if reopened:
@@ -486,14 +485,13 @@ class CardDatabase(QObject):
         :param is_front: Side of the printing. True returns the front, False returns the back, if it exists.
         :return: A Card, if it exists and is visible, None otherwise
         """
-        cursor = self.db.cursor()
         query = cached_dedent('''\
         SELECT face_name, set_code, set_name, icon_svg, collector_number, "language", png_image_uri, oracle_id,
           is_highres_image, is_oversized, is_dfc -- get_card_with_scryfall_id()
             FROM VisiblePrintings
             WHERE (scryfall_id, is_front) = (?, ?)
         ''')
-        if (row := cursor.execute(query, (scryfall_id, is_front)).fetchone()) is None:
+        if (row := self.db.execute(query, (scryfall_id, is_front)).fetchone()) is None:
             return None
         return Card(
             name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),

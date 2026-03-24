@@ -489,12 +489,21 @@ def test_get_card_with_scryfall_id(
 
 @pytest.mark.parametrize("language", ["en", None])
 @pytest.mark.parametrize("card_count_data, expected_index, identification_data", [
-    ([("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 2), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 1)], 0, CardIdentificationData(name="Forest")),
-    ([("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 1), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 2)], 1, CardIdentificationData(name="Forest")),
+    ([(2, "7ef83f4c-d3ff-4905-a16d-f2bae673a5b2"), (1, "e2ef9b74-481b-424b-8e33-f0b910f66370")], 0, CardIdentificationData(name="Forest")),
+    ([(1, "7ef83f4c-d3ff-4905-a16d-f2bae673a5b2"), (2, "e2ef9b74-481b-424b-8e33-f0b910f66370")], 1, CardIdentificationData(name="Forest")),
 ])
 def test_get_cards_from_data_order_by_print_count_enabled(
         qtbot: QtBot, card_db: CardDatabase, language: str | None, card_count_data, expected_index: int, identification_data: CardIdentificationData):
     fill_card_database_with_json_cards(qtbot, card_db, ["english_basic_Forest", "english_basic_Forest_2"])
+    card_db.db.executemany("""\
+    UPDATE PrintingFace SET  -- _update_image_usage()
+        usage_count = ?,
+        FROM (
+          SELECT printing_id FROM Printing
+          WHERE scryfall_id = ?
+          ) AS previous
+      WHERE (PrintingFace.printing_id, PrintingFace.is_front) = (previous.printing_id, TRUE)
+    """, card_count_data)
     card_db.db.executemany(
         "INSERT INTO LastImageUseTimestamps (scryfall_id, is_front, usage_count) VALUES (?, 1, ?)",
         card_count_data

@@ -344,10 +344,6 @@ class DatabaseImportTask(AsyncTask):
         source.network_error_occurred.connect(self.cancel, BlockingQueuedConnection)
         self._db = db
         self.db_created = db is None
-        if db:
-            # Logic is incompatible with sqlite3.Row as a factory.
-            # the DB passed in from test code has this set, so revert to the default factory
-            self.db.row_factory = None
         self.should_run = True
         self.set_code_cache: dict[str, int] = {}
         logger.info(f"Created {self.__class__.__name__} instance.")

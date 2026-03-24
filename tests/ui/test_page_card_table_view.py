@@ -58,12 +58,19 @@ def test__get_default_image_save_path(table_view: PageCardTableView, name: str, 
     )
 
 
+EMPTY_FRONT_CARD = Card(
+    name="", set=MTGSet("", ""), collector_number="", language="", scryfall_id="",
+    is_front=True, oracle_id="", image_uri="", highres_image=True, size=CardSizes.REGULAR,
+    is_dfc=False)
+EMPTY_BACK_CARD = Card(
+    name="", set=MTGSet("", ""), collector_number="", language="", scryfall_id="",
+    is_front=False, oracle_id="", image_uri="", highres_image=True, size=CardSizes.REGULAR,
+    is_dfc=False)
+
+
 @pytest.mark.parametrize("card", [
-    Card("", MTGSet("", ""), "", "", "", True, "", "", True, CardSizes.REGULAR, 1, False, None),
-    CheckCard(
-        Card("", MTGSet("", ""), "", "", "", True, "", "", True, CardSizes.REGULAR, 1, False, None),
-        Card("", MTGSet("", ""), "", "", "", True, "", "", True, CardSizes.REGULAR, 1, False, None),
-    )
+    EMPTY_FRONT_CARD,
+    CheckCard(EMPTY_FRONT_CARD, EMPTY_BACK_CARD)
 ])
 @pytest.mark.parametrize("count", [1, 3])
 def test__add_copies_directly_adds_card_with_image(
@@ -78,7 +85,7 @@ def test__add_copies_directly_adds_card_with_image(
 
 
 @pytest.mark.parametrize("card", [
-    Card("", MTGSet("", ""), "", "", "", True, "", "", True, CardSizes.REGULAR, 1, False, None)
+    EMPTY_FRONT_CARD
 ])
 @pytest.mark.parametrize("count", [1, 3])
 def test__add_copies_uses_image_db_for_card_without_image(

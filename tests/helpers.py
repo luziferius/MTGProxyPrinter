@@ -118,11 +118,14 @@ def setup_settings_for_testing():
 
 def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict):
     # Explicitly share the in-memory database connection
-    dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), card_db.db, ":memory:")
+    db = card_db.db
+    dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), db, ":memory:")
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = update_database_printing_filters(card_db, filter_settings)
+    db.row_factory = None  # TODO: Determine why patch.object() doesn't properly revert during __exit__()
     with patch.dict(section, settings_to_use):
         dw.populate_database(data)
+    db.row_factory = sqlite3.Row
 
 
 def update_database_printing_filters(
@@ -299,7 +302,10 @@ def quantity_between(lower: Quantity, upper: Quantity):
 
 def create_card(name: str, size: CardSize = CardSizes.REGULAR, image_uri: str = "", pixmap: QPixmap = None) -> Card:
     """Creates a Card with given name and size. Most properties are empty."""
-    return Card(name, MTGSet("", ""), "", "", "", True, "", image_uri, True, size, 0, False, pixmap)
+    return Card(
+        name=name, set=MTGSet("", ""), collector_number="", language="", scryfall_id="",
+        is_front=True, oracle_id="", image_uri=image_uri, highres_image=True, size=size, is_dfc=False,
+        image_file=pixmap)
 
 
 def _fill_area(image: QImage, fill_color: QColor, pos: QPoint, width: int = 5, height: int = 5):

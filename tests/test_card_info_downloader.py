@@ -183,8 +183,8 @@ class TestCaseData:
         release_date = datetime.datetime.fromisoformat(card["released_at"])
         return DatabaseSetData(card["set"], card["set_name"], release_date, card["set_id"])
 
-    def db_card(self) -> tuple[str]:
-        return self.oracle_id,
+    def db_card(self) -> str:
+        return self.oracle_id
 
     def db_set(self):
         return self.set
@@ -236,7 +236,7 @@ class TestCaseData:
 
 def _assert_card_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks oracle_id"""
-    data: Sequence[tuple[str]] = card_db.db.execute('SELECT oracle_id FROM Card\n').fetchall()
+    data: Sequence[str] = [row["oracle_id"] for row in card_db.db.execute('SELECT oracle_id FROM Card\n')]
     assert_that(
         data, contains_exactly(test_case.db_card()),
         f"Card relation contains unexpected data: {data}")
@@ -592,9 +592,9 @@ def test_related_printings(
     # Cards always relate to exact printings, but which one is chosen is rather arbitrary. E.g. The Underworld Cookbook
     # and Back into a Pie both create a Food token, but are set to different printings of that token card.
     fill_card_database_with_json_cards(qtbot, card_db, cards)
-
+    data = list(map(tuple, card_db.db.execute("SELECT card_id, related_id FROM RelatedCards")))
     assert_that(
-       card_db.db.execute("SELECT card_id, related_id FROM RelatedCards").fetchall(),
+        data,
         contains_inanyorder(
             *expected_pairs
         )
@@ -609,8 +609,9 @@ def test_related_printings(
 def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, cards: list[str]):
     db = card_db.db
     fill_card_database_with_json_cards(qtbot, card_db, cards)
+    data = list(map(tuple, card_db.db.execute("SELECT card_id, related_id FROM RelatedCards")))
     assert_that(
-        db.execute("SELECT card_id, related_id FROM RelatedCards").fetchall(),
+        data,
         contains_inanyorder((2, 1), (3, 1)),
         "Test setup failed"
     )
@@ -620,8 +621,9 @@ def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, 
         [(1, 2), (1, 3)]
     )
     fill_card_database_with_json_cards(qtbot, card_db, cards)
+    data = list(map(tuple, card_db.db.execute("SELECT card_id, related_id FROM RelatedCards")))
     assert_that(
-        db.execute("SELECT card_id, related_id FROM RelatedCards").fetchall(),
+        data,
         contains_inanyorder((2, 1), (3, 1)),
         "Old related printings not cleaned up"
     )
