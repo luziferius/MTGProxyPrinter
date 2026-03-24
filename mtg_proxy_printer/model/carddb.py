@@ -258,21 +258,20 @@ class CardDatabase(QObject):
         return {item for item, in self.db.execute(query, names)}
 
     def is_valid_and_unique_card(self, card: CardIdentificationData) -> bool:
+        # FIXME: THIS IS UNTESTED CODE!
         """Checks, if the given card data represents a unique card printing"""
         query = cached_dedent('''\
         SELECT COUNT(*) = 1 AS is_unique -- is_valid_and_unique_card()
-            FROM CardFace
+            FROM PrintingFace
             JOIN Printing USING (printing_id)
             JOIN MTGSet USING (set_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            WHERE Printing.is_hidden IS FALSE
+            WHERE Printing.is_visible IS TRUE
         ''')
 
         where_clause = '    AND "language" = ?\n'
         parameters: ParameterList = [card.language]
         if card.name:
-            where_clause += '    AND card_name = ?\n'
+            where_clause += '    AND face_name = ?\n'
             parameters.append(card.name)
         if card.set_code:
             where_clause += '    AND set_code = ?\n'
