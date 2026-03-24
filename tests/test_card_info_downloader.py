@@ -509,17 +509,17 @@ DataPath = list[str | int]
 
 
 @pytest.mark.parametrize("test_case, dict_path, value", [
-#    (TestCaseData("regular_english_card"), ["lang"], "pl"),  # English "Fury Sliver" from Time Spiral
-#    (TestCaseData("regular_english_card"), ["oracle_id"], "59b2a90e-542f-4fb0-b290-000000000000"),
-#    (TestCaseData("reversible_card"), ["card_faces", 0, "oracle_id"], "59b2a90e-542f-4fb0-b290-000000000000"),
+    (TestCaseData("regular_english_card"), ["lang"], "pl"),  # English "Fury Sliver" from Time Spiral
+    (TestCaseData("regular_english_card"), ["oracle_id"], "59b2a90e-542f-4fb0-b290-000000000000"),
+    (TestCaseData("reversible_card"), ["card_faces", 0, "oracle_id"], "59b2a90e-542f-4fb0-b290-000000000000"),
     (TestCaseData("regular_english_card"), ["set"], "tsa"),
-#    (TestCaseData("regular_english_card"), ["set_name"], "Time Spiral Altered"),
-#    (TestCaseData("regular_english_card"), ["scryfall_set_uri"], "https://scryfall.com/sets/tsa"),
-#    (TestCaseData("regular_english_card"), ["released_at"], "2000-01-01"),  # Dating back is allowed.
-#    (TestCaseData("regular_english_card"), ["collector_number"], "1234"),
-#    (TestCaseData("regular_english_card"), ["oversized"], True),
-#    (TestCaseData("regular_english_card"), ["highres_image"], False),
-#    (TestCaseData("regular_english_card"), ["image_uris", "png"], "https://c1.scryfall.com/file/front/invalid.png"),
+    (TestCaseData("regular_english_card"), ["set_name"], "Time Spiral Altered"),
+    (TestCaseData("regular_english_card"), ["scryfall_set_uri"], "https://scryfall.com/sets/tsa"),
+    (TestCaseData("regular_english_card"), ["released_at"], "2000-01-01"),  # Dating back is allowed.
+    (TestCaseData("regular_english_card"), ["collector_number"], "1234"),
+    (TestCaseData("regular_english_card"), ["oversized"], True),
+    (TestCaseData("regular_english_card"), ["highres_image"], False),
+    (TestCaseData("regular_english_card"), ["image_uris", "png"], "https://c1.scryfall.com/file/front/invalid.png"),
 ])
 def test_updates_changed_value_on_re_import(
         qtbot, card_db: CardDatabase, test_case: TestCaseData, dict_path: DataPath, value):
