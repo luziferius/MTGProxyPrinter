@@ -25,7 +25,7 @@ CREATE TABLE Card (
   oracle_id TEXT NOT NULL UNIQUE,
   -- There are now tokens sharing names with cards, so state if this is a card that can go into a deck.
   -- Used by the print selection in the deck list parser to always chose cards over same-name tokens
-  is_card INTEGER NOT NULL CHECK (is_card IN (TRUE, FALSE))
+  is_card BOOLEAN_INTEGER NOT NULL CHECK (is_card IN (TRUE, FALSE))
 );
 
 CREATE TABLE Printing (
@@ -37,13 +37,13 @@ CREATE TABLE Printing (
   card_id INTEGER NOT NULL REFERENCES Card(card_id),
   -- Over-sized card indicator. Over-sized cards (value TRUE) are mostly useless for play,
   -- so store this to be able to warn the user
-  is_oversized INTEGER NOT NULL CHECK (is_oversized IN (TRUE, FALSE)),
+  is_oversized BOOLEAN_INTEGER NOT NULL CHECK (is_oversized IN (TRUE, FALSE)),
   -- Indicates if the card has high resolution images.
-  is_highres_image INTEGER NOT NULL CHECK (is_highres_image IN (TRUE, FALSE)),
+  is_highres_image BOOLEAN_INTEGER NOT NULL CHECK (is_highres_image IN (TRUE, FALSE)),
   -- Result cache for the printing filter evaluation
-  is_visible INTEGER NOT NULL CHECK (is_visible IN (TRUE, FALSE)) DEFAULT TRUE,
+  is_visible BOOLEAN_INTEGER NOT NULL CHECK (is_visible IN (TRUE, FALSE)) DEFAULT TRUE,
   preference_score INTEGER NOT NULL DEFAULT 0,
-  is_dfc INTEGER NOT NULL CHECK (is_dfc IN (TRUE, FALSE)) DEFAULT FALSE
+  is_dfc BOOLEAN_INTEGER NOT NULL CHECK (is_dfc IN (TRUE, FALSE)) DEFAULT FALSE
 );
 
 CREATE TABLE RelatedCards (
@@ -58,12 +58,12 @@ CREATE TABLE RelatedCards (
 
 CREATE TABLE PrintingFace (
   printing_id INTEGER NOT NULL,
-  is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
+  is_front BOOLEAN_INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
   face_name TEXT NOT NULL CHECK (face_name <> ''),
   png_image_uri TEXT NOT NULL,
   usage_count INTEGER NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
-  last_use_timestamp INTEGER,
-  currently_downloaded INTEGER NOT NULL CHECK (currently_downloaded IN (TRUE, FALSE)) DEFAULT FALSE,
+  last_use_timestamp INTEGER_TIMESTAMP,
+  currently_downloaded BOOLEAN_INTEGER NOT NULL CHECK (currently_downloaded IN (TRUE, FALSE)) DEFAULT FALSE,
   PRIMARY KEY(printing_id, is_front)
 );
 
@@ -71,8 +71,8 @@ CREATE TABLE MTGSet (
   set_id   INTEGER PRIMARY KEY NOT NULL,
   set_code TEXT NOT NULL UNIQUE CHECK (set_code <> ''),
   set_name TEXT NOT NULL,
-  release_date INTEGER NOT NULL,
-  set_filter_active INTEGER NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
+  release_date INTEGER_TIMESTAMP NOT NULL,
+  set_filter_active BOOLEAN_INTEGER NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
   icon_svg TEXT CHECK (icon_svg <> ''),
   set_scryfall_id TEXT NOT NULL UNIQUE
 );
@@ -80,7 +80,7 @@ CREATE TABLE MTGSet (
 CREATE TABLE LastDatabaseUpdate (
   -- Contains the history of all performed card data updates
   update_id           INTEGER NOT NULL PRIMARY KEY,
-  update_timestamp    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  update_timestamp    INTEGER_TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   reported_card_count INTEGER NOT NULL CHECK (reported_card_count >= 0)
 );
 
@@ -88,7 +88,7 @@ CREATE TABLE PrintingFilters (
   -- Contains the available display filters and their current values
   filter_id INTEGER NOT NULL PRIMARY KEY,
   filter_name TEXT NOT NULL UNIQUE,
-  filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE)),
+  filter_active BOOLEAN_INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE)),
   printing_preference_weight INTEGER NOT NULL DEFAULT 0
 );
 

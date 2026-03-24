@@ -34,6 +34,18 @@ from .helpers import assert_model_is_empty, fill_card_database_with_json_card, l
     fill_card_database_with_json_cards, CardDataType
 
 
+def row_cursor(db: sqlite3.Connection) -> sqlite3.Cursor:
+    """
+    Returns a cursor for the given database, with sqlite3.Row as the row factory.
+
+    Used in Tests where using Key/value-based lookups result in
+    cleaner test code over brittle 10-tuple unpacking.
+    """
+    cursor = db.cursor()
+    cursor.row_factory = sqlite3.Row
+    return cursor
+
+
 class DatabasePrintingData(NamedTuple):
     """Rows stored in the Printing relation"""
     collector_number: str
@@ -55,7 +67,7 @@ class DatabaseSetData(NamedTuple):
     """Row data stored in the Set relation"""
     set_code: str
     set_name: str
-    release_date: int
+    release_date: datetime.datetime
     set_scryfall_id: UUID
 
 
@@ -66,9 +78,9 @@ class DatabaseVisiblePrintingsData(NamedTuple):
     set_code: str
     set_name: str
     collector_number: str
-    release_date: int
+    release_date: datetime.datetime
     scryfall_id: UUID
-    image_uri: str
+    png_image_uri: str
     oracle_id: UUID
     language: str
     is_oversized: bool
@@ -168,7 +180,7 @@ class TestCaseData:
     @property
     def set(self) -> DatabaseSetData:
         card = self.json_dict
-        release_date = round(datetime.datetime.fromisoformat(card["released_at"]).timestamp())
+        release_date = datetime.datetime.fromisoformat(card["released_at"])
         return DatabaseSetData(card["set"], card["set_name"], release_date, card["set_id"])
 
     def db_card(self) -> tuple[str]:
@@ -226,28 +238,28 @@ def _assert_card_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks oracle_id"""
     data: Sequence[tuple[str]] = card_db.db.execute('SELECT oracle_id FROM Card\n').fetchall()
     assert_that(
-        data,contains_exactly(test_case.db_card()),
+        data, contains_exactly(test_case.db_card()),
         f"Card relation contains unexpected data: {data}")
 
 
 def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
     """
     Asserts that the card's set is stored in the database.
-    Checks columns set_code, set_name, set_uri, release_date
+    Checks columns set_code, set_name, release_date, set_scryfall_id
     """
-    data: Sequence[DatabaseSetData] = card_db.db.execute(
-        "SELECT set_code, set_name, release_date, set_scryfall_id FROM MTGSet\n").fetchall()
+    data: Sequence[DatabaseSetData] = [
+        DatabaseSetData(**dict(row)) for row in row_cursor(card_db.db).execute(
+            "SELECT set_code, set_name, release_date, set_scryfall_id FROM MTGSet\n")]
     assert_that(
         data, contains_exactly(test_case.db_set()),
         "Set relation contains unexpected data")
 
 
 def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *, is_visible: bool = True):
-    """Checks collector_number, scryfall_id, is_oversized, highres_image"""
+    cursor = row_cursor(card_db.db)
     data: Sequence[DatabasePrintingData] = [
-        DatabasePrintingData(collector_number, language, scryfall_id, bool(is_oversized), bool(is_highres_image), bool(is_dfc))
-        for collector_number, language, scryfall_id, is_oversized, is_highres_image, is_dfc
-        in card_db.db.execute("""\
+        DatabasePrintingData(**dict(row)) for row
+        in cursor.execute("""\
         SELECT collector_number, language, scryfall_id, 
                is_oversized, is_highres_image, is_dfc
           FROM Printing""")
@@ -255,25 +267,19 @@ def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *,
     assert_that(
         data, contains_exactly(test_case.db_printing()),
         f"Printing relation contains unexpected data: {data}")
-
-    assert_that(
-        card_db.db.execute(
+    visible_data: Sequence[bool] = [
+        row["is_visible"] for row
+        in cursor.execute(
             "SELECT is_visible FROM Printing WHERE scryfall_id = ?\n",
-            (test_case.scryfall_id,)).fetchall(),
-        contains_exactly(contains_exactly(is_visible)),
-        "Wrong Printing visibility"
-    )
+            (test_case.scryfall_id,))
+    ]
+    assert_that(visible_data, contains_exactly(is_visible), "Wrong Printing visibility")
 
 
 def _assert_printing_face_contains(card_db: CardDatabase, test_case: TestCaseData):
-    """Checks png_image_uri, is_front, face_number"""
-    data: Sequence[tuple[str, str, bool, int, int | None, int]] = [
-        (face_name, png_image_uri, bool(is_front), usage_count, last_use_timestamp, currently_downloaded)
-        for face_name, png_image_uri, is_front, usage_count, last_use_timestamp, currently_downloaded
-        in card_db.db.execute("""\
+    data: Sequence[tuple[str, str, bool, int, int | None, int]] = card_db.db.execute("""\
         SELECT face_name, png_image_uri, is_front, usage_count, last_use_timestamp, currently_downloaded
-          FROM PrintingFace""")
-    ]
+          FROM PrintingFace""").fetchall()
     expected = [contains_exactly(*face, 0, none(), 0) for face in test_case.db_printing_face()]
     assert_that(
         data,
@@ -288,11 +294,13 @@ def _assert_visible_printings_contains(card_db: CardDatabase, test_case: TestCas
       face_name, set_code, set_name, collector_number, release_date, scryfall_id,
       png_image_uri, oracle_id, "language", is_front, is_oversized, is_highres_image, is_dfc
     """
-    data = card_db.db.execute('''\
+    data = [
+        DatabaseVisiblePrintingsData(**dict(row))
+        for row in row_cursor(card_db.db).execute("""\
     SELECT face_name, is_front, set_code, set_name, collector_number, release_date, scryfall_id, 
      png_image_uri, oracle_id, "language", is_oversized, is_highres_image, is_dfc
       FROM VisiblePrintings
-    ''').fetchall()
+    """)]
     assert_that(
         data, contains_inanyorder(*test_case.db_all_printings()),
         f"VisiblePrintings relation contains unexpected data: {data}"
@@ -337,7 +345,7 @@ def test_test_case_data():
             "face_data": contains_exactly(
                 FaceData("Atraxa, Praetors' Voice", "https://cards.scryfall.io/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True)
             ),
-            "set": DatabaseSetData("oc16", "Commander 2016 Oversized", round(datetime.datetime.fromisoformat("2016-11-11").timestamp()), UUID("caa8f8c4-d0bf-4848-9c66-e2fcabd1585c"))
+            "set": DatabaseSetData("oc16", "Commander 2016 Oversized", datetime.datetime.fromisoformat("2016-11-11"), UUID("caa8f8c4-d0bf-4848-9c66-e2fcabd1585c"))
         })
     )
 
@@ -484,7 +492,7 @@ def test_re_import_with_disabled_download_filter_removes_removed_printings_entry
 @pytest.mark.parametrize("test_case_data", [
     TestCaseData("regular_english_card"),  # English "Fury Sliver" from Time Spiral
 ])
-def test_re_import_after_card_ban_hides_it(qtbot, card_db: CardDatabase, test_case_data: TestCaseData):
+def test_re_import_after_unban_makes_card_visible(qtbot, card_db: CardDatabase, test_case_data: TestCaseData):
     card_json = test_case_data.json_dict
     with unittest.mock.patch.dict(card_json["legalities"], {"commander": "banned"}):
         fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
@@ -496,7 +504,7 @@ def test_re_import_after_card_ban_hides_it(qtbot, card_db: CardDatabase, test_ca
 @pytest.mark.parametrize("test_case_data", [
     TestCaseData("regular_english_card"),  # English "Fury Sliver" from Time Spiral
 ])
-def test_re_import_after_unban_makes_card_visible(qtbot, card_db: CardDatabase, test_case_data: TestCaseData):
+def test_re_import_after_card_ban_hides_it(qtbot, card_db: CardDatabase, test_case_data: TestCaseData):
     card_json = test_case_data.json_dict
     fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
     assert_visible_import(card_db, test_case_data)
@@ -581,13 +589,12 @@ def test_updates_ignores_changed_value_on_re_import(
 def test_related_printings(
         qtbot, card_db: CardDatabase,
         cards: list[str], expected_pairs: list[tuple[int, int]]):
-    db = card_db.db
-
     # Cards always relate to exact printings, but which one is chosen is rather arbitrary. E.g. The Underworld Cookbook
     # and Back into a Pie both create a Food token, but are set to different printings of that token card.
     fill_card_database_with_json_cards(qtbot, card_db, cards)
+
     assert_that(
-        db.execute("SELECT card_id, related_id FROM RelatedCards").fetchall(),
+       card_db.db.execute("SELECT card_id, related_id FROM RelatedCards").fetchall(),
         contains_inanyorder(
             *expected_pairs
         )
