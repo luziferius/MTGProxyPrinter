@@ -516,8 +516,8 @@ class CardDatabase(QObject):
         db.execute(cached_dedent('''\
             CREATE TEMP TABLE ImagesOnDisk ( -- get_all_cards_from_image_cache()
               scryfall_id TEXT NOT NULL,
-              is_front INTEGER NOT NULL,
-              highres_on_disk INTEGER NOT NULL,
+              is_front BOOLEAN_INTEGER NOT NULL,
+              highres_on_disk BOOLEAN_INTEGER NOT NULL,
               absolute_path TEXT NOT NULL
             )
         '''))
@@ -530,10 +530,10 @@ class CardDatabase(QObject):
         )
         known_images_query = cached_dedent('''\
         SELECT scryfall_id, is_front, highres_on_disk, absolute_path, -- get_all_cards_from_image_cache()
-            card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
-            is_oversized, face_number, is_dfc, is_hidden -- get_all_cards_from_image_cache()
+            face_name, set_code, set_name, icon_svg, collector_number, "language", png_image_uri, oracle_id,
+            is_oversized, is_dfc, is_visible
             FROM AllPrintings
-            NATURAL JOIN ImagesOnDisk
+            INNER JOIN ImagesOnDisk USING (scryfall_id, is_front)
         ''')
         # Using an EXCEPT compound query in the subquery is faster (~80ms) than a NOT IN () subquery (~700ms)
         unknown_images_query = cached_dedent('''\
@@ -545,29 +545,29 @@ class CardDatabase(QObject):
             EXCEPT
             SELECT scryfall_id, is_front
               FROM Printing
-              JOIN CardFace USING (printing_id)
+              JOIN PrintingFace USING (printing_id)
           )
         ''')
         cards = ImageDatabaseCards([], [], [])
         cards.unknown[:] = (
-            CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), Path(abs_path))
-            for scryfall_id, is_front, highres_on_disk, abs_path
-            in db.execute(unknown_images_query))
-        for scryfall_id, is_front, highres_on_disk, abs_path, \
-                name, set_code, set_name, collector_number, language, image_uri, oracle_id, \
-                is_oversized, face_number, is_dfc, is_hidden \
-                in db.execute(known_images_query):
-            cache_item = CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), Path(abs_path))
-            size = CardSizes.from_bool(is_oversized)
+            CacheContent(
+                scryfall_id=row["scryfall_id"], is_front=row["is_front"],
+                is_high_resolution=row["highres_on_disk"], absolute_path=Path(row["absolute_path"]))
+            for row in db.execute(unknown_images_query))
+
+        for row in db.execute(known_images_query):
+            cache_item = CacheContent(
+                scryfall_id=row["scryfall_id"], is_front=row["is_front"],
+                is_high_resolution=row["highres_on_disk"], absolute_path=Path(row["absolute_path"]))
             card = Card(
-                name, MTGSet(set_code, set_name), collector_number,
-                language, cache_item.scryfall_id, cache_item.is_front, oracle_id, image_uri,
-                bool(highres_on_disk), size, face_number, is_dfc
+                row["face_name"], MTGSet(row["set_code"], row["set_name"], row["icon_svg"]), row["collector_number"],
+                row["language"], cache_item.scryfall_id, cache_item.is_front, row["oracle_id"], row["png_image_uri"],
+                bool(["highres_on_disk"]), CardSizes.from_bool(row["is_oversized"]), row["is_dfc"]
             )
-            if is_hidden:
-                cards.hidden.append((card, cache_item))
-            else:
+            if row["is_visible"]:
                 cards.visible.append((card, cache_item))
+            else:
+                cards.hidden.append((card, cache_item))
         db.execute("ROLLBACK TRANSACTION TO SAVEPOINT 'partition_image_cache' -- get_all_cards_from_image_cache()\n")
         return cards
 
