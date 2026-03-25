@@ -145,12 +145,11 @@ class PrintingFilterUpdater(AsyncTask):
 
     def _changed_or_new_filters(self, section: SectionProxy) -> dict[str, bool]:
         """Returns all changed or new filters with their new value."""
-        old_filter_values_in_db: dict[str, bool] = {
-            key: bool(value) for key, value
-            in self.db.execute(
+        old_filter_values_in_db: dict[str, bool] = dict(
+            self.db.execute(
                 "SELECT filter_name, filter_active FROM PrintingFilters --_changed_or_new_filters()\n"
-             ).fetchall()
-        }
+             )
+        )
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
         filters_in_settings: dict[str, bool] = {key: section.getboolean(key) for key in boolean_keys}
         updated_filters_with_new_values = {

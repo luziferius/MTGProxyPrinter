@@ -54,14 +54,12 @@ T = typing.TypeVar("T")
 
 
 def _should_skip_network_tests() -> bool:
-    result = os.getenv("MTGPROXYPRINTER_RUN_NETWORK_TESTS", "0")
+    env_var_value = os.getenv("MTGPROXYPRINTER_RUN_NETWORK_TESTS", "0")
     try:
-        result = int(result)
+        should_run_tests = bool(int(env_var_value))
     except ValueError:
-        result = True
-    else:
-        result = bool(result)
-    return not result
+        should_run_tests = False
+    return not should_run_tests
 
 
 SHOULD_SKIP_NETWORK_TESTS = _should_skip_network_tests()

@@ -363,9 +363,9 @@ class CardDatabase(QObject):
             Card(
                 name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
                 collector_number=row["collector_number"], language=row["language"],
-                scryfall_id=row["scryfall_id"], is_front=bool(row["is_front"]),  oracle_id=row["oracle_id"],
-                image_uri=row["png_image_uri"], highres_image=bool(row["is_highres_image"]),
-                size=CardSizes.from_bool(row["is_oversized"]), is_dfc=bool(row["is_dfc"]),
+                scryfall_id=row["scryfall_id"], is_front=row["is_front"],  oracle_id=row["oracle_id"],
+                image_uri=row["png_image_uri"], highres_image=row["is_highres_image"],
+                size=CardSizes.from_bool(row["is_oversized"]), is_dfc=row["is_dfc"],
             )
             for row in cursor
         ]
@@ -496,8 +496,8 @@ class CardDatabase(QObject):
             name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
             collector_number=row["collector_number"], language=row["language"], scryfall_id=scryfall_id,
             is_front=is_front, oracle_id=row["oracle_id"], image_uri=row["png_image_uri"],
-            highres_image=bool(row["is_highres_image"]), size=CardSizes.from_bool(row["is_oversized"]),
-            is_dfc=bool(row["is_dfc"])
+            highres_image=row["is_highres_image"], size=CardSizes.from_bool(row["is_oversized"]),
+            is_dfc=row["is_dfc"]
         )
 
     def get_all_cards_from_image_cache(self, cache_content: list[CacheContent]) -> ImageDatabaseCards:
@@ -561,7 +561,7 @@ class CardDatabase(QObject):
             card = Card(
                 row["face_name"], MTGSet(row["set_code"], row["set_name"], row["icon_svg"]), row["collector_number"],
                 row["language"], cache_item.scryfall_id, cache_item.is_front, row["oracle_id"], row["png_image_uri"],
-                bool(["highres_on_disk"]), CardSizes.from_bool(row["is_oversized"]), row["is_dfc"]
+                row["highres_on_disk"], CardSizes.from_bool(row["is_oversized"]), row["is_dfc"]
             )
             if row["is_visible"]:
                 cards.visible.append((card, cache_item))
@@ -862,8 +862,8 @@ class CardDatabase(QObject):
             name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
             collector_number=row["collector_number"], language=target_language, scryfall_id=row["scryfall_id"],
             is_front=card.is_front, oracle_id=card.oracle_id, image_uri=row["png_image_uri"],
-            highres_image=bool(row["is_highres_image"]), size=CardSizes.from_bool(row["is_oversized"]),
-            is_dfc=bool(row["is_dfc"])
+            highres_image=row["is_highres_image"], size=CardSizes.from_bool(row["is_oversized"]),
+            is_dfc=row["is_dfc"]
         )
 
     def get_custom_card(
