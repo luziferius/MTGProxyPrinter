@@ -24,6 +24,7 @@ from pathlib import Path
 import sqlite3
 import threading
 from typing import NamedTuple, TypeVar, Literal, Any, LiteralString
+from unittest import case
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QObject, Signal, Slot
@@ -256,6 +257,23 @@ class CardDatabase(QObject):
                 ({", ".join("?"*len(names))})
         ''')
         return {item for item, in self.db.execute(query, names)}
+
+    def get_oracle_id(self, scryfall_id: UUID) -> UUID | None:
+        # FIXME: THIS IS UNTESTED CODE!
+        row = self.db.execute(cached_dedent("""\
+            SELECT oracle_id -- get_oracle_id()
+              FROM RemovedPrintings
+              WHERE scryfall_id = ?"""), (scryfall_id,)).fetchone() \
+            or self.db.execute(cached_dedent("""\
+            SELECT oracle_id -- get_oracle_id()
+              FROM Printing 
+              INNER JOIN Card USING (card_id)
+              WHERE scryfall_id = ?"""), (scryfall_id,)).fetchone()
+        match row:
+            case sqlite3.Row as row:
+                return row["oracle_id"]
+            case _:
+                return None
 
     def is_valid_and_unique_card(self, card: CardIdentificationData) -> bool:
         # FIXME: THIS IS UNTESTED CODE!

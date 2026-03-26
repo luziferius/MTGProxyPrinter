@@ -21,6 +21,7 @@ from typing import TypedDict, NotRequired
 
 from PySide6.QtCore import QObject, QCoreApplication
 
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from ..model.card import Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -158,6 +159,7 @@ class ScryfallCSVParser(BaseCSVParser):
         target_language = language_override or language
 
         card = self.card_db.get_card_with_scryfall_id(scryfall_id, True) \
+            or self._handle_hidden_printing(scryfall_id, language)\
             or self._handle_removed_printing(scryfall_id, language, guess_printing)
         if card:
             if language_override:
@@ -183,7 +185,20 @@ class ScryfallCSVParser(BaseCSVParser):
                 logger.info("Not enough data available to select a printing for the given line. Skipping.")
         return cards
 
-    def _handle_removed_printing(self, scryfall_id: str, language: str, guess_printing: bool) -> Card | None:
+    def _handle_hidden_printing(self, scryfall_id: UUID, language: str) -> Card | None:
+        oracle_id = self.card_db.get_oracle_id(scryfall_id)
+        to_test = [
+            CardIdentificationData(language, oracle_id=oracle_id),
+            CardIdentificationData(
+                mtg_proxy_printer.settings.settings["cards"]["preferred-language"], oracle_id=oracle_id),
+            CardIdentificationData(oracle_id=oracle_id),
+        ]
+        for test in to_test:
+            if result := self.card_db.get_cards_from_data(test):
+                return result[0]
+        return None
+
+    def _handle_removed_printing(self, scryfall_id: UUID, language: str, guess_printing: bool) -> Card | None:
         if self.card_db.is_removed_printing(scryfall_id):
             choices = self.card_db.get_replacement_card_for_unknown_printing(
                 CardIdentificationData(language, scryfall_id=scryfall_id, is_front=True),
