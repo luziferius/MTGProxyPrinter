@@ -21,7 +21,7 @@ import enum
 import functools
 import re
 import sqlite3
-from typing import Type, NamedTuple, TypedDict, NotRequired, TypeVar, Any, TYPE_CHECKING
+from typing import Type, NamedTuple, TypedDict, NotRequired, TypeVar, Any, TYPE_CHECKING, Literal
 
 from pint import UnitRegistry, Context
 from PySide6.QtCore import QSize, QObject
@@ -196,7 +196,7 @@ class FaceDataType(TypedDict):
     loyalty: NotRequired[str]
     mana_cost: str
     name: str
-    object: str  # Object type, always constant
+    object: Literal["card_face"]  # Object type, always constant
     oracle_id: NotRequired[ShouldBeUUID]  # Present in either the faces of reversible cards, or the parent card object otherwise
     oracle_text: NotRequired[str]
     power: NotRequired[str]
@@ -211,7 +211,7 @@ class FaceDataType(TypedDict):
 class RelatedCardType(TypedDict):
     object: str
     id: ShouldBeUUID
-    component: str
+    component: Literal["token", "meld_part", "meld_result", "combo_piece"]
     name: str
     type_line: str
     uri: str
@@ -238,7 +238,7 @@ class CardDataType(_CardPreviewFields):
     tcgplayer_id: NotRequired[int]
     tcgplayer_etched_id: NotRequired[int]
     cardmarket_id: NotRequired[int]
-    object: str  # Object type, always "card"
+    object: Literal["card"]  # Object type, always "card"
     layout: str
     oracle_id: NotRequired[ShouldBeUUID]  # Always present, except for "reversible" cards, where this is in the individual faces
     print_search_uri: API_URI
@@ -257,7 +257,7 @@ class CardDataType(_CardPreviewFields):
     edhrec_rank: NotRequired[int]
     hand_modifier: NotRequired[str]
     keywords: NotRequired[list[str]]
-    legalities: StrDict
+    legalities: dict[str, Literal["legal", "not_legal", "restricted", "banned"]]
     life_modifier: NotRequired[str]
     loyalty: NotRequired[str]
     mana_cost: NotRequired[str]
@@ -280,7 +280,7 @@ class CardDataType(_CardPreviewFields):
     collector_number: str
     content_warning: NotRequired[bool]
     digital: bool
-    finishes: list[str]
+    finishes: list[Literal["foil", "nonfoil", "etched"]]
     flavor_name: NotRequired[str]
     flavor_text: NotRequired[str]
     frame_effects: NotRequired[list[str]]
@@ -292,14 +292,14 @@ class CardDataType(_CardPreviewFields):
     image_status: str
     image_uris: NotRequired[ImageUriType]
     oversized: bool
-    prices: dict[str, float]
+    prices: dict[Literal["usd", "usd_foil", "usd_etched", "eur", "eur_foil", "eur_etched", "tix"], float]
     printed_name: NotRequired[str]
     printed_text: NotRequired[str]
     printed_type_line: NotRequired[str]
     promo: bool
     promo_types: NotRequired[list[str]]
     purchase_uris: NotRequired[dict[str, ShouldBeUUID]]
-    rarity: str
+    rarity: Literal["common", "uncommon", "rare", "special", "mythic", "bonus"]
     related_uris: dict[str, WEB_URI]
     released_at: str
     reprint: bool
