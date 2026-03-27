@@ -397,7 +397,8 @@ class CardDatabase(QObject):
         Non-token cards may find anything, including other cards, tokens, emblems, dungeons, planes, etc.
 
         Non-regular cards may not find non-token cards as that would create potentially huge graphs due to
-        evergreen tokens like Treasures, Food, Clues, 2/2 Zombies, The Ring emblem, etc.
+        evergreen tokens like Treasures, Food, Clues, 2/2 Zombies
+        or designations, like Dungeons or The Ring emblem, that are created by a set mechanic.
         """
         query = cached_dedent("""\
         WITH RECURSIVE   -- find_related_cards()
@@ -437,7 +438,10 @@ class CardDatabase(QObject):
                     CardIdentificationData("en", oracle_id=related_oracle_id),
                     order_by_print_count=True)
             if related_cards:
-                cards.append(related_cards[0])
+                found = related_cards[0]
+                cards.append(found)
+                if found.is_dfc:
+                    cards.append(self.get_opposing_face(found))
         return cards
 
     def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> list[str]:  # PORTED TO 35
