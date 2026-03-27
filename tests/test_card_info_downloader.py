@@ -468,25 +468,41 @@ def test_re_import_with_enabled_download_filter_removes_card(
     assert_hidden_import(card_db, test_case)
 
 
-@pytest.mark.parametrize("filter_name, visible_value, hidden_value", [
-    ("hide-oversized-cards", "False", "True"),
-    ("hidden-sets", "", "OC16"),
+@pytest.mark.parametrize("unacceptable_card", [
+    "missing_image_double_faced_card",
 ])
-def test_re_import_with_disabled_download_filter_removes_removed_printings_entry(
-        qtbot, card_db: CardDatabase, filter_name: str, visible_value: str, hidden_value: str):
-    test_case = TestCaseData("oversized_card")  # Oversized printing of "Atraxa, Praetors' Voice"
-    # Pass 1: Populate the database and exclude the card. The card should not be visible
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: hidden_value})
-    assert_hidden_import(card_db, test_case)
-    # Pass 2: Re-Populate the database, but include the card now.
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: visible_value})
-    # The card should be in the database. The RemovedPrintings table should be empty
-    assert_visible_import(card_db, test_case)
-    assert_that(
-        card_db.db.execute("SELECT scryfall_id, oracle_id FROM RemovedPrintings").fetchall(),
-        is_(empty()),
-        "RemovedPrintings table not properly cleaned up."
-    )
+def test_removed_printings_table_populated_with_unacceptable_printing(
+        qtbot, card_db: CardDatabase, unacceptable_card: str):
+    card = load_json(unacceptable_card)
+    fill_card_database_with_json_cards(qtbot, card_db, [card])
+    db_result = card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings").fetchall()
+    assert_that(db_result, has_length(1))
+    assert_that(dict(db_result[0]), has_entries({
+        "scryfall_id": card["id"],
+        "language": card["lang"],
+        "oracle_id": card["oracle_id"],
+    }))
+
+
+def test_removed_printings_entry_removed_when_printing_becomes_acceptable(
+        qtbot, card_db: CardDatabase):
+    original = load_json("regular_english_card")
+    modified: CardDataType = original.copy()
+    del modified["image_uris"]
+    modified["image_status"] = "missing"
+    fill_card_database_with_json_cards(qtbot, card_db, [modified])
+    db_result = card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings").fetchall()
+    assert_that(db_result, has_length(1), "Test setup failed")
+    assert_that(dict(db_result[0]), has_entries({
+        "scryfall_id": original["id"],
+        "language": original["lang"],
+        "oracle_id": original["oracle_id"],
+    }), "Test setup failed")
+    fill_card_database_with_json_cards(qtbot, card_db, [original])
+    db_result = card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings").fetchall()
+    assert_that(db_result, is_(empty()))
+
+
 
 
 @pytest.mark.parametrize("test_case_data", [

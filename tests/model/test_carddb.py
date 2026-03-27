@@ -672,9 +672,12 @@ def test_is_removed_printing_with_hidden_or_visible_printing_returns_false(
 ])
 def test_get_replacement_card_for_unknown_printing(
         qtbot: QtBot, card_db: CardDatabase, cards_to_import, filter_name: str, card_data: CardIdentificationData,
-        expected_replacement: str, order_printings: bool):
+        expected_replacement: UUID, order_printings: bool):
     fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {filter_name: "True"})
-
+    assert_that(
+        card_db.db.execute("SELECT count(scryfall_id) FROM RemovedPrintings").fetchone()[0],
+        is_(greater_than(0)), "Test setup failed"
+    )
     assert_that(
         card_db.get_replacement_card_for_unknown_printing(card_data, order_by_print_count=order_printings),
         all_of(
