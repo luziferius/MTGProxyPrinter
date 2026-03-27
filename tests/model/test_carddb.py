@@ -506,15 +506,15 @@ def test_get_cards_from_data_order_by_print_count_enabled(
     """, card_count_data)
     identification_data.language = language
     cards = card_db.get_cards_from_data(identification_data, order_by_print_count=True)
-    other_index = int(not expected_index)
+    other_index = 1 - expected_index
     assert_that(
         cards,
         contains_exactly(
             has_property("scryfall_id", equal_to(
-                card_count_data[expected_index][0]
+                card_count_data[expected_index][1]
             )),
             has_property("scryfall_id", equal_to(
-                card_count_data[other_index][0]
+                card_count_data[other_index][1]
             )),
         )
     )

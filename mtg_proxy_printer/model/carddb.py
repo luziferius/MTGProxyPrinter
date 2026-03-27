@@ -347,7 +347,7 @@ class CardDatabase(QObject):
             order_by_terms.append("usage_count DESC NULLS LAST")
         order_by_terms.append("is_highres_image DESC")
         order_by_terms.append("release_date DESC")
-        query += "ORDER BY " + "\n    ,".join(order_by_terms)
+        query += "ORDER BY " + ",\n    ".join(order_by_terms)
         return self._get_cards_from_data(query, where_parameters)
 
     def get_replacement_card_for_unknown_printing(
@@ -377,7 +377,7 @@ class CardDatabase(QObject):
 
     def _get_cards_from_data(self, query, parameters) -> CardList:
         cursor = self.db.execute(query, parameters)
-        return [
+        result = [
             Card(
                 name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
                 collector_number=row["collector_number"], language=row["language"],
@@ -387,6 +387,7 @@ class CardDatabase(QObject):
             )
             for row in cursor
         ]
+        return result
 
     def find_related_cards(self, card: Card) -> CardList:
         """
