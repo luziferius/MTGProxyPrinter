@@ -19,6 +19,7 @@ while decouple them from introducing a hard dependency on the actual ImageDataba
 """
 
 import dataclasses
+import enum
 import pathlib
 
 from PySide6.QtCore import Qt
@@ -36,21 +37,31 @@ __all__ = [
 ]
 
 
+class ImageQuality(enum.IntFlag):
+    low_resolution = 1
+    high_resolution = enum.auto()
+    custom_card = enum.auto()
+
+
 @dataclasses.dataclass(frozen=True)
 class ImageKey:
     scryfall_id: str
     is_front: bool
-    is_high_resolution: bool
+    image_quality: ImageQuality
+
+    @property
+    def is_high_resolution(self) -> bool:
+        return ImageQuality.high_resolution in self.image_quality
 
     def format_relative_path(self) -> pathlib.Path:
         """Returns the file system path of the associated image relative to the image database root path."""
-        level1 = self.format_level_1_directory_name(self.is_front, self.is_high_resolution)
+        level1 = self.format_level_1_directory_name(self.is_front, self.image_quality)
         return pathlib.Path(level1, self.scryfall_id[:2], f"{self.scryfall_id}.png")
 
     @staticmethod
-    def format_level_1_directory_name(is_front: bool, is_high_resolution: bool) -> str:
+    def format_level_1_directory_name(is_front: bool, image_quality: ImageQuality) -> str:
         side = "front" if is_front else "back"
-        res = "highres" if is_high_resolution else "lowres"
+        res = "highres" if ImageQuality.high_resolution in image_quality else "lowres"
         return f"{res}_{side}"
 
 
@@ -59,4 +70,4 @@ class CacheContent(ImageKey):
     absolute_path: pathlib.Path
 
     def as_key(self):
-        return ImageKey(self.scryfall_id, self.is_front, self.is_high_resolution)
+        return ImageKey(self.scryfall_id, self.is_front, self.image_quality)

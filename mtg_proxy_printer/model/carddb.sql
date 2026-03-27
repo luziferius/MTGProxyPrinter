@@ -63,7 +63,7 @@ CREATE TABLE PrintingFace (
   png_image_uri TEXT NOT NULL,
   usage_count INTEGER NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
   last_use_timestamp INTEGER_TIMESTAMP,
-  currently_downloaded BOOLEAN_INTEGER NOT NULL CHECK (currently_downloaded IN (TRUE, FALSE)) DEFAULT FALSE,
+  download_status INTEGER NOT NULL CHECK (download_status >=0) DEFAULT FALSE,
   PRIMARY KEY(printing_id, is_front)
 );
 
