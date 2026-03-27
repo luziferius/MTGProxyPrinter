@@ -773,7 +773,7 @@ class CardDatabase(QObject):
         """Runs the query with the given parameters, returning a list of singular items"""
         return [item for item, in self.db.execute(query, parameters)]
 
-    def is_removed_printing(self, scryfall_id: str) -> bool:  # FIXME: Deprecated. Table no longer exists
+    def is_removed_printing(self, scryfall_id: str) -> bool:
         logger.debug(f"Query RemovedPrintings table for scryfall id {scryfall_id}")
         parameters: ParameterList = [scryfall_id,]
         query = cached_dedent("""\

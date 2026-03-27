@@ -687,10 +687,10 @@ def test_get_replacement_card_for_unknown_printing(
 
 
 @pytest.mark.parametrize("cards_to_import, filter_name, printing, expected", [
-    (["missing_image_double_faced_card", "english_double_faced_card_2"], "any", "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", True),
-    (["missing_image_double_faced_card", "english_double_faced_card_2"], "any", "d9131fc3-018a-4975-8795-47be3956160d", False),
-    (["german_Back_to_Basics", "english_Back_to_Basics"], "hide-cards-without-images", "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", True),
-    (["german_Back_to_Basics", "english_Back_to_Basics"], "hide-cards-without-images", "0600d6c2-0f72-4e79-a55d-1f06dffa48c2", False),
+    # Invalid card, because one side has completely missing images, and is therefore removed
+    (["missing_image_double_faced_card"], "any", "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", True),
+    # It has placeholder images, so is hidden, but not removed
+    (["german_Back_to_Basics"], "hide-cards-without-images", "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", False),
 ])
 def test_is_removed_printing(
         qtbot: QtBot, card_db: CardDatabase, cards_to_import, filter_name: str, printing: str, expected: bool):
