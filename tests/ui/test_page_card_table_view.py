@@ -32,8 +32,9 @@ from .test_main_window import main_window  # noqa
 
 
 @pytest.fixture()
-def table_view(document_light: Document, card_db: CardDatabase) -> PageCardTableView:
+def table_view(qtbot: QtBot, document_light: Document, card_db: CardDatabase) -> PageCardTableView:
     view = PageCardTableView()
+    qtbot.add_widget(view)
     view.set_data(document_light, card_db)
     return view
 
@@ -58,19 +59,23 @@ def test__get_default_image_save_path(table_view: PageCardTableView, name: str, 
     )
 
 
-EMPTY_FRONT_CARD = Card(
-    name="", set=MTGSet("", ""), collector_number="", language="", scryfall_id="",
-    is_front=True, oracle_id="", image_uri="", highres_image=True, size=CardSizes.REGULAR,
-    is_dfc=False)
-EMPTY_BACK_CARD = Card(
-    name="", set=MTGSet("", ""), collector_number="", language="", scryfall_id="",
-    is_front=False, oracle_id="", image_uri="", highres_image=True, size=CardSizes.REGULAR,
-    is_dfc=False)
+def empty_front_card():
+    return Card(
+        name="", set=MTGSet("", ""), collector_number="", language="", scryfall_id="",
+        is_front=True, oracle_id="", image_uri="", highres_image=True, size=CardSizes.REGULAR,
+        is_dfc=False)
+
+
+def empty_back_card():
+    return Card(
+        name="", set=MTGSet("", ""), collector_number="", language="", scryfall_id="",
+        is_front=False, oracle_id="", image_uri="", highres_image=True, size=CardSizes.REGULAR,
+        is_dfc=False)
 
 
 @pytest.mark.parametrize("card", [
-    EMPTY_FRONT_CARD,
-    CheckCard(EMPTY_FRONT_CARD, EMPTY_BACK_CARD)
+    empty_front_card(),
+    CheckCard(empty_front_card(), empty_back_card())
 ])
 @pytest.mark.parametrize("count", [1, 3])
 def test__add_copies_directly_adds_card_with_image(
@@ -85,7 +90,7 @@ def test__add_copies_directly_adds_card_with_image(
 
 
 @pytest.mark.parametrize("card", [
-    EMPTY_FRONT_CARD
+    empty_front_card()
 ])
 @pytest.mark.parametrize("count", [1, 3])
 def test__add_copies_uses_image_db_for_card_without_image(
