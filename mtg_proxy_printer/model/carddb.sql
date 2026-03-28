@@ -21,29 +21,29 @@ BEGIN TRANSACTION;
 
 
 CREATE TABLE Card (
-  card_id INTEGER NOT NULL PRIMARY KEY,
-  oracle_id TEXT NOT NULL UNIQUE,
+  card_id   INTEGER         NOT NULL PRIMARY KEY,
+  oracle_id TEXT            NOT NULL UNIQUE,
   -- There are now tokens sharing names with cards, so state if this is a card that can go into a deck.
   -- Used by the print selection in the deck list parser to always chose cards over same-name tokens
-  is_card BOOLEAN_INTEGER NOT NULL CHECK (is_card IN (TRUE, FALSE))
+  is_card   BOOLEAN_INTEGER NOT NULL CHECK (is_card IN (TRUE, FALSE))
 );
 
 CREATE TABLE Printing (
-  printing_id INTEGER NOT NULL PRIMARY KEY,
-  set_id INTEGER NOT NULL REFERENCES MTGSet(set_id),
-  collector_number TEXT NOT NULL,
-  "language" TEXT NOT NULL CHECK ("language" <> ''),
-  scryfall_id TEXT NOT NULL UNIQUE,
-  card_id INTEGER NOT NULL REFERENCES Card(card_id),
+  printing_id      INTEGER         NOT NULL PRIMARY KEY,
+  set_id           INTEGER         NOT NULL REFERENCES MTGSet(set_id),
+  collector_number TEXT            NOT NULL,
+  "language"       TEXT            NOT NULL CHECK ("language" <> ''),
+  scryfall_id      TEXT            NOT NULL UNIQUE,
+  card_id          INTEGER         NOT NULL REFERENCES Card(card_id),
   -- Over-sized card indicator. Over-sized cards (value TRUE) are mostly useless for play,
   -- so store this to be able to warn the user
-  is_oversized BOOLEAN_INTEGER NOT NULL CHECK (is_oversized IN (TRUE, FALSE)),
+  is_oversized     BOOLEAN_INTEGER NOT NULL CHECK (is_oversized IN (TRUE, FALSE)),
   -- Indicates if the card has high resolution images.
   is_highres_image BOOLEAN_INTEGER NOT NULL CHECK (is_highres_image IN (TRUE, FALSE)),
   -- Result cache for the printing filter evaluation
-  is_visible BOOLEAN_INTEGER NOT NULL CHECK (is_visible IN (TRUE, FALSE)) DEFAULT TRUE,
-  preference_score INTEGER NOT NULL DEFAULT 0,
-  is_dfc BOOLEAN_INTEGER NOT NULL CHECK (is_dfc IN (TRUE, FALSE)) DEFAULT FALSE
+  is_visible       BOOLEAN_INTEGER NOT NULL CHECK (is_visible IN (TRUE, FALSE)) DEFAULT TRUE,
+  preference_score INTEGER         NOT NULL DEFAULT 0,
+  is_dfc           BOOLEAN_INTEGER NOT NULL CHECK (is_dfc IN (TRUE, FALSE)) DEFAULT FALSE
 );
 
 CREATE TABLE RelatedCards (
@@ -57,39 +57,39 @@ CREATE TABLE RelatedCards (
 ) WITHOUT ROWID;
 
 CREATE TABLE PrintingFace (
-  printing_id INTEGER NOT NULL,
-  is_front BOOLEAN_INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
-  face_name TEXT NOT NULL CHECK (face_name <> ''),
-  png_image_uri TEXT NOT NULL,
-  usage_count INTEGER NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
+  printing_id        INTEGER            NOT NULL,
+  is_front           BOOLEAN_INTEGER    NOT NULL CHECK (is_front IN (TRUE, FALSE)),
+  face_name          TEXT               NOT NULL CHECK (face_name <> ''),
+  png_image_uri      TEXT               NOT NULL,
+  usage_count        INTEGER            NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
   last_use_timestamp INTEGER_TIMESTAMP,
-  download_status INTEGER NOT NULL CHECK (download_status >=0) DEFAULT FALSE,
+  download_status    INTEGER            NOT NULL CHECK (download_status >=0) DEFAULT FALSE,
   PRIMARY KEY(printing_id, is_front)
 );
 
 CREATE TABLE MTGSet (
-  set_id   INTEGER PRIMARY KEY NOT NULL,
-  set_code TEXT NOT NULL UNIQUE CHECK (set_code <> ''),
-  set_name TEXT NOT NULL,
-  release_date INTEGER_TIMESTAMP NOT NULL,
-  set_filter_active BOOLEAN_INTEGER NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
-  icon_svg TEXT CHECK (icon_svg <> ''),
-  set_scryfall_id TEXT NOT NULL UNIQUE
+  set_id            INTEGER           NOT NULL PRIMARY KEY,
+  set_code          TEXT              NOT NULL UNIQUE CHECK (set_code <> ''),
+  set_name          TEXT              NOT NULL,
+  release_date      INTEGER_TIMESTAMP NOT NULL,
+  set_filter_active BOOLEAN_INTEGER   NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
+  icon_svg          TEXT                       CHECK (icon_svg <> ''),
+  set_scryfall_id   TEXT              NOT NULL UNIQUE
 );
 
 CREATE TABLE LastDatabaseUpdate (
   -- Contains the history of all performed card data updates
-  update_id           INTEGER NOT NULL PRIMARY KEY,
-  update_timestamp    INTEGER_TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  reported_card_count INTEGER NOT NULL CHECK (reported_card_count >= 0)
+  update_id           INTEGER           NOT NULL PRIMARY KEY,
+  update_timestamp    INTEGER_TIMESTAMP NOT NULL DEFAULT (unixepoch(CURRENT_TIMESTAMP)),
+  reported_card_count INTEGER           NOT NULL CHECK (reported_card_count >= 0)
 );
 
 CREATE TABLE PrintingFilters (
   -- Contains the available display filters and their current values
-  filter_id INTEGER NOT NULL PRIMARY KEY,
-  filter_name TEXT NOT NULL UNIQUE,
-  filter_active BOOLEAN_INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE)),
-  printing_preference_weight INTEGER NOT NULL DEFAULT 0
+  filter_id                  INTEGER         NOT NULL PRIMARY KEY,
+  filter_name                TEXT            NOT NULL UNIQUE,
+  filter_active              BOOLEAN_INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE)),
+  printing_preference_weight INTEGER         NOT NULL DEFAULT 0
 );
 
 CREATE TABLE FilterAppliesTo (
@@ -102,15 +102,15 @@ CREATE TABLE FilterAppliesTo (
 CREATE TABLE RemovedPrintings (
   scryfall_id TEXT NOT NULL PRIMARY KEY,
   -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
-  language TEXT NOT NULL,
-  oracle_id TEXT NOT NULL
+  language    TEXT NOT NULL,
+  oracle_id   TEXT NOT NULL
 );
 
 CREATE TABLE MigratedPrintings (
-  migration_id TEXT NOT NULL PRIMARY KEY,
-  old_scryfall_id TEXT NOT NULL,
+  migration_id    TEXT              NOT NULL PRIMARY KEY,
+  old_scryfall_id TEXT              NOT NULL,
   new_scryfall_id TEXT,
-  performed_at INTEGER_TIMESTAMP NOT NULL
+  performed_at    INTEGER_TIMESTAMP NOT NULL
 );
 CREATE INDEX MigratedPrintingsLookup ON MigratedPrintings(old_scryfall_id, new_scryfall_id);
 

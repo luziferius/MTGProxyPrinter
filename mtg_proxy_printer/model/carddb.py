@@ -195,8 +195,8 @@ class CardDatabase(QObject):
     def get_last_card_data_update_timestamp(self) -> datetime.datetime | None:
         """Returns the last card data update timestamp, or None, if no card data was ever imported"""
         query: LiteralString = "SELECT MAX(update_timestamp) FROM LastDatabaseUpdate -- get_last_card_data_update_timestamp\n"
-        result: str = self._read_optional_scalar_from_db(query)
-        return datetime.datetime.fromisoformat(result) if result else None
+        result: int = self._read_optional_scalar_from_db(query)
+        return datetime.datetime.fromtimestamp(result) if result else None
 
     def allow_updating_card_data(self) -> bool:
         """

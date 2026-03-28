@@ -692,6 +692,21 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         "DROP VIEW HiddenPrintingIDs",
         "DELETE FROM RemovedPrintings WHERE scryfall_id IN (SELECT scryfall_id FROM Printing)",
         dedent("""\
+        CREATE TABLE LastDatabaseUpdate_New (
+          -- Contains the history of all performed card data updates
+          update_id           INTEGER           NOT NULL PRIMARY KEY,
+          update_timestamp    INTEGER_TIMESTAMP NOT NULL DEFAULT (unixepoch(CURRENT_TIMESTAMP)),
+          reported_card_count INTEGER           NOT NULL CHECK (reported_card_count >= 0)
+        )
+        """),
+        dedent("""\
+        INSERT INTO LastDatabaseUpdate_New (update_id,           update_timestamp,         reported_card_count)
+          SELECT                            update_id, unixepoch(update_timestamp, 'utc'), reported_card_count 
+          FROM LastDatabaseUpdate
+        """),
+        "DROP TABLE LastDatabaseUpdate",
+        "ALTER TABLE LastDatabaseUpdate_New RENAME TO LastDatabaseUpdate",
+        dedent("""\
         CREATE TABLE RelatedCards (
           -- The related cards of a card are those it references or creates, and those creating or referencing it.
           -- The relationship is modelled bi-directional for better discoverability, especially for effects
@@ -704,30 +719,42 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         "INSERT INTO RelatedCards SELECT card_id, related_id FROM RelatedPrintings",
         "DROP TABLE RelatedPrintings",
         "ALTER TABLE PrintingDisplayFilter RENAME TO FilterAppliesTo",
-        "ALTER TABLE DisplayFilters RENAME TO PrintingFilters",
-        "ALTER TABLE PrintingFilters ADD COLUMN printing_preference_weight INTEGER NOT NULL DEFAULT 0",
         dedent("""\
-        CREATE TABLE MTGSet_new (
-          set_id   INTEGER PRIMARY KEY NOT NULL,
-          set_code TEXT NOT NULL UNIQUE CHECK (set_code <> ''),
-          set_name TEXT NOT NULL,
-          release_date INTEGER_TIMESTAMP NOT NULL,
-          set_filter_active INTEGER NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
-          icon_svg TEXT CHECK (icon_svg <> ''),
-          set_scryfall_id TEXT NOT NULL UNIQUE
+        CREATE TABLE PrintingFilters (
+          -- Contains the available display filters and their current values
+          filter_id                  INTEGER         NOT NULL PRIMARY KEY,
+          filter_name                TEXT            NOT NULL UNIQUE,
+          filter_active              BOOLEAN_INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE)),
+          printing_preference_weight INTEGER         NOT NULL DEFAULT 0
         )"""),
         dedent("""\
-        INSERT INTO MTGSet_new (set_id, set_code, set_name, release_date,            set_scryfall_id)
+        INSERT INTO PrintingFilters (filter_id, filter_name, filter_active)
+          SELECT filter_id, filter_name, filter_active
+          FROM DisplayFilters
+        """),
+        "DROP TABLE DisplayFilters",
+        dedent("""\
+        CREATE TABLE MTGSet_new (
+          set_id            INTEGER           NOT NULL PRIMARY KEY,
+          set_code          TEXT              NOT NULL UNIQUE CHECK (set_code <> ''),
+          set_name          TEXT              NOT NULL,
+          release_date      INTEGER_TIMESTAMP NOT NULL,
+          set_filter_active BOOLEAN_INTEGER   NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
+          icon_svg          TEXT                       CHECK (icon_svg <> ''),
+          set_scryfall_id   TEXT              NOT NULL UNIQUE
+        )"""),
+        dedent("""\
+        INSERT INTO MTGSet_new (set_id, set_code, set_name,           release_date,         set_scryfall_id)
           SELECT                set_id, set_code, set_name, unixepoch(release_date, 'utc'), set_code
           FROM MTGSet"""),
         "DROP TABLE MTGSet",
         "ALTER TABLE MTGSet_new RENAME TO MTGSet",
         dedent("""\
         CREATE TABLE MigratedPrintings (
-          migration_id TEXT NOT NULL PRIMARY KEY,
-          old_scryfall_id TEXT NOT NULL,
+          migration_id    TEXT              NOT NULL PRIMARY KEY,
+          old_scryfall_id TEXT              NOT NULL,
           new_scryfall_id TEXT,
-          performed_at INTEGER_TIMESTAMP NOT NULL
+          performed_at    INTEGER_TIMESTAMP NOT NULL
         )"""),
         "CREATE INDEX MigratedPrintingsLookup ON MigratedPrintings(old_scryfall_id, new_scryfall_id)",
         dedent("""\
@@ -736,7 +763,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           oracle_id TEXT NOT NULL UNIQUE,
           -- There are now tokens sharing names with cards, so state if this is a card that can go into a deck.
           -- Used by the print selection in the deck list parser to always chose cards over same-name tokens
-          is_card INTEGER NOT NULL CHECK(is_card IN (TRUE, FALSE))
+          is_card BOOLEAN_INTEGER NOT NULL CHECK(is_card IN (TRUE, FALSE))
         )"""),
         dedent("""\
         WITH tokens(card_id, is_card) AS (
@@ -753,13 +780,13 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         "ALTER TABLE Card_new RENAME TO Card",
         dedent("""\
         CREATE TABLE PrintingFace (
-          printing_id INTEGER NOT NULL,
-          is_front BOOLEAN_INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
-          face_name TEXT NOT NULL CHECK (face_name <> ''),
-          png_image_uri TEXT NOT NULL,
-          usage_count INTEGER NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
+          printing_id        INTEGER            NOT NULL,
+          is_front           BOOLEAN_INTEGER    NOT NULL CHECK (is_front IN (TRUE, FALSE)),
+          face_name          TEXT               NOT NULL CHECK (face_name <> ''),
+          png_image_uri      TEXT               NOT NULL,
+          usage_count        INTEGER            NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
           last_use_timestamp INTEGER_TIMESTAMP,
-          currently_downloaded INTEGER NOT NULL CHECK (currently_downloaded IN (TRUE, FALSE)) DEFAULT FALSE,
+          download_status    INTEGER            NOT NULL CHECK (download_status >=0) DEFAULT FALSE,
           PRIMARY KEY(printing_id, is_front)
         )"""),
         dedent("""\
@@ -775,23 +802,24 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           LEFT OUTER JOIN LastImageUseTimestamps AS lu USING (scryfall_id, is_front)
           JOIN FaceName AS fn USING (face_name_id)
           GROUP BY scryfall_id, is_front"""),
+        "DROP TABLE LastImageUseTimestamps",
         dedent("""\
         CREATE TABLE Printing_new (
-          printing_id INTEGER NOT NULL PRIMARY KEY,
-          set_id INTEGER NOT NULL REFERENCES MTGSet(set_id),
-          collector_number TEXT NOT NULL,
-          "language" TEXT NOT NULL CHECK ("language" <> ''),
-          scryfall_id TEXT NOT NULL UNIQUE,
-          card_id INTEGER NOT NULL REFERENCES Card(card_id),
+          printing_id      INTEGER         NOT NULL PRIMARY KEY,
+          set_id           INTEGER         NOT NULL REFERENCES MTGSet(set_id),
+          collector_number TEXT            NOT NULL,
+          "language"       TEXT            NOT NULL CHECK ("language" <> ''),
+          scryfall_id      TEXT            NOT NULL UNIQUE,
+          card_id          INTEGER         NOT NULL REFERENCES Card(card_id),
           -- Over-sized card indicator. Over-sized cards (value TRUE) are mostly useless for play,
           -- so store this to be able to warn the user
-          is_oversized INTEGER NOT NULL CHECK (is_oversized IN (TRUE, FALSE)),
+          is_oversized     BOOLEAN_INTEGER NOT NULL CHECK (is_oversized IN (TRUE, FALSE)),
           -- Indicates if the card has high resolution images.
-          is_highres_image INTEGER NOT NULL CHECK (is_highres_image IN (TRUE, FALSE)),
+          is_highres_image BOOLEAN_INTEGER NOT NULL CHECK (is_highres_image IN (TRUE, FALSE)),
           -- Result cache for the printing filter evaluation
-          is_visible INTEGER NOT NULL CHECK(is_visible IN (TRUE, FALSE)) DEFAULT TRUE,
-          preference_score INTEGER NOT NULL DEFAULT 0,
-          is_dfc INTEGER NOT NULL CHECK (is_dfc IN (TRUE, FALSE)) DEFAULT FALSE
+          is_visible       BOOLEAN_INTEGER NOT NULL CHECK (is_visible IN (TRUE, FALSE)) DEFAULT TRUE,
+          preference_score INTEGER         NOT NULL DEFAULT 0,
+          is_dfc           BOOLEAN_INTEGER NOT NULL CHECK (is_dfc IN (TRUE, FALSE)) DEFAULT FALSE
         )"""),
         dedent("""\
         INSERT INTO Printing_new
