@@ -61,6 +61,7 @@ Statement = LiteralString | tuple[LiteralString, list[tuple[Any, ...]]]
 @dataclasses.dataclass
 class MigrationScript:
     script: list[Statement] = None
+    disable_foreign_keys: bool = False
 
     def get_script(self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask) -> list[Statement]:
         """Returns the script to run. Can be overridden by subclasses to allow dynamic behavior"""
@@ -209,7 +210,6 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         "CREATE INDEX CardFace_card_id_index ON CardFace (card_id, is_front)",
     ]),
     17: MigrationScript([
-        "PRAGMA foreign_keys = OFF",
         dedent("""\
         CREATE TABLE NewFaceName (
           -- The name of a card face in a given language. Cards are not renamed,
@@ -267,11 +267,8 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         "CREATE INDEX CardFaceToCollectorNumberIndex ON CardFace (face_name_id, set_id, collector_number)",
         "CREATE INDEX CardFace_card_id_index ON CardFace (card_id, is_front)",
         "CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front)",
-        "PRAGMA foreign_key_check",
-        "PRAGMA foreign_keys = ON",
-    ]),
+    ], disable_foreign_keys=True),
     18: MigrationScript([
-        "PRAGMA foreign_keys = OFF",
         dedent("""\
         CREATE TABLE Printing (
           -- A specific printing of a card
@@ -328,14 +325,11 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING(face_name_id)
           JOIN PrintLanguage USING(language_id)"""),
-        "PRAGMA foreign_key_check",
-        "PRAGMA foreign_keys = ON",
-    ]),
+    ], disable_foreign_keys=True),
     19: MigrationScript([
         "CREATE INDEX CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front ON CardFace(is_front, printing_id)"
     ]),
     20: MigrationScript([
-        "PRAGMA foreign_keys = OFF",
         "DROP VIEW AllPrintings",
         dedent("""\
         CREATE TABLE CardFaceNew (
@@ -368,9 +362,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING(face_name_id)
           JOIN PrintLanguage USING(language_id)"""),
-        "PRAGMA foreign_key_check",
-        "PRAGMA foreign_keys = ON",
-    ]),
+    ], disable_foreign_keys=True),
     21: Migrate21to22(),
     22: MigrationScript([
         dedent("""\
@@ -445,7 +437,6 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           GROUP BY printing_id"""),
     ]),
     25: MigrationScript([
-        "PRAGMA foreign_keys = OFF",
         dedent("""\
         CREATE TABLE "Set2" (
           set_id   INTEGER PRIMARY KEY NOT NULL,
@@ -479,9 +470,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           JOIN PrintLanguage USING (language_id)
           WHERE Printing.is_hidden IS FALSE
             AND FaceName.is_hidden IS FALSE"""),
-        "PRAGMA foreign_key_check",
-        "PRAGMA foreign_keys = ON",
-    ]),
+    ], disable_foreign_keys=True),
     26: MigrationScript([
         "UPDATE MTGSet SET release_date = '9999-01-01' WHERE release_date = '1970-01-01'",
         "CREATE INDEX FaceName_for_translation ON FaceName(language_id, card_name DESC)",
@@ -701,6 +690,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         "DROP VIEW AllPrintings",
         "DROP VIEW VisiblePrintings",
         "DROP VIEW HiddenPrintingIDs",
+        "DELETE FROM RemovedPrintings WHERE scryfall_id IN (SELECT scryfall_id FROM Printing)",
         dedent("""\
         CREATE TABLE RelatedCards (
           -- The related cards of a card are those it references or creates, and those creating or referencing it.
@@ -764,7 +754,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         dedent("""\
         CREATE TABLE PrintingFace (
           printing_id INTEGER NOT NULL,
-          is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
+          is_front BOOLEAN_INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
           face_name TEXT NOT NULL CHECK (face_name <> ''),
           png_image_uri TEXT NOT NULL,
           usage_count INTEGER NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
@@ -831,7 +821,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           LEFT OUTER JOIN PrintingFilters USING (filter_id)
           GROUP BY printing_id"""),
         dedent("""\
-        CREATE VIEW AllPrintings AS SELECT 
+        CREATE VIEW AllPrintings AS SELECT
             face_name, set_code, set_name, icon_svg, collector_number, release_date,
             scryfall_id, png_image_uri, oracle_id, "language",
             is_front, is_card, is_oversized, is_highres_image, is_visible, is_dfc, usage_count
@@ -846,7 +836,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
             is_front, is_card, is_oversized, is_highres_image, is_dfc, usage_count
           FROM AllPrintings
           WHERE is_visible IS TRUE"""),
-    ]),
+    ], disable_foreign_keys=True),
 }
 
 
@@ -873,8 +863,6 @@ class DatabaseMigrationTask(AsyncTask):
 
     def __init__(self, card_db: CardDatabase, migration_scripts: dict[int, MigrationScript] = None):
         super().__init__()
-        self.script_update_signals = AsyncTask()
-        self.inner_tasks.append(self.script_update_signals)
         self.db_path = card_db.db_path
         self.migration_scripts = migration_scripts or MIGRATION_SCRIPTS
         logger.debug(f"Created {self.__class__.__name__} instance.")
@@ -892,6 +880,9 @@ class DatabaseMigrationTask(AsyncTask):
         """
         Run the database update.
         """
+
+        script_update_signals = AsyncTask()
+        self.inner_tasks.append(script_update_signals)
         db = mtg_proxy_printer.sqlite_helpers.open_database(self.db_path, "carddb")
         begin_schema_version = self._get_schema_version(db)
         target_version = max(self.migration_scripts.keys())+1
@@ -903,11 +894,11 @@ class DatabaseMigrationTask(AsyncTask):
         logger.info(f"Migrating database from version {begin_schema_version} to {target_version}. "
                     f"About to run {target_version-begin_schema_version} migration scripts.")
         self._begin_top_level_progress(begin_schema_version, target_version)
-        self.request_register_subtask.emit(self.script_update_signals)
+        self.request_register_subtask.emit(script_update_signals)
         try:
             for source_version in range(begin_schema_version, target_version):
                 script = self.migration_scripts[source_version]
-                self._migrate_version(db, source_version, script)
+                self._migrate_version(db, source_version, script, script_update_signals)
                 self.advance_progress.emit()
             current_schema_version = self._get_schema_version(db)
             logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
@@ -916,7 +907,7 @@ class DatabaseMigrationTask(AsyncTask):
             db.execute("VACUUM\n")
             self.advance_progress.emit()
         except sqlite3.Error as e:
-            self.script_update_signals.task_completed.emit()  # Close the inner progress bar that was left open
+            script_update_signals.task_completed.emit()  # Close the inner progress bar that was left open
             if e.sqlite_errorcode == sqlite3.SQLITE_BUSY:
                 raise e
             else:
@@ -957,18 +948,20 @@ class DatabaseMigrationTask(AsyncTask):
     def _get_schema_version(db: sqlite3.Connection) -> int:
         return db.execute("PRAGMA user_version; -- DatabaseMigrationRunner\n").fetchone()[0]
 
-    def _migrate_version(self, db: sqlite3.Connection, source_version: int, script: MigrationScript):
+    def _migrate_version(self, db: sqlite3.Connection, source_version: int, script: MigrationScript, signals: AsyncTask):
         next_version = source_version + 1
         suffix: LiteralString = f";  -- Migrate {source_version} to {next_version}\n"
-        signals = self.script_update_signals
-        steps = script.script_length(db, suffix) + 1  # Add 1 for the call to db.commit()
-
-        msg = QCoreApplication.translate(
-            "DatabaseMigrationRunner", "Migrate to version %n:",
-            "The numeric parameter is a version number, and not countable.", source_version)
+        # Add 1 for the call to db.commit(), and 1 for the foreign keys check
+        steps = script.script_length(db, suffix) + 1 + int(script.disable_foreign_keys)
+        msg = self.tr(
+            "Migrate to version %n:",
+            "Progress bar label. The numeric parameter is a version number, and not countable.",
+            source_version)
         signals.task_begins.emit(steps, msg)
 
         logger.debug(f"Starting migration from {source_version}")
+        if script.disable_foreign_keys:
+            db.execute("PRAGMA foreign_keys = OFF" + suffix)
         db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)
         for statement in script.get_script(db, suffix, signals):  # type: Statement
             if isinstance(statement, str):
@@ -980,6 +973,10 @@ class DatabaseMigrationTask(AsyncTask):
             else:
                 statement, parameters = statement
                 db.executemany(statement + suffix, parameters)
+            signals.advance_progress.emit()
+        if script.disable_foreign_keys:
+            db.execute("PRAGMA foreign_key_check" + suffix)
+            db.execute("PRAGMA foreign_keys = ON" + suffix)
             signals.advance_progress.emit()
         db.execute(f"PRAGMA user_version = {next_version}" + suffix)
         db.commit()
