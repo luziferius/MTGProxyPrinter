@@ -29,7 +29,7 @@ from pytestqt.qtbot import QtBot
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY
 from mtg_proxy_printer.model.card import MTGSet, Card, CardList
-from mtg_proxy_printer.model.imagedb_files import CacheContent
+from mtg_proxy_printer.model.imagedb_files import CacheContent, ImageQuality
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.async_tasks.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -631,10 +631,10 @@ def test_allow_updating_card_data_on_stale_populated_database_returns_true(
     fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
     today = datetime.datetime.today()
     now = today + MINIMUM_REFRESH_DELAY + datetime.timedelta(delta_days)
-    fromisoformat = datetime.datetime.fromisoformat
+    fromtimestamp = datetime.datetime.fromtimestamp
     with unittest.mock.patch("mtg_proxy_printer.model.carddb.datetime.datetime") as mock_date:
         mock_date.today.return_value = now
-        mock_date.fromisoformat = fromisoformat
+        mock_date.fromtimestamp = fromtimestamp
         assert_that(datetime.datetime.today(), is_not(today))
         assert_that(
             card_db.allow_updating_card_data(),
@@ -783,9 +783,9 @@ def test_get_all_cards_from_image_cache(qtbot: QtBot, card_db: CardDatabase):
     fill_card_database_with_json_cards(
         qtbot, card_db, ["regular_english_card", "oversized_card"], {"hide-oversized-cards": str(True)})
     cache_content = [
-        CacheContent("650722b4-d72b-4745-a1a5-00a34836282b", True, True, Path()),  # Atraxa
-        CacheContent("0000579f-7b35-4ed3-b44c-db2a538066fe", True, True, Path()),  # Fury Sliver
-        CacheContent("abcdeabc-abcd-abcd-abcd-efghijklmnop", True, True, Path()),  # Non-existing
+        CacheContent("650722b4-d72b-4745-a1a5-00a34836282b", True, ImageQuality.high_resolution, Path()),  # Atraxa
+        CacheContent("0000579f-7b35-4ed3-b44c-db2a538066fe", True, ImageQuality.high_resolution, Path()),  # Fury Sliver
+        CacheContent("abcdeabc-abcd-abcd-abcd-efghijklmnop", True, ImageQuality.high_resolution, Path()),  # Non-existing
     ]
     assert_that(
         card_db.get_all_cards_from_image_cache(cache_content),

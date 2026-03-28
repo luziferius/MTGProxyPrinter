@@ -30,7 +30,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QObject, Signal, Slot
 
 from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, OptionalCard, CardList, CustomCard
-from mtg_proxy_printer.model.imagedb_files import CacheContent
+from mtg_proxy_printer.model.imagedb_files import CacheContent, ImageQuality
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
@@ -571,16 +571,17 @@ class CardDatabase(QObject):
           )
         ''')
         cards = ImageDatabaseCards([], [], [])
+        qualities = {True: ImageQuality.high_resolution, False: ImageQuality.low_resolution}
         cards.unknown[:] = (
             CacheContent(
                 scryfall_id=row["scryfall_id"], is_front=row["is_front"],
-                is_high_resolution=row["highres_on_disk"], absolute_path=Path(row["absolute_path"]))
+                image_quality=qualities[row["highres_on_disk"]], absolute_path=Path(row["absolute_path"]))
             for row in db.execute(unknown_images_query))
 
         for row in db.execute(known_images_query):
             cache_item = CacheContent(
                 scryfall_id=row["scryfall_id"], is_front=row["is_front"],
-                is_high_resolution=row["highres_on_disk"], absolute_path=Path(row["absolute_path"]))
+                image_quality=qualities[row["highres_on_disk"]], absolute_path=Path(row["absolute_path"]))
             card = Card(
                 row["face_name"], MTGSet(row["set_code"], row["set_name"], row["icon_svg"]), row["collector_number"],
                 row["language"], cache_item.scryfall_id, cache_item.is_front, row["oracle_id"], row["png_image_uri"],
