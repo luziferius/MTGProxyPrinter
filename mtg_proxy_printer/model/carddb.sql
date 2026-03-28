@@ -110,7 +110,7 @@ CREATE TABLE MigratedPrintings (
   migration_id TEXT NOT NULL PRIMARY KEY,
   old_scryfall_id TEXT NOT NULL,
   new_scryfall_id TEXT,
-  performed_at INTEGER NOT NULL
+  performed_at INTEGER_TIMESTAMP NOT NULL
 );
 CREATE INDEX MigratedPrintingsLookup ON MigratedPrintings(old_scryfall_id, new_scryfall_id);
 
