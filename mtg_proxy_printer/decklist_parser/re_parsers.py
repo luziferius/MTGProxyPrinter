@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -82,7 +82,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
         unmatched_lines = []
         for line in self.line_splitter(deck_list):
             # Convert the Match instance to a dict, in order to have the get() method with a default.
-            # The default is used, if the used RE doesn't contain named groups for some of the defined attributes.
+            # The default is used, if the used RE does not contain named groups for some of the defined attributes.
             if match := self.parser.match(line):
                 match_dict = match.groupdict()
                 copies = int(match_dict.get("copies", 1))

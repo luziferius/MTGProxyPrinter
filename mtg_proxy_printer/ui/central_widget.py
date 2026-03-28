@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -57,8 +57,13 @@ class CentralWidget(QWidget):
         super().__init__(parent)
         ui_class = get_configured_central_widget_layout_class()
         logger.debug(f"Using central widget class {ui_class.__name__}")
-        self.ui = ui_class()
-        self.ui.setupUi(self)
+        self.ui = ui = ui_class()
+        ui.setupUi(self)
+        if isinstance(ui, Ui_ColumnarCentralWidget):
+            ui.central_widget_splitter.setStretchFactor(0, 2)
+            ui.central_widget_splitter.setStretchFactor(1, 5)
+            ui.central_widget_splitter.setStretchFactor(2, 9)
+            ui.central_widget_splitter.setStretchFactor(3, 9)
         self.document: Document = None
         self._currently_edited_page: int = 0
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -116,14 +121,14 @@ class CentralWidget(QWidget):
             f"New page to select: {new_page_to_select}")
         document_view.setCurrentIndex(self.document.index(new_page_to_select, 0))
 
-    @Slot(QModelIndex,int,int)
+    @Slot(QModelIndex, int, int)
     def on_document_rows_inserted(self, parent: QModelIndex, first: int, _: int):
         if parent.isValid():  # Not interested in card additions
             return
         # When inserting after the current page, the current page can now be moved down.
         self.ui.page_move_down.setEnabled(self._currently_edited_page < first)
 
-    @Slot(QModelIndex,int,int)
+    @Slot(QModelIndex, int, int)
     def on_document_rows_removed(self, parent: QModelIndex, first: int, last: int):
         if parent.isValid():  # Not interested in card removals
             return

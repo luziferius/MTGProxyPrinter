@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #  Copyright © 2011-2025  Chris Rose, hamcrest.org
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Mapping, TypeVar, Union, overload
+from typing import Any, Mapping, TypeVar, overload
 
 from hamcrest import described_as
 from hamcrest.core import anything

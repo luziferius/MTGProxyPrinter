@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@ from mtg_proxy_printer.async_tasks.decklist_downloader import ScryfallDownloader
     IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader, \
     MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader, MTGTop8Downloader, MTGAZoneDownloader, \
     CubeCobraDownloader, ManaboxDownloader
-
 
 UrlTestData = tuple[type[DecklistDownloader], str]
 
@@ -154,7 +153,7 @@ def test_IsIdentifyingDeckUrlValidator_validate(downloader, url: str):
     validator = IsIdentifyingDeckUrlValidator()
     assert_that(
         validator.validate(url),
-        contains_exactly(IsIdentifyingDeckUrlValidator.Acceptable, url, 0),
+        contains_exactly(IsIdentifyingDeckUrlValidator.State.Acceptable, url, 0),
     )
 
 
@@ -266,7 +265,11 @@ def test_IsIdentifyingDeckUrlValidator_validate_returns_Intermediate_or_Invalid_
     assert_that(
         validator.validate(url),
         contains_exactly(
-            any_of(IsIdentifyingDeckUrlValidator.Intermediate, IsIdentifyingDeckUrlValidator.Invalid), url, 0),
+            any_of(
+                IsIdentifyingDeckUrlValidator.State.Intermediate,
+                IsIdentifyingDeckUrlValidator.State.Invalid,
+            ),
+            url, 0),
     )
 
 

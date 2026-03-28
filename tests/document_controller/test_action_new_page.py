@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -63,9 +63,10 @@ def test_init_initializes_length_content_to_count_if_not_given(count: int):
     assert_that(
         action.content,
         all_of(
-        has_length(count),
-            only_contains(empty())
-    ))
+            has_length(count),
+            only_contains(empty()),
+        )
+    )
 
 
 @pytest.mark.parametrize("content", [
@@ -175,12 +176,14 @@ def test_apply_with_content_populates_created_pages(qtbot: QtBot, document_light
         )
     )
 
-def _create_applied_action(position: int | None, count: int=1, content: list[CardList] = None) -> ActionNewPage:
+
+def _create_applied_action(position: int | None, count: int = 1, content: list[CardList] = None) -> ActionNewPage:
     action = ActionNewPage(position, count=count, content=content)
     action._already_applied = True
     return action
 
-def test_undo_without_position_raises_exception(document_light):
+
+def test_undo_without_position_raises_exception(document_light: Document):
     document_light.pages.append(Page())
     insert_mock_in_page(document_light.pages[0])
     action = ActionNewPage()

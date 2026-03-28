@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ def bounded_copies_spinbox(qtbot: QtBot) -> QSpinBox:
 
 def test_BoundedCopiesSpinboxDelegate_createEditor_returns_correct_type(bounded_copies_spinbox: QSpinBox):
     assert_that(bounded_copies_spinbox, is_(instance_of(QSpinBox)))
+
 
 def test_BoundedCopiesSpinboxDelegate_createEditor_has_correct_limits(bounded_copies_spinbox: QSpinBox):
     assert_that(bounded_copies_spinbox, has_getters(minimum=1, maximum=100))

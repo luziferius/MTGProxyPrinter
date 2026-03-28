@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -606,6 +606,7 @@ def test_undo_with_target_at_end_from_end(qtbot: QtBot, document_light: Document
         "Incorrect card move"
     )
 
+
 @pytest.fixture()
 def document_with_cards(document_light: Document) -> Document:
     ActionNewPage(count=3, content=[[], [], []]).apply(document_light)
@@ -635,26 +636,32 @@ def gather_card_names(document: Document) -> Sequence[str]:
         for page in document.pages
     ]
 
+
 def generate_test_cases_for_card_moves_between_pages():
     # Tuples source, cards_to_move, target_page, target_row, expected
     # Origin card order: ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
 
     # Move onto another existing page
-    yield 0, [0], 1, None, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0], 1, 3, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0], 1, 0, ["A2,A3", "A1,B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0, 2], 1, None, ["A2", "B1,B2,B3,A1,A3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [1], 1, None, ["A1,A3", "B1,B2,B3,A2", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0, 1, 2], 1, None, ["", "B1,B2,B3,A1,A2,A3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 0, [0, 1, 2], 1, 1, ["", "B1,A1,A2,A3,B2,B3", "", "D1,D2,D3,D4,D5,D6"]
-    yield 1, [0], 2, None, ["A1,A2,A3", "B2,B3", "B1", "D1,D2,D3,D4,D5,D6"]
-    yield 1, [0], 3, None, ["A1,A2,A3", "B2,B3", "", "D1,D2,D3,D4,D5,D6,B1"]
-    yield 3, [0, 2], 0, None, ["A1,A2,A3,D1,D3", "B1,B2,B3", "", "D2,D4,D5,D6"]
+    yield 0, [0], 1, None, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]  # 0
+    yield 0, [0], 1, 3, ["A2,A3", "B1,B2,B3,A1", "", "D1,D2,D3,D4,D5,D6"]  # 1
+    yield 0, [0], 1, 0, ["A2,A3", "A1,B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 2
+    yield 0, [0, 2], 1, None, ["A2", "B1,B2,B3,A1,A3", "", "D1,D2,D3,D4,D5,D6"]  # 3
+    yield 0, [1], 1, None, ["A1,A3", "B1,B2,B3,A2", "", "D1,D2,D3,D4,D5,D6"]  # 4
+    yield 0, [0, 1, 2], 1, None, ["", "B1,B2,B3,A1,A2,A3", "", "D1,D2,D3,D4,D5,D6"]  # 5
+    yield 0, [0, 1, 2], 1, 1, ["", "B1,A1,A2,A3,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 6
+    yield 1, [0], 2, None, ["A1,A2,A3", "B2,B3", "B1", "D1,D2,D3,D4,D5,D6"]  # 7
+    yield 1, [0], 3, None, ["A1,A2,A3", "B2,B3", "", "D1,D2,D3,D4,D5,D6,B1"]  # 8
+    yield 3, [0, 2], 0, None, ["A1,A2,A3,D1,D3", "B1,B2,B3", "", "D2,D4,D5,D6"]  # 9
     # Move to new page before target_page
-    yield 3, [0, 2, 3, 5], 0, -1, ["D1,D3,D4,D6", "A1,A2,A3", "B1,B2,B3", "", "D2,D5"]
-    yield 3, [0, 2, 3, 5], 1, -1, ["A1,A2,A3", "D1,D3,D4,D6", "B1,B2,B3", "", "D2,D5"]
+    yield 3, [0, 2, 3, 5], 0, -1, ["D1,D3,D4,D6", "A1,A2,A3", "B1,B2,B3", "", "D2,D5"]  # 10
+    yield 3, [0, 2, 3, 5], 1, -1, ["A1,A2,A3", "D1,D3,D4,D6", "B1,B2,B3", "", "D2,D5"]  # 11
     # Move to new page at document end
-    yield 3, [0, 2, 3, 5], 4, -1, ["A1,A2,A3", "B1,B2,B3", "", "D2,D5", "D1,D3,D4,D6"]
+    yield 3, [0, 2, 3, 5], 4, -1, ["A1,A2,A3", "B1,B2,B3", "", "D2,D5", "D1,D3,D4,D6"]  # 12
+    # Move to new page before current page
+
+    yield 1, [0], 0, -1, ["B1", "A1,A2,A3", "B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 13
+    yield 1, [0], 1, -1, ["A1,A2,A3", "B1", "B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 14
+    yield 0, [0], 0, -1, ["A1", "A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 15
 
 
 @pytest.mark.parametrize(
@@ -662,7 +669,7 @@ def generate_test_cases_for_card_moves_between_pages():
     generate_test_cases_for_card_moves_between_pages())
 def test_ActionMoveCardsBetweenPages_apply(
         document_with_cards: Document,
-        source: int, cards_to_move: list[int], target_page: int, target_row: int|None,
+        source: int, cards_to_move: list[int], target_page: int, target_row: int | None,
         expected: list[str]):
     action = ActionMoveCardsBetweenPages(source, cards_to_move, target_page, target_row)
     action.apply(document_with_cards)
@@ -675,7 +682,7 @@ def test_ActionMoveCardsBetweenPages_apply(
     generate_test_cases_for_card_moves_between_pages())
 def test_ActionMoveCardsBetweenPages_undo(
         document_with_cards: Document,
-        source: int, cards_to_move: list[int], target_page: int, target_row: int|None,
+        source: int, cards_to_move: list[int], target_page: int, target_row: int | None,
         expected: list[str]):
     action = ActionMoveCardsBetweenPages(source, cards_to_move, target_page, target_row)
     action.apply(document_with_cards)
@@ -686,6 +693,7 @@ def test_ActionMoveCardsBetweenPages_undo(
     action.undo(document_with_cards)
     result = gather_card_names(document_with_cards)
     assert_that(result, contains_exactly("A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"), f"Got: {result}")
+
 
 def generate_test_cases_for_card_moves_within_page():
     # Tuples page, cards_to_move, target_row, expected
@@ -706,15 +714,15 @@ def generate_test_cases_for_card_moves_within_page():
     yield 0, [2], 1, ["A1,A3,A2", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 12
     yield 0, [2], 2, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 13
     yield 0, [2], 3, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D4,D5,D6"]  # 14
-    yield 3, [0,2,4], 2, ["A1,A2,A3", "B1,B2,B3", "", "D2,D1,D3,D5,D4,D6"]  # 15
-    yield 3, [1,2,5], 1, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D6,D4,D5"]  # 16
+    yield 3, [0, 2, 4], 2, ["A1,A2,A3", "B1,B2,B3", "", "D2,D1,D3,D5,D4,D6"]  # 15
+    yield 3, [1, 2, 5], 1, ["A1,A2,A3", "B1,B2,B3", "", "D1,D2,D3,D6,D4,D5"]  # 16
 
 
 @pytest.mark.parametrize(
     "page, cards_to_move, target_row, expected",
     generate_test_cases_for_card_moves_within_page())
 def test_ActionMoveCardsWithinPage_apply(document_with_cards: Document, page: int, cards_to_move: list[int],
-                                         target_row: int|None, expected: list[str]):
+                                         target_row: int | None, expected: list[str]):
     ActionMoveCardsWithinPage(page, cards_to_move, target_row).apply(document_with_cards)
     result = gather_card_names(document_with_cards)
     assert_that(result, contains_exactly(*expected), f"Got: {result}")
@@ -724,7 +732,7 @@ def test_ActionMoveCardsWithinPage_apply(document_with_cards: Document, page: in
     "page, cards_to_move, target_row, after_apply",
     generate_test_cases_for_card_moves_within_page())
 def test_ActionMoveCardsWithinPage_undo(document_with_cards: Document, page: int, cards_to_move: list[int],
-                                        target_row: int|None, after_apply: list[str]):
+                                        target_row: int | None, after_apply: list[str]):
     (action := ActionMoveCardsWithinPage(page, cards_to_move, target_row)).apply(document_with_cards)
     try:
         assert_that(gather_card_names(document_with_cards), contains_exactly(*after_apply))

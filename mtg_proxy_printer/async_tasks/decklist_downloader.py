@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 """
 This module is responsible for downloading deck lists from a known list of deckbuilder websites.
 """
-import abc
 import collections
 from collections.abc import Iterable
 import csv
@@ -371,8 +370,8 @@ class TCGPlayerDownloader(DecklistDownloader):
     def map_to_download_url(self, decklist_url: str) -> str:
         match = self.DECKLIST_PATH_RE.match(decklist_url)
         deck_id = match.group("deck_id")
-        # cards enables inclusion of card data (in the form of a mapping from internal card id to card data),
-        # subDecks enables inclusion of mainboard/sideboard as a tuple stream (internal card id, quantity)
+        # cards enables inclusion of card data (in the form of a mapping from internal card id to card data).
+        # subDecks enables inclusion of mainboard/sideboard as a tuple stream (internal card id, quantity).
         # stats enables irrelevant, additional card meta-data, like pricing and such, and is disabled.
         return f"https://infinite-api.tcgplayer.com/deck/magic/{deck_id}/?subDecks=true&cards=true&stats=false"
 

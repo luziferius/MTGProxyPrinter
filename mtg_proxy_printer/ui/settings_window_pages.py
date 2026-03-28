@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -13,7 +13,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from collections.abc import Sequence
 import json
 import logging
 from functools import partial
@@ -75,7 +74,7 @@ class PageMetadata(typing.NamedTuple):
 class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
 
-    def display_item(self) -> Sequence[QStandardItem]:
+    def display_item(self) -> QStandardItem:
         """Returns a list model item for this page, used to represent the page in the settings page selection UI."""
         data = self.display_metadata()
         item = QStandardItem(data.text)
@@ -86,7 +85,7 @@ class Page(QWidget):
         size = item.sizeHint()
         size.setHeight(32)
         item.setSizeHint(size)
-        return item,
+        return item
 
     @abstractmethod
     def display_metadata(self) -> PageMetadata:
@@ -192,7 +191,11 @@ class DebugSettingsPage(Page):
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Download card data to file {path}")
-        self.request_run_async_task.emit(FileDownloadTask(path))
+        task = FileDownloadTask(path)
+        # Failure to download re-enables the download button
+        task.error_occurred.connect(lambda: self.ui.debug_download_card_data_as_file.setEnabled(True))
+        task.network_error_occurred.connect(lambda: self.ui.debug_download_card_data_as_file.setEnabled(True))
+        self.request_run_async_task.emit(task)
 
     @Slot()
     def on_debug_import_card_data_from_file_clicked(self):
@@ -200,7 +203,7 @@ class DebugSettingsPage(Page):
         location, _ = QFileDialog.getOpenFileName(
             self, self.tr("Import previously downloaded card data obtained from Scryfall"),
             QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory),
-            self.tr("Scryfall card data (*.json, *.json.gz)"))
+            self.tr("Scryfall card data (*.json *.json.gz)"))
         logger.info(f"{location=}")
         if not location:
             logger.debug("User cancelled file selection. Not importing.")
@@ -305,6 +308,7 @@ class GeneralSettingsPage(Page):
             (self.tr("English (US) [{progress}%]"), "en_US"),
             (self.tr("German [{progress}%]"), "de"),
             (self.tr("French [{progress}%]"), "fr"),
+            (self.tr("Spanish [{progress}%]"), "es"),
         ]:
             display_text = display_text.format(progress=progress.get(language_code, ""))
             ui.application_language_combo_box.addItem(display_text, language_code)
@@ -367,6 +371,7 @@ class GeneralSettingsPage(Page):
             (ui.automatically_add_opposing_faces, "cards", "automatically-add-opposing-faces"),
             (ui.gui_open_maximized, "gui", "gui-open-maximized"),
             (ui.wizards_open_maximized, "gui", "wizards-open-maximized"),
+            (ui.force_use_internal_icons, "gui", "force-use-internal-icons"),
             (ui.custom_cards_force_round_corners, "cards", "custom-cards-force-round-corners"),
         ]
         return widgets_with_settings

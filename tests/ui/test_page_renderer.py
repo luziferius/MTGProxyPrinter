@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,13 +21,14 @@ from hamcrest import *
 from PySide6.QtCore import QEvent
 from PySide6.QtGui import QAction
 
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.page_renderer import PageRenderer, ZoomDirection
 
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer."
 
 
 @pytest.fixture
-def renderer(qtbot, document_light):
+def renderer(document_light: Document) -> PageRenderer:
     """
     Creates a PageRenderer.
     Note: qtbot fixture parameter is required for the implicitly provided event loop. Qt segfaults without it present
@@ -38,7 +39,7 @@ def renderer(qtbot, document_light):
         yield page_renderer
 
 
-@pytest.fixture(params=[QEvent.ApplicationPaletteChange, QEvent.PaletteChange])
+@pytest.fixture(params=[QEvent.Type.ApplicationPaletteChange, QEvent.Type.PaletteChange])
 def palette_change_event(request):
     yield QEvent(request.param)
 

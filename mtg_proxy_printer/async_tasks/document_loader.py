@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ from mtg_proxy_printer.model.card import Card, CheckCard, CardList, AnyCardType,
 from mtg_proxy_printer.async_tasks.image_downloader import ImageDownloadTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import  PageType, CardSize, CardSizes, unit_registry, \
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, \
     Quantity, T, UUID, OptStr
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.async_tasks.base import AsyncTask
@@ -58,6 +58,7 @@ Orientation = QPageLayout.Orientation
 Millimeter = QPageSize.Unit.Millimeter
 CardTableRow = tuple[int, bool, str, OptStr, OptStr]
 CardTableContent = Iterable[CardTableRow]
+
 
 class CardType(str, enum.Enum):
     value: str
@@ -95,8 +96,10 @@ def split_iterable(iterable: Iterable[T], chunk_size: int, /) -> Iterable[tuple[
     iterable = iter(iterable)
     return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())
 
+
 class CancelledState(Exception):
     pass
+
 
 class DocumentLoader(AsyncTask):
     """
@@ -239,8 +242,8 @@ class DocumentLoader(AsyncTask):
         custom_cards: CustomCards = {}
         assert_that(
             save_db.execute("SELECT min(page) FROM Page").fetchone(),
-            contains_exactly(all_of(instance_of(int), greater_than_or_equal_to(1))
-        ))
+            contains_exactly(all_of(instance_of(int), greater_than_or_equal_to(1)))
+        )
         pages: list[CardList] = []
         allowed_sizes = {CardSizes.REGULAR.to_save_data(), CardSizes.OVERSIZED.to_save_data()}
         for page, expected_size in save_db.execute(
@@ -436,8 +439,8 @@ class DocumentLoader(AsyncTask):
     def _load_document_settings(db: sqlite3.Connection) -> PageLayoutSettings:
         settings = PageLayoutSettings.create_from_settings()
         logger.debug("Reading document settings …")
-        keys =  ", ".join(
-            f"'{key}'" for key, value in settings.__annotations__.items() if value is not Quantity)
+        keys = ", ".join(
+            f"'{key}'" for key, value in PageLayoutSettings.__annotations__.items() if value is not Quantity)
         document_settings_query = textwrap.dedent(f"""\
             SELECT "key", value
                 FROM DocumentSettings
@@ -445,7 +448,7 @@ class DocumentLoader(AsyncTask):
             """)
         settings.update(db.execute(document_settings_query))
         keys = ", ".join(
-            f"'{key}'" for key, value in settings.__annotations__.items() if value is Quantity)
+            f"'{key}'" for key, value in PageLayoutSettings.__annotations__.items() if value is Quantity)
         document_dimensions_query = textwrap.dedent(f"""\
             SELECT "key", value
                 FROM DocumentDimensions
@@ -506,7 +509,7 @@ class DocumentLoader(AsyncTask):
                 if isinstance(value, str):
                     value = QColor(value)
             elif annotated_type is str:
-                 pass
+                pass
             setattr(settings, key, value)
         assert_that(
             settings.compute_page_card_capacity(),

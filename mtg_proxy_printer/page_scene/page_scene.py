@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@ from collections.abc import Generator
 import enum
 import functools
 import itertools
-import typing
 
 from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, QPoint, Signal, QObject, Slot, \
     QPersistentModelIndex, QModelIndex
@@ -44,6 +43,7 @@ ColorRole = QPalette.ColorRole
 SortOrder = Qt.SortOrder
 
 ZERO_WIDTH: Quantity = 0 * unit_registry.mm
+
 
 @enum.unique
 class RenderMode(enum.Flag):
@@ -179,7 +179,9 @@ class PageScene(QGraphicsScene):
 
     @property
     def card_items(self) -> list[CardItem]:
-        return list(filter(is_card_item, self.items(SortOrder.AscendingOrder)))
+        # Sort the items to match the document. This is important for replacing cards.
+        card_items = filter(is_card_item, self.items())
+        return sorted(card_items, key=lambda item: tuple(reversed(item.scenePos().toTuple())))
 
     @property
     def cut_lines(self) -> list[QGraphicsLineItem]:
@@ -238,7 +240,7 @@ class PageScene(QGraphicsScene):
 
     def _update_page_number_text(self):
         if self.page_number_text not in self.text_items:
-            return
+            return  # Rendering page numbers disabled, so skipping the update
         logger.debug("Updating page number text")
         page = self.selected_page.row() + 1
         total_pages = self.document.rowCount()
@@ -344,7 +346,7 @@ class PageScene(QGraphicsScene):
             QPointF(0, 0),
             QSizeF(
                 distance_to_rounded_px(width),
-               distance_to_rounded_px( height),
+                distance_to_rounded_px(height),
             )
         )
         return page_size
@@ -358,7 +360,7 @@ class PageScene(QGraphicsScene):
         for row in range(images_to_draw):
             self.draw_card(document.index(row, PageColumns.Image, parent), page_type)
 
-    def draw_card(self, index: QModelIndex, page_type: PageType, next_item: CardItem = None):
+    def draw_card(self, index: QModelIndex, page_type: PageType):
         position = self._compute_position_for_image(index.row(), page_type)
         if index.data(ItemDataRole.DisplayRole) is not None:  # Card has a QPixmap set
             card_item = CardItem(index, self.document)
@@ -397,7 +399,7 @@ class PageScene(QGraphicsScene):
             for row in range(top_left.row(), bottom_right.row()+1):
                 logger.debug(f"Card {row} on the current page was replaced, replacing image.")
                 current_item = card_items[row]
-                self.draw_card(top_left.siblingAtRow(row), page_type, current_item)
+                self.draw_card(top_left.siblingAtRow(row), page_type)
                 self.removeItem(current_item)
         # Editing the Image column only happens when the custom card corner style was toggled.
         elif top_left.column() == PageColumns.Image:
@@ -412,12 +414,11 @@ class PageScene(QGraphicsScene):
         if self._is_valid_page_index(parent) and parent.row() == self.selected_page.row():
             inserted_cards = last-first+1
             needs_reorder = first + inserted_cards < self.document.rowCount(parent)
-            next_item = self.card_items[first] if needs_reorder else None
             page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
             logger.debug(f"Added {inserted_cards} cards to the currently shown page, drawing them.")
             model = parent.model()
             for new in range(first, last+1):
-                self.draw_card(model.index(new, PageColumns.Image, parent), page_type, next_item)
+                self.draw_card(model.index(new, PageColumns.Image, parent), page_type)
             if needs_reorder:
                 logger.debug("Cards added in the middle of the page, re-order existing cards.")
                 self.update_card_positions()
@@ -440,9 +441,8 @@ class PageScene(QGraphicsScene):
                 if first <= item.index.row() <= last:
                     self.removeItem(item)
 
-
-    @Slot(QModelIndex, int, int)
-    def on_rows_removed(self, parent: QModelIndex, first: int, last: int):
+    @Slot(QModelIndex)
+    def on_rows_removed(self, parent: QModelIndex):
         if not parent.isValid():
             # Page removed. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
@@ -459,7 +459,6 @@ class PageScene(QGraphicsScene):
             # Cards moved away are treated as if they were deleted
             logger.debug("Cards moved away from the currently shown page, calling card removal handler.")
             self.on_rows_about_to_be_removed(parent, start, end)
-
 
     @Slot(QModelIndex, int, int, QModelIndex, int)
     def on_rows_moved(self, parent: QModelIndex, start: int, end: int, destination: QModelIndex, row: int):
@@ -479,7 +478,6 @@ class PageScene(QGraphicsScene):
             logger.debug("Card move affects the current page, updating positions.")
             self.update_card_positions()
         # Remaining cases are card moves happening "off-screen", so nothing has to be done on them.
-
 
     @functools.cache
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
@@ -503,15 +501,11 @@ class PageScene(QGraphicsScene):
         # Excessively large margins may shift the page content off-center. Clamp the borders to the non-negative range
         # to avoid clipping images off
         left_border = max(
-            page_width
-            - image_width * self.column_count
-            - column_spacing * (self.column_count - 1),
+            page_width - image_width * self.column_count - column_spacing * (self.column_count - 1),
             0
         ) / 2
         top_border = max(
-            page_height
-            - image_height * self.row_count
-            - row_spacing * (self.row_count - 1),
+            page_height - image_height * self.row_count - row_spacing * (self.row_count - 1),
             0
         ) / 2
 

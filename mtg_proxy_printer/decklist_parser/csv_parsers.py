@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -113,7 +113,7 @@ class ScryfallCSVParser(BaseCSVParser):
 
     @staticmethod
     def supported_file_types() -> dict[str, list[str]]:
-        return  {
+        return {
             QCoreApplication.translate("ScryfallCSVParser", "Scryfall CSV export"): ["csv"],
         }
 
@@ -170,7 +170,7 @@ class TappedOutCSVParser(BaseCSVParser):
 
     class Dialect(csv.Dialect):
         '''
-        Specifies the CSV dialect used by TappedOut (http://tappedout.net/).
+        Specifies the CSV dialect used by TappedOut (https://tappedout.net/).
         The parameters were determined by inspecting exports.
         As a test case, a deck containing "Ach! Hans, Run!" was used.
         (Note that the actual card name contains both a comma and the quotation marks.)

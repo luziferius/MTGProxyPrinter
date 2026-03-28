@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -409,11 +409,12 @@ def test_get_cards_from_data(
         )
     )
 
+
 @pytest.mark.parametrize("card_data, expected", [
             (CardIdentificationData(name="Flowerfoot Swordmaster"), [
-        TestCaseData("Flowerfoot_Swordmaster_card").as_card(),
-        TestCaseData("Flowerfoot_Swordmaster_token").as_card(),
-    ])
+                TestCaseData("Flowerfoot_Swordmaster_card").as_card(),
+                TestCaseData("Flowerfoot_Swordmaster_token").as_card(),
+            ])
 ])
 def test_get_cards_from_data_always_prefers_card_over_token(
         card_db_with_cards: CardDatabase,

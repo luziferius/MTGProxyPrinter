@@ -13,7 +13,7 @@
     <file>translations/mtgproxyprinter_de.qm</file>
     <!--file alias="translations/mtgproxyprinter_en.qm">translations/mtgproxyprinter_en_GB.qm</file-->
     <file alias="translations/mtgproxyprinter_en.qm">translations/mtgproxyprinter_en_US.qm</file>
-    <!--file>translations/mtgproxyprinter_es.qm</file-->
+    <file>translations/mtgproxyprinter_es.qm</file>
     <file>translations/mtgproxyprinter_fr.qm</file>
     <!--file>translations/mtgproxyprinter_it.qm</file-->
     <!--file>translations/mtgproxyprinter_ja.qm</file-->

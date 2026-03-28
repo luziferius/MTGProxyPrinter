@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-import collections
+
 from collections import Counter
 from collections.abc import Iterable
 import itertools
@@ -86,7 +86,7 @@ def test_apply_raises_exception_if_action_list_is_not_empty(document_light: Docu
 
 
 @pytest.mark.parametrize("new_card_is_oversized", [False, True])
-def test_apply_clears_document_if_enabled(qtbot, document_light, new_card_is_oversized: bool):
+def test_apply_clears_document_if_enabled(document_light: Document, new_card_is_oversized: bool):
     """
     The new card should be placed on the first page, regardless of size compared to the existing card
     """
@@ -113,10 +113,12 @@ def test_apply_clears_document_if_enabled(qtbot, document_light, new_card_is_ove
 
     )
 
+
 def _create_applied_action(cards: Counter, clear_document: bool) -> ActionImportDeckList:
     action = ActionImportDeckList(cards, clear_document)
     action._already_applied = True
     return action
+
 
 @pytest.mark.parametrize("card_count", [1, 9, 10, 11, 100])
 def test_undo_removes_created_pages(document_light: Document, card_count: int):

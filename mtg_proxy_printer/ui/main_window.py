@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -344,16 +344,18 @@ class MainWindow(QMainWindow):
     def on_network_error_occurred(self, message: str):
         QMessageBox.warning(
             self, self.tr("Network error"),
-            self.tr("Operation failed, because a network error occurred.\n"
-            "Check your internet connection. Reported error message:\n\n{message}").format(message=message),
+            self.tr(
+                "Operation failed, because a network error occurred.\n"
+                "Check your internet connection. Reported error message:\n\n{message}").format(message=message),
             StandardButton.Ok, StandardButton.Ok)
 
     @Slot(str)
     def on_error_occurred(self, message: str):
         QMessageBox.critical(
             self, self.tr("Error"),
-            self.tr("Operation failed, because an internal error occurred.\n"
-            "Reported error message:\n\n{message}").format(message=message),
+            self.tr(
+                "Operation failed, because an internal error occurred.\n"
+                "Reported error message:\n\n{message}").format(message=message),
             StandardButton.Ok, StandardButton.Ok)
 
     def _ask_user_about_compacting_document(self, action: str) -> StandardButton:

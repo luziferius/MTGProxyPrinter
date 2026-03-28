@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ def test_negative_step_to_negative_total_progress_raises_exception(progress_mete
     # Overshooting works
     (1, 10),
 ])
-def test_advance_within_range_works(qtbot, progress_meter, initial_value, step):
+def test_advance_within_range_works(progress_meter, initial_value, step):
     progress_meter._progress = initial_value
     target = initial_value + step
     progress_meter.advance(step)

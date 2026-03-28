@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -200,6 +200,7 @@ def validate_database_schema(
 
 
 S = typing.TypeVar("S", LiteralString, str)
+
 
 @functools.cache
 def cached_dedent(text: S) -> S:

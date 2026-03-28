@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -336,6 +336,8 @@ class PageConfigWidget(QGroupBox):
         self._load_paper_orientation(other.paper_orientation)
         self._load_cut_marker_style(other.cut_marker_style)
         self._load_print_registration_marks_style(other.print_registration_marks_style)
+        # Ensure that the custom paper size editor widgets are only active, iff the Custom paper size is selected
+        self.ui.paper_size.currentIndexChanged.emit(self.ui.paper_size.currentIndex())
         self.validate_paper_size_settings()
         self.on_page_layout_changed()
         self.page_layout_changed.emit(self.page_layout)

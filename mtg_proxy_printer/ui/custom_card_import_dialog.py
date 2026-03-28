@@ -134,7 +134,7 @@ class CustomCardImportDialog(QDialog):
                 # This read should stay guarded by the Pixmap constructor to prevent accidental DoS by reading huge files
                 pixmap_bytes = path.read_bytes()
                 card = card_db.get_custom_card(
-                    path.stem, "" , "", "", regular, True, pixmap_bytes)
+                    path.stem, "", "", "", regular, True, pixmap_bytes)
                 result[card] += 1
         return result
 

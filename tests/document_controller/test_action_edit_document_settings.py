@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -138,7 +138,7 @@ def test_reflow_moves_card_on_later_page(document_light: Document):
     )
 
 
-def test_reflow_does_not_append_empty_pages(qtbot: QtBot, document_light: Document):
+def test_reflow_does_not_append_empty_pages(document_light: Document):
     """The issue of trailing empty pages was discovered on a document with at least four full pages"""
     pages = document_light.pages
     ActionAddCard((card_inserted := create_card("Card")), 4*9).apply(document_light)

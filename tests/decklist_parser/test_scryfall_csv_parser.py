@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -31,8 +31,10 @@ DECK_LIST_CSV_HEADER = "section,count,name,mana_cost,type,set,set_code,collector
 SEARCH_CSV_HEADER = "multiverse_id,mtgo_id,set,collector_number,lang,rarity,name,mana_cost,cmc,type_line,artist," \
     "usd_price,usd_foil_price,eur_price,tix_price,image_uri,scryfall_uri,scryfall_id"
 
+
 def append_to_header(header: str, plain_deck_list: str) -> str:
     return f"{header}\n{plain_deck_list}"
+
 
 @pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")
 @pytest.mark.parametrize("url, header", [
@@ -49,22 +51,21 @@ def test_local_header_conforms_to_current_scryfall_return_data(url: str, header:
     )
 
 
-
 @pytest.mark.parametrize(
     "cards_to_import, deck_list, expected_card", [
         (["german_Back_to_Basics", "english_Back_to_Basics"],
-        append_to_header(
+         append_to_header(
             DECK_LIST_CSV_HEADER,
             "nonlands,1,Back to Basics,{2}{U},Enchantment,Urza's Saga,usg,62,de,rare,Andrew Robinson,,13.27,7.9,"
             "2.92,https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
-        CardIdentificationData("en", "Back to Basics", is_front=True,)),
+         CardIdentificationData("en", "Back to Basics", is_front=True,)),
         (["german_Back_to_Basics", "english_Back_to_Basics"],
-        append_to_header(
+         append_to_header(
             SEARCH_CSV_HEADER,
             ",,USG,62,de,R,Back to Basics,{2}{U},3.0,Enchantment,Andrew Robinson,,,,,"
             "https://cards.scryfall.io/large/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127,"
             "https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
-        CardIdentificationData("en", "Back to Basics", is_front=True,)),
+         CardIdentificationData("en", "Back to Basics", is_front=True,)),
     ])
 def test_excluded_printing_is_replaced_with_an_available_printing(
         qtbot, card_db, image_db, cards_to_import: list[str], deck_list: str, expected_card: CardIdentificationData):
@@ -83,21 +84,22 @@ def test_excluded_printing_is_replaced_with_an_available_printing(
         )
     )
 
+
 def generate_test_cases_for_translation_and_replacement():
     # DE to EN
     yield (["german_Back_to_Basics", "english_Back_to_Basics"],
-        append_to_header(
+           append_to_header(
             DECK_LIST_CSV_HEADER,
             "nonlands,1,Back to Basics,{2}{U},Enchantment,Urza's Saga,usg,62,de,rare,Andrew Robinson,,13.27,7.9,"
             "2.92,https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
-        CardIdentificationData("en", "Back to Basics", is_front=True,))
+           CardIdentificationData("en", "Back to Basics", is_front=True,))
     yield (["german_Back_to_Basics", "english_Back_to_Basics"],
-        append_to_header(
+           append_to_header(
             SEARCH_CSV_HEADER,
             ",,USG,62,de,R,Back to Basics,{2}{U},3.0,Enchantment,Andrew Robinson,,,,,"
             "https://cards.scryfall.io/large/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127,"
             "https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
-        CardIdentificationData("en", "Back to Basics", is_front=True,))
+           CardIdentificationData("en", "Back to Basics", is_front=True,))
     # DE to DE
     yield (
         ["german_Back_to_Basics", "english_Back_to_Basics"],
@@ -107,12 +109,12 @@ def generate_test_cases_for_translation_and_replacement():
             "2.92,https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
         CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
     yield (["german_Back_to_Basics", "english_Back_to_Basics"],
-        append_to_header(
+           append_to_header(
             SEARCH_CSV_HEADER,
             ",,USG,62,de,R,Back to Basics,{2}{U},3.0,Enchantment,Andrew Robinson,,,,,"
             "https://cards.scryfall.io/large/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127,"
             "https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
-        CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
+           CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
     # EN TO DE
     yield (
         ["german_Back_to_Basics", "english_Back_to_Basics"],
@@ -122,12 +124,12 @@ def generate_test_cases_for_translation_and_replacement():
             "6.14,6.85,6.66,https://scryfall.com/card/uma/46/back-to-basics,0600d6c2-0f72-4e79-a55d-1f06dffa48c2"),
         CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
     yield (["german_Back_to_Basics", "english_Back_to_Basics"],
-        append_to_header(
+           append_to_header(
             SEARCH_CSV_HEADER,
             "456642,70165,UMA,46,en,R,Back to Basics,{2}{U},3.0,Enchantment,Terese Nielsen,6.14,15.5,6.85,6.66,"
             "https://cards.scryfall.io/large/front/0/6/0600d6c2-0f72-4e79-a55d-1f06dffa48c2.jpg?1654805483,"
             "https://scryfall.com/card/uma/46/back-to-basics,0600d6c2-0f72-4e79-a55d-1f06dffa48c2"),
-        CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
+           CardIdentificationData("de", "Grundlagenforschung", is_front=True,))
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
 
 import socket
 import time
-import typing
 import urllib.error
 import urllib.request
 from unittest.mock import patch, MagicMock, DEFAULT
@@ -369,10 +368,10 @@ def test__urlopen_in_init_raises_exception_after_exceeded_retries(
 def test__urlopen_in_read_works_with_multiple_retries(
         retries: int, urlopen: MagicMock = None, Request: MagicMock = None):
     urlopen.side_effect = ([MagicMock(spec=http.client.HTTPResponse)]
-                                + [urllib.error.URLError("Test error")]*retries
-                                + [MagicMock(spec=http.client.HTTPResponse)])
+                           + [urllib.error.URLError("Test error")]*retries
+                           + [MagicMock(spec=http.client.HTTPResponse)])
     file = MeteredSeekableHTTPFile("")
-    file.file.read.side_effect = socket.timeout
+    file.file.read.return_value = b"\0"*10
     file.read(10)
     Request.assert_called()
 
@@ -383,8 +382,8 @@ def test__urlopen_in_read_works_with_multiple_retries(
 def test__urlopen_in_read_raises_exception_when_exceeding_retries(
         retries: int, urlopen: MagicMock = None, Request: MagicMock = None):
     urlopen.side_effect = ([MagicMock(spec=http.client.HTTPResponse)]
-                                + [urllib.error.URLError("Test error")] * retries
-                                + [MagicMock(spec=http.client.HTTPResponse)])
+                           + [urllib.error.URLError("Test error")] * retries
+                           + [MagicMock(spec=http.client.HTTPResponse)])
     file = MeteredSeekableHTTPFile("")
     file.file.read.side_effect = socket.timeout
     assert_that(calling(file.read), raises(urllib.error.URLError))

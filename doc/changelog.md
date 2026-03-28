@@ -9,7 +9,33 @@
 
 ## Fixed issues
 
-- Handle invalid internal card databases at application start, instead of crashing.
+- Fixed failure loading documents, caused by a compatibility issue with Python 3.14.
+- Fixed application hang at exit, if a card data update was previously canceled.
+- Fixed Scryfall card data import aborting on some systems with `IncompleteRead` errors
+
+# Version 0.35.1 (2025-02-25)  <a name="v0_35_1"></a>
+
+## New features
+
+- Added community-contributed application translation into Spanish. 
+
+## Changed features
+
+- The main window column widths are now adjustable, by dragging the separator between the elements.
+
+## Fixed issues
+
+- Fixed HTTP 400 errors occurring in communication with Scryfall,
+  which rendered the card data update and deck list imports from Scryfall unusable.
+  - This was caused by a policy change on the Scryfall API server. All older versions of MTGProxyPrinter cease to work.
+- Fixed broken rendering after switching printings. This was a purely visual bug, and did not affect prints or PDFs.
+- Automatically re-create the internal card database, if it gets corrupted, instead of repeatedly crashing in that case.
+- Fixed issues, including a potential crash, when moving cards using drag&drop and dropping them in the space between
+  their current page and the previous page. This now correctly inserts a new page at the indicated drop position
+  and moves the cards there in all cases.
+- The custom paper size settings widgets are now correctly disabled, if a predefined paper size is used.
+- Added a settings option to force the application to use it's internal icon theme, even on Linux systems supporting
+  system-wide icon themes. This can help if the system-provided theme is incomplete or otherwise broken
 
 # Version 0.35.0 (2025-10-11)  <a name="v0_35_0"></a>
 

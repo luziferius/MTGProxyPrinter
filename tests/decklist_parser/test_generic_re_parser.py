@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -48,10 +48,10 @@ def test_generic_re_parser_with_card_name_only_list(
         all_of(
             has_key(
                 has_properties(
-                language="en",
-                name="Fury Sliver",
-                is_front=True
-            )),
+                    language="en",
+                    name="Fury Sliver",
+                    is_front=True
+                )),
             has_value(1),
             has_length(1)
         )
@@ -78,11 +78,11 @@ def test_translating_from_hidden_name_works(
         all_of(
             has_key(
                 has_properties(
-                language="en",
-                name="Back to Basics",
-                scryfall_id="0600d6c2-0f72-4e79-a55d-1f06dffa48c2",
-                is_front=True
-            )),
+                    language="en",
+                    name="Back to Basics",
+                    scryfall_id="0600d6c2-0f72-4e79-a55d-1f06dffa48c2",
+                    is_front=True
+                )),
             has_value(1),
             has_length(1)
         )
@@ -109,11 +109,11 @@ def test_translating_from_name_with_ambiguous_language_works(
         all_of(
             has_key(
                 has_properties(
-                language="en",
-                name="Corrosive Mentor",
-                scryfall_id="140457ff-ee7d-48ec-8b91-ef5c2cc1ed74",
-                is_front=True
-            )),
+                    language="en",
+                    name="Corrosive Mentor",
+                    scryfall_id="140457ff-ee7d-48ec-8b91-ef5c2cc1ed74",
+                    is_front=True
+                )),
             has_value(1),
             has_length(1)
         )

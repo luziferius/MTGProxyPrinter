@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ def test_local_header_conforms_to_current_scryfall_return_data(url: str, header:
     assert_that(
         header, is_(equal_to(expected)), "CSV header format changed on Tappedout"
     )
+
 
 def generate_test_cases_for_translation_and_replacement():
     yield (

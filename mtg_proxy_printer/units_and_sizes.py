@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -23,23 +23,30 @@ import re
 import sqlite3
 from typing import Type, NamedTuple, TypedDict, NotRequired, TypeVar, Any
 
-from pint import UnitRegistry, Quantity, Context, Unit
+from pint import UnitRegistry, Context
 from PySide6.QtCore import QSize, QObject, Qt
 from PySide6.QtGui import QPageSize, QPageLayout, QColor
 import pint.facets.context.objects
+import pint
+
+QuantityT = pint.facets.plain.QuantityT
+Quantity = pint.facets.plain.PlainQuantity
+Unit = pint.facets.plain.PlainUnit
 
 import mtg_proxy_printer.natsort
+
 
 class ToDots(pint.facets.context.objects.Transformation):
     def __call__(self, _: pint.UnitRegistry, value: Quantity, **kwargs: Any) -> Quantity:
         return value*RESOLUTION
+
 
 class ToLength(pint.facets.context.objects.Transformation):
     def __call__(self, _: pint.UnitRegistry, value: Quantity, **kwargs: Any) -> Quantity:
         return value/RESOLUTION
 
 
-def _setup_units() -> tuple[UnitRegistry, Quantity]:
+def _setup_units():
     registry = UnitRegistry()
     resolution = registry.parse_expression("300dots/inch")
     print_context = Context("print")
@@ -233,7 +240,7 @@ _CardPreviewFields = TypedDict("_CardPreviewFields", {
 
 
 class CardDataType(_CardPreviewFields):
-    """Card data type modelled according to https://scryfall.com/docs/api/cards"""
+    """Card data type modeled according to https://scryfall.com/docs/api/cards"""
 
     # Core fields
     arena_id: NotRequired[int]

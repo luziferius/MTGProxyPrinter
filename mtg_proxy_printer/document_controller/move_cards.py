@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -12,7 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-import enum
+
 from collections.abc import Sequence
 import functools
 import typing
@@ -62,7 +62,7 @@ class ActionMoveCardsBetweenPages(DocumentAction):
         else:
             self.insert_page_action = None
         # When inserting a new page before the source page, add one to compensate
-        self.source_page = source + (target_page < source and self.insert_page_action is not None)
+        self.source_page = source + (target_page <= source and self.insert_page_action is not None)
         self.target_page = target_page
         self.target_row = target_row
         self.card_ranges_to_move = to_list_of_ranges(cards_to_move)

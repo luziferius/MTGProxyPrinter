@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,12 +16,9 @@
 from pathlib import Path
 
 import pytest
-
-import mtg_proxy_printer.print
-from mtg_proxy_printer.model.document import Document
-
 from hamcrest import *
 
+import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog
 from mtg_proxy_printer.ui.main_window import MainWindow
 from tests.ui.test_main_window import main_window

@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -118,7 +118,7 @@ def test_subsequent_save_updates_settings(tmp_path: Path, qtbot: QtBot, document
     modified_layout = copy.copy(document_custom_layout.page_layout)
     modified_layout.custom_page_width = modified_layout.custom_page_width = 1000 * mm
     modified_layout.margin_top = modified_layout.margin_bottom = 13*mm
-    modified_layout.margin_left = modified_layout.margin_right= 14*mm
+    modified_layout.margin_left = modified_layout.margin_right = 14*mm
     modified_layout.column_spacing = modified_layout.row_spacing = 2*mm
     modified_layout.draw_page_numbers = not modified_layout.draw_page_numbers
     modified_layout.cut_marker_style = "Dots"
@@ -191,7 +191,7 @@ def _validate_database_schema(db_path: Path):
 
 def _validate_saved_document_settings(layout: PageLayoutSettings, save_file: Path):
     with open_database(save_file, "document-v7") as save:
-        keys = ", ".join(map("'{}'".format, layout.__annotations__.keys()))
+        keys = ", ".join(map("'{}'".format, PageLayoutSettings.__annotations__.keys()))
         query = textwrap.dedent(f"""\
             SELECT value
               FROM DocumentSettings

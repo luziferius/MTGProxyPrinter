@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 
 
 from pathlib import PurePath
-from unittest.mock import NonCallableMagicMock, patch
+from unittest.mock import NonCallableMagicMock
 
 import pytest
 from pytestqt.qtbot import QtBot
@@ -36,6 +36,7 @@ def table_view(document_light: Document, card_db: CardDatabase) -> PageCardTable
     view = PageCardTableView()
     view.set_data(document_light, card_db)
     return view
+
 
 @pytest.mark.parametrize("name, expected", [
     ('"Quoted"', 'Quoted'),

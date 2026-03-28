@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@ import pytest
 from PySide6.QtCore import QBuffer, QIODevice
 from PySide6.QtGui import QPixmap
 from hamcrest import *
-from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -40,7 +39,7 @@ def qpixmap_to_bytes_io(pixmap: QPixmap) -> io.BytesIO:
 DOWNLOADER = "mtg_proxy_printer.model.imagedb.ImageDownloader"
 
 
-def test_delete_disk_cache_entries_removes_empty_parent_directories(qtbot: QtBot, image_db: ImageDatabase):
+def test_delete_disk_cache_entries_removes_empty_parent_directories(image_db: ImageDatabase):
     # Setup
     keys = [
         ImageKey("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", True, True),

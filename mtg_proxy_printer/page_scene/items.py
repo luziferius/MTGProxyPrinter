@@ -3,17 +3,15 @@ import itertools
 import typing
 
 from PySide6.QtCore import QRect, QPoint, QPointF, QSize, QModelIndex, QPersistentModelIndex, Qt, Slot
-from PySide6.QtGui import QPixmap, QPen, QColorConstants, QTransform, QPolygon, QPolygonF
+from PySide6.QtGui import QPixmap, QPen, QColorConstants, QTransform, QPolygonF
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsItemGroup, QGraphicsItem, \
     QGraphicsSimpleTextItem, QGraphicsRectItem
 from PySide6.QtSvgWidgets import QGraphicsSvgItem
 
-from pint import Quantity
-
 from mtg_proxy_printer.model.card import AnyCardType, CardCorner
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import unit_registry, RESOLUTION
+from mtg_proxy_printer.units_and_sizes import unit_registry, RESOLUTION, Quantity
 from mtg_proxy_printer.ui.common import RESOURCE_PATH_PREFIX
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -23,7 +21,8 @@ ItemDataRole = Qt.ItemDataRole
 point = unit_registry.point
 degree = unit_registry.degree
 pixel = unit_registry.pixel
-PenStyle=Qt.PenStyle
+PenStyle = Qt.PenStyle
+
 
 @enum.unique
 class RenderLayers(enum.IntEnum):
@@ -62,9 +61,9 @@ class BullseyeMarkItem(QGraphicsSvgItem):
         self.setTransformOriginPoint(length*left_aligned, length*bottom_aligned)
         self.setZValue(RenderLayers.CUT_LINES_BELOW.value)
         self.setScale(RESOLUTION.magnitude/100+285/256000)  # whole 96 pixel at 300DPI, resulting in ~8.1mm.
-        self.setPos(QPoint(0,0))
+        self.setPos(QPoint(0, 0))
 
-    def setPos(self, pos: QPoint|QPointF, /):
+    def setPos(self, pos: QPoint | QPointF, /):
         new = QPointF(
             (pos.x()*256105/256000),
             (pos.y()*256105/256000),

@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ from mtg_proxy_printer.sqlite_helpers import read_resource_text, open_database
 
 T = typing.TypeVar("T")
 
+
 def _should_skip_network_tests() -> bool:
     result = os.getenv("MTGPROXYPRINTER_RUN_NETWORK_TESTS", "0")
     try:
@@ -91,6 +92,7 @@ class AsyncTaskReceiver(QObject):
             if isinstance(task, class_):
                 return task
         return None
+
 
 def setup_logging_for_testing():
     with patch.dict(
@@ -223,17 +225,17 @@ class is_dataclass_equal_to(BaseMatcher):
 
     @staticmethod
     def _has_annotations(item: dataclasses.dataclass):
-        return hasattr(item, "__annotations__")
+        return hasattr(item.__class__, "__annotations__")
 
     def _has_equal_keys(self, item: dataclasses.dataclass) -> bool:
         return contains_inanyorder(
-            *self.expected.__annotations__.keys()
-        ).matches(item.__annotations__.keys())
+            *self.expected.__class__.__annotations__.keys()
+        ).matches(item.__class__.__annotations__.keys())
 
     def _has_equal_values(self, item: dataclasses.dataclass) -> bool:
         return has_properties({
             key: equal_to(getattr(self.expected, key))
-            for key in self.expected.__annotations__.keys()
+            for key in self.expected.__class__.__annotations__.keys()
         }).matches(item)
 
     def describe_to(self, description: Description) -> None:
@@ -244,8 +246,8 @@ class is_dataclass_equal_to(BaseMatcher):
             mismatch_description.append_text(f"{item} instance has no __annotations__ attribute")
             return
         if not self._has_equal_keys(item):
-            expected_keys = set(self.expected.__annotations__.keys())
-            got_keys = set(item.__annotations__.keys())
+            expected_keys = set(self.expected.__class__.__annotations__.keys())
+            got_keys = set(item.__class__.__annotations__.keys())
             if missing_keys := expected_keys-got_keys:
                 mismatch_description.append_text(f"Missing attributes: {sorted(missing_keys)},")
             if excess_keys := got_keys-expected_keys:
@@ -253,7 +255,7 @@ class is_dataclass_equal_to(BaseMatcher):
             return
         mismatched_values = {
             key: (expected, got)
-            for key in self.expected.__annotations__.keys()
+            for key in self.expected.__class__.__annotations__.keys()
             if (expected := (getattr(self.expected, key))) != (got := getattr(item, key))
         }
         mismatch_description.append_text(
@@ -269,9 +271,10 @@ class is_dataclass_equal_to(BaseMatcher):
 class matches_type_annotation(BaseMatcher):
 
     def _matches(self, item: dataclasses.dataclass) -> bool:
-        return hasattr(item, "__annotations__") and has_properties({
+        class_ = item.__class__
+        return hasattr(class_, "__annotations__") and has_properties({
                 key: self._get_matcher(annotated_type)
-                for key, annotated_type in item.__annotations__.items()
+                for key, annotated_type in class_.__annotations__.items()
             }).matches(item)
 
     @staticmethod
@@ -312,7 +315,9 @@ def _fill_area(image: QImage, fill_color: QColor, pos: QPoint, width: int = 5, h
     for x, y in itertools.product(range(width), range(height)):  # type: int, int
         image.setPixelColor(pos+QPoint(x, y), fill_color)
 
-def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *, color = QColorConstants.Transparent):
+
+def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *,
+                            color: QColor = QColorConstants.Transparent):
     """
     Create a Card with the given size, and fill the pixmap with the given color.
     Each corner has a square transparent area, as a crude emulation of rounded corners.

@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -43,7 +43,10 @@ def get_logger(full_module_path: str) -> logging.Logger:
     """
     Returns a logger instance for the given module __name__.
     """
-    _, module_path = full_module_path.split(".", 1)
+    try:
+        _, module_path = full_module_path.split(".", 1)
+    except ValueError:
+        module_path = full_module_path
     return root_logger.getChild(module_path)
 
 

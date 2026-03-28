@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,10 +14,8 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import copy
-import typing
 import unittest.mock
 
-from pint import Unit
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QColorConstants
 

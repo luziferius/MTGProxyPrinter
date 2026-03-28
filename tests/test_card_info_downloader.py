@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -570,7 +570,7 @@ def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expec
     ]),
     ([
          "Dungeon_of_the_Mad_Mage", "Zombie_Ogre", "Dungeon_Skeleton_Token",
-     ],[
+     ], [
         (1, 3),  # The Dungeon itself can create a Skeleton Token
         (2, 1),  # Zombie Ogre has Venture into the Dungeon
         # Nothing else here:

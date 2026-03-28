@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ from hamcrest import *
 from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.ui.main_window import MainWindow
-from tests.helpers import AsyncTaskReceiver
 
 # Import dynamically used by pytest. Without this, the main_window fixture won’t be found by pytest.
 from .test_main_window import main_window  # noqa
@@ -56,6 +55,7 @@ def test_undoing_remove_last_page_enables_move_down_button(main_window: MainWind
     assert_that(pmd.isEnabled(), is_(False), "Test setup failed")
     ui.action_undo.trigger()
     assert_that(pmd.isEnabled(), is_(True))
+
 
 def test_clicking_move_page_button_triggers_only_once(main_window: MainWindow):
     main_window.ui.action_new_page.trigger()

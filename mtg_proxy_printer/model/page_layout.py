@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@ import itertools
 import math
 from typing import TYPE_CHECKING, Any
 
-from pint import Quantity
 from PySide6.QtGui import QPageLayout, QPageSize, QColor, QColorConstants
 from PySide6.QtCore import QMarginsF, QSizeF, Qt
 
@@ -27,7 +26,8 @@ import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.settings import VALID_CUT_MARKER_STYLES
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, distance_to_mm
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, \
+    distance_to_mm, Quantity
 if TYPE_CHECKING:
     from mtg_proxy_printer.page_scene.page_scene import RenderMode
 logger = get_logger(__name__)
@@ -37,7 +37,6 @@ PenStyle = Qt.PenStyle
 __all__ = [
     "PageLayoutSettings",
 ]
-
 
 
 def _is_quantity_setting(pair: tuple[str, Any]):
@@ -50,7 +49,7 @@ class PageLayoutSettings:
     card_bleed: Quantity = 0 * unit_registry.mm
     cut_marker_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Black)
     cut_marker_draw_above_cards: bool = False
-    cut_marker_style: str = "None"  # TODO: Can this be Literal["None", "Solid", "Dots", "Dashes"] instead of str
+    cut_marker_style: str = "None"
     cut_marker_width: Quantity = 0 * unit_registry.mm
     document_name: str = ""
     draw_page_numbers: bool = False
@@ -63,9 +62,9 @@ class PageLayoutSettings:
     margin_top: Quantity = 0 * unit_registry.mm
     custom_page_height: Quantity = 0 * unit_registry.mm
     custom_page_width: Quantity = 0 * unit_registry.mm
-    paper_orientation: str = "Portrait"  # TODO: Here, too. Literal["Portrait", "Landscape"] instead of str
+    paper_orientation: str = "Portrait"
     paper_size: str = "Custom"
-    print_registration_marks_style: str = "None"  # TODO: Here, too.
+    print_registration_marks_style: str = "None"
     watermark_angle: Quantity = 0 * unit_registry.degree
     watermark_color: QColor = dataclasses.field(default_factory=lambda: QColorConstants.Transparent)
     watermark_font_size: Quantity = 0 * unit_registry.point
@@ -76,7 +75,6 @@ class PageLayoutSettings:
     @property
     def draw_cut_markers(self) -> bool:
         return self.cut_marker_style != "None"
-
 
     def cut_marker_pen_style(self) -> PenStyle:
         return VALID_CUT_MARKER_STYLES[self.cut_marker_style]
@@ -208,7 +206,7 @@ class PageLayoutSettings:
             > other.compute_page_card_capacity(PageType.OVERSIZED)
 
     def update(self, other: Iterable[tuple[str, Any]]):
-        known_keys = set(self.__annotations__.keys())
+        known_keys = set(PageLayoutSettings.__annotations__.keys())
         for key, value in other:
             if key in known_keys:
                 setattr(self, key, value)

@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -94,8 +94,7 @@ class PageConfigPreviewArea(QWidget):
             data.border_width, data.border_width,
             card_width - 2 * data.border_width, card_height - 2 * data.border_width)
         painter.end()
-        return Card(name , MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, image)
-
+        return Card(name, MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, image)
 
     @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, layout: PageLayoutSettings):
@@ -112,7 +111,6 @@ class PageConfigPreviewArea(QWidget):
     def on_oversized_card_count_valueChanged(self, value: int):
         logger.debug(f"Setting oversized card count to {value}")
         self._adjust_card_count_on_page(PagesData.OVERSIZED.page, value, self.oversized_card)
-
 
     def _adjust_card_count_on_page(self, page: int, new_count: int, card: Card):
         document = self.document
@@ -139,5 +137,5 @@ class PageConfigPreviewArea(QWidget):
     def _switch_to_document_page(self, page: int):
         document = self.document
         document.currently_edited_page = document.pages[page]
-        index = document.index(page,0)
+        index = document.index(page, 0)
         document.current_page_changed.emit(QPersistentModelIndex(index))

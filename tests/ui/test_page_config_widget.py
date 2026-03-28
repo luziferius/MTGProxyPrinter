@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
 
 from unittest.mock import patch
 
-from pint import Quantity, Unit
 from PySide6.QtWidgets import QDoubleSpinBox, QCheckBox, QLineEdit
 
 from hamcrest import *
@@ -38,6 +37,7 @@ def widget(qtbot: QtBot) -> PageConfigWidget:
     widget = PageConfigWidget()
     qtbot.addWidget(widget)
     return widget
+
 
 @pytest.fixture()
 def default_settings() -> PageLayoutSettings:
@@ -137,7 +137,6 @@ ZeroMarginsSettings = {
 }
 
 
-
 @pytest.mark.parametrize("value", [-1*mm, 0*mm, 1*mm, 200*mm, 1000*mm])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value, max_value", [
     ("custom-page-height", "custom_page_height", 126.17*mm, 10000*mm),
@@ -150,7 +149,6 @@ ZeroMarginsSettings = {
     ("column-spacing", "column_spacing", 0*mm, 10000*mm),
 ])
 def test_save_numerical_document_settings_to_config(
-        qtbot: QtBot,
         widget: PageConfigWidget, settings_name: str, attribute_name: str,
         min_value: Quantity, max_value: Quantity, value: Quantity):
     """
@@ -159,7 +157,7 @@ def test_save_numerical_document_settings_to_config(
     """
     document_settings = mtg_proxy_printer.settings.settings["documents"]
     original_value = document_settings[settings_name]
-    with patch.dict( document_settings, ZeroMarginsSettings), \
+    with patch.dict(document_settings, ZeroMarginsSettings), \
             patch.dict(document_settings, {settings_name: original_value}):
         widget.load_from_page_layout(PageLayoutSettings.create_from_settings(mtg_proxy_printer.settings.settings))
         expected = min(max(min_value, value), max_value)
@@ -293,3 +291,19 @@ def test_page_capacity_updates_correctly(widget: PageConfigWidget, default_setti
     row_spacing.setValue(11)
     assert_that(page_layout.compute_page_card_capacity(), is_(9))
     assert_that(page_capacity, has_getter("text", contains_string("9")))
+
+
+def test_custom_page_size_widgets_disabled_with_preset_paper_size(
+        widget: PageConfigWidget, default_settings: PageLayoutSettings):
+    widget.load_from_page_layout(default_settings)
+    assert_that(widget.ui.custom_page_width.isEnabled(), is_(False))
+    assert_that(widget.ui.custom_page_height.isEnabled(), is_(False))
+    assert_that(widget.ui.flip_page_dimensions.isEnabled(), is_(False))
+
+
+def test_custom_page_size_widgets_disabled_with_custom_paper_size(
+        widget: PageConfigWidget, custom_a4_page_layout: PageLayoutSettings):
+    widget.load_from_page_layout(custom_a4_page_layout)
+    assert_that(widget.ui.custom_page_width.isEnabled(), is_(True))
+    assert_that(widget.ui.custom_page_height.isEnabled(), is_(True))
+    assert_that(widget.ui.flip_page_dimensions.isEnabled(), is_(True))

@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@ This is a test module for the set of custom PyHamcrest matchers in tests/helpers
 """
 
 import dataclasses
-from typing import Optional
 
 import pytest
 from hamcrest import *

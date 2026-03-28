@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ if os.getenv("MTGPROXYPRINTER_SKIP_RESOURCE_TESTS"):
         "Skipping raw resource file tests when running tests using compiled resources",
         allow_module_level=True
     )
+
 
 def list_dir(directory: Path) -> Iterable[Path]:
     walker = os.walk(directory)

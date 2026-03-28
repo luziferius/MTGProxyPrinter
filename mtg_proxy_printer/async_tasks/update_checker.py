@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ __all__ = [
 
 VERSION_TAG_MATCHER = re.compile(r"v(?P<version>\d+\.\d+\.\d+)")
 KNOWN_APPLICATION_MIRRORS: list[str] = [
-    "http://chiselapp.com/user/luziferius/repository/MTGProxyPrinter",
+    "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter",
     # Don’t use the master repository for now, as it may not be able to handle load spikes
     # "http://1337net.duckdns.org:8080/MTGProxyPrinter",
 ]

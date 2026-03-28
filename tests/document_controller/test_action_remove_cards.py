@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -138,6 +138,7 @@ def _create_applied_action(cards_to_remove: list[int], page_number: int | None) 
     action = ActionRemoveCards(cards_to_remove, page_number)
     action._already_applied = True
     return action
+
 
 def test_undo_restores_two_1_card_ranges(qtbot: QtBot, document_light: Document):
     page = document_light.pages[0]

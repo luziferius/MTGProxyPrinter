@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -129,7 +129,6 @@ class LoadListPage(QWizardPage):
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-
     @Property(str, notify=deck_list_downloader_changed)
     def deck_list_downloader(self):
         return self._deck_list_downloader
@@ -205,7 +204,7 @@ class LoadListPage(QWizardPage):
     @Slot()
     def on_deck_list_download_button_clicked(self):
         url = self.ui.deck_list_download_url_line_edit.text()
-        bad_request_msg=self.tr(
+        bad_request_msg = self.tr(
             "Verify that the URL is valid, reachable, and that the deck list is set to public.\n"
             "This program cannot download private deck lists. Please note, that setting deck lists to\n"
             "public may take a minute or two to apply.",
@@ -221,7 +220,7 @@ class LoadListPage(QWizardPage):
             self.tr(
                 "Downloading a deck list will overwrite the existing deck list. Continue?",
                 "Message box body text. Shown when loading a deck list would overwrite existing text"),
-            StandardButton.Yes | StandardButton.No) == StandardButton.Yes:
+                StandardButton.Yes | StandardButton.No) == StandardButton.Yes:
             logger.info(f"User requests to download a deck list from the internet: {url}")
             downloader_class = get_downloader_class(url)
             if downloader_class is not None:

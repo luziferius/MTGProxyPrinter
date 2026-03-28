@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,8 +14,9 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from collections.abc import Callable
+from typing import Sequence
 
-from PySide6.QtCore import QStringListModel, Signal, Qt, QItemSelectionModel, QEvent, QObject, QTimer
+from PySide6.QtCore import QStringListModel, Signal, Qt, QItemSelectionModel, QEvent, QObject
 from PySide6.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
 from PySide6.QtGui import QIcon, QStandardItemModel, QResizeEvent
 
@@ -89,9 +90,10 @@ class SettingsWindow(QDialog):
         self.pages_model = self._setup_pages_model(ui)
         ui.general_settings_page.set_language_model(language_model)
         ui.default_document_layout_page.ui.page_config_preview_area.hide()
-        # Delay the resize to the next event loop iteration
+        # Delay the resize to the next event loop iteration. A direct connection causes glitches, like
+        # the page list view showing up on narrow windows, where it really shouldn't.
         ui.default_document_layout_page.ui.page_config_widget.ui.show_preview_button.clicked.connect(
-            lambda: QTimer.singleShot(0, lambda: self._adapt_layout_to_size(self.size()))
+            lambda: self._adapt_layout_to_size(self.size()), Qt.ConnectionType.QueuedConnection
         )
         self._setup_hide_printing_page(ui.hide_printings_page, document.card_db)
         ui.debug_settings_page.request_run_async_task.connect(self.request_run_async_task)
@@ -101,8 +103,8 @@ class SettingsWindow(QDialog):
     def _setup_pages_model(self, ui: Ui_SettingsWindow) -> QStandardItemModel:
         model = QStandardItemModel(self)
         # Create the model entries for each page, in the order they are stacked.
-        pages: list[Page] = [ui.stacked_pages.widget(index) for index in range(ui.stacked_pages.count())]
-        for page in pages:
+        stack = ui.stacked_pages
+        for page in self._get_pages():
             model.appendRow(page.display_item())
         # Set the models
         ui.page_selection_list_view.setModel(model)
@@ -112,8 +114,8 @@ class SettingsWindow(QDialog):
         selection_model = ui.page_selection_list_view.selectionModel()
         selection_model.select(first_page, ClearAndSelect)
         # Connect the list view selection model and the combo box with the page stack
-        selection_model.currentRowChanged.connect(lambda current, _: ui.stacked_pages.setCurrentIndex(current.row()))
-        ui.page_selection_combo_box.currentIndexChanged.connect(ui.stacked_pages.setCurrentIndex)
+        selection_model.currentRowChanged.connect(lambda current, _: stack.setCurrentIndex(current.row()))
+        ui.page_selection_combo_box.currentIndexChanged.connect(stack.setCurrentIndex)
 
         # Sync selections of both page list views
         selection_model.currentRowChanged.connect(
@@ -178,9 +180,9 @@ class SettingsWindow(QDialog):
         ui.page_selection_list_view.setHidden(is_narrow)
         ui.page_selection_combo_box.setVisible(is_narrow)
 
-    def _get_pages(self) -> list[Page]:
+    def _get_pages(self) -> Sequence[Page]:
         ui = self.ui
-        return [ui.stacked_pages.widget(index) for index in range(ui.stacked_pages.count())]
+        return map(self.ui.stacked_pages.widget, range(ui.stacked_pages.count()))
 
     def load_settings(self, settings: ConfigParser):
         logger.debug("Loading the settings")
@@ -226,6 +228,8 @@ class SettingsWindow(QDialog):
             logger.info("User resets changes made on the current page.")
             self.ui.stacked_pages.currentWidget().load(mtg_proxy_printer.settings.settings)
             self.clear_highlight()
+        else:
+            logger.info("User canceled reset")
 
     def reject(self):
         """Automatically called when the user hits the "Cancel" button or closes the settings window."""
@@ -260,4 +264,5 @@ class SettingsWindow(QDialog):
             logger.info("User reverts the current page to the default values.")
             self.ui.stacked_pages.currentWidget().load(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
             self.clear_highlight()
-        logger.debug("Loaded DEFAULT_SETTINGS.")
+        else:
+            logger.info("User canceled restoring default values.")

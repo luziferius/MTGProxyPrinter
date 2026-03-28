@@ -1,4 +1,4 @@
-#  Copyright © 2020-2025  Thomas Hess <thomas.hess@udo.edu>
+#  Copyright © 2020-2026  Thomas Hess <thomas.hess@udo.edu>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -55,6 +55,7 @@ __all__ = [
     "SingleDownloadTask",
     "BatchDownloadTask",
     "ObtainMissingImagesTask",
+    "SingleActions",
 ]
 
 
@@ -143,6 +144,7 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
         self.currently_opened_file_monitor.total_bytes_processed.disconnect(self.set_progress)
         self.currently_opened_file_monitor.io_begin.connect(progress_container.task_begins)
         self.currently_opened_file_monitor.total_bytes_processed.connect(progress_container.set_progress)
+        pixmap = QPixmap()
         try:
             with self.currently_opened_file, download_path.open("wb") as file_in_cache:
                 shutil.copyfileobj(self.currently_opened_file, file_in_cache)
@@ -170,7 +172,7 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
         if low_resolution_image_path.exists():
             logger.info(f"Removing outdated low-resolution image of {card.name}")
             low_resolution_image_path.unlink()
-        try:  # Clean-up the parent directory used to bucket the images
+        try:  # Cleanup the parent directory used to bucket the images
             low_resolution_image_path.parent.rmdir()
         except (OSError, FileNotFoundError):  # It may not exist, or contain other images, so ignore those errors
             pass
