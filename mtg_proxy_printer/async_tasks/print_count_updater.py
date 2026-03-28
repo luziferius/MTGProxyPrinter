@@ -18,7 +18,7 @@ import sqlite3
 import typing
 
 from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
-from mtg_proxy_printer.sqlite_helpers import open_database
+from mtg_proxy_printer.sqlite_helpers import open_database, cached_dedent
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.logger import get_logger
 if typing.TYPE_CHECKING:
@@ -71,15 +71,18 @@ class PrintCountUpdater(AsyncTask):
         logger.info("Updating image usage for all cards in the document.")
         db = self.db
         db.execute("BEGIN IMMEDIATE TRANSACTION -- _update_image_usage()")
-        db.executemany(
-            r"""
-            INSERT INTO LastImageUseTimestamps (scryfall_id, is_front) -- _update_image_usage()
-              VALUES (?, ?)
-              ON CONFLICT (scryfall_id, is_front)
-              DO UPDATE SET usage_count = usage_count + 1, last_use_date = CURRENT_TIMESTAMP;
-            """,
-            self.data
-        )
+        db.executemany(cached_dedent("""\
+            UPDATE PrintingFace SET  -- _update_image_usage()
+                usage_count = previous.usage_count + 1,
+                last_use_timestamp = unixepoch(CURRENT_TIMESTAMP, 'utc')
+                FROM (
+                  SELECT printing_id, is_front, usage_count 
+                  FROM PrintingFace
+                  INNER JOIN Printing USING (printing_id)
+                  WHERE (scryfall_id, is_front) = (?, ?)
+                  ) AS previous
+              WHERE (PrintingFace.printing_id, PrintingFace.is_front) = (previous.printing_id, previous.is_front)
+            """), self.data)
         db.commit()
         logger.info("Usage data written.")
         if self.db_created:

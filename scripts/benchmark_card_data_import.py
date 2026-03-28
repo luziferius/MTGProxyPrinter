@@ -60,16 +60,17 @@ to_be_profiled_functions = {
     DatabaseImportTask: [
         "_populate_database",
         "_parse_single_printing",
-        "_insert_set",
-        "_insert_card_faces",
-        "_update_card_filters",
+        "_insert_or_update_set",
+        "_insert_or_update_printing_faces",
+        "_insert_or_update_card_filters",
         "_clean_unused_data",
-        "_insert_card",
-        "_handle_printing",
-        "_insert_face_name",
+        "_insert_or_update_card",
+        "_insert_or_update_printing",
+        "_read_optional_scalar_from_db",
     ],
     mtg_proxy_printer.async_tasks.card_info_downloader: [
         "_get_card_filter_data",
+        "_get_card_faces",
     ]
 }
 

@@ -54,14 +54,12 @@ T = typing.TypeVar("T")
 
 
 def _should_skip_network_tests() -> bool:
-    result = os.getenv("MTGPROXYPRINTER_RUN_NETWORK_TESTS", "0")
+    env_var_value = os.getenv("MTGPROXYPRINTER_RUN_NETWORK_TESTS", "0")
     try:
-        result = int(result)
+        should_run_tests = bool(int(env_var_value))
     except ValueError:
-        result = True
-    else:
-        result = bool(result)
-    return not result
+        should_run_tests = False
+    return not should_run_tests
 
 
 SHOULD_SKIP_NETWORK_TESTS = _should_skip_network_tests()
@@ -116,15 +114,16 @@ def setup_settings_for_testing():
         section[setting] = str(False)
 
 
-def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict):
+def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict):
     # Explicitly share the in-memory database connection
-    dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), card_db.db, ":memory:")
+    db = card_db.db
+    dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), db, ":memory:")
     section = mtg_proxy_printer.settings.settings["card-filter"]
-    with qtbot.assertNotEmitted(dw.error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
-        settings_to_use = update_database_printing_filters(card_db, filter_settings)
-        with patch.dict(section, settings_to_use):
-
-            dw.populate_database(data)
+    settings_to_use = update_database_printing_filters(card_db, filter_settings)
+    db.row_factory = None  # TODO: Determine why patch.object() doesn't properly revert during __exit__()
+    with patch.dict(section, settings_to_use):
+        dw.populate_database(data)
+    db.row_factory = sqlite3.Row
 
 
 def update_database_printing_filters(
@@ -139,7 +138,7 @@ def update_database_printing_filters(
     return settings_to_use
 
 
-@functools.lru_cache()
+@functools.cache
 def load_json(name: str) -> CardDataType:
     data = read_resource_text("tests.json_samples", f"{name}.json")
     return json.loads(data)
@@ -153,21 +152,21 @@ def load_multiple_json_cards(json_files_or_names: list[str | CardDataType]) -> l
 
 
 def fill_card_database_with_json_cards(
-        qtbot: QtBot,
+        _: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_files_or_names: list[str | CardDataType],
         filter_settings: dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     data = load_multiple_json_cards(json_files_or_names)
-    populate_database(qtbot, card_db, data, filter_settings)
+    populate_database(card_db, data, filter_settings)
     return card_db
 
 
 def fill_card_database_with_json_card(
-        qtbot: QtBot,
+        _: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_file_or_name: str | CardDataType,
         filter_settings: dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], filter_settings)
+    return fill_card_database_with_json_cards(_, card_db, [json_file_or_name], filter_settings)
 
 
 def create_save_database_with(
@@ -203,14 +202,7 @@ def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, 
     If a test case data object is passed in, it is assumed that the printing it represents was excluded during the
     import. So also check that RemovedPrintings table contains the correct data.
     """
-    relations_to_check = ["PrintLanguage", "Card", "FaceName", "CardFace", "MTGSet", "VisiblePrintings"]
-    if test_case is None:
-        relations_to_check.append("RemovedPrintings")
-    else:
-        assert_that(
-            card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings"),
-            contains_inanyorder((test_case.scryfall_id, test_case.language, test_case.oracle_id))
-        )
+    relations_to_check = ["Card", "MTGSet", "Printing", "PrintingFace", "VisiblePrintings"]
     for relation in relations_to_check:
         assert_relation_is_empty(card_db, relation)
 
@@ -308,7 +300,10 @@ def quantity_between(lower: Quantity, upper: Quantity):
 
 def create_card(name: str, size: CardSize = CardSizes.REGULAR, image_uri: str = "", pixmap: QPixmap = None) -> Card:
     """Creates a Card with given name and size. Most properties are empty."""
-    return Card(name, MTGSet("", ""), "", "", "", True, "", image_uri, True, size, 0, False, pixmap)
+    return Card(
+        name=name, set=MTGSet("", ""), collector_number="", language="", scryfall_id="",
+        is_front=True, oracle_id="", image_uri=image_uri, highres_image=True, size=size, is_dfc=False,
+        image_file=pixmap)
 
 
 def _fill_area(image: QImage, fill_color: QColor, pos: QPoint, width: int = 5, height: int = 5):

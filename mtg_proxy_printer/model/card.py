@@ -56,6 +56,7 @@ CORNER_MASKS = {
 class MTGSet:
     code: str
     name: str
+    svg_icon: str = None
 
     def data(self, role: ItemDataRole):
         """data getter used for Qt Model API based access"""
@@ -122,7 +123,6 @@ class Card:
     image_uri: str = dataclasses.field(compare=True)
     highres_image: bool = dataclasses.field(compare=False)
     size: CardSize = dataclasses.field(compare=False)
-    face_number: int = dataclasses.field(compare=True)
     is_dfc: bool = dataclasses.field(compare=True)
     image_file: QPixmap | None = dataclasses.field(default=None, compare=False)
 
@@ -175,7 +175,6 @@ class CustomCard:
     image_uri: str = dataclasses.field(compare=True)
     highres_image: bool = dataclasses.field(compare=False)
     size: CardSize = dataclasses.field(compare=False)
-    face_number: int = dataclasses.field(compare=True)
     is_dfc: bool = dataclasses.field(compare=True)
     source_image_file: bytes = dataclasses.field(default=None, compare=False)
 

@@ -304,7 +304,7 @@ def test_editing_custom_card_sets_data(
         qtbot: QtBot, document: Document, column: CardListColumns, value: typing.Any):
     model = _populate_card_db_and_create_model(qtbot, document)
     size = CardSizes.REGULAR
-    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, size, 1, False, REGULAR_CUSTOM_CARD)
+    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, size, False, REGULAR_CUSTOM_CARD)
     model.add_cards(Counter([card]))
     ActionAddCard(card, 1).apply(document)
     card_list_index = model.index(0, column)
@@ -325,7 +325,7 @@ def test_editing_custom_card_propagates_to_instances_in_the_document(
         qtbot: QtBot, document: Document, column: CardListColumns, value: typing.Any):
     model = _populate_card_db_and_create_model(qtbot, document)
     size = CardSizes.REGULAR
-    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, size, 1, False, REGULAR_CUSTOM_CARD)
+    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, size, False, REGULAR_CUSTOM_CARD)
     model.add_cards(Counter([card]))
     ActionAddCard(card, 1).apply(document)
     model.setData(model.index(0, column), value)

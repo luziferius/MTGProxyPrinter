@@ -35,7 +35,7 @@ def card(qtbot: QtBot) -> Card:  # QPixmap() requires a QApplication to function
         "Name", MTGSet("CODE", "Set name"), "collector number", "en",
         "11112222-3333-4444-5555-666677778888", True,
         "aaaabbbb-cccc-dddd-eeee-ffff00001111", "/nonexistent", True,
-        size, 1, False, pixmap
+        size, False, pixmap
     )
 
 
@@ -49,7 +49,7 @@ def oversized(qtbot: QtBot) -> Card:  # QPixmap() requires a QApplication to fun
         "Name", MTGSet("CODE", "Set name"), "collector number", "en",
         "11112222-3333-4444-5555-666677778888", True,
         "aaaabbbb-cccc-dddd-eeee-ffff00001111", "/nonexistent", True,
-        size, 1, False, pixmap
+        size, False, pixmap
     )
 
 
@@ -108,7 +108,7 @@ def custom_card(qtbot: QtBot) -> CustomCard:  # QPixmap() requires a QApplicatio
     return CustomCard(
         "Name", MTGSet("CODE", "Set name"), "collector number", "en",
         True, "/nonexistent", True,
-        size, 1, False, image
+        size, False, image
     )
 
 
@@ -120,7 +120,7 @@ def custom_oversized(qtbot: QtBot) -> CustomCard:  # QPixmap() requires a QAppli
     return CustomCard(
         "Name", MTGSet("CODE", "Set name"), "collector number", "en",
         True, "/nonexistent", True,
-        size, 1, False, image
+        size, False, image
     )
 
 
@@ -176,7 +176,6 @@ def _create_back(front: Card) -> Card:
     back.set_image_file(image)
     back.name = "Back"
     back.is_front = False
-    back.face_number = front.face_number + 1
     return back
 
 

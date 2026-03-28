@@ -158,9 +158,11 @@ class PageCardTableView(QTableView):
         card_name = card.name if isinstance(card, AnyCardType) else nl + nl.join(item.name for item in card)
         if count is None:
             count, success = QInputDialog.getInt(
-                self, self.tr("Add copies"), self.tr(
+                self, self.tr(
+                    "Add copies",
+                    "Number input dialog caption"), self.tr(
                     "Add copies of {card_name}",
-                    "Asks the user for a number. Does not need plural forms").format(card_name=card_name),
+                    "Number input dialog text").format(card_name=card_name),
                 1, 1, 100)
             if not success:
                 logger.info("User cancelled adding card copies")
@@ -178,6 +180,7 @@ class PageCardTableView(QTableView):
         # at this point are CheckCards or related cards.
         action = ActionAddCard(card, count)
         if card.image_file is None:
+            logger.debug("Card has no image set, requesting it from the image database")
             task = SingleDownloadTask(self.image_db, action)
             self.request_run_async_task.emit(task)
         else:

@@ -78,7 +78,9 @@ def card_container_with_name(name: str, parent: Page):
 
 def append_new_card_in_page(page: Page, name: str, size: CardSize = CardSizes.REGULAR) -> Card:
     """Appends a new card with the given name and size to the given page, returning the Card"""
-    card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, None)
+    card = Card(
+        name=name, set=MTGSet("", ""), collector_number="", language="", scryfall_id="", is_front=True,
+        oracle_id="", image_uri="", highres_image=True, size=size, is_dfc=False)
     page.append(card)
     return card
 

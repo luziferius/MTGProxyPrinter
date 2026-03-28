@@ -25,7 +25,7 @@ from typing import Callable
 from PySide6.QtCore import QObject, Signal, Slot, QModelIndex
 from PySide6.QtGui import QPixmap, QColorConstants
 
-from .imagedb_files import ImageKey, CacheContent
+from .imagedb_files import ImageKey, CacheContent, ImageQuality
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
@@ -81,7 +81,7 @@ class ImageDatabase(QObject):
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.
         self.loaded_images: dict[ImageKey, QPixmap] = {}
-        self.images_on_disk: set[ImageKey] = set()
+        self.images_on_disk: ImageKeySet = set()
         InitOnDiskDataTask(self.images_on_disk, db_path).run()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -144,14 +144,14 @@ def read_disk_cache_content(db_path: pathlib.Path) -> list[CacheContent]:
     :returns: list with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
     """
     result: list[CacheContent] = []
-    data: Iterable[tuple[pathlib.Path, bool, bool]] = (
-        (db_path/CacheContent.format_level_1_directory_name(is_front, is_high_resolution),
-         is_front, is_high_resolution)
-        for is_front, is_high_resolution in itertools.product([True, False], repeat=2)
+    data: Iterable[tuple[pathlib.Path, bool, ImageQuality]] = (
+        (db_path/CacheContent.format_level_1_directory_name(is_front, quality),
+         is_front, quality)
+        for is_front, quality in itertools.product([True, False], ImageQuality)
     )
-    for directory, is_front, is_high_resolution in data:
+    for directory, is_front, quality in data:
         result += (
-            CacheContent(path.stem, is_front, is_high_resolution, path)
+            CacheContent(path.stem, is_front, quality, path)
             for path in directory.glob("[0-9a-z][0-9a-z]/*.png"))
     return result
 
@@ -168,10 +168,10 @@ def _migrate_database(db_path: pathlib.Path):
     if version_file.read_text() == "2":
         old_front = db_path/"front"
         old_back = db_path/"back"
-        high_res_front = db_path/ImageKey.format_level_1_directory_name(True, True)
-        low_res_front = db_path/ImageKey.format_level_1_directory_name(True, False)
-        high_res_back = db_path/ImageKey.format_level_1_directory_name(False, True)
-        low_res_back = db_path/ImageKey.format_level_1_directory_name(False, False)
+        high_res_front = db_path/ImageKey.format_level_1_directory_name(True, ImageQuality.high_resolution)
+        low_res_front = db_path/ImageKey.format_level_1_directory_name(True, ImageQuality.low_resolution)
+        high_res_back = db_path/ImageKey.format_level_1_directory_name(False, ImageQuality.high_resolution)
+        low_res_back = db_path/ImageKey.format_level_1_directory_name(False, ImageQuality.low_resolution)
         if old_front.exists():
             old_front.rename(low_res_front)
         else:

@@ -46,6 +46,7 @@ sqlite3.register_adapter(WindowsPath, str)
 sqlite3.register_adapter(type(1*unit_registry.mm), str)
 sqlite3.register_converter("TEXT_QUANTITY", lambda b: unit_registry.parse_expression(b.decode("utf-8")))
 sqlite3.register_converter("BOOLEAN_INTEGER", lambda b: bool(int(b)))
+sqlite3.register_converter("INTEGER_TIMESTAMP", lambda b: datetime.datetime.fromtimestamp(int(b)))
 sqlite3.register_converter("TIMESTAMP", lambda b: datetime.datetime.fromisoformat(b.decode("utf-8")))
 
 
