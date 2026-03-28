@@ -533,6 +533,8 @@ class CardDatabase(QObject):
         Visible and invisible printings are returned as lists containing tuples (Card, CacheContent),
         unknown images are returned as a list with plain CacheContent instances.
         """
+        # FIXME: DEPRECATED. Replace once the image database content is synced each application start
+        #  into the card database PrintingFace.download_status column
         db = self.db
         db.execute("SAVEPOINT 'partition_image_cache' -- get_all_cards_from_image_cache()\n")
         db.execute(cached_dedent('''\
