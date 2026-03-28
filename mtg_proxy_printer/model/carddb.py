@@ -207,7 +207,7 @@ class CardDatabase(QObject):
         last_timestamp = self.get_last_card_data_update_timestamp()
         return (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.datetime.today() if last_timestamp else True
 
-    def get_all_languages(self) -> list[str]:  # PORTED TO 35
+    def get_all_languages(self) -> list[str]:
         """Returns the list of all known and visible languages, sorted ascendingly."""
         logger.debug("Reading all known languages")
         query: LiteralString = cached_dedent('''\
@@ -217,7 +217,7 @@ class CardDatabase(QObject):
         ''')
         return self._read_scalar_list_from_db(query)
 
-    def get_card_names(self, language: str, card_name_filter: str = None) -> list[str]:  # PORTED TO 35
+    def get_card_names(self, language: str, card_name_filter: str = None) -> list[str]:
         """Returns a sorted list with all card names in the given language that match the given filter."""
         logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
         # This DISTINCT finds all spelling variants within a language,
@@ -238,7 +238,7 @@ class CardDatabase(QObject):
         return self._read_scalar_list_from_db(query, parameters)
 
     def get_basic_land_oracle_ids(
-            self, include_wastes: bool = False, include_snow_basics: bool = False) -> set[str]:  # PORTED TO 35
+            self, include_wastes: bool = False, include_snow_basics: bool = False) -> set[str]:
         """Returns the oracle ids of all Basic lands."""
         names = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']
         # Ordering matters: This order also supports Snow-Covered Wastes
@@ -316,39 +316,42 @@ class CardDatabase(QObject):
         SELECT face_name, set_code, set_name, icon_svg, collector_number, png_image_uri, scryfall_id, is_front,
                 oracle_id, is_highres_image, is_oversized, language, is_dfc -- get_cards_from_data()
             FROM VisiblePrintings
+            WHERE ({columns}) = ({parameters})
+            ORDER BY {order_by_terms}
         ''')
-        where_clause = ['    WHERE TRUE']
-        where_parameters = []
+        columns: list[LiteralString] = []
+        parameters = []
         if card.language:
-            where_clause.append(f'AND "language" = ?')
-            where_parameters.append(card.language)
+            columns.append('"language"')
+            parameters.append(card.language)
         if card.name:
-            where_clause.append(f'AND face_name = ?')
-            where_parameters.append(card.name)
+            columns.append('face_name')
+            parameters.append(card.name)
         if card.set_code:
-            where_clause.append(f'AND set_code = ?')
-            where_parameters.append(card.set_code)
+            columns.append('set_code')
+            parameters.append(card.set_code)
         if card.collector_number:
-            where_clause.append(f'AND collector_number = ?')
-            where_parameters.append(card.collector_number)
+            columns.append('collector_number')
+            parameters.append(card.collector_number)
         if card.is_front is not None:
-            where_clause.append(f'AND is_front = ?')
-            where_parameters.append(card.is_front)
+            columns.append('is_front')
+            parameters.append(card.is_front)
         if card.scryfall_id:
-            where_clause.append(f'AND scryfall_id = ?')
-            where_parameters.append(card.scryfall_id)
+            columns.append('scryfall_id')
+            parameters.append(card.scryfall_id)
         if card.oracle_id:
-            where_clause.append(f'AND oracle_id = ?')
-            where_parameters.append(card.oracle_id)
-        where_clause.append("")  # Insert final newline after joining
-        query += "\n    ".join(where_clause)
-        order_by_terms = ["is_card DESC"]
+            columns.append('oracle_id')
+            parameters.append(card.oracle_id)
+        order_by_terms = ["is_card DESC", "is_highres_image DESC", "release_date DESC"]
         if order_by_print_count:
-            order_by_terms.append("usage_count DESC NULLS LAST")
-        order_by_terms.append("is_highres_image DESC")
-        order_by_terms.append("release_date DESC")
-        query += "ORDER BY " + ",\n    ".join(order_by_terms)
-        return self._get_cards_from_data(query, where_parameters)
+            order_by_terms.insert(1, "usage_count DESC NULLS LAST")
+        query = query.format(
+            columns=', '.join(columns),
+            parameters=', '.join("?"*len(columns)),
+            order_by_terms=", ".join(order_by_terms)
+        )
+
+        return self._get_cards_from_data(query, parameters)
 
     def get_replacement_card_for_unknown_printing(
             self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
@@ -445,7 +448,7 @@ class CardDatabase(QObject):
                     cards.append(self.get_opposing_face(found))
         return cards
 
-    def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> list[str]:  # PORTED TO 35
+    def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> list[str]:
         """
         Finds all visible collector numbers matching the given filter parameters.
         The result contains multiple elements, if the card
@@ -469,7 +472,7 @@ class CardDatabase(QObject):
         ''')
         return natural_sorted(item for item, in self.db.execute(query, (language, set_code, card_name)))
 
-    def find_sets_matching(  # PORTED TO 35
+    def find_sets_matching(
             self, card_name: str, language: str, set_name_filter: str = None,
             *, is_front: bool = None) -> list[MTGSet]:
         """
@@ -498,7 +501,7 @@ class CardDatabase(QObject):
         query += '    ORDER BY set_name ASC\n'
         return list(starmap(MTGSet, self.db.execute(query, parameters)))
 
-    def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:  # PORTED TO 35
+    def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         """
         Returns the printing identified by the scryfall_id and side, if it is not hidden.
         Returns None, if such printing does not exist, or if the requested printing is hidden.
@@ -626,7 +629,7 @@ class CardDatabase(QObject):
         ''')
         return bool(self._read_optional_scalar_from_db(query, (language,)))
 
-    def is_dfc(self, scryfall_id: str) -> bool:  # PORTED TO 35
+    def is_dfc(self, scryfall_id: str) -> bool:
         """Returns True, if the given scryfall_id belongs to a double-faced card, False otherwise."""
         query = cached_dedent('''
         SELECT is_dfc -- is_dfc()

@@ -38,56 +38,56 @@ from mtg_proxy_printer.__main__ import main
 # These methods are wrapped by the profile() function
 # if this script is run using the kernprof line profiler.
 to_be_profiled_functions = {
-    #mtg_proxy_printer.model.carddb.CardDatabase: [
-    #    "get_all_languages",
-    #    "get_card_names",
-    #    "is_valid_and_unique_card",
-    #    "get_cards_from_data",
-    #    "get_replacement_card_for_unknown_printing",
-    #    "_get_cards_from_data",
-    #    "find_collector_numbers_matching",
-    #    "find_sets_matching",
-    #    "find_related_cards",
-    #    "get_card_with_scryfall_id",
-    #    "get_opposing_face",
-    #    "guess_language_from_name",
-    #    "translate_card_name",
-    #    "is_removed_printing",
-    #    "cards_not_used_since",
-    #    "cards_used_less_often_then",
-    #    "_translate_card",
-    #    "store_current_printing_filters",
-    #    "_update_cached_data",
-    #    "get_all_cards_from_image_cache",
+    mtg_proxy_printer.model.carddb.CardDatabase: [
+        "get_all_languages",
+        "get_card_names",
+        "is_valid_and_unique_card",
+        "get_cards_from_data",
+        "get_replacement_card_for_unknown_printing",
+        "_get_cards_from_data",
+        "find_collector_numbers_matching",
+        "find_sets_matching",
+        "find_related_cards",
+        "get_card_with_scryfall_id",
+        "get_opposing_face",
+        "guess_language_from_name",
+        "translate_card_name",
+        "is_removed_printing",
+        "cards_not_used_since",
+        "cards_used_less_often_then",
+        "_translate_card",
+        "store_current_printing_filters",
+        "_update_cached_data",
+        "get_all_cards_from_image_cache",
+    ],
+    #mtg_proxy_printer.page_scene.items.CardBleeds: [
+    #    "update_bleeds",
+    #    "from_card",
     #],
-    mtg_proxy_printer.page_scene.items.CardBleeds: [
-        "update_bleeds",
-        "from_card",
-    ],
-    mtg_proxy_printer.page_scene.items.CardBleedItem: [
-        "__init__",
-        "update_bleed_size",
-    ],
-    mtg_proxy_printer.page_scene.items.CardBleedCornerItem: [
-        "__init__",
-        "update_bleed_size",
-    ],
-    mtg_proxy_printer.page_scene.items.CardItem: [
-        "__init__",
-    ],
-    mtg_proxy_printer.page_scene.page_scene.PageScene: [
-        "update_card_bleeds",
-        "draw_card",
-        "_compute_position_for_image",
-        "_has_neighbors",
-    ],
-    mtg_proxy_printer.async_tasks.document_loader.DocumentLoader: [
-        "_load_official_card",
-    ],
-    mtg_proxy_printer.model.page_layout.PageLayoutSettings: [
-        "compute_page_column_count",
-        "compute_page_row_count",
-    ],
+    #mtg_proxy_printer.page_scene.items.CardBleedItem: [
+    #    "__init__",
+    #    "update_bleed_size",
+    #],
+    #mtg_proxy_printer.page_scene.items.CardBleedCornerItem: [
+    #    "__init__",
+    #    "update_bleed_size",
+    #],
+    #mtg_proxy_printer.page_scene.items.CardItem: [
+    #    "__init__",
+    #],
+    #mtg_proxy_printer.page_scene.page_scene.PageScene: [
+    #    "update_card_bleeds",
+    #    "draw_card",
+    #    "_compute_position_for_image",
+    #    "_has_neighbors",
+    #],
+    #mtg_proxy_printer.async_tasks.document_loader.DocumentLoader: [
+    #    "_load_official_card",
+    #],
+    #mtg_proxy_printer.model.page_layout.PageLayoutSettings: [
+    #    "compute_page_column_count",
+    #    "compute_page_row_count",
+    #],
 }
 
 
