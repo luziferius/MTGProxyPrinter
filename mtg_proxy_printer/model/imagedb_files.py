@@ -61,7 +61,15 @@ class ImageKey:
     @staticmethod
     def format_level_1_directory_name(is_front: bool, image_quality: ImageQuality) -> str:
         side = "front" if is_front else "back"
-        res = "highres" if ImageQuality.high_resolution in image_quality else "lowres"
+        match image_quality:
+            case ImageQuality.high_resolution:
+                res = "highres"
+            case ImageQuality.low_resolution:
+                res = "lowres"
+            case ImageQuality.custom_card:
+                res = "custom"
+            case _:
+                raise RuntimeError(f"Unknown image quality: {image_quality}")
         return f"{res}_{side}"
 
 
