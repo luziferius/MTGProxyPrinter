@@ -660,19 +660,16 @@ class CardDatabase(QObject):
           If False, translation can fail if the only potential results are from hidden printings.
         :return: String with the translated card name, or None, if either unknown or unavailable in the target language.
         """
-        # TODO: Can the common table expression use the card_id instead of the oracle_id?
-        #  The AllPrintings/VisiblePrintings views need the card_id then.
-        #  Using the Card table integer primary key should be faster than using the string oracle_id
         card_view: LiteralString = "AllPrintings" if include_hidden_names else "VisiblePrintings"
         query = cached_dedent("""\
         WITH  -- translate_card_name()
           source_context (source_scryfall_id, source_set_code) AS (SELECT ?, ?),
-          source_oracle_id (oracle_id, is_front, source_score, source_set_code) AS (
-            SELECT oracle_id, is_front,
+          source_card_id (card_id, is_front, source_score, source_set_code) AS (
+            SELECT card_id, is_front,
                 (SELECT count() FROM Card)
                   * (COALESCE(scryfall_id = source_scryfall_id, 0)
                      OR COALESCE(set_code = source_set_code, 0))
-                  + count(oracle_id) AS source_score,
+                  + count(card_id) AS source_score,
                 set_code AS source_set_code
             FROM PrintingFace
             JOIN Printing USING (printing_id)
@@ -682,13 +679,12 @@ class CardDatabase(QObject):
                COALESCE(set_code = source_set_code, TRUE) AND
                COALESCE(scryfall_id = source_scryfall_id, TRUE))
             WHERE face_name = ? AND COALESCE("language" = ?, TRUE)
-            GROUP BY oracle_id, is_front
+            GROUP BY card_id, is_front
             )
         SELECT face_name
-          FROM source_oracle_id
-          JOIN {card_view} USING (oracle_id, is_front)
+          FROM source_card_id
+          INNER JOIN {card_view} USING (card_id, is_front)
           WHERE language = ?
-          GROUP BY face_name
           -- Some localized names were updated to fix typos and similar, so prefer the newest, matched name
           ORDER BY source_score DESC, set_code = source_set_code DESC, release_date DESC
           LIMIT 1
