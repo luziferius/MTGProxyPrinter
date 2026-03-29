@@ -278,7 +278,7 @@ def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *,
 
 def _assert_printing_face_contains(card_db: CardDatabase, test_case: TestCaseData):
     data: Sequence[tuple[str, str, bool, int, int | None, int]] = card_db.db.execute("""\
-        SELECT face_name, png_image_uri, is_front, usage_count, last_use_timestamp, currently_downloaded
+        SELECT face_name, png_image_uri, is_front, usage_count, last_use_timestamp, download_status
           FROM PrintingFace""").fetchall()
     expected = [contains_exactly(*face, 0, none(), 0) for face in test_case.db_printing_face()]
     assert_that(
