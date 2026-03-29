@@ -803,6 +803,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           JOIN FaceName AS fn USING (face_name_id)
           GROUP BY scryfall_id, is_front"""),
         "DROP TABLE LastImageUseTimestamps",
+        "CREATE INDEX PrintingFace_find_printing_by_name ON PrintingFace(face_name, printing_id)",
         dedent("""\
         CREATE TABLE Printing_new (
           printing_id      INTEGER         NOT NULL PRIMARY KEY,

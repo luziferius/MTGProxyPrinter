@@ -66,6 +66,7 @@ CREATE TABLE PrintingFace (
   download_status    INTEGER            NOT NULL CHECK (download_status >=0) DEFAULT FALSE,
   PRIMARY KEY(printing_id, is_front)
 );
+CREATE INDEX PrintingFace_find_printing_by_name ON PrintingFace(face_name, printing_id)
 
 CREATE TABLE MTGSet (
   set_id            INTEGER           NOT NULL PRIMARY KEY,

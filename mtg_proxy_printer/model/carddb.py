@@ -232,7 +232,7 @@ class CardDatabase(QObject):
               {name_filter}
             ORDER BY face_name ASC
         ''')
-        name_filter: LiteralString = 'AND face_name LIKE ?' if card_name_filter else ''
+        name_filter: LiteralString = 'AND face_name GLOB ?' if card_name_filter else ''
         query = query.format(name_filter=name_filter)
         parameters = (language, f"{card_name_filter}%") if card_name_filter else (language,)
         return self._read_scalar_list_from_db(query, parameters)
@@ -481,7 +481,7 @@ class CardDatabase(QObject):
         :param card_name: Card name, matched exactly
         :param language: card language, matched exactly
         :param set_name_filter: If provided, only return sets with set code or full name beginning with this.
-          Used as a LIKE pattern, supporting SQLite wildcards.
+          Used as a GLOB pattern, supporting * as wildcards.
         :param is_front: Match by front/back. Only relevant when switching printings of SLD reversible cards.
         :return: list of matching sets, as tuples (set_abbreviation, full_english_set_name)
         """
@@ -495,7 +495,7 @@ class CardDatabase(QObject):
         ''')
         parameters: ParameterList = [language, card_name, is_front]
         if set_name_filter:
-            query += '      AND (set_code LIKE ? OR set_name LIKE ?)\n'
+            query += '      AND (set_code GLOB ? OR set_name GLOB ?)\n'
             parameters += [f"{set_name_filter}%"] * 2
 
         query += '    ORDER BY set_name ASC\n'

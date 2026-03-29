@@ -2,9 +2,15 @@
 
 # Next version (in development)
 
+## Changed features
+
+- Changed wildcard behavior in the built-in card search.
+  - Search is now consistently case-sensitive, even for ASCII characters
+  - The wildcard character to represent "any number of characters" is now `*` instead of `%`
+
 ## Fixed issues
 
-- The card lookup for "related cards" via the context menu now finds both sides of double-faced cards or tokens.
+- The card lookup for "related cards" via the context menu now finds both sides of related double-faced cards or tokens.
 - Fixed failure loading documents, caused by a compatibility issue with Python 3.14.
 - Fixed application hang at exit, if a card data update was previously canceled.
 - Potentially fixed Scryfall card data import aborting on some systems with `IncompleteRead` errors
