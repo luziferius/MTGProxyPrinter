@@ -45,6 +45,7 @@ CREATE TABLE Printing (
   preference_score INTEGER         NOT NULL DEFAULT 0,
   is_dfc           BOOLEAN_INTEGER NOT NULL CHECK (is_dfc IN (TRUE, FALSE)) DEFAULT FALSE
 );
+CREATE INDEX Printing_find_printing_by_language ON Printing(language);
 
 CREATE TABLE RelatedCards (
   -- The related cards of a card are those it references or creates, and those creating or referencing it.

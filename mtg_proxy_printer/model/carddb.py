@@ -660,7 +660,8 @@ class CardDatabase(QObject):
           If False, translation can fail if the only potential results are from hidden printings.
         :return: String with the translated card name, or None, if either unknown or unavailable in the target language.
         """
-        card_view: LiteralString = "AllPrintings" if include_hidden_names else "VisiblePrintings"
+        # TODO: Investigate, if pulling the source_score computation into the outer query works and is faster.
+        include_hidden_snippet: LiteralString = "" if include_hidden_names else "AND is_visible IS TRUE"
         query = cached_dedent("""\
         WITH  -- translate_card_name()
           source_context (source_scryfall_id, source_set_code) AS (SELECT ?, ?),
@@ -683,13 +684,15 @@ class CardDatabase(QObject):
             )
         SELECT face_name
           FROM source_card_id
-          INNER JOIN {card_view} USING (card_id, is_front)
-          WHERE language = ?
+          INNER JOIN Printing USING (card_id)
+          INNER JOIN MTGSet USING (set_id)
+          INNER JOIN PrintingFace USING (printing_id, is_front)
+          WHERE language = ? {include_hidden_names}
           -- Some localized names were updated to fix typos and similar, so prefer the newest, matched name
           ORDER BY source_score DESC, set_code = source_set_code DESC, release_date DESC
           LIMIT 1
         ;
-        """).format(card_view=card_view)
+        """).format(include_hidden_names=include_hidden_snippet)
         parameters: ParameterList = [
             card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language]
         return self._read_optional_scalar_from_db(query, parameters)

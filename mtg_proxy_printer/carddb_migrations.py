@@ -839,6 +839,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         "DROP TABLE FaceName",
         "DROP TABLE PrintLanguage",
         "DROP INDEX PrintingDisplayFilter_Printing_from_filter_lookup",
+        "CREATE INDEX Printing_find_printing_by_language ON Printing(language)",
         dedent("""\
         CREATE VIEW EvaluatePrintingFilters AS SELECT
           printing_id,
