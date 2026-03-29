@@ -24,7 +24,6 @@ from pathlib import Path
 import sqlite3
 import threading
 from typing import NamedTuple, TypeVar, Literal, Any, LiteralString
-from unittest import case
 
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QObject, Signal, Slot
@@ -660,37 +659,47 @@ class CardDatabase(QObject):
           If False, translation can fail if the only potential results are from hidden printings.
         :return: String with the translated card name, or None, if either unknown or unavailable in the target language.
         """
-        # TODO: Investigate, if pulling the source_score computation into the outer query works and is faster.
         include_hidden_snippet: LiteralString = "" if include_hidden_names else "AND is_visible IS TRUE"
         query = cached_dedent("""\
         WITH  -- translate_card_name()
-          source_context (source_scryfall_id, source_set_code) AS (SELECT ?, ?),
-          source_card_id (card_id, is_front, source_score, source_set_code) AS (
-            SELECT card_id, is_front,
-                (SELECT count() FROM Card)
+          source_context (source_row, source_scryfall_id, source_set_code, source_name, source_language) AS (
+            SELECT        1,          ?,                  ?,               ?,           ?
+            ),
+            card_count(card_count) AS (SELECT count() FROM Card),
+          source_card_id (source_row, card_id, is_front, set_id, source_score) AS (
+                SELECT source_row, card_id, is_front, set_id,
+                card_count
                   * (COALESCE(scryfall_id = source_scryfall_id, 0)
                      OR COALESCE(set_code = source_set_code, 0))
-                  + count(card_id) AS source_score,
-                set_code AS source_set_code
-            FROM PrintingFace
-            JOIN Printing USING (printing_id)
-            JOIN Card USING (card_id)
-            JOIN MTGSet USING (set_id)
-            JOIN source_context ON (
-               COALESCE(set_code = source_set_code, TRUE) AND
-               COALESCE(scryfall_id = source_scryfall_id, TRUE))
-            WHERE face_name = ? AND COALESCE("language" = ?, TRUE)
-            GROUP BY card_id, is_front
+                  + count(oracle_id) AS source_score
+            FROM card_count
+            INNER JOIN PrintingFace
+            INNER JOIN Printing USING (printing_id)
+            INNER JOIN Card USING (card_id)
+            INNER JOIN MTGSet USING (set_id)
+            INNER JOIN source_context  ON (
+               face_name = source_name
+               AND COALESCE(language = source_language, TRUE)
+               AND COALESCE(scryfall_id = source_scryfall_id, TRUE)
+               AND COALESCE(set_code = source_set_code, TRUE)
+               )
+            GROUP BY oracle_id, is_front
+          ),
+          english_face_name(card_id, is_front, english_name) AS (
+            SELECT DISTINCT card_id, PrintingFace.is_front, face_name
+            FROM PrintingFace INNER JOIN Printing USING (printing_id)
+            INNER JOIN source_card_id USING (card_id, is_front)
+            WHERE language = 'en'
             )
         SELECT face_name
-          FROM source_card_id
-          INNER JOIN Printing USING (card_id)
-          INNER JOIN MTGSet USING (set_id)
-          INNER JOIN PrintingFace USING (printing_id, is_front)
+          FROM PrintingFace
+          INNER JOIN Printing USING (printing_id)
+          INNER JOIN source_card_id USING (card_id, is_front, set_id)
+          INNER JOIN english_face_name USING (card_id, is_front)
           WHERE language = ? {include_hidden_names}
-          -- Some localized names were updated to fix typos and similar, so prefer the newest, matched name
-          ORDER BY source_score DESC, set_code = source_set_code DESC, release_date DESC
-          LIMIT 1
+          AND (language = 'en' OR face_name <> english_name)
+          GROUP BY source_row
+          HAVING max(source_score)
         ;
         """).format(include_hidden_names=include_hidden_snippet)
         parameters: ParameterList = [
