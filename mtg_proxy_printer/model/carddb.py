@@ -234,7 +234,7 @@ class CardDatabase(QObject):
         ''')
         name_filter: LiteralString = 'AND face_name GLOB ?' if card_name_filter else ''
         query = query.format(name_filter=name_filter)
-        parameters = (language, f"{card_name_filter}%") if card_name_filter else (language,)
+        parameters = (language, f"{card_name_filter}*") if card_name_filter else (language,)
         return self._read_scalar_list_from_db(query, parameters)
 
     def get_basic_land_oracle_ids(
@@ -496,7 +496,7 @@ class CardDatabase(QObject):
         parameters: ParameterList = [language, card_name, is_front]
         if set_name_filter:
             query += '      AND (set_code GLOB ? OR set_name GLOB ?)\n'
-            parameters += [f"{set_name_filter}%"] * 2
+            parameters += [f"{set_name_filter}*"] * 2
 
         query += '    ORDER BY set_name ASC\n'
         return list(starmap(MTGSet, self.db.execute(query, parameters)))

@@ -74,17 +74,42 @@ def test_get_all_languages_with_data(qtbot: QtBot, card_db: CardDatabase):
     )
 
 
+@pytest.mark.parametrize("card_name, language, prefix, expected_codes", [
+    ("Forest", "en", None, ["anb", "znr"]),
+    ("Forest", "en", "Z", ["znr"]),
+    ("Forest", "en", "ZE", []),
+    ("Forest", "en", "z", ["znr"]),
+    ("Forest", "en", "AAAAAAAA", []),
+    ("Forest", "es", None, []),
+    ("Bosque", "es", None, ["znr"]),
+    ("Bosque", "es", "Zendikar", ["znr"]),
+])
+def test_find_sets_matching(
+        qtbot: QtBot, card_db: CardDatabase, card_name: str, language: str, prefix: str | None,
+        expected_codes: list[str]):
+    fill_card_database_with_json_cards(
+        qtbot, card_db,
+        [
+            "english_basic_Forest",
+            "english_basic_Forest_2",
+            "spanish_basic_Forest",
+        ],
+    )
+    found_set_codes = [set_.code for set_ in card_db.find_sets_matching(card_name, language, prefix)]
+    assert_that(found_set_codes, contains_inanyorder(*expected_codes))
+
+
 @pytest.mark.parametrize("language, prefix, expected_names", [
     ("en", None, ["Forest", "Future Sight", "Duress", "Coercion"]),
     ("en", "Fu", ["Future Sight"]),
-    ("en", "%or", ["Forest"]),
+    ("en", "*or", ["Forest"]),
     ("en", "AAAAAAAA", []),
-    ("en", "F%t", ["Forest", "Future Sight"]),
+    ("en", "F*t", ["Forest", "Future Sight"]),
     ("de", None, ["Wald", "Zwang"]),  # noqa  # A German Forest and Duress
     ("es", None, ["Bosque"]),  # noqa  # A Spanish Forest
     ("Nonexisting language", None, []),
 ])
-def test_get_card_names(qtbot, card_db: CardDatabase, language: str, prefix: str | None, expected_names: list[str]):
+def test_get_card_names(qtbot: QtBot, card_db: CardDatabase, language: str, prefix: str | None, expected_names: list[str]):
     fill_card_database_with_json_cards(
         qtbot, card_db,
         [
@@ -115,7 +140,7 @@ def test_get_card_names(qtbot, card_db: CardDatabase, language: str, prefix: str
     ("Mentor Corrosivo", "pt"),
     ("Mentor corrosivo", "es"),
 ])
-def test_guess_language_from_name(qtbot, card_db: CardDatabase, name: str, expected: str | None):
+def test_guess_language_from_name(qtbot: QtBot, card_db: CardDatabase, name: str, expected: str | None):
     fill_card_database_with_json_cards(
         qtbot, card_db,
         [
@@ -148,7 +173,7 @@ def test_guess_language_from_name(qtbot, card_db: CardDatabase, name: str, expec
     ("", False),
     ("Unknown", False),
 ])
-def test_is_known_language(qtbot, card_db: CardDatabase, language: str, expected: bool):
+def test_is_known_language(qtbot: QtBot, card_db: CardDatabase, language: str, expected: bool):
     fill_card_database_with_json_cards(
         qtbot, card_db,
         [
@@ -171,7 +196,7 @@ def test_is_known_language(qtbot, card_db: CardDatabase, language: str, expected
 
 
 @pytest.fixture
-def card_db_with_cards(qtbot, card_db: CardDatabase):
+def card_db_with_cards(qtbot: QtBot, card_db: CardDatabase):
     fill_card_database_with_json_cards(
         qtbot, card_db,
         [
@@ -279,7 +304,7 @@ def test_translate_card_name(
     (3, [0, 1, 2]),
     (100, [0, 1, 2]),
 ])
-def test_cards_used_less_often_then(qtbot, card_db: CardDatabase, usage_count: int, expected: list[int]):
+def test_cards_used_less_often_then(qtbot: QtBot, card_db: CardDatabase, usage_count: int, expected: list[int]):
     # Setup
     fill_card_database_with_json_cards(
         qtbot, card_db,
@@ -330,7 +355,7 @@ def _get_card_from_model(card_db: CardDatabase, scryfall_id: str, is_front: bool
     ("regular_english_card", "0000579f-7b35-4ed3-b44c-db2a538066fe", False),
     ("oversized_card", "650722b4-d72b-4745-a1a5-00a34836282b", True)
 ])
-def test_card_is_oversized(qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
+def test_card_is_oversized(qtbot: QtBot, card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
     """
     Tests that all methods creating Card instances correctly set is_oversized attribute.
     """
