@@ -171,8 +171,8 @@ class ScryfallCSVParser(BaseCSVParser):
             set_code = line.get("set_code")
             collector_number = line.get("collector_number")
             if english_name:
-                card_name = english_name if target_language == "en" else self.card_db.translate_card_name(
-                    CardIdentificationData("en", english_name, scryfall_id=scryfall_id), target_language)
+                card_name = english_name if target_language == "en" else self.card_db.translate_card_names(
+                    [CardIdentificationData("en", english_name, scryfall_id=scryfall_id)], target_language)[0]
             else:
                 card_name = english_name
             if card_name or (set_code and collector_number):
@@ -268,8 +268,8 @@ class TappedOutCSVParser(BaseCSVParser):
         target_language = language_override or self._read_language(line)
         set_code = self._read_set_code(line)
         english_name = line["Name"]
-        card_name = self.card_db.translate_card_name(
-            CardIdentificationData("en", english_name, set_code), target_language)\
+        card_name = self.card_db.translate_card_names(
+            [CardIdentificationData("en", english_name, set_code)], target_language)[0]\
             if target_language != "en" else english_name
         if english_name and not card_name:
             # Unable to translate card. Missing localized card data? Defaulting to English

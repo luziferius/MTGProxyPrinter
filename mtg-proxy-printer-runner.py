@@ -51,7 +51,7 @@ to_be_profiled_functions = {
         "get_card_with_scryfall_id",
         "get_opposing_face",
         "guess_language_from_name",
-        "translate_card_name",
+        "translate_card_names",
         "is_removed_printing",
         "cards_not_used_since",
         "cards_used_less_often_then",

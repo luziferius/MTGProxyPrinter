@@ -637,10 +637,10 @@ class CardDatabase(QObject):
         ''')
         return bool(self._read_optional_scalar_from_db(query, (scryfall_id,)))
 
-    def translate_card_name(self, card_data: CardIdentificationData | Card, target_language: str,
-                            include_hidden_names: bool = False) -> str | None:
+    def translate_card_names(self, card_data_list: list[CardIdentificationData | Card], target_language: str,
+                             include_hidden_names: bool = False) -> list[str|None]:
         """
-        Translates a card name into the target_language.
+        Translates a list of card names into the target_language.
         Uses the language in the card data as the source language, if given.
         If not, card names across all languages are searched.
 
@@ -653,19 +653,35 @@ class CardDatabase(QObject):
         result. But if context is given by the scryfall id or the set code, the exact, set-specific
         translation is returned.
 
-        :param card_data: A Card or CardIdentificationData. Accesses the name, language, scryfall_id and set_code fields
+        :param card_data_list: A list containing Card or CardIdentificationData instances.
+          Accesses the name, language, scryfall_id and set_code fields
         :param target_language: Target language to translate to
         :param include_hidden_names: If True, can look at hidden printings.
           If False, translation can fail if the only potential results are from hidden printings.
-        :return: String with the translated card name, or None, if either unknown or unavailable in the target language.
+        :return: List of strings with the translated card names. Has same length as the input list.
+          Individual elements can be None, if either unknown or unavailable in the target language.
         """
+        if not card_data_list:
+            return []
+        # The temporary table itself can stay in the temp namespace after use, but content is cleared at the end
+        self.db.execute(cached_dedent("""\
+        CREATE TEMPORARY TABLE IF NOT EXISTS TranslateCardSourceContext (
+          source_row         INTEGER PRIMARY KEY NOT NULL,
+          source_scryfall_id TEXT,
+          source_set_code    TEXT,
+          source_name        TEXT NOT NULL,
+          source_language    TEXT
+         );"""))
+        self.db.executemany(cached_dedent("""\
+        INSERT INTO TranslateCardSourceContext 
+               (source_scryfall_id,    source_set_code,    source_name,    source_language)
+        VALUES (?,                     ?,                  ?,              ?)
+        """), ((card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language)
+               for card_data in card_data_list))
         include_hidden_snippet: LiteralString = "" if include_hidden_names else "AND is_visible IS TRUE"
-        query = cached_dedent("""\
-        WITH  -- translate_card_name()
-          source_context (source_row, source_scryfall_id, source_set_code, source_name, source_language) AS (
-            SELECT        1,          ?,                  ?,               ?,           ?
-            ),
-            card_count(card_count) AS (SELECT count() FROM Card),
+        translate_query = cached_dedent("""\
+        WITH  -- translate_card_names()
+          card_count(card_count) AS (SELECT count() FROM Card),
           source_card_id (source_row, card_id, is_front, set_id, source_score) AS (
                 SELECT source_row, card_id, is_front, set_id,
                 card_count
@@ -677,7 +693,7 @@ class CardDatabase(QObject):
             INNER JOIN Printing USING (printing_id)
             INNER JOIN Card USING (card_id)
             INNER JOIN MTGSet USING (set_id)
-            INNER JOIN source_context  ON (
+            INNER JOIN TranslateCardSourceContext  ON (
                face_name = source_name
                AND COALESCE(language = source_language, TRUE)
                AND COALESCE(scryfall_id = source_scryfall_id, TRUE)
@@ -691,7 +707,7 @@ class CardDatabase(QObject):
             INNER JOIN source_card_id USING (card_id, is_front)
             WHERE language = 'en'
             )
-        SELECT face_name
+        SELECT source_row, face_name
           FROM PrintingFace
           INNER JOIN Printing USING (printing_id)
           INNER JOIN source_card_id USING (card_id, is_front, set_id)
@@ -702,9 +718,12 @@ class CardDatabase(QObject):
           HAVING max(source_score)
         ;
         """).format(include_hidden_names=include_hidden_snippet)
-        parameters: ParameterList = [
-            card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language]
-        return self._read_optional_scalar_from_db(query, parameters)
+        rows = {row["source_row"]: row["face_name"] for row in self.db.execute(
+            translate_query, (target_language,)
+        )}
+        results = [rows.get(index) for index in range(1, len(card_data_list)+1)]
+        self.db.execute("DELETE FROM TranslateCardSourceContext")
+        return results
 
     def get_available_languages_for_card(self, card: Card) -> list[str]:
         """

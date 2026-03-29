@@ -185,7 +185,7 @@ class KnownCardImageModel(QAbstractTableModel):
         self.beginInsertRows(INVALID_INDEX, position, position)
         size_bytes = image.absolute_path.stat().st_size
         if card.language != self.preferred_language:
-            preferred_name = self.card_db.translate_card_name(card, self.preferred_language, True)
+            preferred_name = self.card_db.translate_card_names([card], self.preferred_language, True)[0]
         else:
             preferred_name = None
         row = KnownCardRow(

@@ -290,10 +290,8 @@ def generate_test_cases_for_test_translate_card_name():
 @pytest.mark.parametrize("card_data, target_language, expected", generate_test_cases_for_test_translate_card_name())
 def test_translate_card_name(
         card_db_with_cards: CardDatabase, card_data: CardIdentificationData, target_language: str, expected: str | None):
-    assert_that(
-        card_db_with_cards.translate_card_name(card_data, target_language),
-        is_(equal_to(expected))
-    )
+    result = card_db_with_cards.translate_card_names([card_data], target_language)
+    assert_that(result, contains_exactly(equal_to(expected)), f"Got: {result}" )
 
 
 @pytest.mark.parametrize("usage_count, expected", [

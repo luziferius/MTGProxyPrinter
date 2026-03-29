@@ -89,8 +89,8 @@ class GenericRegularExpressionDeckParser(ParserBase):
                 # If the matcher doesn't include language information, all cards are implicitly English printings
                 parsed_data = self._parse_line(match_dict)
                 if language_override and language_override != parsed_data.language and (
-                        translated := self.card_db.translate_card_name(parsed_data, language_override)):
-                    parsed_data.name = translated
+                        translated := self.card_db.translate_card_names([parsed_data], language_override)):
+                    parsed_data.name = translated[0]
                     parsed_data.language = language_override
                     parsed_data.scryfall_id = None  # The old value is definitely invalid in this case, so set to Null
                 if matched_cards := self.card_db.get_cards_from_data(parsed_data):
