@@ -718,7 +718,6 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         ) WITHOUT ROWID"""),
         "INSERT INTO RelatedCards SELECT card_id, related_id FROM RelatedPrintings",
         "DROP TABLE RelatedPrintings",
-        "ALTER TABLE PrintingDisplayFilter RENAME TO FilterAppliesTo",
         dedent("""\
         CREATE TABLE PrintingFilters (
           -- Contains the available display filters and their current values
@@ -733,6 +732,16 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           FROM DisplayFilters
         """),
         "DROP TABLE DisplayFilters",
+        dedent("""\
+        CREATE TABLE FilterAppliesTo (
+          -- Stores which filter applies to which printing.
+          printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
+          filter_id      INTEGER NOT NULL REFERENCES PrintingFilters (filter_id) ON DELETE CASCADE,
+          PRIMARY KEY (printing_id, filter_id)
+        ) WITHOUT ROWID
+        """),
+        "INSERT INTO FilterAppliesTo SELECT * FROM PrintingDisplayFilter",
+        "DROP TABLE PrintingDisplayFilter",
         dedent("""\
         CREATE TABLE MTGSet_new (
           set_id            INTEGER           NOT NULL PRIMARY KEY,
@@ -838,7 +847,6 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         "DROP TABLE CardFace",
         "DROP TABLE FaceName",
         "DROP TABLE PrintLanguage",
-        "DROP INDEX PrintingDisplayFilter_Printing_from_filter_lookup",
         "CREATE INDEX Printing_find_printing_by_language ON Printing(language)",
         dedent("""\
         CREATE VIEW EvaluatePrintingFilters AS SELECT
@@ -986,7 +994,7 @@ class DatabaseMigrationTask(AsyncTask):
         msg = self.tr(
             "Migrate to version %n:",
             "Progress bar label. The numeric parameter is a version number, and not countable.",
-            source_version)
+            next_version)
         signals.task_begins.emit(steps, msg)
 
         logger.debug(f"Starting migration from {source_version}")
