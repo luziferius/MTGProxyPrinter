@@ -155,8 +155,8 @@ class GenericRegularExpressionDeckParser(ParserBase):
     def _match_name(match_dict: MatchType) -> str | None:
         name = match_dict.get("name")
         if name and "//" in name:
-            # Many sources combine both names of split- or flip-cards as "Front // Back". If so, simply remove the
-            # second name, as the back, if any, will be added later.
+            # Many sources combine both names of split- or flip-cards as "Front // Back" or rarely "Front//Back".
+            # If so, simply remove all but the first name, as the back, if any, will be added later.
             name = name.split("//")[0].rstrip()
         return name
 
