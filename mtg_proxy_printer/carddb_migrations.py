@@ -768,11 +768,12 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         "CREATE INDEX MigratedPrintingsLookup ON MigratedPrintings(old_scryfall_id, new_scryfall_id)",
         dedent("""\
         CREATE TABLE Card_new (
-          card_id INTEGER NOT NULL PRIMARY KEY,
-          oracle_id TEXT NOT NULL UNIQUE,
+          card_id      INTEGER         NOT NULL PRIMARY KEY,
+          oracle_id    TEXT            NOT NULL UNIQUE,
+          english_name TEXT            NOT NULL, -- Not UNIQUE. There are some distinct tokens and  Un-set cards sharing names
           -- There are now tokens sharing names with cards, so state if this is a card that can go into a deck.
           -- Used by the print selection in the deck list parser to always chose cards over same-name tokens
-          is_card BOOLEAN_INTEGER NOT NULL CHECK(is_card IN (TRUE, FALSE))
+          is_card      BOOLEAN_INTEGER NOT NULL CHECK (is_card IN (TRUE, FALSE))
         )"""),
         dedent("""\
         WITH tokens(card_id, is_card) AS (
@@ -780,11 +781,23 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
             FROM Printing
             LEFT OUTER JOIN FilterAppliesTo USING (printing_id)
             LEFT OUTER JOIN PrintingFilters USING (filter_id)
-            WHERE filter_name = 'hide-token')
-        INSERT INTO Card_new (card_id, oracle_id, is_card)
-          SELECT              card_id, oracle_id, coalesce(is_card, TRUE) AS is_card
+            WHERE filter_name = 'hide-token'),
+          english_face_name(card_id, english_name) AS (
+            SELECT distinct card_id, group_concat(card_name, ' // ') AS english_name
             FROM Card
-            LEFT OUTER JOIN tokens USING (card_id)"""),
+            INNER JOIN Printing USING (card_id)
+            INNER JOIN CardFace USING (printing_id)
+            INNER JOIN FaceName USING (face_name_id)
+            INNER JOIN PrintLanguage USING (language_id)
+            WHERE language = 'en'
+            GROUP BY scryfall_id
+            ORDER BY face_number ASC
+          )
+        INSERT INTO Card_new (card_id, oracle_id, english_name,               is_card)
+          SELECT              card_id, oracle_id, coalesce(english_name, ''), coalesce(is_card, TRUE)
+            FROM Card
+            LEFT OUTER JOIN tokens USING (card_id)
+            LEFT OUTER JOIN english_face_name USING (card_id)"""),
         "DROP TABLE Card",
         "ALTER TABLE Card_new RENAME TO Card",
         dedent("""\
@@ -795,7 +808,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           png_image_uri      TEXT               NOT NULL,
           usage_count        INTEGER            NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
           last_use_timestamp INTEGER_TIMESTAMP,
-          download_status    INTEGER            NOT NULL CHECK (download_status >=0) DEFAULT FALSE,
+          download_status    INTEGER            NOT NULL CHECK (download_status >=0) DEFAULT 0,
           PRIMARY KEY(printing_id, is_front)
         )"""),
         dedent("""\
@@ -862,7 +875,8 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         CREATE VIEW AllPrintings AS SELECT
             face_name, set_code, set_name, icon_svg, collector_number, release_date,
             scryfall_id, png_image_uri, oracle_id, card_id, "language",
-            is_front, is_card, is_oversized, is_highres_image, is_visible, is_dfc, usage_count
+            is_front, is_card, is_oversized, is_highres_image, is_visible, is_dfc, usage_count,
+            english_name, preference_score
           FROM Printing
           INNER JOIN Card USING(card_id)
           INNER JOIN PrintingFace USING (printing_id)
@@ -871,7 +885,8 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         CREATE VIEW VisiblePrintings AS SELECT 
             face_name, set_code, set_name, icon_svg, collector_number, release_date,
             scryfall_id, png_image_uri, oracle_id, card_id, "language",
-            is_front, is_card, is_oversized, is_highres_image, is_dfc, usage_count
+            is_front, is_card, is_oversized, is_highres_image, is_dfc, usage_count,
+            english_name, preference_score
           FROM AllPrintings
           WHERE is_visible IS TRUE"""),
     ], disable_foreign_keys=True),
