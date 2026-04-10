@@ -637,12 +637,19 @@ class CardDatabase(QObject):
         ''')
         return bool(self._read_optional_scalar_from_db(query, (scryfall_id,)))
 
-    def translate_card_names(self, card_data_list: list[CardIdentificationData | Card], target_language: str,
-                             include_hidden_names: bool = False) -> list[str|None]:
+    def translate_card_names(self, card_data_list: list[CardIdentificationData | Card],
+                             target_language: str | list[str],
+                             include_hidden_names: bool = False) -> list[str | None]:
         """
         Translates a list of card names into the target_language.
+        Data is passed as CardIdentificationData or Card instances to include additional data along the name.
         Uses the language in the card data as the source language, if given.
         If not, card names across all languages are searched.
+
+        If target_language is a list of languages, this method performs an elementwise translation,
+        thus the length must match the card_data_list. Then, the card data list and target language list are
+        zipped together, and each source card is translated to its associated target language. This is primarily useful
+        for translating deck lists, where each line contains the card language together with the English name.
 
         Can take the source scryfall id or source set code as an optional disambiguation in case
         that a translation is ambiguous. As an example, “Duress” is translated to “Zwang” in German, except for
@@ -655,7 +662,7 @@ class CardDatabase(QObject):
 
         :param card_data_list: A list containing Card or CardIdentificationData instances.
           Accesses the name, language, scryfall_id and set_code fields
-        :param target_language: Target language to translate to
+        :param target_language: Target language or languages list to translate to.
         :param include_hidden_names: If True, can look at hidden printings.
           If False, translation can fail if the only potential results are from hidden printings.
         :return: List of strings with the translated card names. Has same length as the input list.
@@ -663,37 +670,42 @@ class CardDatabase(QObject):
         """
         if not card_data_list:
             return []
+        if isinstance(target_language, str):
+            target_language = [target_language]*len(card_data_list)
+
         # The temporary table itself can stay in the temp namespace after use, but content is cleared at the end
         self.db.execute(cached_dedent("""\
-        CREATE TEMPORARY TABLE IF NOT EXISTS TranslateCardSourceContext (
+        CREATE TEMPORARY TABLE IF NOT EXISTS TranslateCardSourceContext (  -- translate_card_names()
           source_row         INTEGER PRIMARY KEY NOT NULL,
           source_scryfall_id TEXT,
           source_set_code    TEXT,
           source_name        TEXT NOT NULL,
-          source_language    TEXT
-         );"""))
+          source_language    TEXT,
+          target_language    TEXT NOT NULL
+         )"""))
+        parameters = (
+            (card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_lang)
+            for card_data, target_lang in zip(card_data_list, target_language, strict=True))
         self.db.executemany(cached_dedent("""\
-        INSERT INTO TranslateCardSourceContext 
-               (source_scryfall_id,    source_set_code,    source_name,    source_language)
-        VALUES (?,                     ?,                  ?,              ?)
-        """), ((card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language)
-               for card_data in card_data_list))
-        include_hidden_snippet: LiteralString = "" if include_hidden_names else "AND is_visible IS TRUE"
+        INSERT INTO TranslateCardSourceContext   -- translate_card_names()
+               (source_scryfall_id,    source_set_code,    source_name,    source_language, target_language)
+        VALUES (?,                     ?,                  ?,              ?,               ?)
+        """), parameters)
         translate_query = cached_dedent("""\
         WITH  -- translate_card_names()
           card_count(card_count) AS (SELECT count() FROM Card),
-          source_card_id (source_row, card_id, is_front, set_id, source_score) AS (
+          source_card_id (source_row, card_id, is_front, set_id, source_score, target_language) AS (
                 SELECT source_row, card_id, is_front, set_id,
                 card_count
                   * (COALESCE(scryfall_id = source_scryfall_id, 0)
                      OR COALESCE(set_code = source_set_code, 0))
-                  + count(oracle_id) AS source_score
+                  + count(oracle_id) AS source_score, target_language
             FROM card_count
             INNER JOIN PrintingFace
             INNER JOIN Printing USING (printing_id)
             INNER JOIN Card USING (card_id)
             INNER JOIN MTGSet USING (set_id)
-            INNER JOIN TranslateCardSourceContext  ON (
+            INNER JOIN TranslateCardSourceContext ON (
                face_name = source_name
                AND COALESCE(language = source_language, TRUE)
                AND COALESCE(scryfall_id = source_scryfall_id, TRUE)
@@ -712,17 +724,17 @@ class CardDatabase(QObject):
           INNER JOIN Printing USING (printing_id)
           INNER JOIN source_card_id USING (card_id, is_front, set_id)
           INNER JOIN english_face_name USING (card_id, is_front)
-          WHERE language = ? {include_hidden_names}
+          WHERE language = target_language AND (? OR is_visible IS TRUE)
+          -- Some None-English printings have English placeholder names. Exclude those from result sets
           AND (language = 'en' OR face_name <> english_name)
           GROUP BY source_row
           HAVING max(source_score)
-        ;
-        """).format(include_hidden_names=include_hidden_snippet)
+        """)
         rows = {row["source_row"]: row["face_name"] for row in self.db.execute(
-            translate_query, (target_language,)
+            translate_query, (include_hidden_names,)
         )}
         results = [rows.get(index) for index in range(1, len(card_data_list)+1)]
-        self.db.execute("DELETE FROM TranslateCardSourceContext")
+        self.db.execute("DELETE FROM TranslateCardSourceContext  -- translate_card_names()\n")
         return results
 
     def get_available_languages_for_card(self, card: Card) -> list[str]:
@@ -785,7 +797,7 @@ class CardDatabase(QObject):
           )
         """)
         parameters: ParameterList = [card.collector_number, card.oracle_id, card.set_code, card.language]
-        return natural_sorted((number for number, in self.db.execute(query, parameters)))
+        return natural_sorted(self._read_scalar_list_from_db(query, parameters))
 
     def _read_optional_scalar_from_db(self, query: LiteralString, parameters: Sequence[Any] = ()):
         """
@@ -793,7 +805,7 @@ class CardDatabase(QObject):
         and returns the result
         """
         match self.db.execute(query, parameters).fetchone():
-            case sqlite3.Row() as row:
+            case sqlite3.Row() as row if len(row) == 1:
                 return row[0]
             case None:
                 return None
