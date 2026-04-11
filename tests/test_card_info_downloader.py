@@ -183,8 +183,8 @@ class TestCaseData:
         release_date = datetime.datetime.fromisoformat(card["released_at"])
         return DatabaseSetData(card["set"], card["set_name"], release_date, card["set_id"])
 
-    def db_card(self) -> str:
-        return self.oracle_id
+    def db_card(self) -> tuple[str, str]:
+        return self.oracle_id, self.json_dict["name"]
 
     def db_set(self):
         return self.set
@@ -236,7 +236,9 @@ class TestCaseData:
 
 def _assert_card_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks oracle_id"""
-    data: Sequence[str] = [row["oracle_id"] for row in card_db.db.execute('SELECT oracle_id FROM Card\n')]
+    data: Sequence[tuple[str, str]] = [
+        (row["oracle_id"], row["english_name"])
+        for row in card_db.db.execute('SELECT oracle_id, english_name FROM Card\n')]
     assert_that(
         data, contains_exactly(test_case.db_card()),
         f"Card relation contains unexpected data: {data}")

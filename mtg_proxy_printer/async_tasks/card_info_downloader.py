@@ -524,10 +524,11 @@ class DatabaseImportTask(AsyncTask):
 
     def _parse_single_printing(self, card: CardDataType):
         oracle_id = _get_oracle_id(card)
-        is_card = not(
-                card["layout"] in {"art_series", "double_faced_token", "token", "vanguard"}
-                or card["set_type"] == "token")
-        card_id = self._insert_or_update_card(oracle_id, is_card)
+        is_card = not (
+            card["layout"] in {"art_series", "double_faced_token", "token", "vanguard"}
+            or card["set_type"] == "token")
+        english_name = card["name"]
+        card_id = self._insert_or_update_card(oracle_id, is_card, english_name)
         set_code = card["set"]
         if (set_id := self.set_code_cache.get(set_code)) is None:
             self.set_code_cache[set_code] = set_id = self._insert_or_update_set(card)
@@ -566,33 +567,33 @@ class DatabaseImportTask(AsyncTask):
         """), related_cards)
 
     @functools.cache
-    def _insert_or_update_card(self, oracle_id: UUID, is_card: bool) -> int:
+    def _insert_or_update_card(self, oracle_id: UUID, is_card: bool, english_name) -> int:
         db = self.db
         query = cached_dedent("""\
         SELECT card_id, ( -- _insert_or_update_card()
           is_card <> ?
+          OR english_name <> ?
         ) AS needs_update
         FROM Card WHERE oracle_id = ?
         """)
-        parameters = [is_card, oracle_id]
-        check_result = db.execute(query, parameters).fetchone()
-        match check_result:
+        parameters = [is_card, english_name, oracle_id]
+        match db.execute(query, parameters).fetchone():
             case card_id, 0:
                 pass  # Already present and nothing changed
             case None:
                 card_id = db.execute(cached_dedent("""\
                 INSERT INTO Card  -- _insert_or_update_card()
-                       (is_card, oracle_id)
-                VALUES (?,       ?)
+                       (is_card, english_name, oracle_id)
+                VALUES (?,       ?,            ?)
                 """), parameters).lastrowid
             case card_id, 1:
                 parameters[-1] = card_id
                 db.execute(cached_dedent("""\
                 UPDATE Card -- _insert_or_update_card()
-                  SET is_card = ?
+                  SET is_card = ?, english_name = ?
                   WHERE card_id = ?
                 """), parameters)
-            case _:
+            case check_result:
                 raise RuntimeError(f"Unexpected data: {check_result}")
         return card_id
 
@@ -607,9 +608,8 @@ class DatabaseImportTask(AsyncTask):
         ) AS needs_update
         FROM MTGSet WHERE set_code = ?
         """)
-        parameters = [ card["set_name"], card["released_at"], card["set_id"], set_code]
-        check_result = db.execute(query, parameters).fetchone()
-        match check_result:
+        parameters = [card["set_name"], card["released_at"], card["set_id"], set_code]
+        match db.execute(query, parameters).fetchone():
             case set_id, 0:
                 pass  # Already present and nothing changed
             case None:
@@ -629,7 +629,7 @@ class DatabaseImportTask(AsyncTask):
                     = (?,        unixepoch(?, 'utc'), ?)
                   WHERE set_id = ?
                 """), parameters)
-            case _:
+            case check_result:
                 raise RuntimeError(f"Unexpected data: {check_result}")
         return set_id
 
@@ -652,8 +652,7 @@ class DatabaseImportTask(AsyncTask):
         parameters = [
             set_id, card["collector_number"], card["lang"], card_id,
             card["oversized"], card["highres_image"], is_dfc, card["id"]]
-        check_result = db.execute(query, parameters).fetchone()
-        match check_result:
+        match db.execute(query, parameters).fetchone():
             case None:                
                 printing_id = db.execute(cached_dedent("""\
                 INSERT INTO Printing  -- _insert_or_update_printing()
@@ -670,7 +669,7 @@ class DatabaseImportTask(AsyncTask):
                 """), parameters)
             case printing_id, 0:
                 pass  # Already present and nothing changed
-            case _:
+            case check_result:
                 raise RuntimeError(f"Unexpected data: {check_result}")
         return printing_id
 
@@ -699,8 +698,8 @@ class DatabaseImportTask(AsyncTask):
                     """), parameters)
                 case 0:
                     continue  # Everything already present and up-to-date
-                case _:
-                    raise RuntimeError(f"Unexpected data retuned from query: {check_query}")
+                case check_result:
+                    raise RuntimeError(f"Unexpected data retuned from query: {check_query} {check_result=}")
 
     def _insert_or_update_card_filters(self, printing_id: int, filter_data: dict[str, bool]):
         printing_filter_ids = self._read_available_printing_filters_from_db()
@@ -782,10 +781,10 @@ def _should_skip_card(card: CardDataType) -> bool:
     # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
     # Also skip double faced cards that have at least one face without images
     return card["image_status"] == "missing" or (
-            # Has faces, but no image_uris, therefore is a DFC
-            "card_faces" in card and "image_uris" not in card
-            # And at least one face has no images
-            and any("image_uris" not in face for face in card["card_faces"])
+        # Has faces, but no image_uris, therefore is a DFC
+        "card_faces" in card and "image_uris" not in card
+        # And at least one face has no images
+        and any("image_uris" not in face for face in card["card_faces"])
     )
 
 
