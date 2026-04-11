@@ -783,7 +783,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
             LEFT OUTER JOIN PrintingFilters USING (filter_id)
             WHERE filter_name = 'hide-token'),
           english_face_name(card_id, english_name) AS (
-            SELECT distinct card_id, group_concat(card_name, ' // ') AS english_name
+            SELECT distinct card_id, group_concat(card_name, ' // ' ORDER BY face_number ASC) AS english_name
             FROM Card
             INNER JOIN Printing USING (card_id)
             INNER JOIN CardFace USING (printing_id)
@@ -791,13 +791,13 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
             INNER JOIN PrintLanguage USING (language_id)
             WHERE language = 'en'
             GROUP BY scryfall_id
-            ORDER BY face_number ASC
           )
         INSERT INTO Card_new (card_id, oracle_id, english_name,               is_card)
           SELECT              card_id, oracle_id, coalesce(english_name, ''), coalesce(is_card, TRUE)
             FROM Card
             LEFT OUTER JOIN tokens USING (card_id)
-            LEFT OUTER JOIN english_face_name USING (card_id)"""),
+            LEFT OUTER JOIN english_face_name USING (card_id)
+            GROUP BY card_id"""),
         "DROP TABLE Card",
         "ALTER TABLE Card_new RENAME TO Card",
         dedent("""\
