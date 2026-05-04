@@ -331,6 +331,7 @@ class ApiStreamTask(StreamTask):
 
 
 class SetIconImportTask(DownloaderBase):
+    BULK_THRESHOLD = 10
 
     def __init__(self, db: sqlite3.Connection = None, carddb_path: Path | Literal[":memory:"] = DEFAULT_DATABASE_LOCATION):
         super().__init__()
@@ -343,6 +344,9 @@ class SetIconImportTask(DownloaderBase):
         db = self.db
         missing_icon_sets: set[str] = {
             code for code, in db.execute("SELECT set_code FROM MTGSet WHERE icon_svg IS NULL")}
+        missing_icon_sets_count = len(missing_icon_sets)
+        steps = 1 + missing_icon_sets_count*(1 + len(missing_icon_sets)<=self.BULK_THRESHOLD)
+        self.task_begins.emit(self.tr("Download set icons: ", "Progress bar label"), steps)
         icon_uris = self._fetch_icon_uris(missing_icon_sets)
         if not self.should_run: return
         icon_svgs = self._fetch_icon_svgs(icon_uris)
@@ -351,6 +355,8 @@ class SetIconImportTask(DownloaderBase):
             "UPDATE set_code SET icon_svg = ? WHERE set_code = ?",
             icon_svgs
         )
+        self.advance_progress.emit()
+        self.task_completed.emit()
 
     def _fetch_icon_uris(self, missing_icons: set[str]) -> dict[str, str]:
         """
@@ -359,7 +365,7 @@ class SetIconImportTask(DownloaderBase):
         :param missing_icons: The set of set codes to query
         :returns: Mapping from set codes to SVG icon URIs
         """
-        if len(missing_icons) > 10:
+        if len(missing_icons) > self.BULK_THRESHOLD:
             open_file, _ = self.read_from_url("https://api.scryfall.com/sets")
             with open_file:
                 stream: Iterable[SetsAPIDataType] = ijson.items(open_file, "data.item", use_float=True)
@@ -368,6 +374,7 @@ class SetIconImportTask(DownloaderBase):
                     for item in stream
                     if (code := item["code"]) in missing_icons
                 }
+                self.advance_progress.emit()
         else:
             result: dict[str, str] = {}
             for code in missing_icons:
@@ -375,6 +382,7 @@ class SetIconImportTask(DownloaderBase):
                 open_file, _ = self.read_from_url(f"https://api.scryfall.com/sets/{code}")
                 uri = next(ijson.items(open_file, "icon_svg_uri", use_float=True))
                 result[code] = uri
+                self.advance_progress.emit()
         return result
 
     def _fetch_icon_svgs(self, icon_uris: dict[str, str]) -> list[tuple[str, str]]:
@@ -388,6 +396,7 @@ class SetIconImportTask(DownloaderBase):
         for code, uri in icon_uris.items():
             if not self.should_run: return result
             result.append((self.read_from_url(uri,)[0].read().decode("utf-8"), code))
+            self.advance_progress.emit()
         return result
 
 
