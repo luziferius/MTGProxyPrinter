@@ -94,6 +94,7 @@ class RelatedPrintingData(typing.NamedTuple):
 
 class CardInfoDownloadTaskBase(DownloaderBase):
     """Base class for tasks that fetch card data from the Scryfall bulk-data API."""
+
     def get_scryfall_bulk_card_data_url(self) -> tuple[str, int]:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
