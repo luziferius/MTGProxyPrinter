@@ -31,10 +31,10 @@ import typing
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Literal, LiteralString, Any
+from typing import Literal, LiteralString, Any, Iterable
 
 import ijson
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Qt, Slot, QObject
 
 from mtg_proxy_printer import BlockingQueuedConnection
 from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
@@ -45,7 +45,7 @@ from mtg_proxy_printer.sqlite_helpers import cached_dedent
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID
+from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID, SetsAPIDataType
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 
@@ -94,6 +94,7 @@ class RelatedPrintingData(typing.NamedTuple):
 
 class CardInfoDownloadTaskBase(DownloaderBase):
     """Base class for tasks that fetch card data from the Scryfall bulk-data API."""
+
     def get_scryfall_bulk_card_data_url(self) -> tuple[str, int]:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
@@ -329,6 +330,123 @@ class ApiStreamTask(StreamTask):
         return self.get_available_card_count()
 
 
+class SetIconImportTask(DownloaderBase):
+    BULK_THRESHOLD = 10
+
+    def __init__(self, db: sqlite3.Connection = None, carddb_path: Path | Literal[":memory:"] = DEFAULT_DATABASE_LOCATION):
+        super().__init__()
+        self.carddb_path = carddb_path
+        self._db = db
+        self.db_created = db is None
+        self.should_run = True
+
+    def run(self):
+        db = self.db
+        missing_icon_sets: set[str] = {
+            code for code, in db.execute("SELECT set_code FROM MTGSet WHERE icon_svg IS NULL")}
+        missing_icon_sets_count = len(missing_icon_sets)
+        if missing_icon_sets_count:
+            logger.info(f"Fetching {missing_icon_sets_count} missing set icons.")
+        else:
+            logger.info("All set icons present.")
+            return
+        steps = 1 + missing_icon_sets_count*(1 + (missing_icon_sets_count<=self.BULK_THRESHOLD))
+        self.task_begins.emit(steps, self.tr("Download set icons: ", "Progress bar label"))
+        icon_uris = self._fetch_icon_uris(missing_icon_sets)
+        if not self.should_run: return
+        logger.debug("SVG icon URIs obtained, downloading them…")
+        icon_svgs = self._fetch_icon_svgs(icon_uris)
+        if not self.should_run: return
+        logger.debug("SVG icons downloaded, updating the database…")
+        db.executemany(
+            "UPDATE MTGSet SET icon_svg = ? WHERE set_code = ?",
+            icon_svgs
+        )
+        logger.debug("All SVG icons inserted.")
+        self.advance_progress.emit()
+        logger.info("All missing set icons downloaded")
+        self.task_completed.emit()
+
+    def _fetch_icon_uris(self, missing_icons: set[str]) -> dict[str, str]:
+        """
+        Fetches the SVG icon URIs from the Scryfall API. If the number of missing icons is greater than the threshold,
+        fetch everything in a bulk request, otherwise iterate and query specific sets from the API.
+        :param missing_icons: The set of set codes to query
+        :returns: Mapping from set codes to SVG icon URIs
+        """
+        if len(missing_icons) > self.BULK_THRESHOLD:
+            logger.debug(
+                f"Above {self.BULK_THRESHOLD} set icons missing, requesting URIs from the bulk API end point")
+            # This bulk end point is slow to react
+            socket.setdefaulttimeout(30)
+            open_file, _ = self.read_from_url("https://api.scryfall.com/sets")
+            with open_file:
+                stream: Iterable[SetsAPIDataType] = ijson.items(open_file, "data.item", use_float=True)
+                result = {
+                    code: item["icon_svg_uri"]
+                    for item in stream
+                    if (code := item["code"]) in missing_icons
+                }
+                self.advance_progress.emit()
+            socket.setdefaulttimeout(5)
+        else:
+            logger.debug(
+                f"Below {self.BULK_THRESHOLD} set icons missing, requesting URIs from the set code API end point.")
+            result: dict[str, str] = {}
+            for code in missing_icons:
+                if not self.should_run: return result
+                open_file, _ = self.read_from_url(f"https://api.scryfall.com/sets/{code}")
+                uri = next(ijson.items(open_file, "icon_svg_uri", use_float=True))
+                result[code] = uri
+                self.advance_progress.emit()
+        return result
+
+    def _fetch_icon_svgs(self, icon_uris: dict[str, str]) -> list[tuple[bytes, str]]:
+        """
+        Fetches the given SVG icons. Note: The returned tuples have the SVG source in front, because that's the
+        item order expected by the database UPDATE query.
+        :param icon_uris: Mapping from set code to the SVG uri
+        :returns: list with tuples [SVG source code, set code]
+        """
+        result : list[tuple[bytes, str]] = []
+        for code, uri in icon_uris.items():
+            if not self.should_run: return result
+            result.append((self.read_from_url(uri,)[0].read(), code))
+            self.advance_progress.emit()
+        return result
+
+
+    @property
+    def db(self) -> sqlite3.Connection:
+        # Delay connection creation until first access.
+        # Avoids opening connections that aren't actually used and opens the connection
+        # in the thread that actually uses it.
+        if self._db is None:
+            logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
+            self._db = open_database(self.carddb_path, SCHEMA_NAME)
+        return self._db
+
+    def _read_optional_scalar_from_db(self, query: LiteralString, parameters: Sequence[Any] = ()):
+        """
+        Runs the query with the given parameters that is expected to return either a singular value or None,
+        and returns the result
+        """
+        match self.db.execute(query, parameters).fetchone():
+            case result, :
+                return result
+            case _, *_:
+                raise RuntimeError(f"BUG: {query} result was not a scalar")
+        return None
+
+    @property
+    def can_cancel(self) -> bool:
+        return True
+
+    def cancel(self):
+        logger.info(f"{self.__class__.__name__}: Cancelling…")
+        self.should_run = False
+        self.task_completed.emit()
+
 class DatabaseImportTask(AsyncTask):
     """This class implements importing a CardStream into the given CardDatabase instance"""
 
@@ -342,6 +460,7 @@ class DatabaseImportTask(AsyncTask):
         # The most efficient way is to use the signal/slot mechanism already in place and call cancel using that.
         source.error_occurred.connect(self.cancel, BlockingQueuedConnection)
         source.network_error_occurred.connect(self.cancel, BlockingQueuedConnection)
+        self._subtask: AsyncTask | None = None
         self._db = db
         self.db_created = db is None
         self.should_run = True
@@ -354,6 +473,8 @@ class DatabaseImportTask(AsyncTask):
 
     @Slot()
     def cancel(self):
+        if self._subtask is not None and self._subtask.can_cancel:
+            self._subtask.cancel()
         self.source.cancel()
         self.should_run = False
 
@@ -497,11 +618,16 @@ class DatabaseImportTask(AsyncTask):
           SELECT scryfall_id FROM Printing
         )""")
         self.advance_progress.emit()
-        updater = PrintingFilterUpdater(
+        self._subtask = updater = PrintingFilterUpdater(
             CardDatabase(self.carddb_path, check_same_thread=True, register_exit_hooks=False),
             self.db, force_update_hidden_column=True)
         updater.advance_progress.connect(self.advance_progress)
         updater.store_current_printing_filters()  # Don't call run() to not deadlock via the db semaphore
+        self._subtask = updater = SetIconImportTask(db, self.carddb_path)
+        updater.error_occurred.connect(updater.cancel)
+        self.request_register_subtask.emit(updater)
+        if self.should_run:
+            updater.run()
         # Store the timestamp of this import.
         db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n", (index,))
         self.advance_progress.emit()

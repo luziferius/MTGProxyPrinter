@@ -333,6 +333,28 @@ class BulkDataType(TypedDict):
     content_type: str
     content_encoding: str
 
+class SetsAPIDataType(TypedDict):
+    object: Literal["set"]
+    code: str
+    mtgo_code: NotRequired[str]
+    arena_code: NotRequired[str]
+    tcgplayer_id: NotRequired[int]
+    name: str
+    set_type: Literal["core", "expansion", "masters", "eternal", "alchemy", "masterpiece", "arsenal", "from_the_vault",
+        "spellbook", "premium_deck", "duel_deck", "draft_innovation", "treasure_chest", "commander", "planechase",
+        "archenemy", "vanguard", "funny", "starter", "box", "promo", "token", "memorabilia", "minigame"]
+    released_at: NotRequired[str]
+    block_code: NotRequired[str]
+    parent_set_code: NotRequired[str]
+    card_count: int
+    printed_size: NotRequired[int]
+    digital: bool
+    foil_only: bool
+    nonfoil_only: bool
+    scrfall_uri: WEB_URI
+    uri: API_URI
+    icon_svg_uri: WEB_URI
+    search_uri: WEB_URI
 
 def _read_enum(container: Type, enum_class: Type[T], accumulator: dict[str, T] = None) -> dict[str, T]:
     if accumulator is None:

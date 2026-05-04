@@ -83,6 +83,8 @@ def test_get_all_languages_with_data(qtbot: QtBot, card_db: CardDatabase):
     ("Forest", "es", None, []),
     ("Bosque", "es", None, ["znr"]),
     ("Bosque", "es", "Zendikar", ["znr"]),
+    ("Growing Rites of Itlimoc", "en", "", ["xln"]),
+    ("Itlimoc, Cradle of the Sun", "en", "", ["xln"]),
 ])
 def test_find_sets_matching(
         qtbot: QtBot, card_db: CardDatabase, card_name: str, language: str, prefix: str | None,
@@ -93,6 +95,7 @@ def test_find_sets_matching(
             "english_basic_Forest",
             "english_basic_Forest_2",
             "spanish_basic_Forest",
+            "english_double_faced_card",
         ],
     )
     found_set_codes = [set_.code for set_ in card_db.find_sets_matching(card_name, language, prefix)]

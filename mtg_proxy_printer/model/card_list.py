@@ -134,6 +134,8 @@ class CardListModel(QAbstractTableModel):
                 if role == ItemDataRole.EditRole:
                     return card.is_front
                 return self.tr("Front", "Magic card side") if card.is_front else self.tr("Back", "Magic card side")
+        elif role == ItemDataRole.DecorationRole and column == CardListColumns.Set:
+            return card.set.data(role)
         if card.is_custom_card and column == CardListColumns.CardName and role == ItemDataRole.ToolTipRole:
             return get_card_image_tooltip(card.source_image_file)
         elif card.is_oversized and role == ItemDataRole.ToolTipRole:

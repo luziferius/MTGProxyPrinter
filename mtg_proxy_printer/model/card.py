@@ -20,7 +20,8 @@ import functools
 from typing import Union
 
 from PySide6.QtCore import QRect, QPoint, QSize, Qt, QPointF
-from PySide6.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform, QImage
+from PySide6.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform, QImage, QIcon, QIconEngine
+from PySide6.QtSvg import QSvgRenderer
 
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import CardSize, PageType, CardSizes, UUID
@@ -51,12 +52,32 @@ CORNER_MASKS = {
     CardSizes.OVERSIZED.as_qsize_px(): _create_corner_mask(CardSizes.OVERSIZED.as_qsize_px(), 50),
 }
 
+class SVGIconEngine(QIconEngine):
+    """An SVG icon engine"""
+    def __init__(self, svg_source: bytes):
+        super().__init__()
+        self.svg_source = svg_source
+
+    def paint(self, painter, rect, mode, state, /):
+        renderer = QSvgRenderer(self.svg_source)
+        renderer.render(painter, rect)
+
+    def clone(self, /):
+        return SVGIconEngine(self.svg_source)
+
+    def pixmap(self, size, mode, state, /):
+        image = QImage(size, QImage.Format.Format_ARGB32)
+        image.fill(QColorConstants.Transparent)
+        pixmap = QPixmap.fromImage(image, Qt.ImageConversionFlag.NoFormatConversion)
+        painter = QPainter(pixmap)
+        self.paint(painter, QRect(0, 0, size.width(), size.height()), mode, state)
+        return pixmap
 
 @dataclasses.dataclass(frozen=True)
 class MTGSet:
     code: str
     name: str
-    svg_icon: str = None
+    svg_icon: bytes = None
 
     def data(self, role: ItemDataRole):
         """data getter used for Qt Model API based access"""
@@ -66,8 +87,15 @@ class MTGSet:
             return f"{self.name} ({self.code.upper()})"
         elif role == ItemDataRole.ToolTipRole:
             return self.name
-        else:
-            return None
+        elif role == ItemDataRole.DecorationRole and self.svg_icon:
+            return self._render_icon()
+        return None
+
+    @functools.cache
+    def _render_icon(self) -> QIcon:
+        engine = SVGIconEngine(self.svg_icon)
+        icon = QIcon(engine)
+        return icon
 
 
 @enum.unique
