@@ -345,17 +345,26 @@ class SetIconImportTask(DownloaderBase):
         missing_icon_sets: set[str] = {
             code for code, in db.execute("SELECT set_code FROM MTGSet WHERE icon_svg IS NULL")}
         missing_icon_sets_count = len(missing_icon_sets)
+        if missing_icon_sets_count:
+            logger.info(f"Fetching {missing_icon_sets_count} missing set icons.")
+        else:
+            logger.info("All set icons present.")
+            return
         steps = 1 + missing_icon_sets_count*(1 + len(missing_icon_sets)<=self.BULK_THRESHOLD)
-        self.task_begins.emit(self.tr("Download set icons: ", "Progress bar label"), steps)
+        self.task_begins.emit(steps, self.tr("Download set icons: ", "Progress bar label"))
         icon_uris = self._fetch_icon_uris(missing_icon_sets)
         if not self.should_run: return
+        logger.debug("SVG icon URIs obtained, downloading them…")
         icon_svgs = self._fetch_icon_svgs(icon_uris)
         if not self.should_run: return
+        logger.debug("SVG icons downloaded, updating the database…")
         db.executemany(
             "UPDATE set_code SET icon_svg = ? WHERE set_code = ?",
             icon_svgs
         )
+        logger.debug("All SVG icons inserted.")
         self.advance_progress.emit()
+        logger.info("All missing set icons downloaded")
         self.task_completed.emit()
 
     def _fetch_icon_uris(self, missing_icons: set[str]) -> dict[str, str]:
@@ -366,6 +375,10 @@ class SetIconImportTask(DownloaderBase):
         :returns: Mapping from set codes to SVG icon URIs
         """
         if len(missing_icons) > self.BULK_THRESHOLD:
+            logger.debug(
+                f"Above {self.BULK_THRESHOLD} set icons missing, requesting URIs from the bulk API end point")
+            # This bulk end point is slow to react
+            socket.setdefaulttimeout(30)
             open_file, _ = self.read_from_url("https://api.scryfall.com/sets")
             with open_file:
                 stream: Iterable[SetsAPIDataType] = ijson.items(open_file, "data.item", use_float=True)
@@ -375,7 +388,10 @@ class SetIconImportTask(DownloaderBase):
                     if (code := item["code"]) in missing_icons
                 }
                 self.advance_progress.emit()
+            socket.setdefaulttimeout(5)
         else:
+            logger.debug(
+                f"Below {self.BULK_THRESHOLD} set icons missing, requesting URIs from the set code API end point.")
             result: dict[str, str] = {}
             for code in missing_icons:
                 if not self.should_run: return result
@@ -421,6 +437,10 @@ class SetIconImportTask(DownloaderBase):
             case _, *_:
                 raise RuntimeError(f"BUG: {query} result was not a scalar")
         return None
+
+    def cancel(self):
+        self.should_run = False
+        self.task_completed.emit()
 
 class DatabaseImportTask(AsyncTask):
     """This class implements importing a CardStream into the given CardDatabase instance"""
@@ -595,6 +615,11 @@ class DatabaseImportTask(AsyncTask):
             self.db, force_update_hidden_column=True)
         updater.advance_progress.connect(self.advance_progress)
         updater.store_current_printing_filters()  # Don't call run() to not deadlock via the db semaphore
+        updater = SetIconImportTask(db, self.carddb_path)
+        updater.error_occurred.connect(updater.cancel)
+        self.request_register_subtask.emit(updater)
+        if self.should_run:
+            updater.run()
         # Store the timestamp of this import.
         db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n", (index,))
         self.advance_progress.emit()
