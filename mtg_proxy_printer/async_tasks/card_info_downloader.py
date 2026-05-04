@@ -350,7 +350,7 @@ class SetIconImportTask(DownloaderBase):
         else:
             logger.info("All set icons present.")
             return
-        steps = 1 + missing_icon_sets_count*(1 + len(missing_icon_sets)<=self.BULK_THRESHOLD)
+        steps = 1 + missing_icon_sets_count*(1 + (missing_icon_sets_count<=self.BULK_THRESHOLD))
         self.task_begins.emit(steps, self.tr("Download set icons: ", "Progress bar label"))
         icon_uris = self._fetch_icon_uris(missing_icon_sets)
         if not self.should_run: return
@@ -359,7 +359,7 @@ class SetIconImportTask(DownloaderBase):
         if not self.should_run: return
         logger.debug("SVG icons downloaded, updating the database…")
         db.executemany(
-            "UPDATE set_code SET icon_svg = ? WHERE set_code = ?",
+            "UPDATE MTGSet SET icon_svg = ? WHERE set_code = ?",
             icon_svgs
         )
         logger.debug("All SVG icons inserted.")
@@ -438,7 +438,12 @@ class SetIconImportTask(DownloaderBase):
                 raise RuntimeError(f"BUG: {query} result was not a scalar")
         return None
 
+    @property
+    def can_cancel(self) -> bool:
+        return True
+
     def cancel(self):
+        logger.info(f"{self.__class__.__name__}: Cancelling…")
         self.should_run = False
         self.task_completed.emit()
 
@@ -455,6 +460,7 @@ class DatabaseImportTask(AsyncTask):
         # The most efficient way is to use the signal/slot mechanism already in place and call cancel using that.
         source.error_occurred.connect(self.cancel, BlockingQueuedConnection)
         source.network_error_occurred.connect(self.cancel, BlockingQueuedConnection)
+        self._subtask: AsyncTask | None = None
         self._db = db
         self.db_created = db is None
         self.should_run = True
@@ -467,6 +473,8 @@ class DatabaseImportTask(AsyncTask):
 
     @Slot()
     def cancel(self):
+        if self._subtask is not None and self._subtask.can_cancel:
+            self._subtask.cancel()
         self.source.cancel()
         self.should_run = False
 
@@ -610,12 +618,12 @@ class DatabaseImportTask(AsyncTask):
           SELECT scryfall_id FROM Printing
         )""")
         self.advance_progress.emit()
-        updater = PrintingFilterUpdater(
+        self._subtask = updater = PrintingFilterUpdater(
             CardDatabase(self.carddb_path, check_same_thread=True, register_exit_hooks=False),
             self.db, force_update_hidden_column=True)
         updater.advance_progress.connect(self.advance_progress)
         updater.store_current_printing_filters()  # Don't call run() to not deadlock via the db semaphore
-        updater = SetIconImportTask(db, self.carddb_path)
+        self._subtask = updater = SetIconImportTask(db, self.carddb_path)
         updater.error_occurred.connect(updater.cancel)
         self.request_register_subtask.emit(updater)
         if self.should_run:
