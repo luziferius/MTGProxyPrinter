@@ -87,7 +87,7 @@ class MTGSet:
             return f"{self.name} ({self.code.upper()})"
         elif role == ItemDataRole.ToolTipRole:
             return self.name
-        elif role == ItemDataRole.DecorationRole and self.svg_icon is not None:
+        elif role == ItemDataRole.DecorationRole and self.svg_icon:
             return self._render_icon()
         return None
 

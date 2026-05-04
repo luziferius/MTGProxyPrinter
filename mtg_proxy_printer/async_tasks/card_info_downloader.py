@@ -31,10 +31,10 @@ import typing
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Literal, LiteralString, Any
+from typing import Literal, LiteralString, Any, Iterable
 
 import ijson
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Qt, Slot, QObject
 
 from mtg_proxy_printer import BlockingQueuedConnection
 from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
@@ -45,7 +45,7 @@ from mtg_proxy_printer.sqlite_helpers import cached_dedent
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID
+from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID, SetsAPIDataType
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 
@@ -329,6 +329,89 @@ class ApiStreamTask(StreamTask):
     def item_count(self):
         return self.get_available_card_count()
 
+
+class SetIconImportTask(DownloaderBase):
+
+    def __init__(self, db: sqlite3.Connection = None, carddb_path: Path | Literal[":memory:"] = DEFAULT_DATABASE_LOCATION):
+        super().__init__()
+        self.carddb_path = carddb_path
+        self._db = db
+        self.db_created = db is None
+        self.should_run = True
+
+    def run(self):
+        db = self.db
+        missing_icon_sets: set[str] = {
+            code for code, in db.execute("SELECT set_code FROM MTGSet WHERE icon_svg IS NULL")}
+        icon_uris = self._fetch_icon_uris(missing_icon_sets)
+        if not self.should_run: return
+        icon_svgs = self._fetch_icon_svgs(icon_uris)
+        if not self.should_run: return
+        db.executemany(
+            "UPDATE set_code SET icon_svg = ? WHERE set_code = ?",
+            icon_svgs
+        )
+
+    def _fetch_icon_uris(self, missing_icons: set[str]) -> dict[str, str]:
+        """
+        Fetches the SVG icon URIs from the Scryfall API. If the number of missing icons is greater than the threshold,
+        fetch everything in a bulk request, otherwise iterate and query specific sets from the API.
+        :param missing_icons: The set of set codes to query
+        :returns: Mapping from set codes to SVG icon URIs
+        """
+        if len(missing_icons) > 10:
+            open_file, _ = self.read_from_url("https://api.scryfall.com/sets")
+            with open_file:
+                stream: Iterable[SetsAPIDataType] = ijson.items(open_file, "data.item", use_float=True)
+                result = {
+                    code: item["icon_svg_uri"]
+                    for item in stream
+                    if (code := item["code"]) in missing_icons
+                }
+        else:
+            result: dict[str, str] = {}
+            for code in missing_icons:
+                if not self.should_run: return result
+                open_file, _ = self.read_from_url(f"https://api.scryfall.com/sets/{code}")
+                uri = next(ijson.items(open_file, "icon_svg_uri", use_float=True))
+                result[code] = uri
+        return result
+
+    def _fetch_icon_svgs(self, icon_uris: dict[str, str]) -> list[tuple[str, str]]:
+        """
+        Fetches the given SVG icons. Note: The returned tuples have the SVG source in front, because that's the
+        item order expected by the database UPDATE query.
+        :param icon_uris: Mapping from set code to the SVG uri
+        :returns: list with tuples [SVG source code, set code]
+        """
+        result : list[tuple[str, str]] = []
+        for code, uri in icon_uris.items():
+            if not self.should_run: return result
+            result.append((self.read_from_url(uri,)[0].read().decode("utf-8"), code))
+        return result
+
+
+    @property
+    def db(self) -> sqlite3.Connection:
+        # Delay connection creation until first access.
+        # Avoids opening connections that aren't actually used and opens the connection
+        # in the thread that actually uses it.
+        if self._db is None:
+            logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
+            self._db = open_database(self.carddb_path, SCHEMA_NAME)
+        return self._db
+
+    def _read_optional_scalar_from_db(self, query: LiteralString, parameters: Sequence[Any] = ()):
+        """
+        Runs the query with the given parameters that is expected to return either a singular value or None,
+        and returns the result
+        """
+        match self.db.execute(query, parameters).fetchone():
+            case result, :
+                return result
+            case _, *_:
+                raise RuntimeError(f"BUG: {query} result was not a scalar")
+        return None
 
 class DatabaseImportTask(AsyncTask):
     """This class implements importing a CardStream into the given CardDatabase instance"""
