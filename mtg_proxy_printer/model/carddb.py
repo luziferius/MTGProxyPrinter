@@ -48,7 +48,7 @@ SCHEMA_NAME = "carddb"
 # once per month or so.
 MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
 T = TypeVar("T", Card, CheckCard, CustomCard)
-ParameterList = list[str | bool]
+ParameterList = list[str | bool | None]
 write_semaphore = threading.BoundedSemaphore()
 
 __all__ = [
@@ -269,7 +269,7 @@ class CardDatabase(QObject):
               INNER JOIN Card USING (card_id)
               WHERE scryfall_id = ?"""), (scryfall_id,)).fetchone()
         match row:
-            case sqlite3.Row as row:
+            case sqlite3.Row() as row:
                 return row["oracle_id"]
             case _:
                 return None
