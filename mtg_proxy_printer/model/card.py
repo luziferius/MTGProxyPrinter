@@ -33,7 +33,7 @@ ItemDataRole = Qt.ItemDataRole
 RenderHint = QPainter.RenderHint
 SmoothTransformation = Qt.TransformationMode.SmoothTransformation
 IgnoreAspectRatio = Qt.AspectRatioMode.IgnoreAspectRatio
-
+Mode = QIcon.Mode
 
 def _create_corner_mask(size: QSize, corner_radius: int):
     image = QImage(size, QImage.Format.Format_Alpha8)
@@ -58,14 +58,15 @@ class SVGIconEngine(QIconEngine):
         super().__init__()
         self.svg_source = svg_source
 
-    def paint(self, painter, rect, mode, state, /):
+    def paint(self, painter: QPainter, rect: QRect, mode: Mode, state, /):
         renderer = QSvgRenderer(self.svg_source)
+        renderer.setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
         renderer.render(painter, rect)
 
     def clone(self, /):
         return SVGIconEngine(self.svg_source)
 
-    def pixmap(self, size, mode, state, /):
+    def pixmap(self, size: QSize, mode: Mode, state, /):
         image = QImage(size, QImage.Format.Format_ARGB32)
         image.fill(QColorConstants.Transparent)
         pixmap = QPixmap.fromImage(image, Qt.ImageConversionFlag.NoFormatConversion)
