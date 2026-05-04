@@ -489,8 +489,9 @@ class CardDatabase(QObject):
           FROM Printing 
           INNER JOIN PrintingFace USING (printing_id)
           INNER JOIN MTGSet USING (set_id)
-          WHERE (is_visible, "language", face_name, is_front)
-              = (TRUE,       ?,          ?,         COALESCE(?, TRUE))
+          WHERE (is_visible, "language", face_name)
+              = (TRUE,       ?,          ?)
+              AND COALESCE(is_front = ?, TRUE)
         ''')
         parameters: ParameterList = [language, card_name, is_front]
         if set_name_filter:
