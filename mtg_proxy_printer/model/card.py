@@ -344,4 +344,4 @@ class CheckCard:
 
 AnyCardType = Union[Card, CheckCard, CustomCard]
 CardList = list[AnyCardType]
-OptionalCard = AnyCardType | None
+OptionalCard = Card | None
