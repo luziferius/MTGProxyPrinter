@@ -401,17 +401,17 @@ class SetIconImportTask(DownloaderBase):
                 self.advance_progress.emit()
         return result
 
-    def _fetch_icon_svgs(self, icon_uris: dict[str, str]) -> list[tuple[str, str]]:
+    def _fetch_icon_svgs(self, icon_uris: dict[str, str]) -> list[tuple[bytes, str]]:
         """
         Fetches the given SVG icons. Note: The returned tuples have the SVG source in front, because that's the
         item order expected by the database UPDATE query.
         :param icon_uris: Mapping from set code to the SVG uri
         :returns: list with tuples [SVG source code, set code]
         """
-        result : list[tuple[str, str]] = []
+        result : list[tuple[bytes, str]] = []
         for code, uri in icon_uris.items():
             if not self.should_run: return result
-            result.append((self.read_from_url(uri,)[0].read().decode("utf-8"), code))
+            result.append((self.read_from_url(uri,)[0].read(), code))
             self.advance_progress.emit()
         return result
 

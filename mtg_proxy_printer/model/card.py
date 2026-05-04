@@ -54,7 +54,7 @@ CORNER_MASKS = {
 
 class SVGIconEngine(QIconEngine):
     """An SVG icon engine"""
-    def __init__(self, svg_source: str):
+    def __init__(self, svg_source: bytes):
         super().__init__()
         self.svg_source = svg_source
 
@@ -77,7 +77,7 @@ class SVGIconEngine(QIconEngine):
 class MTGSet:
     code: str
     name: str
-    svg_icon: str = None
+    svg_icon: bytes = None
 
     def data(self, role: ItemDataRole):
         """data getter used for Qt Model API based access"""
@@ -93,7 +93,8 @@ class MTGSet:
 
     @functools.cache
     def _render_icon(self) -> QIcon:
-        icon = QIcon(SVGIconEngine(self.svg_icon))
+        engine = SVGIconEngine(self.svg_icon)
+        icon = QIcon(engine)
         return icon
 
 
