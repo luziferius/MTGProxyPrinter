@@ -35,7 +35,7 @@ from mtg_proxy_printer.model.carddb import with_database_write_lock
 if TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
     from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.model.imagedb_files import ImageKey
+from mtg_proxy_printer.model.imagedb_files import ImageKey, ImageQuality
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
 from mtg_proxy_printer.logger import get_logger
@@ -90,7 +90,9 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
             self._handle_network_error_during_download(card, f"Reading from socket failed: {e}")
 
     def _fetch_and_set_image(self, card: Card, progress_container: AsyncTask):
-        key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
+        key = ImageKey(
+            card.scryfall_id, card.is_front,
+            ImageQuality.high_resolution if card.highres_image else ImageQuality.low_resolution)
         image_path = self.image_database.db_path / key.format_relative_path()
         blank = self.image_database.get_blank(card.size)
         pixmap = self._load_from_memory(key) \
@@ -168,7 +170,7 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
         if not card.highres_image:
             return
         low_resolution_image_path = self.image_database.db_path / ImageKey(
-            card.scryfall_id, card.is_front, False).format_relative_path()
+            card.scryfall_id, card.is_front, ImageQuality.low_resolution).format_relative_path()
         if low_resolution_image_path.exists():
             logger.info(f"Removing outdated low-resolution image of {card.name}")
             low_resolution_image_path.unlink()

@@ -17,6 +17,7 @@
 import abc
 import collections
 import csv
+from collections.abc import Sequence, Iterable
 from typing import TypedDict, NotRequired
 
 from PySide6.QtCore import QObject, QCoreApplication
@@ -35,6 +36,7 @@ del get_logger
 
 LineParserResult = collections.Counter[Card]
 CsvLine = tuple[str, dict[str, str]]
+GatherStepResult = list[tuple[int, CardIdentificationData]]
 
 __all__ = [
     "ScryfallCSVParser",
@@ -70,7 +72,7 @@ class BaseCSVParser(ParserBase):
                 unmatched_lines.append(source)
         return deck, unmatched_lines
 
-    def _read_lines_from_csv(self, deck_list: str):
+    def _read_lines_from_csv(self, deck_list: str) -> tuple[csv.DictReader[str], Iterable[tuple[str, dict[str, str]]]]:
         lines = deck_list.splitlines()
         # Skip the header line when zipping the original lines and the parsed result.
         reader = csv.DictReader(lines, dialect=self.DIALECT_NAME)
@@ -79,6 +81,15 @@ class BaseCSVParser(ParserBase):
     @abc.abstractmethod
     def parse_cards_from_line(self, line: dict[str, str], guess_printing: bool, language_override: str = None) \
             -> LineParserResult:
+        pass
+
+    def gather_card_identification_data_from_list(
+            self, lines: Sequence[dict[str, str]]) -> GatherStepResult:
+        """Extracts the """
+        return list(map(self.gather_card_identification_data, lines))
+
+    @abc.abstractmethod
+    def gather_card_identification_data(self, line: dict[str, str]) -> tuple[int, CardIdentificationData]:
         pass
 
     def should_skip_entry(self, line: dict[str, str]) -> bool:
@@ -141,14 +152,29 @@ class ScryfallCSVParser(BaseCSVParser):
 
     DIALECT_NAME = "scryfall_com"
     USED_COLUMNS = {
-        "scryfall_id", "lang",
+        "scryfall_id"
     }
 
     @staticmethod
     def supported_file_types() -> dict[str, list[str]]:
         return {
-            QCoreApplication.translate("ScryfallCSVParser", "Scryfall CSV export"): ["csv"],
+            QCoreApplication.translate(
+                "ScryfallCSVParser", "Scryfall CSV export",
+                "Used as a file type filter in a file selection dialog"): ["csv"],
         }
+
+    def gather_card_identification_data(self, line: ScryfallCSVLine) -> tuple[int, CardIdentificationData]:
+        copies = int(line.get("count", 1))  # Default to singleton for Scryfall search query results
+        data = CardIdentificationData(
+            #line["lang"],
+            #line["name"],  # Always the English name
+            # Deck lists use "set_code" for the code and "set" contains the human-readable name.
+            # Search result use "set" for the UPPER CASE set code.
+            #line.get("set_code") or line["set"].lower(),
+            #line["collector_number"],
+            line["scryfall_id"],
+        )
+        return copies, data
 
     def parse_cards_from_line(self, line: ScryfallCSVLine, guess_printing: bool, language_override: str = None) \
             -> LineParserResult:
@@ -171,8 +197,8 @@ class ScryfallCSVParser(BaseCSVParser):
             set_code = line.get("set_code")
             collector_number = line.get("collector_number")
             if english_name:
-                card_name = english_name if target_language == "en" else self.card_db.translate_card_name(
-                    CardIdentificationData("en", english_name, scryfall_id=scryfall_id), target_language)
+                card_name = english_name if target_language == "en" else self.card_db.translate_card_names(
+                    [CardIdentificationData("en", english_name, scryfall_id=scryfall_id)], target_language)[0]
             else:
                 card_name = english_name
             if card_name or (set_code and collector_number):
@@ -250,7 +276,9 @@ class TappedOutCSVParser(BaseCSVParser):
     @staticmethod
     def supported_file_types() -> dict[str, list[str]]:
         return {
-            QCoreApplication.translate("TappedOutCSVParser", "Tappedout CSV export"): ["csv"]
+            QCoreApplication.translate(
+                "TappedOutCSVParser", "Tappedout CSV export",
+                "Used as a file type filter in a file selection dialog"): ["csv"]
         }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
@@ -262,14 +290,25 @@ class TappedOutCSVParser(BaseCSVParser):
         if include_acquire_board:
             self.allowed_boards.add("acquire")
 
+    def gather_card_identification_data(
+            self, line: TappedOutCSVLine) -> tuple[int, CardIdentificationData]:
+        if self.should_skip_entry(line):
+            return 0, CardIdentificationData()
+        copies = int(line["Qty"])  # Quantity (Qty) contains the number of copies
+        target_language = self._read_language(line)
+        set_code = self._read_set_code(line)
+        english_name = line["Name"]
+        return copies, CardIdentificationData(
+            language=target_language, name=english_name, set_code=set_code)
+
     def parse_cards_from_line(self, line: TappedOutCSVLine, guess_printing: bool, language_override: str = None) \
             -> LineParserResult:
         cards = collections.Counter()
         target_language = language_override or self._read_language(line)
         set_code = self._read_set_code(line)
         english_name = line["Name"]
-        card_name = self.card_db.translate_card_name(
-            CardIdentificationData("en", english_name, set_code), target_language)\
+        card_name = self.card_db.translate_card_names(
+            [CardIdentificationData("en", english_name, set_code)], target_language)[0]\
             if target_language != "en" else english_name
         if english_name and not card_name:
             # Unable to translate card. Missing localized card data? Defaulting to English
@@ -312,7 +351,7 @@ class TappedOutCSVParser(BaseCSVParser):
             language = "en"
         return language
 
-    def should_skip_entry(self, line: dict[str, str]) -> bool:
+    def should_skip_entry(self, line: TappedOutCSVLine) -> bool:
         board = line["Board"]
         return board not in self.allowed_boards
 

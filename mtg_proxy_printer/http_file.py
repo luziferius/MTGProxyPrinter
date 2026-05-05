@@ -82,7 +82,6 @@ class MeteredSeekableHTTPFile(QObject):
         self.content_length = self._read_content_length(self.file)
         self._pos = 0
         self.read_bytes = 0
-        logger.info(f"Created {self.__class__.__name__} instance.")
 
     @staticmethod
     def _read_content_length(file) -> int:

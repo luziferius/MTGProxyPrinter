@@ -31,7 +31,7 @@ import typing
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Literal, LiteralString, Any
+from typing import Literal, LiteralString, Any, Iterable
 
 import ijson
 from PySide6.QtCore import Qt, Slot
@@ -45,7 +45,7 @@ from mtg_proxy_printer.sqlite_helpers import cached_dedent
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID
+from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID, SetsAPIDataType
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 
@@ -94,6 +94,7 @@ class RelatedPrintingData(typing.NamedTuple):
 
 class CardInfoDownloadTaskBase(DownloaderBase):
     """Base class for tasks that fetch card data from the Scryfall bulk-data API."""
+
     def get_scryfall_bulk_card_data_url(self) -> tuple[str, int]:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
@@ -329,6 +330,125 @@ class ApiStreamTask(StreamTask):
         return self.get_available_card_count()
 
 
+class SetIconImportTask(DownloaderBase):
+
+    def __init__(self, db: sqlite3.Connection = None, carddb_path: Path | Literal[":memory:"] = DEFAULT_DATABASE_LOCATION):
+        super().__init__()
+        self.carddb_path = carddb_path
+        self._db = db
+        self.db_created = db is None
+        self.should_run = True
+        self.network_error_occurred.connect(self.cancel)
+        self.error_occurred.connect(self.cancel)
+
+    def run(self):
+        db = self.db
+        logger.info("About to fetch set symbols.")
+        # icon_filename is empty for unset symbols, so they are guaranteed to be unequal to the file name in the URI.
+        symbols_in_db: dict[UUID, str] =  dict(db.execute("SELECT set_scryfall_id, icon_file_name FROM MTGSet"))
+        if not self.should_run: return
+        progress_bar_text = self.tr("Download set symbols: ", "Progress bar label")
+        self.task_begins.emit(1, progress_bar_text)
+        icon_uris = self._fetch_icon_uris_to_download(symbols_in_db)
+        if not icon_uris:
+            logger.info("No icons to download.")
+            self.task_completed.emit()
+            return
+        # Now that the number of items to download is known, update the progress bar
+        download_count = len(icon_uris)
+        self.task_begins.emit(download_count+2, progress_bar_text)
+        self.advance_progress.emit()
+        if not self.should_run: return
+        logger.debug(f"Total of {download_count} SVG icon URIs to download, starting downloads…")
+        icon_svgs = self._fetch_icon_svgs(icon_uris)
+        if not self.should_run: return
+        logger.debug("SVG icons downloaded, updating the database…")
+        db.executemany(
+            "UPDATE MTGSet SET icon_svg = ?, icon_file_name = ? WHERE set_scryfall_id = ?",
+            icon_svgs
+        )
+        logger.debug(f"All {download_count} SVG icons updated.")
+        self.advance_progress.emit()
+        logger.info("All missing or outdated set symbols downloaded")
+        self.task_completed.emit()
+
+    def _fetch_icon_uris_to_download(self, filenames_in_db: dict[UUID, str]) -> dict[UUID, str]:
+        """
+        Fetches the SVG icon URIs from the Scryfall API.
+        :param filenames_in_db: Mapping of currently downloaded set symbols. Keys are set ids, values are filenames.
+        :returns: Mapping from set ids to SVG icon URIs
+        """
+        logger.debug(f"Requesting URIs for all {len(filenames_in_db)} in the database from the set code API end point.")
+        # This bulk end point is sometimes slow to react
+        socket.setdefaulttimeout(30)
+        open_file, _ = self.read_from_url("https://api.scryfall.com/sets")
+        with open_file:
+            response = open_file.read()
+        socket.setdefaulttimeout(5)
+        # Data is fetched. Check against the file names in the database. Any difference will cause a re-download.
+        # Missing symbols have empty file names in the database, which is a guaranteed to be different
+        # from the non-empty file names supplied by the API.
+        result: dict[UUID, str] = {}
+        stream: Iterable[SetsAPIDataType] = ijson.items(response, "data.item", use_float=True)
+        for set_item in stream:
+            set_scryfall_id = set_item["id"]
+            uri = set_item["icon_svg_uri"]
+            file_name = uri.rsplit("/", 1)[1]
+            # If a set is completely skipped during import, this get() avoids a KeyError
+            if filenames_in_db.get(set_scryfall_id) != file_name:
+                result[set_scryfall_id] = uri
+        # All parsed and filtered
+        self.advance_progress.emit()
+        return result
+
+    def _fetch_icon_svgs(self, icon_uris: dict[UUID, str]) -> list[tuple[bytes, str, UUID]]:
+        """
+        Fetches the given SVG icons. Note: The returned tuples have the set_scryfall_id at the end, because that's the
+        item order expected by the database UPDATE query.
+        :param icon_uris: Mapping from set_scryfall_id to the SVG uri
+        :returns: list with tuples [SVG source code, file name, set_scryfall_id]
+        """
+        result : list[tuple[bytes, str, UUID]] = []
+        for set_scryfall_id, uri in icon_uris.items():
+            if not self.should_run: return result
+            svg = self.read_from_url(uri,)[0].read()
+            filename = uri.rsplit("/", 1)[1]
+            result.append((svg, filename, set_scryfall_id))
+            self.advance_progress.emit()
+        return result
+
+
+    @property
+    def db(self) -> sqlite3.Connection:
+        # Delay connection creation until first access.
+        # Avoids opening connections that aren't actually used and opens the connection
+        # in the thread that actually uses it.
+        if self._db is None:
+            logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
+            self._db = open_database(self.carddb_path, SCHEMA_NAME)
+        return self._db
+
+    def _read_optional_scalar_from_db(self, query: LiteralString, parameters: Sequence[Any] = ()):
+        """
+        Runs the query with the given parameters that is expected to return either a singular value or None,
+        and returns the result
+        """
+        match self.db.execute(query, parameters).fetchone():
+            case result, :
+                return result
+            case _, *_:
+                raise RuntimeError(f"BUG: {query} result was not a scalar")
+        return None
+
+    @property
+    def can_cancel(self) -> bool:
+        return True
+
+    def cancel(self):
+        logger.info(f"{self.__class__.__name__}: Cancelling…")
+        self.should_run = False
+        self.task_completed.emit()
+
 class DatabaseImportTask(AsyncTask):
     """This class implements importing a CardStream into the given CardDatabase instance"""
 
@@ -342,6 +462,7 @@ class DatabaseImportTask(AsyncTask):
         # The most efficient way is to use the signal/slot mechanism already in place and call cancel using that.
         source.error_occurred.connect(self.cancel, BlockingQueuedConnection)
         source.network_error_occurred.connect(self.cancel, BlockingQueuedConnection)
+        self._subtask: AsyncTask | None = None
         self._db = db
         self.db_created = db is None
         self.should_run = True
@@ -354,6 +475,8 @@ class DatabaseImportTask(AsyncTask):
 
     @Slot()
     def cancel(self):
+        if self._subtask is not None and self._subtask.can_cancel:
+            self._subtask.cancel()
         self.source.cancel()
         self.should_run = False
 
@@ -497,11 +620,16 @@ class DatabaseImportTask(AsyncTask):
           SELECT scryfall_id FROM Printing
         )""")
         self.advance_progress.emit()
-        updater = PrintingFilterUpdater(
+        self._subtask = updater = PrintingFilterUpdater(
             CardDatabase(self.carddb_path, check_same_thread=True, register_exit_hooks=False),
             self.db, force_update_hidden_column=True)
         updater.advance_progress.connect(self.advance_progress)
         updater.store_current_printing_filters()  # Don't call run() to not deadlock via the db semaphore
+        self._subtask = updater = SetIconImportTask(db, self.carddb_path)
+        updater.error_occurred.connect(updater.cancel)
+        self.request_register_subtask.emit(updater)
+        if self.should_run:
+            updater.run()
         # Store the timestamp of this import.
         db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n", (index,))
         self.advance_progress.emit()
@@ -524,10 +652,11 @@ class DatabaseImportTask(AsyncTask):
 
     def _parse_single_printing(self, card: CardDataType):
         oracle_id = _get_oracle_id(card)
-        is_card = not(
-                card["layout"] in {"art_series", "double_faced_token", "token", "vanguard"}
-                or card["set_type"] == "token")
-        card_id = self._insert_or_update_card(oracle_id, is_card)
+        is_card = not (
+            card["layout"] in {"art_series", "double_faced_token", "token", "vanguard"}
+            or card["set_type"] == "token")
+        english_name = card["name"]
+        card_id = self._insert_or_update_card(oracle_id, is_card, english_name)
         set_code = card["set"]
         if (set_id := self.set_code_cache.get(set_code)) is None:
             self.set_code_cache[set_code] = set_id = self._insert_or_update_set(card)
@@ -566,33 +695,33 @@ class DatabaseImportTask(AsyncTask):
         """), related_cards)
 
     @functools.cache
-    def _insert_or_update_card(self, oracle_id: UUID, is_card: bool) -> int:
+    def _insert_or_update_card(self, oracle_id: UUID, is_card: bool, english_name) -> int:
         db = self.db
         query = cached_dedent("""\
         SELECT card_id, ( -- _insert_or_update_card()
           is_card <> ?
+          OR english_name <> ?
         ) AS needs_update
         FROM Card WHERE oracle_id = ?
         """)
-        parameters = [is_card, oracle_id]
-        check_result = db.execute(query, parameters).fetchone()
-        match check_result:
+        parameters = [is_card, english_name, oracle_id]
+        match db.execute(query, parameters).fetchone():
             case card_id, 0:
                 pass  # Already present and nothing changed
             case None:
                 card_id = db.execute(cached_dedent("""\
                 INSERT INTO Card  -- _insert_or_update_card()
-                       (is_card, oracle_id)
-                VALUES (?,       ?)
+                       (is_card, english_name, oracle_id)
+                VALUES (?,       ?,            ?)
                 """), parameters).lastrowid
             case card_id, 1:
                 parameters[-1] = card_id
                 db.execute(cached_dedent("""\
                 UPDATE Card -- _insert_or_update_card()
-                  SET is_card = ?
+                  SET is_card = ?, english_name = ?
                   WHERE card_id = ?
                 """), parameters)
-            case _:
+            case check_result:
                 raise RuntimeError(f"Unexpected data: {check_result}")
         return card_id
 
@@ -607,9 +736,8 @@ class DatabaseImportTask(AsyncTask):
         ) AS needs_update
         FROM MTGSet WHERE set_code = ?
         """)
-        parameters = [ card["set_name"], card["released_at"], card["set_id"], set_code]
-        check_result = db.execute(query, parameters).fetchone()
-        match check_result:
+        parameters = [card["set_name"], card["released_at"], card["set_id"], set_code]
+        match db.execute(query, parameters).fetchone():
             case set_id, 0:
                 pass  # Already present and nothing changed
             case None:
@@ -629,7 +757,7 @@ class DatabaseImportTask(AsyncTask):
                     = (?,        unixepoch(?, 'utc'), ?)
                   WHERE set_id = ?
                 """), parameters)
-            case _:
+            case check_result:
                 raise RuntimeError(f"Unexpected data: {check_result}")
         return set_id
 
@@ -652,8 +780,7 @@ class DatabaseImportTask(AsyncTask):
         parameters = [
             set_id, card["collector_number"], card["lang"], card_id,
             card["oversized"], card["highres_image"], is_dfc, card["id"]]
-        check_result = db.execute(query, parameters).fetchone()
-        match check_result:
+        match db.execute(query, parameters).fetchone():
             case None:                
                 printing_id = db.execute(cached_dedent("""\
                 INSERT INTO Printing  -- _insert_or_update_printing()
@@ -670,7 +797,7 @@ class DatabaseImportTask(AsyncTask):
                 """), parameters)
             case printing_id, 0:
                 pass  # Already present and nothing changed
-            case _:
+            case check_result:
                 raise RuntimeError(f"Unexpected data: {check_result}")
         return printing_id
 
@@ -699,8 +826,8 @@ class DatabaseImportTask(AsyncTask):
                     """), parameters)
                 case 0:
                     continue  # Everything already present and up-to-date
-                case _:
-                    raise RuntimeError(f"Unexpected data retuned from query: {check_query}")
+                case check_result:
+                    raise RuntimeError(f"Unexpected data retuned from query: {check_query} {check_result=}")
 
     def _insert_or_update_card_filters(self, printing_id: int, filter_data: dict[str, bool]):
         printing_filter_ids = self._read_available_printing_filters_from_db()
@@ -782,10 +909,10 @@ def _should_skip_card(card: CardDataType) -> bool:
     # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
     # Also skip double faced cards that have at least one face without images
     return card["image_status"] == "missing" or (
-            # Has faces, but no image_uris, therefore is a DFC
-            "card_faces" in card and "image_uris" not in card
-            # And at least one face has no images
-            and any("image_uris" not in face for face in card["card_faces"])
+        # Has faces, but no image_uris, therefore is a DFC
+        "card_faces" in card and "image_uris" not in card
+        # And at least one face has no images
+        and any("image_uris" not in face for face in card["card_faces"])
     )
 
 

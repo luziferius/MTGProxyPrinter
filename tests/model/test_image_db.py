@@ -23,7 +23,7 @@ from hamcrest import *
 
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.model.imagedb_files import ImageKey
+from mtg_proxy_printer.model.imagedb_files import ImageKey, ImageQuality
 
 from tests.hasgetter import has_getter
 
@@ -42,8 +42,8 @@ DOWNLOADER = "mtg_proxy_printer.model.imagedb.ImageDownloader"
 def test_delete_disk_cache_entries_removes_empty_parent_directories(image_db: ImageDatabase):
     # Setup
     keys = [
-        ImageKey("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", True, True),
-        ImageKey("7ef83f4c-abcd-abcd-9876-1234567890ab", True, True),  # Same prefix
+        ImageKey("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", True, ImageQuality.high_resolution),
+        ImageKey("7ef83f4c-abcd-abcd-9876-1234567890ab", True, ImageQuality.high_resolution),  # Same prefix
     ]
     blank_image_file = qpixmap_to_bytes_io(image_db.get_blank())
     for key in keys:

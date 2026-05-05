@@ -2,14 +2,23 @@
 
 # Next version (in development)
 
+## New features
+
+- MTG sets are now shown with their set symbols wherever a set can be selected.
+
 ## Changed features
 
 - Reworked the print hiding user interface in the application settings.
   - Improved the grouping of printing filters, with closely related filters placed together 
+- Rewrite of the internal card database layout, resulting in performance improvements
+  - Massive speed up in the card image cache cleanup wizard, if many foreign-language cards were previously downloaded
+- Changed search behavior in the built-in card search.
+  - Search is now consistently case-sensitive, even for ASCII characters
+  - The wildcard character to represent "any number of characters" is now `*` instead of `%`
 
 ## Fixed issues
 
-- The card lookup for "related cards" via the context menu now finds both sides of double-faced cards or tokens.
+- The card lookup for "related cards" via the context menu now finds both sides of related double-faced cards or tokens.
 - Fixed failure loading documents, caused by a compatibility issue with Python 3.14.
 - Fixed application hang at exit, if a card data update was previously canceled.
 - Potentially fixed Scryfall card data import aborting on some systems with `IncompleteRead` errors
