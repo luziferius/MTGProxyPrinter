@@ -752,6 +752,8 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           -- While the SVG is utf-8 text, the Qt API requires them as bytes, so store as blob to
           -- avoid decoding/encoding round-trips.
           icon_svg          BLOB                       CHECK (length(icon_svg)>100),
+          -- File name and cache key from the URI. Used to determine if the local copy is outdated.
+          icon_file_name    TEXT              NOT NULL DEFAULT '',
           set_scryfall_id   TEXT              NOT NULL UNIQUE
         )"""),
         dedent("""\

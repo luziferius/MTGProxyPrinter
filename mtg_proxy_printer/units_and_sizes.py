@@ -335,6 +335,7 @@ class BulkDataType(TypedDict):
 
 class SetsAPIDataType(TypedDict):
     object: Literal["set"]
+    id: UUID
     code: str
     mtgo_code: NotRequired[str]
     arena_code: NotRequired[str]
