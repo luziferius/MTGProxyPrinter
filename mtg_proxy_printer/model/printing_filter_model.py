@@ -92,7 +92,7 @@ class PrintingFilterModel(QAbstractTableModel):
                         "These cards are banned in all sanctioned tournament formats and several\n"
                         "community formats like Commander, Oathbreaker and others.",
                         "Tooltip text"),
-                "hide-cards-depicting-racism", "function:banned-due-to-racist-imagery"),
+                "hide-cards-depicting-racism", "is:content_warning"),
             _create_item(
                 self.tr("Hide cards with placeholder images",
                         "Display text"),
