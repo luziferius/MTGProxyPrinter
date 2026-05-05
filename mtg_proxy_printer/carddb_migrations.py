@@ -749,7 +749,11 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           set_name          TEXT              NOT NULL,
           release_date      INTEGER_TIMESTAMP NOT NULL,
           set_filter_active BOOLEAN_INTEGER   NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
-          icon_svg          TEXT                       CHECK (icon_svg <> ''),
+          -- While the SVG is utf-8 text, the Qt API requires them as bytes, so store as blob to
+          -- avoid decoding/encoding round-trips.
+          icon_svg          BLOB                       CHECK (length(icon_svg)>100),
+          -- File name and cache key from the URI. Used to determine if the local copy is outdated.
+          icon_file_name    TEXT              NOT NULL DEFAULT '',
           set_scryfall_id   TEXT              NOT NULL UNIQUE
         )"""),
         dedent("""\

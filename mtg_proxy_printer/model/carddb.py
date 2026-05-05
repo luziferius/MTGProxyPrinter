@@ -489,8 +489,9 @@ class CardDatabase(QObject):
           FROM Printing 
           INNER JOIN PrintingFace USING (printing_id)
           INNER JOIN MTGSet USING (set_id)
-          WHERE (is_visible, "language", face_name, is_front)
-              = (TRUE,       ?,          ?,         COALESCE(?, TRUE))
+          WHERE (is_visible, "language", face_name)
+              = (TRUE,       ?,          ?)
+              AND COALESCE(is_front = ?, TRUE)
         ''')
         parameters: ParameterList = [language, card_name, is_front]
         if set_name_filter:
@@ -587,7 +588,8 @@ class CardDatabase(QObject):
                 scryfall_id=row["scryfall_id"], is_front=row["is_front"],
                 image_quality=qualities[row["highres_on_disk"]], absolute_path=Path(row["absolute_path"]))
             card = Card(
-                row["face_name"], MTGSet(row["set_code"], row["set_name"], row["icon_svg"]), row["collector_number"],
+                row["face_name"], MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
+                row["collector_number"],
                 row["language"], cache_item.scryfall_id, cache_item.is_front, row["oracle_id"], row["png_image_uri"],
                 row["highres_on_disk"], CardSizes.from_bool(row["is_oversized"]), row["is_dfc"]
             )

@@ -140,6 +140,7 @@ class SetEditorDelegate(FastComboBoxDelegate):
             current_set_code = card.set.code
             for position, set_data in enumerate(matching_sets):
                 editor.addItem(set_data.data(ItemDataRole.DisplayRole), set_data)
+                editor.setItemData(position, set_data.data(ItemDataRole.DecorationRole), ItemDataRole.DecorationRole)
                 if set_data.code == current_set_code:
                     editor.setCurrentIndex(position)
 
