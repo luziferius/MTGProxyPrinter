@@ -32,7 +32,8 @@ from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilter
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel, ScryfallQueryRole
+from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel, ScryfallQueryRole, ModelColumns, \
+    IsHeaderRole
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
@@ -466,15 +467,15 @@ class HidePrintingsPage(Page):
         ui.printing_filter_view.setModel(self.model)
         header = ui.printing_filter_view.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(1, 32)
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
+        header.resizeSection(3, 32)
         for row in range(self.model.rowCount()):
-            index = self.model.index(row, 0)
-
-            ui.printing_filter_view.setSpan(row, 0, 1, 4)
-            if query := index.data(ScryfallQueryRole):
+            index = self.model.index(row, ModelColumns.name)
+            if index.data(IsHeaderRole):
+                ui.printing_filter_view.setSpan(row, ModelColumns.name, 1, 4)
+            if query := index.siblingAtColumn(ModelColumns.scryfall_query).data(ScryfallQueryRole):
                 button = self._create_scryfall_query_button(query)
-                ui.printing_filter_view.setIndexWidget(index.siblingAtColumn(1), button)
+                ui.printing_filter_view.setIndexWidget(index.siblingAtColumn(ModelColumns.scryfall_query), button)
 
     def _create_scryfall_query_button(self, query_str: str) -> QPushButton:
         button = QPushButton(QIcon.fromTheme("globe"), "", self)

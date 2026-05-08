@@ -13,9 +13,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections import defaultdict
 import dataclasses
 import enum
-import typing
 
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 from PySide6.QtGui import QFont
@@ -38,6 +38,7 @@ CheckStateRole = ItemDataRole.CheckStateRole
 
 ScryfallQueryRole = ItemDataRole(UserRole.value + 1)
 ItemFlagsRole = ItemDataRole(UserRole.value + 2)
+IsHeaderRole = ItemDataRole(UserRole.value + 3)
 
 # The flag values
 EmptyCellFlags: Qt.ItemFlag = Qt.ItemFlag.ItemNeverHasChildren
@@ -46,7 +47,11 @@ TextItemFlags: Qt.ItemFlag = _DataFlags
 IsHiddenItemFlags: Qt.ItemFlag = _DataFlags | Qt.ItemFlag.ItemIsUserCheckable  # The is_hidden column is checkable
 PreferenceWeightFlags: Qt.ItemFlag = _DataFlags | Qt.ItemFlag.ItemIsEditable  # the pref score column is editable
 
-ModelCell = dict[ItemDataRole, typing.Any]
+class ModelCell(defaultdict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(lambda: None, *args, **kwargs)
+
+MC = ModelCell
 
 
 @enum.verify(enum.CONTINUOUS, enum.UNIQUE)
@@ -63,19 +68,19 @@ class ModelRow:
     is_hidden: ModelCell
     preference_weights: ModelCell
     scryfall_query: ModelCell
-    _settings_key: str | None
+    _settings_key: str
 
     def data(self, column: ModelColumns, role: ItemDataRole):
         column = ModelColumns(column)
-        attr: ModelCell = getattr(self, column._name_, {})
-        return attr.get(role)
+        attr: ModelCell = getattr(self, column._name_, ModelCell())
+        return attr[role]
 
     def flags(self, column: ModelColumns) -> Qt.ItemFlag:
         return self.data(column, ItemFlagsRole)
 
     def setData(self, column: ModelColumns, value, /, role: ItemDataRole = DisplayRole) -> bool:
         column = ModelColumns(column)
-        attr: ModelCell = getattr(self, column._name_, {})
+        attr: ModelCell = getattr(self, column._name_, ModelCell())
         if attr[role] != value:
             attr[role] = value
             return True
@@ -85,12 +90,12 @@ class ModelRow:
     def create_header(cls, header_font: QFont, ui_text: str, tooltip: str = None) -> ModelRow:
         """Create a centered, text-only header item for the PrintingFilterModel"""
         return cls(
-            {ItemFlagsRole: TextItemFlags, DisplayRole: ui_text, ToolTipRole: tooltip,
-             ItemDataRole.TextAlignmentRole: Qt.AlignmentFlag.AlignCenter, ItemDataRole.FontRole: header_font},
-            {ItemFlagsRole: EmptyCellFlags},
-            {ItemFlagsRole: EmptyCellFlags},
-            {ItemFlagsRole: EmptyCellFlags},
-            None,
+            MC({ItemFlagsRole: TextItemFlags, DisplayRole: ui_text, ToolTipRole: tooltip, IsHeaderRole: True,
+             ItemDataRole.TextAlignmentRole: Qt.AlignmentFlag.AlignCenter, ItemDataRole.FontRole: header_font}),
+            MC({ItemFlagsRole: EmptyCellFlags}),
+            MC({ItemFlagsRole: EmptyCellFlags}),
+            MC({ItemFlagsRole: EmptyCellFlags}),
+            "",
         )
 
     @classmethod
@@ -100,10 +105,10 @@ class ModelRow:
         but no preference score, because the latter does not make sense here.
         """
         return cls(
-            {ItemFlagsRole: TextItemFlags, DisplayRole: ui_text, ToolTipRole: tooltip, },
-            {ItemFlagsRole: IsHiddenItemFlags},
-            {ItemFlagsRole: EmptyCellFlags},
-            {ItemFlagsRole: EmptyCellFlags, ScryfallQueryRole: f"banned:{internal_format_key}"},
+            MC({ItemFlagsRole: TextItemFlags, DisplayRole: ui_text, ToolTipRole: tooltip}),
+            MC({ItemFlagsRole: IsHiddenItemFlags, CheckStateRole: CheckState.Unchecked}),
+            MC({ItemFlagsRole: EmptyCellFlags}),
+            MC({ItemFlagsRole: EmptyCellFlags, ScryfallQueryRole: f"banned:{internal_format_key}"}),
             f"hide-banned-in-{internal_format_key}",
         )
     
@@ -113,15 +118,16 @@ class ModelRow:
         Creates a PrintingFilterModel row item for arbitrary non-format card filters.
         They have both a binary show/hide toggle, and a numerical weight.
         """
-        weights_value = \
-            {ItemFlagsRole: PreferenceWeightFlags, ToolTipRole: weight_tooltip} \
-                if weight_tooltip is not None \
-                else {ItemFlagsRole: EmptyCellFlags}
+        weights_value = MC(
+            {ItemFlagsRole: PreferenceWeightFlags, ToolTipRole: weight_tooltip, EditRole: 0, DisplayRole: 0}
+            if weight_tooltip is not None
+            else {ItemFlagsRole: EmptyCellFlags}
+        )
         return cls(
-            {ItemFlagsRole: TextItemFlags, DisplayRole: ui_text, ToolTipRole: text_tooltip, },
-            {ItemFlagsRole: IsHiddenItemFlags, ToolTipRole: text_tooltip},
+            MC({ItemFlagsRole: TextItemFlags, DisplayRole: ui_text, ToolTipRole: text_tooltip}),
+            MC({ItemFlagsRole: IsHiddenItemFlags, ToolTipRole: text_tooltip, CheckStateRole: CheckState.Unchecked}),
             weights_value,
-            {ItemFlagsRole: EmptyCellFlags, ScryfallQueryRole: scryfall_query},
+            MC({ItemFlagsRole: EmptyCellFlags, ScryfallQueryRole: scryfall_query}),
             settings_key,
         )
 
@@ -306,7 +312,9 @@ class PrintingFilterModel(QAbstractTableModel):
 
     def data(self, index: QModelIndex, /, role: ItemDataRole = DisplayRole):
         column = ModelColumns(index.column())
-        self.items[index.row()].data(column, role)
+        item = self.items[index.row()]
+        data = item.data(column, role)
+        return data
 
     def setData(self, index: QModelIndex, value, /, role: ItemDataRole = DisplayRole):
         column = ModelColumns(index.column())
@@ -314,27 +322,35 @@ class PrintingFilterModel(QAbstractTableModel):
             value = CheckState(value)
         return self.items[index.row()].setData(column, value, role)
 
-    def flags(self, index: QModelIndex, /):
-        return self.data(index, ItemFlagsRole)
+    def flags(self, index: QModelIndex, /) -> Qt.ItemFlag:
+        return self.data(index, ItemFlagsRole) or Qt.ItemFlag.NoItemFlags
 
     def load_settings(self, settings: ConfigParser):
         logger.debug("Loading printing filter state from settings")
         section = settings["card-filter"]
         for row, item in enumerate(self.items):
-            if item[CheckStateRole] is not None:
-                item[CheckStateRole] = section.get_check_state(item[SettingsKeyRole])
+            if item.is_hidden[CheckStateRole] is not None:
+                item.is_hidden[CheckStateRole] = section.get_check_state(item._settings_key)
+            if item.preference_weights[EditRole] is not None:
+                item.preference_weights[DisplayRole] = item.preference_weights[DisplayRole] = 0
+                # TODO: Read the preference weights from the card database
         self.dataChanged.emit(
-            self.index(1, 0),  # First row isn't checkable, so skip it
-            self.index(self.rowCount()-1, 0),
+            self.index(1, ModelColumns.is_hidden),  # First row isn't checkable, so skip it
+            self.index(self.rowCount()-1, ModelColumns.is_hidden),
             [CheckStateRole])
+        self.dataChanged.emit(
+            self.index(1, ModelColumns.preference_weights),  # First row isn't checkable, so skip it
+            self.index(self.rowCount() - 1, ModelColumns.preference_weights),
+            [DisplayRole])
         logger.debug("Done.")
 
     def save_settings(self, settings: ConfigParser):
         logger.debug("Saving printing filter state to settings.")
         section = settings["card-filter"]
         for row, item in enumerate(self.items):
-            if item[CheckStateRole] is not None:
-                section.set_check_state(item[SettingsKeyRole],item[CheckStateRole])
+            if item.is_hidden[CheckStateRole] is not None:
+                section.set_check_state(item._settings_key, item.is_hidden[CheckStateRole])
+                # TODO: Save the preference weights to the card database
         logger.debug("Done.")
 
     def highlight_differing_settings(self, settings: ConfigParser):
@@ -343,17 +359,21 @@ class PrintingFilterModel(QAbstractTableModel):
         highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
         highlight_color.setAlpha(64)  # 25% opacity, same as the highlight_widget() implementation
         for row, item in enumerate(self.items):
-            current_state: CheckState = item[CheckStateRole]
-            if current_state is not None and current_state != section.get_check_state(item[SettingsKeyRole]):
-                index = self.index(row, 0)
-                item[BackgroundRole] = highlight_color
+            if item.is_hidden[CheckStateRole] != section.get_check_state(item._settings_key):
+                index = self.index(row, ModelColumns.is_hidden)
+                item.is_hidden[BackgroundRole] = highlight_color
                 self.dataChanged.emit(index, index, [BackgroundRole])
+            if item.preference_weights[EditRole] != None:  # TODO: Read from the actual card database
+                index = self.index(row, ModelColumns.preference_weights)
+                item.preference_weights[BackgroundRole] = highlight_color
+                self.dataChanged.emit(index, index, [BackgroundRole])
+            
 
     def clear_highlight(self):
         for item in self.items:
-            item[BackgroundRole] = None
+            item.is_hidden[BackgroundRole] = item.preference_weights[BackgroundRole] = None
         self.dataChanged.emit(
-            self.index(0, 0),
-            self.index(self.rowCount()-1, 0),
+            self.index(0, ModelColumns.is_hidden),
+            self.index(self.rowCount()-1, ModelColumns.preference_weights),
             [BackgroundRole]
         )
