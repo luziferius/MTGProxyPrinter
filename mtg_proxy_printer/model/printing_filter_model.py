@@ -17,7 +17,7 @@ from collections import defaultdict
 import dataclasses
 import enum
 
-from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QItemSelectionModel
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication
 
@@ -320,6 +320,11 @@ class PrintingFilterModel(QAbstractTableModel):
         column = ModelColumns(index.column())
         if role == CheckStateRole:
             value = CheckState(value)
+            text = self.tr("Hidden", "Card filter column display text") \
+                if value == CheckState.Checked \
+                else self.tr("Visible", "Card filter column display text")
+            self.items[index.row()].setData(column, text, DisplayRole)
+            self.dataChanged.emit(index, index, [DisplayRole])
         return self.items[index.row()].setData(column, value, role)
 
     def flags(self, index: QModelIndex, /) -> Qt.ItemFlag:
@@ -330,14 +335,14 @@ class PrintingFilterModel(QAbstractTableModel):
         section = settings["card-filter"]
         for row, item in enumerate(self.items):
             if item.is_hidden[CheckStateRole] is not None:
-                item.is_hidden[CheckStateRole] = section.get_check_state(item._settings_key)
+                self.setData(self.index(row, ModelColumns.is_hidden), section.get_check_state(item._settings_key), CheckStateRole)
             if item.preference_weights[EditRole] is not None:
                 item.preference_weights[DisplayRole] = item.preference_weights[DisplayRole] = 0
                 # TODO: Read the preference weights from the card database
         self.dataChanged.emit(
             self.index(1, ModelColumns.is_hidden),  # First row isn't checkable, so skip it
             self.index(self.rowCount()-1, ModelColumns.is_hidden),
-            [CheckStateRole])
+            [CheckStateRole, DisplayRole])
         self.dataChanged.emit(
             self.index(1, ModelColumns.preference_weights),  # First row isn't checkable, so skip it
             self.index(self.rowCount() - 1, ModelColumns.preference_weights),
