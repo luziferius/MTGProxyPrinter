@@ -331,14 +331,17 @@ class PrintingFilterModel(QAbstractTableModel):
 
     def setData(self, index: QModelIndex, value, /, role: ItemDataRole = DisplayRole):
         column = ModelColumns(index.column())
+        item = self.items[index.row()]
         if role == CheckStateRole:
             value = CheckState(value)
             text = self.tr("Hidden", "Card filter column display text") \
                 if value == CheckState.Checked \
                 else self.tr("Visible", "Card filter column display text")
-            self.items[index.row()].setData(column, text, DisplayRole)
+            item.setData(column, text, DisplayRole)
             self.dataChanged.emit(index, index, [DisplayRole])
-        return self.items[index.row()].setData(column, value, role)
+        elif role == EditRole and column == ModelColumns.preference_weights:
+            item.setData(column, value, DisplayRole)
+        return item.setData(column, value, role)
 
     def flags(self, index: QModelIndex, /) -> Qt.ItemFlag:
         return self.data(index, ItemFlagsRole) or Qt.ItemFlag.NoItemFlags
