@@ -17,7 +17,7 @@ from collections import defaultdict
 import dataclasses
 import enum
 
-from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QItemSelectionModel
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication
 
@@ -159,11 +159,11 @@ class PrintingFilterModel(QAbstractTableModel):
             "Is preference weight column tooltip text")
         return [
             ModelRow.create_header(header_font,
-                self.tr("General filters", "Display text. Printing filter section header"),
-                self.tr("Hide printings based on general card properties", "Tooltip text")),
+                self.tr("General card filters", "Display text. Printing filter section header"),
+                None),
             ModelRow.create_item(
                 self.tr("Cards depicting racism", "Display text"),
-                self.tr("Hide cards banned for depicting racism.\n\n"
+                self.tr("Cards banned for depicting racism or for being culturally inappropriate.\n\n"
                         "Background: Some cards were banned by Wizards of the Coast,\n"
                         "because they depict references to controversial real-world events,\n"
                         "religion or contain combinations of card effect, name and artwork that,\n"
@@ -171,17 +171,17 @@ class PrintingFilterModel(QAbstractTableModel):
                         "These cards are banned in all sanctioned tournament formats and several\n"
                         "community formats like Commander, Oathbreaker and others.",
                         "Tooltip text"),
-                weight_tooltip, "hide-cards-depicting-racism", "is:content_warning"),
+                None, "hide-cards-depicting-racism", "is:content_warning"),
             ModelRow.create_item(
-                self.tr("Hide cards with placeholder images",
+                self.tr("Cards with placeholder images",
                         "Display text"),
-                self.tr("Hide non-English cards with low-resolution,\n"
+                self.tr("Non-English cards with low-resolution,\n"
                         "English placeholder images containing an overlay text stating\n"
                         "“This card is not available in the selected language.”",
                         "Tooltip text"),
                 weight_tooltip, "hide-cards-without-images", None),
             ModelRow.create_item(
-                self.tr("Hide “funny” cards",
+                self.tr("“Funny” cards",
                         "Display text"),
                 self.tr("“Funny” cards, not legal in any constructed format.\n"
                         "This includes silver-bordered cards, full-art Contraptions from Unstable,\n"
@@ -190,29 +190,29 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Tooltip text"),
                 weight_tooltip, "hide-funny-cards", "is:funny"),
             ModelRow.create_item(
-                self.tr("Hide digital-only cards or printings",
+                self.tr("Digital-only cards or printings",
                         "Display text"),
-                self.tr("Hide cards and printings that are only available on digital platforms. "
+                self.tr("Cards and printings that are only available on digital platforms. "
                         "This includes all kinds of digital printings.",
                         "Tooltip text"),
                 weight_tooltip, "hide-digital-cards", "is:digital"),
             ModelRow.create_item(
-                self.tr("Hide reversible cards",
+                self.tr("Reversible cards",
                         "Display text"),
                 self.tr("Some single-sided cards are re-printed as two-sided, reversible cards in some "
-                        "Secret Lair releases.\nThis filter hides those.",
+                        "Secret Lair releases.",
                         "Tooltip text"),
                 weight_tooltip, "hide-reversible-cards", "is:reversible"),
 
             ModelRow.create_header(header_font,
                 self.tr("Border style", "Display text. Printing filter section header")),
             ModelRow.create_item(
-                self.tr("Hide white-bordered cards",
+                self.tr("White-bordered cards",
                         "Display text"),
                 None,
                 weight_tooltip, "hide-white-bordered", "border:white"),
             ModelRow.create_item(
-                self.tr("Hide gold-bordered cards",
+                self.tr("Gold-bordered cards",
                         "Display text"),
                 self.tr("Some “collectible” sets, like full reprints of "
                         "tournament-winning decks were printed with golden borders.\n"
@@ -221,16 +221,16 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Tooltip text"),
                 weight_tooltip, "hide-gold-bordered", "border:gold"),
             ModelRow.create_item(
-                self.tr("Hide borderless cards",
+                self.tr("Borderless cards",
                         "Display text"),
-                self.tr("Hide cards without a defined, solid-color border.\n"
+                self.tr("Cards without a defined, solid-color border.\n"
                         "Those require higher cutting precision to get right.",
                         "Tooltip text"),
                 weight_tooltip, "hide-borderless", "border:borderless"),
             ModelRow.create_item(
-                self.tr("Hide extended-art cards",
+                self.tr("Extended-art cards",
                         "Display text"),
-                self.tr("Hide cards with artwork extending to the left and right card border.\n"
+                self.tr("Cards with artwork extending to the left and right card border.\n"
                         "Similar to borderless cards, these require higher precision during the cutting process.",
                         "Tooltip text"),
                 weight_tooltip, "hide-extended-art", "is:extended"),
@@ -238,7 +238,7 @@ class PrintingFilterModel(QAbstractTableModel):
             ModelRow.create_header(header_font,
                 self.tr("Non-traditional cards", "Display text. Printing filter section header")),
             ModelRow.create_item(
-                self.tr("Hide oversized cards",
+                self.tr("Oversized cards",
                         "Display text"),
                 self.tr("These cards are larger than regular Magic cards and can’t be included in decks.\n"
                         "Includes Archenemy schemes, Planechase planes and\noversized commander creature or "
@@ -246,14 +246,14 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Tooltip text"),
                 weight_tooltip, "hide-oversized-cards", "is:oversized"),
             ModelRow.create_item(
-                self.tr("Hide Tokens",
+                self.tr("Tokens",
                         "Display text"),
                 self.tr("The official Tokens, used to represent permanents created by card effects.\n"
                         "Not part of deck-building. Obscure ones can be relatively rare",
                         "Tooltip text"),
                 None, "hide-token", "is:token"),
             ModelRow.create_item(
-                self.tr("Hide Art Series cards",
+                self.tr("Art Series cards",
                         "Display text"),
                 self.tr("Artwork cards that can be found in Set Boosters or Play Boosters",
                         "Tooltip text"),
@@ -309,6 +309,19 @@ class PrintingFilterModel(QAbstractTableModel):
 
     def columnCount(self, parent: QModelIndex = QModelIndex(), /):
         return 0 if parent.isValid() else len(ModelColumns)
+
+    def headerData(self, section: ModelColumns, orientation: Qt.Orientation, role: ItemDataRole = DisplayRole, /):
+        if orientation == Qt.Orientation.Vertical or role != DisplayRole:
+            return None
+        match section:
+            case ModelColumns.name:
+                return self.tr("Filter name", "Printing filter table header")
+            case ModelColumns.is_hidden:
+                return self.tr("Completely hide matching cards", "Printing filter table header")
+            case ModelColumns.preference_weights:
+                return self.tr("Printing preference", "Printing filter table header")
+            case _:
+                return None
 
     def data(self, index: QModelIndex, /, role: ItemDataRole = DisplayRole):
         column = ModelColumns(index.column())
