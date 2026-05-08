@@ -470,6 +470,8 @@ class HidePrintingsPage(Page):
         header.resizeSection(1, 32)
         for row in range(self.model.rowCount()):
             index = self.model.index(row, 0)
+
+            ui.printing_filter_view.setSpan(row, 0, 1, 4)
             if query := index.data(ScryfallQueryRole):
                 button = self._create_scryfall_query_button(query)
                 ui.printing_filter_view.setIndexWidget(index.siblingAtColumn(1), button)
