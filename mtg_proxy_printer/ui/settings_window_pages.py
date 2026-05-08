@@ -466,9 +466,9 @@ class HidePrintingsPage(Page):
         self.card_db = None
         ui.printing_filter_view.setModel(self.model)
         header = ui.printing_filter_view.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
-        header.resizeSection(3, 32)
+        for column in range(len(ModelColumns)-1):
+            header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        header.resizeSection(ModelColumns.scryfall_query, 32)
         for row in range(self.model.rowCount()):
             index = self.model.index(row, ModelColumns.name)
             if index.data(IsHeaderRole):
