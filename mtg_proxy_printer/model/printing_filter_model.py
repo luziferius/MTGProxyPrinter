@@ -315,11 +315,11 @@ class PrintingFilterModel(QAbstractTableModel):
             return None
         match section:
             case ModelColumns.name:
-                return self.tr("Filter name", "Printing filter table header")
+                return f'  {self.tr("Filter name", "Printing filter table header")}  '
             case ModelColumns.is_hidden:
-                return self.tr("Completely hide matching cards", "Printing filter table header")
+                return f'  {self.tr("Completely hide matching cards", "Printing filter table header")}  '
             case ModelColumns.preference_weights:
-                return self.tr("Printing preference", "Printing filter table header")
+                return f'  {self.tr("Printing preference", "Printing filter table header")}  '
             case _:
                 return None
 
