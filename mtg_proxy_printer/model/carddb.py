@@ -947,3 +947,9 @@ class CardDatabase(QObject):
         card = self.custom_cards.get(custom_card_id, card)
         self.custom_cards[custom_card_id] = card
         return card
+
+    def get_printing_filter_weights(self) -> dict[str, int]:
+        return dict(self.db.execute(cached_dedent("""\
+            SELECT filter_name, printing_preference_weight FROM PrintingFilters
+        """)))
+

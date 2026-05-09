@@ -351,12 +351,12 @@ class PrintingFilterModel(QAbstractTableModel):
     def load_settings(self, settings: ConfigParser):
         logger.debug("Loading printing filter state from settings")
         section = settings["card-filter"]
+        printing_weights_db = self.card_db.get_printing_filter_weights()
         for row, item in enumerate(self.items):
             if item.is_hidden[CheckStateRole] is not None:
                 self.setData(self.index(row, ModelColumns.is_hidden), section.get_check_state(item._settings_key), CheckStateRole)
             if item.preference_weights[EditRole] is not None:
-                item.preference_weights[DisplayRole] = item.preference_weights[DisplayRole] = 0
-                # TODO: Read the preference weights from the card database
+                item.preference_weights[DisplayRole] = item.preference_weights[DisplayRole] = printing_weights_db[item._settings_key]
         self.dataChanged.emit(
             self.index(1, ModelColumns.is_hidden),  # First row isn't checkable, so skip it
             self.index(self.rowCount()-1, ModelColumns.is_hidden),
@@ -373,11 +373,12 @@ class PrintingFilterModel(QAbstractTableModel):
         for row, item in enumerate(self.items):
             if item.is_hidden[CheckStateRole] is not None:
                 section.set_check_state(item._settings_key, item.is_hidden[CheckStateRole])
-                # TODO: Save the preference weights to the card database
+            # TODO: Save the preference weights to the card database
         logger.debug("Done.")
 
     def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]
+        printing_weights_db = self.card_db.get_printing_filter_weights()
         palette = QApplication.palette()
         highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
         highlight_color.setAlpha(64)  # 25% opacity, same as the highlight_widget() implementation
@@ -386,7 +387,7 @@ class PrintingFilterModel(QAbstractTableModel):
                 index = self.index(row, ModelColumns.is_hidden)
                 item.is_hidden[BackgroundRole] = highlight_color
                 self.dataChanged.emit(index, index, [BackgroundRole])
-            if item.preference_weights[EditRole] != None:  # TODO: Read from the actual card database
+            if item.preference_weights[EditRole] != printing_weights_db[item._settings_key]:
                 index = self.index(row, ModelColumns.preference_weights)
                 item.preference_weights[BackgroundRole] = highlight_color
                 self.dataChanged.emit(index, index, [BackgroundRole])
