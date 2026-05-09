@@ -21,6 +21,7 @@ from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication
 
+from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.units_and_sizes import ConfigParser
 from mtg_proxy_printer.logger import get_logger
 
@@ -147,6 +148,7 @@ class PrintingFilterModel(QAbstractTableModel):
     """
     def __init__(self, parent = None):
         super().__init__(parent)
+        self.card_db = CardDatabase.main_instance
         self.items = self._create_items()
 
     def _create_items(self) -> ModelRows:
