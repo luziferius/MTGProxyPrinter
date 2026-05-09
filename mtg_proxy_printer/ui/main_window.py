@@ -74,7 +74,6 @@ class MainWindow(QMainWindow):
     request_run_async_task = Signal(AsyncTask)
 
     def __init__(self,
-                 card_db: CardDatabase,
                  image_db: ImageDatabase,
                  document: Document,
                  language_model: QStringListModel,
@@ -88,9 +87,8 @@ class MainWindow(QMainWindow):
         self.default_undo_tooltip = ui.action_undo.toolTip()
         self.default_redo_tooltip = ui.action_redo.toolTip()
         self.missing_images_manager = self._create_missing_images_manager(document)
-        self.about_dialog = self._create_about_dialog(card_db)
+        self.about_dialog = self._create_about_dialog()
         self.progress_bar_manager = self._create_progress_bar_manager()
-        self.card_database = card_db
         self.image_db = image_db
         self.document = document
         self._connect_document_signals(document)
@@ -104,12 +102,12 @@ class MainWindow(QMainWindow):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def update_language_model(self):
-        available_languages = self.card_database.get_all_languages()
+        available_languages = CardDatabase.main_instance.get_all_languages()
         logger.debug(f"Setting the list of available languages to {available_languages}")
         self.language_model.setStringList(available_languages)
 
-    def _create_about_dialog(self, card_database: CardDatabase) -> AboutDialog:
-        about_dialog = AboutDialog(card_database, self)
+    def _create_about_dialog(self) -> AboutDialog:
+        about_dialog = AboutDialog(self)
         self.ui.action_show_about_dialog.triggered.connect(about_dialog.show_about)
         self.ui.action_show_changelog.triggered.connect(about_dialog.show_changelog)
         return about_dialog
@@ -149,7 +147,7 @@ class MainWindow(QMainWindow):
             action.setShortcut(shortcut)
 
     def _setup_central_widget(self):
-        self.ui.central_widget.set_data(self.document, self.card_database, self.image_db)
+        self.ui.central_widget.set_data(self.document, self.image_db)
         self.ui.central_widget.request_run_async_task.connect(self.request_run_async_task)
 
     def _setup_undo_redo_actions(self, document: Document):
@@ -175,7 +173,7 @@ class MainWindow(QMainWindow):
         ui = self.ui
         ui.action_download_card_data.setDisabled(True)
         data_source = ApiStreamTask()
-        import_task = DatabaseImportTask(data_source, carddb_path=self.card_database.db_path)
+        import_task = DatabaseImportTask(data_source, carddb_path=CardDatabase.main_instance.db_path)
         import_task.error_occurred.connect(
             lambda: ui.action_download_card_data.setEnabled(True), BlockingQueuedConnection)
         data_source.network_error_occurred.connect(
@@ -257,7 +255,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_cleanup_local_image_cache_triggered(self):
         logger.info("User wants to clean up the local image cache")
-        wizard = CacheCleanupWizard(self.card_database, self.image_db, self)
+        wizard = CacheCleanupWizard(self.image_db, self)
         show_wizard_or_dialog(wizard)
 
     @Slot()

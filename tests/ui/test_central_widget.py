@@ -26,8 +26,9 @@ from mtg_proxy_printer.ui.main_window import MainWindow
 from .test_main_window import main_window  # noqa
 
 
-def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBot, main_window: MainWindow):
-    card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+def test_deleting_last_card_of_current_page_does_not_raise_exception(
+        qtbot: QtBot, main_window: MainWindow, card_db):
+    card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = main_window.document
     central_widget = main_window.ui.central_widget
     main_window.document.apply(ActionAddCard(card, 9))
