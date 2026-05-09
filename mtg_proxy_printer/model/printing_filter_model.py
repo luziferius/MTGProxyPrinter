@@ -188,7 +188,7 @@ class PrintingFilterModel(QAbstractTableModel):
                         "cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),\n"
                         "some black-bordered promotional cards with non-standard back faces,\nand potentially others.",
                         "Tooltip text"),
-                weight_tooltip, "hide-funny-cards", "is:funny"),
+                None, "hide-funny-cards", "is:funny"),
             ModelRow.create_item(
                 self.tr("Digital-only cards or printings",
                         "Display text"),
