@@ -339,13 +339,13 @@ class FilterSetupPage(QWizardPage):
 
 class CardFilterPage(QWizardPage):
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QWidget = None):
+    def __init__(self, image_db: ImageDatabase, parent: QWidget = None):
         super().__init__(parent)
         self.ui = Ui_CardFilterPage()
         self.ui.setupUi(self)
-        self.card_db = card_db
+        self.card_db = CardDatabase.main_instance
         self.image_db = image_db
-        self.card_image_model = KnownCardImageModel(card_db, self)
+        self.card_image_model = KnownCardImageModel(self.card_db, self)
         self.card_image_sort_model = self._setup_card_image_sort_model(self.card_image_model)
         self._setup_card_image_view(self.card_image_sort_model)
         self.unknown_image_model = UnknownCardImageModel(parent=self)
@@ -484,12 +484,12 @@ class CacheCleanupWizard(WizardBase):
         QWizard.WizardButton.HelpButton: "help-contents",
     }
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
+    def __init__(self, image_db: ImageDatabase,
                  parent: QWidget = None, flags=Qt.WindowType.Window):
         super().__init__(QSize(1024, 768), parent, flags)
         self.image_db = image_db
         self.addPage(FilterSetupPage(self))
-        self.addPage(CardFilterPage(card_db, image_db, self))
+        self.addPage(CardFilterPage(image_db, self))
         self.addPage(SummaryPage(self))
         self.setWindowTitle(self.tr("Cleanup locally stored card images", "Dialog window title"))
         self.setWindowIcon(QIcon.fromTheme("edit-clear-history"))

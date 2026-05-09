@@ -104,6 +104,7 @@ class CardDatabase(QObject):
     Holds the connection to the local SQLite database that contains the relevant card data.
     Provides methods for data access.
     """
+    main_instance: CardDatabase = None
     card_data_updated = Signal()
     custom_cards: dict[UUID, CustomCard] = {}
 

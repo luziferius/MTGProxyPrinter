@@ -64,7 +64,8 @@ class AddCardWidget(QWidget):
         logger.debug(f"Creating {self.__class__.__name__} instance")
         self.ui = ui_class()
         self.ui.setupUi(self)
-        self.card_database: CardDatabase = None
+        self.card_db: CardDatabase = CardDatabase.main_instance
+        self.card_db.card_data_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
         self.image_db: ImageDatabase = None
         self.language_model = self._setup_language_combo_box()
         self.card_name_model = self._setup_card_name_box()
@@ -135,7 +136,7 @@ class AddCardWidget(QWidget):
         self.ui.set_name_box.setEnabled(valid)
         if valid:
             card_name = current_model_index.data(ItemDataRole.DisplayRole)
-            sets = self.card_database.find_sets_matching(card_name, self.current_language)
+            sets = self.card_db.find_sets_matching(card_name, self.current_language)
             logger.debug(f'Selected: "{card_name}", language: {self.current_language}, matching {len(sets)} sets')
             self.set_name_model.set_set_data(sets)
             self.ui.set_name_filter.clear()
@@ -153,7 +154,7 @@ class AddCardWidget(QWidget):
         self.ui.collector_number_box.setEnabled(valid)
         if valid:
             mtg_set: MTGSet = current_model_index.data(ItemDataRole.EditRole)
-            collector_numbers = self.card_database.find_collector_numbers_matching(
+            collector_numbers = self.card_db.find_collector_numbers_matching(
                 self.current_card_name, mtg_set.code, self.current_language
             )
             logger.debug(
@@ -170,7 +171,7 @@ class AddCardWidget(QWidget):
     def card_name_filter_updated(self, card_name_filter: str):
         logger.debug(f'Card name filter changed to: "{card_name_filter}"')
         selected_card_name = self.current_card_name
-        card_names = self.card_database.get_card_names(self.current_language, card_name_filter)
+        card_names = self.card_db.get_card_names(self.current_language, card_name_filter)
         self.card_name_model.setStringList(card_names)
 
         if selected_card_name in card_names:
@@ -185,7 +186,7 @@ class AddCardWidget(QWidget):
     @Slot(str)
     def set_name_filter_updated(self, set_name_filter: str):
         logger.debug(f'Set name/abbreviation filter changed to: "{set_name_filter}"')
-        set_names = self.card_database.find_sets_matching(
+        set_names = self.card_db.find_sets_matching(
             self.current_card_name, self.current_language, set_name_filter
         )
         self.set_name_model.set_set_data(set_names)
@@ -194,18 +195,16 @@ class AddCardWidget(QWidget):
     def language_combo_box_changed(self, new_language: str):
         logger.info(f'Selected language changed to: "{new_language}"')
         current_filter = self.ui.card_name_filter.text()
-        card_names = self.card_database.get_card_names(new_language, current_filter)
+        card_names = self.card_db.get_card_names(new_language, current_filter)
         self.card_name_model.setStringList(card_names)
         self.set_name_model.set_set_data([])
         self.ui.set_name_box.setEnabled(False)
 
-    def set_databases(self, card_db: CardDatabase, image_db: ImageDatabase):
+    def set_databases(self, image_db: ImageDatabase):
         logger.debug("About to set the card database")
-        self.card_database = card_db
         self.image_db = image_db
-        card_db.card_data_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
         preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
-        languages = self.card_database.get_all_languages()
+        languages = self.card_db.get_all_languages()
         if not languages:
             languages = [preferred_language]
         self.language_model.setStringList(languages)
@@ -230,7 +229,7 @@ class AddCardWidget(QWidget):
     def ok_button_triggered(self):
         logger.info("User clicked OK and adds a new card to the current page.")
         card_data = self._read_card_data_from_ui()
-        card = self.card_database.get_cards_from_data(card_data)[0]
+        card = self.card_db.get_cards_from_data(card_data)[0]
         copies = self.ui.copies_input.value()
         self._log_added_card(card, copies)
         action = ActionAddCard(card, copies)
@@ -238,7 +237,7 @@ class AddCardWidget(QWidget):
         add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["cards"].getboolean(
             "automatically-add-opposing-faces"
         )
-        if add_opposing_faces_enabled and (opposing_face := self.card_database.get_opposing_face(card)) is not None:
+        if add_opposing_faces_enabled and (opposing_face := self.card_db.get_opposing_face(card)) is not None:
             logger.info(
                 "Card is double faced and adding opposing faces is enabled, automatically adding the other face.")
             self._log_added_card(opposing_face, copies)

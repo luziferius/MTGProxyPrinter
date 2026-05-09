@@ -44,13 +44,14 @@ def card_db(request) -> CardDatabase:
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     with unittest.mock.patch.dict(section, settings_to_use):
-        card_db = CardDatabase(":memory:", check_same_thread=False)
+        CardDatabase.main_instance = card_db = CardDatabase(":memory:", check_same_thread=False)
     db = card_db.db
     if request.param:
         db.execute("PRAGMA reverse_unordered_selects = TRUE")
     PrintingFilterUpdater(card_db, card_db.db).run()
     yield card_db
     del card_db.db
+    CardDatabase.main_instance = None
     db.close()
 
 

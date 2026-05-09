@@ -35,7 +35,7 @@ from .test_main_window import main_window  # noqa
 def table_view(qtbot: QtBot, document_light: Document, card_db: CardDatabase) -> PageCardTableView:
     view = PageCardTableView()
     qtbot.add_widget(view)
-    view.set_data(document_light, card_db)
+    view.set_data(document_light)
     return view
 
 
