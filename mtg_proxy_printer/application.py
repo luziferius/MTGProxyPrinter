@@ -162,7 +162,7 @@ class Application(QApplication):
             return card_db, image_db
         logger.debug("Opening Databases")
         mtg_proxy_printer.carddb_migrations.migrate_card_database_location()
-        card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        mtg_proxy_printer.model.carddb.CardDatabase.main_instance = card_db = mtg_proxy_printer.model.carddb.CardDatabase()
         image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         return card_db, image_db
 
