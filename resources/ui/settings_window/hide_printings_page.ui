@@ -14,7 +14,12 @@
    <item>
     <widget class="QLabel" name="card_filter_settings_header_label">
      <property name="text">
-      <string>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists, if possible. If all printings of a card are hidden, it won’t be available at all.</string>
+      <string>These options determine how printings are chosen.
+
+Hidden printings can’t be found in the card search and are automatically replaced with other printings, if possible. If all printings of a card are hidden, it won’t be available at all.
+The printing preference weights are used to weight printings against each other when the app automatically chooses a printing.
+Each printing gets a score based on the sum of all applicable weights, and the one with the highest score wins.
+A higher weight for a filter means a stronger preference for it. Negative weights can be used to discourage choosing these printings.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -22,10 +27,17 @@
     </widget>
    </item>
    <item>
-    <widget class="GeneralPrintingFilter" name="card_filter_general_settings"/>
-   </item>
-   <item>
-    <widget class="FormatPrintingFilter" name="card_filter_format_settings"/>
+    <widget class="QTableView" name="printing_filter_view">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>10</verstretch>
+      </sizepolicy>
+     </property>
+     <attribute name="verticalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
+    </widget>
    </item>
    <item>
     <widget class="QLabel" name="set_filter_label">
@@ -39,6 +51,12 @@
    </item>
    <item>
     <widget class="QPlainTextEdit" name="set_filter_settings">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>3</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>Example:
 
@@ -54,20 +72,6 @@ LEA DDU TC13 J21</string>
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>GeneralPrintingFilter</class>
-   <extends>QGroupBox</extends>
-   <header>mtg_proxy_printer.ui.printing_filter_widgets</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>FormatPrintingFilter</class>
-   <extends>QGroupBox</extends>
-   <header>mtg_proxy_printer.ui.printing_filter_widgets</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

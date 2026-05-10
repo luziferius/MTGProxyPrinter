@@ -117,6 +117,7 @@ packages = [
 excludes = [
     "distutils",
     "ijson.benchmark",  # Ignore the benchmark script added after ijson 3.2.3
+    "ijson.dump",  # Also ignore the CSV dumping script.
     "importlib_metadata",
     "lib2to3",
     "pep517",

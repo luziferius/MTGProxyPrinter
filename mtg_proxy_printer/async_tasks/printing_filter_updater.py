@@ -37,7 +37,7 @@ class PrintingFilterUpdater(AsyncTask):
     """
     This class updates the printing filters stored in the database.
     Syncs the db-internal printing filters with the filters stored in the configuration file,
-    and updates the is_hidden columns.
+    and updates the is_visible column.
     """
     PROGRESS_STEP_COUNT = 4
 
@@ -51,7 +51,7 @@ class PrintingFilterUpdater(AsyncTask):
           This doesn't work for in-memory databases used by unit tests.
           Thus, it requires an option to pass an existing connection to override the logic that opens new connections,
           and also suppresses automatic connection closure during tests.
-        :param force_update_hidden_column: Force re-writing the is_hidden columns. The columns need updates,
+        :param force_update_hidden_column: Force re-writing the is_visible column. The columns need updates,
           if the filter values change (determined internally) or the card data changes.
           This boolean can be used by the card data update to enforce refreshing
           the cached is_hidden, as the value may change for each card, even if the filters were unchanged.
@@ -112,7 +112,7 @@ class PrintingFilterUpdater(AsyncTask):
             db.execute("BEGIN IMMEDIATE TRANSACTION\n")
         section = mtg_proxy_printer.settings.settings["card-filter"]
         update_ui = self._remove_old_printing_filters(section)
-        changed_or_new_filters = self._changed_or_new_filters(section)
+        changed_or_new_filters = self._get_changed_or_new_filters(section)
         self.advance_progress.emit()
         if self.should_abort:
             return False
@@ -143,11 +143,11 @@ class PrintingFilterUpdater(AsyncTask):
             self.ui_update_required.emit()
         return update_ui
 
-    def _changed_or_new_filters(self, section: SectionProxy) -> dict[str, bool]:
+    def _get_changed_or_new_filters(self, section: SectionProxy) -> dict[str, bool]:
         """Returns all changed or new filters with their new value."""
         old_filter_values_in_db: dict[str, bool] = dict(
             self.db.execute(
-                "SELECT filter_name, filter_active FROM PrintingFilters --_changed_or_new_filters()\n"
+                "SELECT filter_name, filter_active FROM PrintingFilters --_get_changed_or_new_filters()\n"
              )
         )
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
@@ -231,3 +231,90 @@ class PrintingFilterUpdater(AsyncTask):
             return result[0]
         else:
             return None
+
+
+class PrintingPreferenceUpdater(AsyncTask):
+    """
+    This class saves the updated printing preference scores in the database.
+    This is a database-writing task, thus has to operate under a database write lock.
+    It may take several hundred milliseconds per changed preference weight.
+    Many weights only affect a few thousand printings,
+    but some like "borderless card" or "white-bordered card" have over 20k printings that need to be updated.
+    """
+
+    def __init__(
+            self, model: "CardDatabase", preference_weights: set[tuple[str, int]],
+            db_connection: sqlite3.Connection = None, /):
+        """
+        :param model: CardDatabase instance to work on
+        :param db_connection: Database connection to use. Only useful for testing. During normal operation, this class opens
+          a separate connection by using the database filesystem path stored in the passed-in model.
+          This doesn't work for in-memory databases used by unit tests.
+          Thus, it requires an option to pass an existing connection to override the logic that opens new connections,
+          and also suppresses automatic connection closure during tests.
+        """
+        super().__init__()
+        self.model = model
+        self.new_preference_weights = preference_weights
+        self.old_preference_weights = set(model.get_printing_filter_weights().items())
+        self.progress = 0
+        self.task_completed.connect(model.restart_transaction, QueuedConnection)
+        self._db = db_connection
+        self.db_connection_self_opened = db_connection is None
+        self.should_abort = False
+        logger.debug(f"Created {self.__class__.__name__} instance.")
+
+    def cancel(self):
+        self.should_abort = True
+
+    @property
+    def db(self) -> sqlite3.Connection:
+        # Delay connection creation until first access.
+        # Avoids opening connections that aren't actually used and opens the connection
+        # in the thread that actually uses it.
+        if self._db is None:
+            logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
+            self._db = open_database(self.model.db_path, SCHEMA_NAME)
+        return self._db
+
+    @with_database_write_lock()
+    def run(self):
+        logger.debug(f"Called {self.__class__.__name__}.run()")
+        needs_update_weights = self.new_preference_weights - self.old_preference_weights
+        db = self.db
+        try:
+            self.task_begins.emit(
+                len(needs_update_weights), self.tr(
+                    "Processing printing preferences:", "Progress bar label text")
+            )
+            self.update_printing_preferences(needs_update_weights)
+            if self.should_abort:
+                db.rollback()
+            else:
+                db.commit()
+            return
+        except sqlite3.Error as e:
+            logger.exception(e)
+            self.error_occurred.emit(e.sqlite_errorname)
+            db.rollback()
+        finally:
+            self.task_completed.emit()
+            if self.db_connection_self_opened:
+                logger.debug(f"Closing {self.__class__.__name__} connection")
+                db.close()
+                self._db = None
+
+    def update_printing_preferences(self, needs_update_weights: set[tuple[str, int]]):
+        db = self.db
+        if self.db_connection_self_opened:
+            db.execute("BEGIN IMMEDIATE TRANSACTION -- update_printing_preferences()\n")
+        for name, weight in needs_update_weights:
+            db.execute(cached_dedent("""\
+                UPDATE PrintingFilters  -- update_printing_preferences()
+                  SET printing_preference_weight = ?
+                  WHERE filter_name = ?
+                """),
+                (weight, name)
+            )
+            self.advance_progress.emit()
+            if self.should_abort: break

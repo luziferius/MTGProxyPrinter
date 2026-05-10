@@ -24,7 +24,7 @@ import sqlite3
 from typing import Type, NamedTuple, TypedDict, NotRequired, TypeVar, Any, TYPE_CHECKING, Literal
 
 from pint import UnitRegistry, Context
-from PySide6.QtCore import QSize, QObject
+from PySide6.QtCore import QSize, QObject, Qt
 from PySide6.QtGui import QPageSize, QPageLayout, QColor
 import pint.facets.context.objects
 import pint
@@ -84,29 +84,49 @@ StrDict = dict[str, str]
 T = TypeVar("T")
 PageSizeId = QPageSize.PageSizeId
 mm: Unit = unit_registry.mm
+CheckState = Qt.CheckState
+
+BooleanToCheckStateMap = {
+    True: CheckState.Checked,
+    False: CheckState.Unchecked,
+    None: CheckState.PartiallyChecked
+}
+CheckStateToBooleanStrMap = {value: str(key) for key,value in BooleanToCheckStateMap.items()}
 
 
 class SectionProxy(configparser.SectionProxy):
-    def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars=None) -> Quantity:
+    def get_quantity(self, option: str, fallback: Quantity = None, *, raw=False, vars=None) -> Quantity:
         raw_value = self.get(option, fallback, raw=raw, vars=vars)
         return unit_registry.parse_expression(raw_value)
 
-    def get_color(self, option: str, fallback: str = None, *, raw=False, vars=None) -> QColor:
+    def get_color(self, option: str, fallback: QColor = None, *, raw=False, vars=None) -> QColor:
         raw_value = self.get(option, fallback, raw=raw, vars=vars)
         return QColor(raw_value)
+
+    def get_check_state(self, option: str, fallback: CheckState = None, *, raw=False, vars=None):
+        return BooleanToCheckStateMap[self.getboolean(option, raw=raw, vars=vars, fallback=fallback)]
+
+    def set_check_state(self, option: str, value: CheckState):
+        self[option] = CheckStateToBooleanStrMap[value]
 
 
 class ConfigParser(configparser.ConfigParser):
 
     __getitem__: Callable[[str], SectionProxy]  # Type hint that [] returns a SectionProxy having get_quantity()
 
-    def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> Quantity:
+    def get_quantity(self, section: str, option: str, fallback: Quantity = None, *, raw=False, vars=None) -> Quantity:
         raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
         return unit_registry.parse_expression(raw_value)
 
-    def get_color(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> QColor:
+    def get_color(self, section: str, option: str, fallback: QColor = None, *, raw=False, vars=None) -> QColor:
         raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
         return QColor(raw_value)
+
+    def get_check_state(self, section: str, option: str, fallback: CheckState = None, *, raw=False, vars=None):
+        return BooleanToCheckStateMap[self.getboolean(section, option, raw=raw, vars=vars, fallback=fallback)]
+
+    def set_check_state(self, section: str, option: str, value: CheckState):
+        self.set(section, option, CheckStateToBooleanStrMap[value])
 
 
 configparser.SectionProxy = SectionProxy

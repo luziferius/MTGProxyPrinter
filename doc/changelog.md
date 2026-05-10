@@ -8,6 +8,8 @@
 
 ## Changed features
 
+- Reworked the print hiding user interface in the application settings.
+  - Improved the grouping of printing filters, with closely related filters placed together 
 - Rewrite of the internal card database layout, resulting in performance improvements
   - Massive speed up in the card image cache cleanup wizard, if many foreign-language cards were previously downloaded
 - Changed search behavior in the built-in card search.

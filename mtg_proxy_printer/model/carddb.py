@@ -104,6 +104,7 @@ class CardDatabase(QObject):
     Holds the connection to the local SQLite database that contains the relevant card data.
     Provides methods for data access.
     """
+    main_instance: CardDatabase = None
     card_data_updated = Signal()
     custom_cards: dict[UUID, CustomCard] = {}
 
@@ -946,3 +947,9 @@ class CardDatabase(QObject):
         card = self.custom_cards.get(custom_card_id, card)
         self.custom_cards[custom_card_id] = card
         return card
+
+    def get_printing_filter_weights(self) -> dict[str, int]:
+        return dict(self.db.execute(cached_dedent("""\
+            SELECT filter_name, printing_preference_weight FROM PrintingFilters
+        """)))
+

@@ -54,11 +54,9 @@ class PageCardTableView(QTableView):
             self._setup_language_delegate(),
             self._setup_set_delegate(),
         )
-        self.card_db: CardDatabase = None
         self.image_db: ImageDatabase = None
 
-    def set_data(self, document: Document, card_db: CardDatabase):
-        self.card_db = card_db
+    def set_data(self, document: Document):
         self.image_db = document.image_db
         self.setModel(document)
         self.request_action.connect(document.apply)
@@ -98,14 +96,14 @@ class PageCardTableView(QTableView):
         if card.is_dfc:
             menu.addSeparator()
             self._create_add_check_card_actions(menu, card)
-        if related_cards := self.card_db.find_related_cards(card):
+        if related_cards := CardDatabase.main_instance.find_related_cards(card):
             menu.addSeparator()
             self._create_add_related_actions(menu, related_cards)
         self._add_save_image_action(menu, card)
         menu.popup(self.viewport().mapToGlobal(pos))
 
     def _create_add_check_card_actions(self, parent: QMenu, card: Card):
-        other_face = self.card_db.get_opposing_face(card)
+        other_face = CardDatabase.main_instance.get_opposing_face(card)
         front, back = sorted([card, other_face], key=operator.attrgetter("is_front"), reverse=True)
         check_card = CheckCard(front, back)
         actions = [
