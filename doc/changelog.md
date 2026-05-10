@@ -5,6 +5,11 @@
 ## New features
 
 - MTG sets are now shown with their set symbols wherever a set can be selected.
+- Configurable printing preferences:
+  - Add ability to specify positive or negative weights for card properties, like border color, etc.
+  - The app uses these to calculate the best matching printing whenever it has to choose among multiple choices.
+  - Negative values will rank matching printings lower than plain, regular printings, so they will only be chosen,
+    if there is no alternative available.
 
 ## Changed features
 
