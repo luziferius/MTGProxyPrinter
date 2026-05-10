@@ -205,6 +205,12 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Secret Lair releases.",
                         "Tooltip text"),
                 weight_tooltip, "hide-reversible-cards", "is:reversible"),
+            ModelRow.create_item(
+                self.tr("Universes Beyond cards", "Display text"),
+                self.tr('"Universes Beyond" are cards coming from other, non-Magic IPs, like Lord of the Ring, '
+                        'Marvel comics, Warhammer 40k, and a lot others.',
+                        "Tooltip text"),
+                weight_tooltip, "hide-universes-beyond-cards", "is:universesbeyond"),
 
             ModelRow.create_header(header_font,
                 self.tr("Border style", "Display text. Printing filter section header")),

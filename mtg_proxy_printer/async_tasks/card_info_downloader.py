@@ -889,19 +889,20 @@ def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
         "hide-token": card["layout"].endswith("token") or card.get("type_line") == "Dungeon",
         "hide-digital-cards": card["digital"],
         "hide-art-series-cards": card["layout"] == "art_series",
+        "hide-universes-beyond-cards": "universesbeyond" in card.get("promo_types", ()),
         # Specific format legality. Use .get() with a default instead of [] to not fail
         # if Scryfall removes one of the listed formats in the future.
-        "hide-banned-in-brawl": legalities.get("brawl", "") == "banned",
-        "hide-banned-in-commander": legalities.get("commander", "") == "banned",
-        "hide-banned-in-historic": legalities.get("historic", "") == "banned",
-        "hide-banned-in-legacy": legalities.get("legacy", "") == "banned",
-        "hide-banned-in-modern": legalities.get("modern", "") == "banned",
-        "hide-banned-in-oathbreaker": legalities.get("oathbreaker", "") == "banned",
-        "hide-banned-in-pauper": legalities.get("pauper", "") == "banned",
-        "hide-banned-in-penny": legalities.get("penny", "") == "banned",
-        "hide-banned-in-pioneer": legalities.get("pioneer", "") == "banned",
-        "hide-banned-in-standard": legalities.get("standard", "") == "banned",
-        "hide-banned-in-vintage": legalities.get("vintage", "") == "banned",
+        "hide-banned-in-brawl": legalities.get("brawl") == "banned",
+        "hide-banned-in-commander": legalities.get("commander") == "banned",
+        "hide-banned-in-historic": legalities.get("historic") == "banned",
+        "hide-banned-in-legacy": legalities.get("legacy") == "banned",
+        "hide-banned-in-modern": legalities.get("modern") == "banned",
+        "hide-banned-in-oathbreaker": legalities.get("oathbreaker") == "banned",
+        "hide-banned-in-pauper": legalities.get("pauper") == "banned",
+        "hide-banned-in-penny": legalities.get("penny") == "banned",
+        "hide-banned-in-pioneer": legalities.get("pioneer") == "banned",
+        "hide-banned-in-standard": legalities.get("standard") == "banned",
+        "hide-banned-in-vintage": legalities.get("vintage") == "banned",
     }
 
 

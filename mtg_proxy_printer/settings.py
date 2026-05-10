@@ -166,6 +166,7 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-digital-cards": "True",
     "hide-reversible-cards": "False",
     "hide-art-series-cards": "False",
+    "hide-universes-beyond-cards": "False",
     "hidden-sets": "",
 }
 

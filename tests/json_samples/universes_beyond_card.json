@@ -1,0 +1,140 @@
+{
+  "object": "card",
+  "id": "815261f8-daaa-4d76-86d9-d2801eb3f1f7",
+  "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+  "multiverse_ids": [],
+  "tcgplayer_id": 679224,
+  "cardmarket_id": 873965,
+  "name": "Forest",
+  "lang": "en",
+  "released_at": "2026-03-06",
+  "uri": "https://api.scryfall.com/cards/815261f8-daaa-4d76-86d9-d2801eb3f1f7",
+  "scryfall_uri": "https://scryfall.com/card/tmt/309/forest?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/8/1/815261f8-daaa-4d76-86d9-d2801eb3f1f7.jpg?1771345147",
+    "normal": "https://cards.scryfall.io/normal/front/8/1/815261f8-daaa-4d76-86d9-d2801eb3f1f7.jpg?1771345147",
+    "large": "https://cards.scryfall.io/large/front/8/1/815261f8-daaa-4d76-86d9-d2801eb3f1f7.jpg?1771345147",
+    "png": "https://cards.scryfall.io/png/front/8/1/815261f8-daaa-4d76-86d9-d2801eb3f1f7.png?1771345147",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/8/1/815261f8-daaa-4d76-86d9-d2801eb3f1f7.jpg?1771345147",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/8/1/815261f8-daaa-4d76-86d9-d2801eb3f1f7.jpg?1771345147"
+  },
+  "mana_cost": "",
+  "cmc": 0.0,
+  "type_line": "Basic Land — Forest",
+  "oracle_text": "({T}: Add {G}.)",
+  "colors": [],
+  "color_identity": [
+    "G"
+  ],
+  "keywords": [],
+  "produced_mana": [
+    "G"
+  ],
+  "all_parts": [
+    {
+      "object": "related_card",
+      "id": "3b84ec1e-ccce-4b8b-9302-b26f84cfa469",
+      "component": "combo_piece",
+      "name": "Forest",
+      "type_line": "Basic Land — Forest",
+      "uri": "https://api.scryfall.com/cards/3b84ec1e-ccce-4b8b-9302-b26f84cfa469"
+    },
+    {
+      "object": "related_card",
+      "id": "aed8ae06-ae54-4a16-8830-6547164ce6ae",
+      "component": "combo_piece",
+      "name": "Gilt-Leaf Alchemist",
+      "type_line": "Creature — Elf Druid",
+      "uri": "https://api.scryfall.com/cards/aed8ae06-ae54-4a16-8830-6547164ce6ae"
+    }
+  ],
+  "legalities": {
+    "standard": "legal",
+    "future": "legal",
+    "historic": "legal",
+    "timeless": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "oathbreaker": "legal",
+    "standardbrawl": "legal",
+    "brawl": "legal",
+    "alchemy": "legal",
+    "paupercommander": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal",
+    "predh": "legal",
+    "tlr": "legal"
+  },
+  "games": [
+    "paper",
+    "arena",
+    "mtgo"
+  ],
+  "reserved": false,
+  "game_changer": false,
+  "foil": true,
+  "nonfoil": false,
+  "finishes": [
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "03990f52-1d8a-4ce8-828a-c9bf633f0de6",
+  "set": "tmt",
+  "set_name": "Teenage Mutant Ninja Turtles",
+  "set_type": "expansion",
+  "set_uri": "https://api.scryfall.com/sets/03990f52-1d8a-4ce8-828a-c9bf633f0de6",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Atmt&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/tmt?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/815261f8-daaa-4d76-86d9-d2801eb3f1f7/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Ab34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6&unique=prints",
+  "collector_number": "309",
+  "digital": false,
+  "rarity": "common",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "BEMOCS",
+  "artist_ids": [
+    "5b5115bb-b57d-4a9c-8399-494b3f4cd9c7"
+  ],
+  "illustration_id": "ac4e650b-a2fc-447e-afa5-9df8baae5fd6",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": true,
+  "textless": false,
+  "booster": false,
+  "story_spotlight": false,
+  "promo_types": [
+    "surgefoil",
+    "universesbeyond"
+  ],
+  "prices": {
+    "usd": null,
+    "usd_foil": "1.01",
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": "0.96",
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DForest",
+    "tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DForest",
+    "edhrec": "https://edhrec.com/route/?cc=Forest"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F679224%3Fpage%3D1",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=873965&referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Forest&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

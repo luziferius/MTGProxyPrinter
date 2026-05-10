@@ -10,6 +10,7 @@
   - The app uses these to calculate the best matching printing whenever it has to choose among multiple choices.
   - Negative values will rank matching printings lower than plain, regular printings, so they will only be chosen,
     if there is no alternative available.
+- Printing filter for Universes Beyond cards
 
 ## Changed features
 
@@ -847,7 +848,7 @@ capabilities.
   Uses image usage information already available since version 0.9.0
 - Renamed the “vertical” user interface variant in the settings. It is now referred to as “Columnar”,
   because it shows the main window content in four columns.
-- Improved sorting behaviour in the image cache cleanup wizard, when sorting the image table by collector number.
+- Improved sorting behavior in the image cache cleanup wizard, when sorting the image table by collector number.
 - Re-grouped and moved some settings in the settings window, resulting in a more logical options grouping
 - It is now possible to open the log directory from the debug settings tab, to ease log file access,
   when the option to write log files to disk is enabled. 
@@ -1294,7 +1295,7 @@ capabilities.
 
 # Version 0.2.1 (2020-12-02) <a name="v0_2_1"></a>
 
-This version incorporates major performance optimisations.
+This version incorporates major performance optimizations.
 
 ## Important notice
 
