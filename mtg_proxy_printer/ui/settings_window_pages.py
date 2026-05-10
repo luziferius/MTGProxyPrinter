@@ -28,7 +28,7 @@ from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QLin
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.async_tasks.card_info_downloader import FileDownloadTask, FileStreamTask, DatabaseImportTask
-from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater, PrintingPreferenceUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
@@ -480,7 +480,9 @@ class HidePrintingsPage(Page):
     def _create_scryfall_query_button(self, query_str: str) -> QPushButton:
         button = QPushButton(QIcon.fromTheme("globe"), "", self)
         button.clicked.connect(partial(self.view_query_on_scryfall, query_str))
-        button.setToolTip(self.tr("View cards hidden by this filter on the Scryfall website.", "Tooltip text on a button next to a printing filter"))
+        button.setToolTip(self.tr(
+            "View cards hidden by this filter on the Scryfall website.",
+            "Tooltip text on a button next to a printing filter"))
         return button
 
     @staticmethod
@@ -500,7 +502,9 @@ class HidePrintingsPage(Page):
         ui = self.ui
         self.model.save_settings(mtg_proxy_printer.settings.settings)
         section["hidden-sets"] = ui.set_filter_settings.toPlainText()
+        weights = self.model.get_new_preference_weights()
         self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
+        self.request_run_async_task.emit(PrintingPreferenceUpdater(self.card_db, weights))
 
     def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]

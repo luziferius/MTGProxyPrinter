@@ -373,8 +373,16 @@ class PrintingFilterModel(QAbstractTableModel):
         for row, item in enumerate(self.items):
             if item.is_hidden[CheckStateRole] is not None:
                 section.set_check_state(item._settings_key, item.is_hidden[CheckStateRole])
-            # TODO: Save the preference weights to the card database
         logger.debug("Done.")
+
+    def get_new_preference_weights(self) -> set[tuple[str, int]]:
+        result = set(
+            (item._settings_key, weight)
+            for item in self.items
+            if (weight := item.preference_weights[EditRole]) is not None
+        )
+        return result
+
 
     def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]
