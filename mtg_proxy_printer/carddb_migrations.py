@@ -893,6 +893,20 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
             english_name, preference_score
           FROM AllPrintings
           WHERE is_visible IS TRUE"""),
+        dedent("""\
+        CREATE TRIGGER "Update Printing.preference_score on PrintingFilter.printing_preference_weight update"
+          AFTER UPDATE OF printing_preference_weight ON PrintingFilters
+          FOR EACH ROW
+          WHEN NEW.printing_preference_weight <> OLD.printing_preference_weight
+          BEGIN
+            UPDATE Printing
+              SET preference_score = preference_score + NEW.printing_preference_weight - OLD.printing_preference_weight
+              WHERE Printing.printing_id IN (
+                SELECT FilterAppliesTo.printing_id FROM PrintingFilters
+                  INNER JOIN FilterAppliesTo USING (filter_id)
+                    WHERE PrintingFilters.filter_id = NEW.filter_id
+                );
+        END""")
     ], disable_foreign_keys=True),
 }
 
