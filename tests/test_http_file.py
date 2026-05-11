@@ -236,7 +236,7 @@ def test_content_encoding_without_file(http_file: MeteredSeekableHTTPFile):
 
 
 def test_content_encoding_with_file(http_file: MeteredSeekableHTTPFile):
-    expected = http_file.file.info().get("Content-Encoding")
+    expected = http_file.file.headers.get("Content-Encoding")
     assert_that(http_file.content_encoding(), is_(equal_to(expected)))
 
 

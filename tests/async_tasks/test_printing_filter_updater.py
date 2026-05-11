@@ -18,7 +18,6 @@ import unittest.mock
 
 import pytest
 from hamcrest import *
-from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.settings
@@ -109,8 +108,8 @@ def generate_test_cases_for_test_set_code_filters_updates_value_in_database():
     "test_case, filter_value, expected_set_is_hidden",
     generate_test_cases_for_test_set_code_filters_updates_value_in_database())
 def test_set_code_filters_updates_value_in_database(
-        qtbot: QtBot, card_db: CardDatabase, test_case: TestCaseData, filter_value: str, expected_set_is_hidden: bool):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict)
+        card_db: CardDatabase, test_case: TestCaseData, filter_value: str, expected_set_is_hidden: bool):
+    fill_card_database_with_json_card(card_db, test_case.json_dict)
     expected_card_is_visible = not expected_set_is_hidden
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = {"hidden-sets": filter_value}

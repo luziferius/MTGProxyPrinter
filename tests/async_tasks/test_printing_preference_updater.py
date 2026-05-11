@@ -21,7 +21,7 @@ from tests.helpers import fill_card_database_with_json_cards
 
 
 def test_update_only_updates_relevant_printing_preferences(card_db: CardDatabase):
-    fill_card_database_with_json_cards(None, card_db, [
+    fill_card_database_with_json_cards(card_db, [
         "universes_beyond_card",
         "spanish_basic_Forest",
         "english_basic_Forest",

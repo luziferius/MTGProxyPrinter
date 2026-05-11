@@ -53,10 +53,11 @@ def _create_custom_card(size: CardSizes) -> bytes:
 REGULAR_CUSTOM_CARD = _create_custom_card(CardSizes.REGULAR)
 
 
-def _populate_card_db_and_create_model(qtbot, document: Document) -> CardListModel:
+def _populate_card_db_and_create_model(document: Document) -> CardListModel:
     fill_card_database_with_json_cards(
-        qtbot, document.card_db,
-        ["oversized_card", "regular_english_card", "english_basic_Forest", "english_basic_Wastes", "english_basic_Snow_Forest"])
+        document.card_db,
+       ["oversized_card", "regular_english_card", "english_basic_Forest",
+        "english_basic_Wastes", "english_basic_Snow_Forest"])
     model = CardListModel(document)
     return model
 

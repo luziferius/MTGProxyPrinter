@@ -85,8 +85,8 @@ def image_db(qtbot, tmp_path: Path) -> ImageDatabase:
 
 
 @pytest.fixture
-def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
-    fill_card_database_with_json_cards(qtbot, card_db, [
+def document(card_db: CardDatabase, image_db: ImageDatabase) -> Document:
+    fill_card_database_with_json_cards(card_db, [
         "regular_english_card", "oversized_card", "english_double_faced_card"])
     return Document(card_db, image_db)
 

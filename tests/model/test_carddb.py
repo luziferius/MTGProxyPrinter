@@ -24,7 +24,6 @@ from unittest.mock import MagicMock
 
 from hamcrest import *
 import pytest
-from pytestqt.qtbot import QtBot
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY
@@ -45,8 +44,8 @@ def test_has_data_on_empty_database_returns_false(card_db: CardDatabase):
     assert_that(card_db.has_data(), is_(False))
 
 
-def test_has_data_on_filled_database_returns_true(qtbot: QtBot, card_db: CardDatabase):
-    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
+def test_has_data_on_filled_database_returns_true(card_db: CardDatabase):
+    fill_card_database_with_json_card(card_db, "regular_english_card")
     assert_that(card_db.has_data(), is_(True))
 
 
@@ -57,17 +56,14 @@ def test_get_all_languages_without_data(card_db: CardDatabase):
     )
 
 
-def test_get_all_languages_with_data(qtbot: QtBot, card_db: CardDatabase):
-    fill_card_database_with_json_cards(
-        qtbot, card_db,
-        [
-            "english_Coercion",
-            "english_Duress",
-            "german_Coercion_with_faulty_translation",
-            "spanish_basic_Forest",
-            "german_Duress",
-        ],
-    )
+def test_get_all_languages_with_data(card_db: CardDatabase):
+    fill_card_database_with_json_cards(card_db, [
+        "english_Coercion",
+        "english_Duress",
+        "german_Coercion_with_faulty_translation",
+        "spanish_basic_Forest",
+        "german_Duress",
+    ])
     assert_that(
         card_db.get_all_languages(),
         contains_exactly("de", "en", "es")
@@ -87,17 +83,14 @@ def test_get_all_languages_with_data(qtbot: QtBot, card_db: CardDatabase):
     ("Itlimoc, Cradle of the Sun", "en", "", ["xln"]),
 ])
 def test_find_sets_matching(
-        qtbot: QtBot, card_db: CardDatabase, card_name: str, language: str, prefix: str | None,
+        card_db: CardDatabase, card_name: str, language: str, prefix: str | None,
         expected_codes: list[str]):
-    fill_card_database_with_json_cards(
-        qtbot, card_db,
-        [
-            "english_basic_Forest",
-            "english_basic_Forest_2",
-            "spanish_basic_Forest",
-            "english_double_faced_card",
-        ],
-    )
+    fill_card_database_with_json_cards(card_db, [
+        "english_basic_Forest",
+        "english_basic_Forest_2",
+        "spanish_basic_Forest",
+        "english_double_faced_card",
+    ])
     found_set_codes = [set_.code for set_ in card_db.find_sets_matching(card_name, language, prefix)]
     assert_that(found_set_codes, contains_inanyorder(*expected_codes))
 
@@ -112,22 +105,19 @@ def test_find_sets_matching(
     ("es", None, ["Bosque"]),  # noqa  # A Spanish Forest
     ("Nonexisting language", None, []),
 ])
-def test_get_card_names(qtbot: QtBot, card_db: CardDatabase, language: str, prefix: str | None, expected_names: list[str]):
-    fill_card_database_with_json_cards(
-        qtbot, card_db,
-        [
-            "english_Coercion",
-            "english_Duress",
-            "english_basic_Forest",
-            "english_basic_Forest_2",
-            "english_card_Future_Sight_MH1",
-            "english_card_Future_Sight_MTGO_promo",
-            "german_Coercion_with_faulty_translation",
-            "german_basic_Forest",
-            "spanish_basic_Forest",
-            "german_Duress",
-        ],
-    )
+def test_get_card_names(card_db: CardDatabase, language: str, prefix: str | None, expected_names: list[str]):
+    fill_card_database_with_json_cards(card_db, [
+        "english_Coercion",
+        "english_Duress",
+        "english_basic_Forest",
+        "english_basic_Forest_2",
+        "english_card_Future_Sight_MH1",
+        "english_card_Future_Sight_MTGO_promo",
+        "german_Coercion_with_faulty_translation",
+        "german_basic_Forest",
+        "spanish_basic_Forest",
+        "german_Duress",
+    ])
     assert_that(
         card_db.get_card_names(language, prefix),
         contains_inanyorder(*expected_names)
@@ -143,25 +133,22 @@ def test_get_card_names(qtbot: QtBot, card_db: CardDatabase, language: str, pref
     ("Mentor Corrosivo", "pt"),
     ("Mentor corrosivo", "es"),
 ])
-def test_guess_language_from_name(qtbot: QtBot, card_db: CardDatabase, name: str, expected: str | None):
-    fill_card_database_with_json_cards(
-        qtbot, card_db,
-        [
-            "english_Coercion",
-            "english_Duress",
-            "english_basic_Forest",
-            "english_basic_Forest_2",
-            "english_card_Future_Sight_MH1",
-            "english_card_Future_Sight_MTGO_promo",
-            "german_Coercion_with_faulty_translation",
-            "german_basic_Forest",
-            "spanish_basic_Forest",
-            "german_Duress",
-            "korean_Forest_with_placeholder_name",
-            "portuguese_Corrosive_Mentor",
-            "spanish_Corrosive_Mentor",
-        ],
-    )
+def test_guess_language_from_name(card_db: CardDatabase, name: str, expected: str | None):
+    fill_card_database_with_json_cards(card_db, [
+        "english_Coercion",
+        "english_Duress",
+        "english_basic_Forest",
+        "english_basic_Forest_2",
+        "english_card_Future_Sight_MH1",
+        "english_card_Future_Sight_MTGO_promo",
+        "german_Coercion_with_faulty_translation",
+        "german_basic_Forest",
+        "spanish_basic_Forest",
+        "german_Duress",
+        "korean_Forest_with_placeholder_name",
+        "portuguese_Corrosive_Mentor",
+        "spanish_Corrosive_Mentor",
+    ])
     assert_that(
         card_db.guess_language_from_name(name),
         is_(equal_to(expected))
@@ -176,22 +163,19 @@ def test_guess_language_from_name(qtbot: QtBot, card_db: CardDatabase, name: str
     ("", False),
     ("Unknown", False),
 ])
-def test_is_known_language(qtbot: QtBot, card_db: CardDatabase, language: str, expected: bool):
-    fill_card_database_with_json_cards(
-        qtbot, card_db,
-        [
-            "english_Coercion",
-            "english_Duress",
-            "english_basic_Forest",
-            "english_basic_Forest_2",
-            "english_card_Future_Sight_MH1",
-            "english_card_Future_Sight_MTGO_promo",
-            "german_Coercion_with_faulty_translation",
-            "german_basic_Forest",
-            "spanish_basic_Forest",
-            "german_Duress",
-        ],
-    )
+def test_is_known_language(card_db: CardDatabase, language: str, expected: bool):
+    fill_card_database_with_json_cards(card_db, [
+        "english_Coercion",
+        "english_Duress",
+        "english_basic_Forest",
+        "english_basic_Forest_2",
+        "english_card_Future_Sight_MH1",
+        "english_card_Future_Sight_MTGO_promo",
+        "german_Coercion_with_faulty_translation",
+        "german_basic_Forest",
+        "spanish_basic_Forest",
+        "german_Duress",
+    ])
     assert_that(
         card_db.is_known_language(language),
         is_(equal_to(expected))
@@ -199,35 +183,32 @@ def test_is_known_language(qtbot: QtBot, card_db: CardDatabase, language: str, e
 
 
 @pytest.fixture
-def card_db_with_cards(qtbot: QtBot, card_db: CardDatabase):
-    fill_card_database_with_json_cards(
-        qtbot, card_db,
-        [
-            "english_Coercion",
-            "english_Duress",
-            "english_basic_Forest",
-            "english_basic_Forest_2",
-            "english_card_Future_Sight_MH1",
-            "english_card_Future_Sight_MTGO_promo",
-            "german_Coercion_with_faulty_translation",
-            "german_basic_Forest",
-            "spanish_basic_Forest",
-            "german_Duress",
-            "german_Duress_2",
-            "english_Ironroot_Treefolk_1",
-            "english_Ironroot_Treefolk_2",
-            "english_Ironroot_Treefolk_3",
-            "german_Ironroot_Treefolk_1",
-            "german_Ironroot_Treefolk_2",
-            "german_Ironroot_Treefolk_3",
-            "oversized_card",
-            "regular_english_card",
-            "english_double_faced_card",
-            "english_double_faced_art_series_card",
-            "Flowerfoot_Swordmaster_card",
-            "Flowerfoot_Swordmaster_token",
-        ],
-    )
+def card_db_with_cards(card_db: CardDatabase):
+    fill_card_database_with_json_cards(card_db, [
+        "english_Coercion",
+        "english_Duress",
+        "english_basic_Forest",
+        "english_basic_Forest_2",
+        "english_card_Future_Sight_MH1",
+        "english_card_Future_Sight_MTGO_promo",
+        "german_Coercion_with_faulty_translation",
+        "german_basic_Forest",
+        "spanish_basic_Forest",
+        "german_Duress",
+        "german_Duress_2",
+        "english_Ironroot_Treefolk_1",
+        "english_Ironroot_Treefolk_2",
+        "english_Ironroot_Treefolk_3",
+        "german_Ironroot_Treefolk_1",
+        "german_Ironroot_Treefolk_2",
+        "german_Ironroot_Treefolk_3",
+        "oversized_card",
+        "regular_english_card",
+        "english_double_faced_card",
+        "english_double_faced_art_series_card",
+        "Flowerfoot_Swordmaster_card",
+        "Flowerfoot_Swordmaster_token",
+    ])
     return card_db
 
 
@@ -305,23 +286,20 @@ def test_translate_card_name(
     (3, [0, 1, 2]),
     (100, [0, 1, 2]),
 ])
-def test_cards_used_less_often_then(qtbot: QtBot, card_db: CardDatabase, usage_count: int, expected: list[int]):
+def test_cards_used_less_often_then(card_db: CardDatabase, usage_count: int, expected: list[int]):
     # Setup
-    fill_card_database_with_json_cards(
-        qtbot, card_db,
-        [
-            "english_Coercion",
-            "english_Duress",
-            "english_basic_Forest",
-            "english_basic_Forest_2",
-            "english_card_Future_Sight_MH1",
-            "english_card_Future_Sight_MTGO_promo",
-            "german_Coercion_with_faulty_translation",
-            "german_basic_Forest",
-            "spanish_basic_Forest",
-            "german_Duress",
-        ],
-    )
+    fill_card_database_with_json_cards(card_db, [
+        "english_Coercion",
+        "english_Duress",
+        "english_basic_Forest",
+        "english_basic_Forest_2",
+        "english_card_Future_Sight_MH1",
+        "english_card_Future_Sight_MTGO_promo",
+        "german_Coercion_with_faulty_translation",
+        "german_basic_Forest",
+        "spanish_basic_Forest",
+        "german_Duress",
+    ])
     document = Document(card_db, MagicMock())
     document.apply(ActionAddCard(
         _get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1)
@@ -356,11 +334,11 @@ def _get_card_from_model(card_db: CardDatabase, scryfall_id: str, is_front: bool
     ("regular_english_card", "0000579f-7b35-4ed3-b44c-db2a538066fe", False),
     ("oversized_card", "650722b4-d72b-4745-a1a5-00a34836282b", True)
 ])
-def test_card_is_oversized(qtbot: QtBot, card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
+def test_card_is_oversized(card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
     """
     Tests that all methods creating Card instances correctly set is_oversized attribute.
     """
-    fill_card_database_with_json_card(qtbot, card_db, json_name)
+    fill_card_database_with_json_card(card_db, json_name)
     assert_that(
         card_db.get_card_with_scryfall_id(scryfall_id, True),
         has_property("is_oversized", is_(expected))
@@ -519,8 +497,8 @@ def test_get_card_with_scryfall_id(
     ([(1, "7ef83f4c-d3ff-4905-a16d-f2bae673a5b2"), (2, "e2ef9b74-481b-424b-8e33-f0b910f66370")], 1, CardIdentificationData(name="Forest")),
 ])
 def test_get_cards_from_data_order_by_print_count_enabled(
-        qtbot: QtBot, card_db: CardDatabase, language: str | None, card_count_data, expected_index: int, identification_data: CardIdentificationData):
-    fill_card_database_with_json_cards(qtbot, card_db, ["english_basic_Forest", "english_basic_Forest_2"])
+        card_db: CardDatabase, language: str | None, card_count_data, expected_index: int, identification_data: CardIdentificationData):
+    fill_card_database_with_json_cards(card_db, ["english_basic_Forest", "english_basic_Forest_2"])
     card_db.db.executemany("""\
     UPDATE PrintingFace SET  -- _update_image_usage()
         usage_count = ?
@@ -547,8 +525,8 @@ def test_get_cards_from_data_order_by_print_count_enabled(
 
 
 def test_get_replacement_card(
-        qtbot: QtBot, card_db: CardDatabase):
-    fill_card_database_with_json_cards(qtbot, card_db, ["english_basic_Forest", "german_basic_Forest"])
+        card_db: CardDatabase):
+    fill_card_database_with_json_cards(card_db, ["english_basic_Forest", "german_basic_Forest"])
     card_db.db.executemany(
         textwrap.dedent("""\
             INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
@@ -646,15 +624,15 @@ def test_allow_updating_card_data_on_empty_database_returns_true(card_db: CardDa
     assert_that(card_db.allow_updating_card_data(), is_(True))
 
 
-def test_allow_updating_card_data_on_freshly_populated_database_returns_false(qtbot: QtBot, card_db: CardDatabase):
-    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
+def test_allow_updating_card_data_on_freshly_populated_database_returns_false(card_db: CardDatabase):
+    fill_card_database_with_json_card(card_db, "regular_english_card")
     assert_that(card_db.allow_updating_card_data(), is_(False))
 
 
 @pytest.mark.parametrize("delta_days", [-2, -1, 0, 1, 2])
 def test_allow_updating_card_data_on_stale_populated_database_returns_true(
-        qtbot: QtBot, card_db: CardDatabase, delta_days: int):
-    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
+        card_db: CardDatabase, delta_days: int):
+    fill_card_database_with_json_card(card_db, "regular_english_card")
     today = datetime.datetime.today()
     now = today + MINIMUM_REFRESH_DELAY + datetime.timedelta(delta_days)
     fromtimestamp = datetime.datetime.fromtimestamp
@@ -668,8 +646,8 @@ def test_allow_updating_card_data_on_stale_populated_database_returns_true(
         )
 
 
-def test_is_removed_printing_with_removed_printing_returns_true(qtbot: QtBot, card_db: CardDatabase):
-    fill_card_database_with_json_card(qtbot, card_db, "missing_image_double_faced_card")
+def test_is_removed_printing_with_removed_printing_returns_true(card_db: CardDatabase):
+    fill_card_database_with_json_card(card_db, "missing_image_double_faced_card")
     assert_that(
         card_db.is_removed_printing("b120e3c2-21b1-43e3-b685-9cf62bd7aa07"),
         is_(True)
@@ -678,11 +656,8 @@ def test_is_removed_printing_with_removed_printing_returns_true(qtbot: QtBot, ca
 
 @pytest.mark.parametrize("filter_value", [True, False])
 def test_is_removed_printing_with_hidden_or_visible_printing_returns_false(
-        qtbot: QtBot, card_db: CardDatabase, filter_value: bool):
-    fill_card_database_with_json_card(
-        qtbot, card_db,
-        "oversized_card",
-        {"hide-oversized-cards": str(filter_value)})
+        card_db: CardDatabase, filter_value: bool):
+    fill_card_database_with_json_card(card_db, "oversized_card", {"hide-oversized-cards": str(filter_value)})
     assert_that(
         card_db.is_removed_printing("650722b4-d72b-4745-a1a5-00a34836282b"),
         is_(False)
@@ -695,9 +670,9 @@ def test_is_removed_printing_with_hidden_or_visible_printing_returns_false(
     (["missing_image_double_faced_card", "english_double_faced_card_2"], "any", CardIdentificationData(scryfall_id="b120e3c2-21b1-43e3-b685-9cf62bd7aa07", is_front=True), "d9131fc3-018a-4975-8795-47be3956160d"),
 ])
 def test_get_replacement_card_for_unknown_printing(
-        qtbot: QtBot, card_db: CardDatabase, cards_to_import, filter_name: str, card_data: CardIdentificationData,
+        card_db: CardDatabase, cards_to_import, filter_name: str, card_data: CardIdentificationData,
         expected_replacement: UUID, order_printings: bool):
-    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {filter_name: "True"})
+    fill_card_database_with_json_cards(card_db, cards_to_import, {filter_name: "True"})
     assert_that(
         card_db.db.execute("SELECT count(scryfall_id) FROM RemovedPrintings").fetchone()[0],
         is_(greater_than(0)), "Test setup failed"
@@ -718,8 +693,8 @@ def test_get_replacement_card_for_unknown_printing(
     (["german_Back_to_Basics"], "hide-cards-without-images", "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", False),
 ])
 def test_is_removed_printing(
-        qtbot: QtBot, card_db: CardDatabase, cards_to_import, filter_name: str, printing: str, expected: bool):
-    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {filter_name: "True"})
+        card_db: CardDatabase, cards_to_import, filter_name: str, printing: str, expected: bool):
+    fill_card_database_with_json_cards(card_db, cards_to_import, {filter_name: "True"})
     assert_that(
         card_db.is_removed_printing(printing),
         is_(expected)
@@ -734,7 +709,7 @@ def test_is_removed_printing(
     (True, True, ["b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6", "05d24b0c-904a-46b6-b42a-96a4d91a0dd4", "5f0d3be8-e63e-4ade-ae58-6b0c14f2ce6d"]),
 ])
 def test_get_basic_land_oracle_ids(
-        qtbot: QtBot, card_db: CardDatabase,
+        card_db: CardDatabase,
         include_wastes: bool, include_snow_basics: bool, expected_oracle_ids: list[str]):
     cards_to_load = [
         # Basic lands
@@ -742,7 +717,7 @@ def test_get_basic_land_oracle_ids(
         # Not basic lands, even if one matches by the English name
         "basic_land_art_series_card", "regular_english_card",
     ]
-    fill_card_database_with_json_cards(qtbot, card_db, cards_to_load)
+    fill_card_database_with_json_cards(card_db, cards_to_load)
     assert_that(
         card_db.get_basic_land_oracle_ids(include_wastes, include_snow_basics),
         contains_inanyorder(*expected_oracle_ids)
@@ -772,28 +747,27 @@ def test_get_basic_land_oracle_ids(
     ("0cbf06f5-d1c7-474c-8f09-72f5ad0c8120", ["Undercity", "The Initiative"]),  # Explore the Underdark
 
 ])
-def test_find_related_printings(qtbot: QtBot, card_db: CardDatabase, source_id: str, expected_cards_names: list[str]):
-    fill_card_database_with_json_cards(
-        qtbot, card_db, [
-            "The_Underworld_Cookbook",
-            "Food_Token",
-            "Asmoranomardicadaistinaculdacar",
-            "Bake_into_a_Pie",
-            "Asmoranomardicadaistinaculdacar_2",
-            "Food_Token_2",
-            # The Ring emblem and two cards having "The Ring tempts you"
-            "The_Ring",
-            "Samwise_the_Stouthearted",
-            "Elrond_Lord_of_Rivendell",
-            # A Dungeon and two cards having "Venture into the dungeon"
-            "Dungeon_of_the_Mad_Mage",
-            "Bar_the_Gate",
-            "Zombie_Ogre",
-            # The "Undercity" dungeon and two cards having "Take the initiative."
-            "Undercity",
-            "Explore_the_Underdark",
-            "Trailblazers_Torch",
-        ])
+def test_find_related_printings(card_db: CardDatabase, source_id: str, expected_cards_names: list[str]):
+    fill_card_database_with_json_cards(card_db, [
+        "The_Underworld_Cookbook",
+        "Food_Token",
+        "Asmoranomardicadaistinaculdacar",
+        "Bake_into_a_Pie",
+        "Asmoranomardicadaistinaculdacar_2",
+        "Food_Token_2",
+        # The Ring emblem and two cards having "The Ring tempts you"
+        "The_Ring",
+        "Samwise_the_Stouthearted",
+        "Elrond_Lord_of_Rivendell",
+        # A Dungeon and two cards having "Venture into the dungeon"
+        "Dungeon_of_the_Mad_Mage",
+        "Bar_the_Gate",
+        "Zombie_Ogre",
+        # The "Undercity" dungeon and two cards having "Take the initiative."
+        "Undercity",
+        "Explore_the_Underdark",
+        "Trailblazers_Torch",
+    ])
     source_card = card_db.get_card_with_scryfall_id(source_id, True)
     assert_that(source_card, is_(not_none()), "Setup failed")
     related = card_db.find_related_cards(source_card)
@@ -805,9 +779,9 @@ def test_find_related_printings(qtbot: QtBot, card_db: CardDatabase, source_id: 
     )
 
 
-def test_get_all_cards_from_image_cache(qtbot: QtBot, card_db: CardDatabase):
-    fill_card_database_with_json_cards(
-        qtbot, card_db, ["regular_english_card", "oversized_card"], {"hide-oversized-cards": str(True)})
+def test_get_all_cards_from_image_cache(card_db: CardDatabase):
+    fill_card_database_with_json_cards(card_db, ["regular_english_card", "oversized_card"],
+                                       {"hide-oversized-cards": str(True)})
     cache_content = [
         CacheContent("650722b4-d72b-4745-a1a5-00a34836282b", True, ImageQuality.high_resolution, Path()),  # Atraxa
         CacheContent("0000579f-7b35-4ed3-b44c-db2a538066fe", True, ImageQuality.high_resolution, Path()),  # Fury Sliver
@@ -832,8 +806,8 @@ def test_get_all_cards_from_image_cache(qtbot: QtBot, card_db: CardDatabase):
     ("english_double_faced_card", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),
 
 ])
-def test_is_dfc(qtbot: QtBot, card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
-    fill_card_database_with_json_card(qtbot, card_db, json_name)
+def test_is_dfc(card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
+    fill_card_database_with_json_card(card_db, json_name)
     assert_that(
         card_db.is_dfc(scryfall_id),
         is_(equal_to(expected))
@@ -857,8 +831,8 @@ def test_is_dfc(qtbot: QtBot, card_db: CardDatabase, json_name: str, scryfall_id
     (CardIdentificationData(scryfall_id="97b84e7d-258f-46dc-baef-4b1eb6f28d4d", is_front=True), True, ["de", "en"]),
 ])
 def test_get_available_languages_for_card(
-        qtbot: QtBot, card_db: CardDatabase, card_data: CardIdentificationData, filter_enabled: bool, expected: list[str]):
-    fill_card_database_with_json_cards(qtbot, card_db, [
+        card_db: CardDatabase, card_data: CardIdentificationData, filter_enabled: bool, expected: list[str]):
+    fill_card_database_with_json_cards(card_db, [
         "english_basic_Forest", "german_basic_Forest", "spanish_basic_Forest",
         "german_Coercion_with_faulty_translation", "german_Duress", "english_Duress",
         "english_Back_to_Basics", "german_Back_to_Basics",
@@ -874,10 +848,9 @@ def test_get_available_languages_for_card(
     )
 
 
-def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(qtbot: QtBot, card_db: CardDatabase):
+def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(card_db: CardDatabase):
     fill_card_database_with_json_cards(
-        qtbot, card_db, ["english_basic_Forest_2", "English_basic_Forest_newest_and_low_res"]
-    )
+        card_db, ["english_basic_Forest_2", "English_basic_Forest_newest_and_low_res"])
     assert_that(
         card_db.get_cards_from_data(CardIdentificationData(name="Forest")),
         contains_exactly(
@@ -941,9 +914,9 @@ def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(q
     
 ])
 def test_get_available_sets_for_card(
-        qtbot: QtBot, card_db: CardDatabase,
+        card_db: CardDatabase,
         jsons: list[str], scryfall_id: UUID, filter_enabled: bool, expected: list[MTGSet]):
-    fill_card_database_with_json_cards(qtbot, card_db, jsons)
+    fill_card_database_with_json_cards(card_db, jsons)
     card = card_db.get_card_with_scryfall_id(scryfall_id, True)
     if filter_enabled:
         filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["card-filter"]}
@@ -981,9 +954,9 @@ def test_get_available_sets_for_card(
      ["131"]),
 ])
 def test_get_available_collector_numbers_for_card_in_set(
-        qtbot: QtBot, card_db: CardDatabase,
+        card_db: CardDatabase,
         jsons: list[str], scryfall_id: UUID, filter_enabled: bool, expected: list[str]):
-    fill_card_database_with_json_cards(qtbot, card_db, jsons)
+    fill_card_database_with_json_cards(card_db, jsons)
     card = card_db.get_card_with_scryfall_id(scryfall_id, True)
     assert_that(card, is_(not_none()), "Setup failed. Card not found")
     if filter_enabled:

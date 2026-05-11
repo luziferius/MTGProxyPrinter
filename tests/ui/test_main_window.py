@@ -50,7 +50,7 @@ def _create_task_receiver(main_window: MainWindow) -> AsyncTaskReceiver:
 
 @pytest.fixture(params=[Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, Ui_TabbedCentralWidget])
 def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Generator[MainWindow, None, None]:
-    fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
+    fill_card_database_with_json_cards(card_db, ["regular_english_card", "oversized_card"])
     with patch(
             "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",
             return_value=request.param), \

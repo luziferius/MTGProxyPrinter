@@ -25,6 +25,7 @@ from mtg_proxy_printer.units_and_sizes import CardSizes
 
 @pytest.fixture
 def blank_image(qtbot: QtBot) -> QPixmap:
+    _ = qtbot  # QPixmap needs an existing QApplication instance. This is not an unused parameter
     pixmap = QPixmap(CardSizes.REGULAR.as_qsize_px())
     pixmap.fill(QColorConstants.White)
     return pixmap

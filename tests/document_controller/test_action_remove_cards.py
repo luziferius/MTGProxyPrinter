@@ -22,7 +22,8 @@ from pytestqt.qtbot import QtBot
 from mtg_proxy_printer.model.document_page import CardContainer, PageType
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller import IllegalStateError, DocumentAction
-from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards, to_list_of_ranges
+from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards
+from mtg_proxy_printer.natsort import to_list_of_ranges
 
 from tests.helpers import create_card
 from .helpers import append_new_card_in_page, card_container_with

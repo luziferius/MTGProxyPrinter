@@ -364,8 +364,8 @@ def generate_test_cases_for_test_card_import():
 
 
 @pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
-def test_card_import(qtbot, card_db: CardDatabase, test_case: TestCaseData):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict)
+def test_card_import(card_db: CardDatabase, test_case: TestCaseData):
+    fill_card_database_with_json_card(card_db, test_case.json_dict)
     assert_visible_import(card_db, test_case)
 
 
@@ -406,8 +406,8 @@ def generate_test_cases_for_test_print_hiding_filters():
 @pytest.mark.parametrize("filter_enabled", [True, False])
 @pytest.mark.parametrize("test_case, filter_name", generate_test_cases_for_test_print_hiding_filters())
 def test_boolean_print_hiding_filters(
-        qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_enabled: bool):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: str(filter_enabled)})
+        card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_enabled: bool):
+    fill_card_database_with_json_card(card_db, test_case.json_dict, {filter_name: str(filter_enabled)})
     if filter_enabled:
         assert_hidden_import(card_db, test_case)
     else:
@@ -425,9 +425,9 @@ def generate_test_cases_for_test_set_code_filters():
 
 @pytest.mark.parametrize("test_case, filter_value, expected_result", generate_test_cases_for_test_set_code_filters())
 def test_set_code_filters(
-        qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_value: str,
+        card_db: CardDatabase, test_case: TestCaseData, filter_value: str,
         expected_result: Callable[[CardDatabase, TestCaseData], None]):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {"hidden-sets": filter_value})
+    fill_card_database_with_json_card(card_db, test_case.json_dict, {"hidden-sets": filter_value})
     expected_result(card_db, test_case)
 
 
@@ -436,8 +436,8 @@ def test_set_code_filters(
     (TestCaseData("funny_legal_card"), "hide-funny-cards"),  # Black-bordered, eternal-legal "Aerialephant" from Unfinity
 ])
 def test_download_filters_does_not_affect_unexpected_cards(
-        qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: str(filter_setting)})
+        card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
+    fill_card_database_with_json_card(card_db, test_case.json_dict, {filter_name: str(filter_setting)})
     assert_visible_import(card_db, test_case)
 
 
@@ -445,17 +445,17 @@ def test_download_filters_does_not_affect_unexpected_cards(
     TestCaseData("missing_image_double_faced_card"),
     TestCaseData("double_faced_card_with_missing_back_images"),  # Crash discovered Oct 27th, 2022. The back face of this double faced card has no image_uris key
 ])
-def test_import_card_skips_import_of_card_with_missing_image(qtbot, card_db: CardDatabase, test_case: TestCaseData):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict)
-    assert_model_is_empty(card_db, test_case)
+def test_import_card_skips_import_of_card_with_missing_image(card_db: CardDatabase, test_case: TestCaseData):
+    fill_card_database_with_json_card(card_db, test_case.json_dict)
+    assert_model_is_empty(card_db)
 
 
-def test_two_imports_having_the_same_filtered_out_card_work(qtbot, card_db: CardDatabase):
+def test_two_imports_having_the_same_filtered_out_card_work(card_db: CardDatabase):
     case = TestCaseData("missing_image_double_faced_card")
-    fill_card_database_with_json_card(qtbot, card_db, case.json_dict)
-    assert_model_is_empty(card_db, case)
-    fill_card_database_with_json_card(qtbot, card_db, case.json_dict)
-    assert_model_is_empty(card_db, case)
+    fill_card_database_with_json_card(card_db, case.json_dict)
+    assert_model_is_empty(card_db)
+    fill_card_database_with_json_card(card_db, case.json_dict)
+    assert_model_is_empty(card_db)
 
 
 @pytest.mark.parametrize("filter_name, visible_value, hidden_value", [
@@ -463,13 +463,13 @@ def test_two_imports_having_the_same_filtered_out_card_work(qtbot, card_db: Card
     ("hidden-sets", "", "OC16"),
 ])
 def test_re_import_with_enabled_download_filter_removes_card(
-        qtbot, card_db: CardDatabase, filter_name: str, visible_value: str, hidden_value: str):
+        card_db: CardDatabase, filter_name: str, visible_value: str, hidden_value: str):
     test_case = TestCaseData("oversized_card")  # Oversized printing of "Atraxa, Praetors' Voice"
     # Pass 1: Populate the database and include the card. The card should be in the database afterward
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: visible_value})
+    fill_card_database_with_json_card(card_db, test_case.json_dict, {filter_name: visible_value})
     assert_visible_import(card_db, test_case)
     # Pass 2: Re-Populate the database, but exclude the card now.
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: hidden_value})
+    fill_card_database_with_json_card(card_db, test_case.json_dict, {filter_name: hidden_value})
     # The card should not be visible
     assert_hidden_import(card_db, test_case)
 
@@ -478,9 +478,9 @@ def test_re_import_with_enabled_download_filter_removes_card(
     "missing_image_double_faced_card",
 ])
 def test_removed_printings_table_populated_with_unacceptable_printing(
-        qtbot, card_db: CardDatabase, unacceptable_card: str):
+        card_db: CardDatabase, unacceptable_card: str):
     card = load_json(unacceptable_card)
-    fill_card_database_with_json_cards(qtbot, card_db, [card])
+    fill_card_database_with_json_cards(card_db, [card])
     db_result = card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings").fetchall()
     assert_that(db_result, has_length(1))
     assert_that(dict(db_result[0]), has_entries({
@@ -491,12 +491,12 @@ def test_removed_printings_table_populated_with_unacceptable_printing(
 
 
 def test_removed_printings_entry_removed_when_printing_becomes_acceptable(
-        qtbot, card_db: CardDatabase):
+        card_db: CardDatabase):
     original = load_json("regular_english_card")
     modified: CardDataType = original.copy()
     del modified["image_uris"]
     modified["image_status"] = "missing"
-    fill_card_database_with_json_cards(qtbot, card_db, [modified])
+    fill_card_database_with_json_cards(card_db, [modified])
     db_result = card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings").fetchall()
     assert_that(db_result, has_length(1), "Test setup failed")
     assert_that(dict(db_result[0]), has_entries({
@@ -504,7 +504,7 @@ def test_removed_printings_entry_removed_when_printing_becomes_acceptable(
         "language": original["lang"],
         "oracle_id": original["oracle_id"],
     }), "Test setup failed")
-    fill_card_database_with_json_cards(qtbot, card_db, [original])
+    fill_card_database_with_json_cards(card_db, [original])
     db_result = card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings").fetchall()
     assert_that(db_result, is_(empty()))
 
@@ -514,24 +514,24 @@ def test_removed_printings_entry_removed_when_printing_becomes_acceptable(
 @pytest.mark.parametrize("test_case_data", [
     TestCaseData("regular_english_card"),  # English "Fury Sliver" from Time Spiral
 ])
-def test_re_import_after_unban_makes_card_visible(qtbot, card_db: CardDatabase, test_case_data: TestCaseData):
+def test_re_import_after_unban_makes_card_visible(card_db: CardDatabase, test_case_data: TestCaseData):
     card_json = test_case_data.json_dict
     with unittest.mock.patch.dict(card_json["legalities"], {"commander": "banned"}):
-        fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
+        fill_card_database_with_json_card(card_db, card_json, {"hide-banned-in-commander": "True"})
     assert_hidden_import(card_db, test_case_data)
-    fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
+    fill_card_database_with_json_card(card_db, card_json, {"hide-banned-in-commander": "True"})
     assert_visible_import(card_db, test_case_data)
 
 
 @pytest.mark.parametrize("test_case_data", [
     TestCaseData("regular_english_card"),  # English "Fury Sliver" from Time Spiral
 ])
-def test_re_import_after_card_ban_hides_it(qtbot, card_db: CardDatabase, test_case_data: TestCaseData):
+def test_re_import_after_card_ban_hides_it(card_db: CardDatabase, test_case_data: TestCaseData):
     card_json = test_case_data.json_dict
-    fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
+    fill_card_database_with_json_card(card_db, card_json, {"hide-banned-in-commander": "True"})
     assert_visible_import(card_db, test_case_data)
     with unittest.mock.patch.dict(card_json["legalities"], {"commander": "banned"}):
-        fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
+        fill_card_database_with_json_card(card_db, card_json, {"hide-banned-in-commander": "True"})
     assert_hidden_import(card_db, test_case_data)
 
 
@@ -552,15 +552,15 @@ DataPath = list[str | int]
     (TestCaseData("regular_english_card"), ["image_uris", "png"], "https://c1.scryfall.com/file/front/invalid.png"),
 ])
 def test_updates_changed_value_on_re_import(
-        qtbot, card_db: CardDatabase, test_case: TestCaseData, dict_path: DataPath, value):
+        card_db: CardDatabase, test_case: TestCaseData, dict_path: DataPath, value):
     json_data = test_case.json_dict
     to_patch = json_data
     for item in dict_path[:-1]:
         to_patch = to_patch[item]
     assert_that(to_patch, is_(instance_of(dict)), "Setup failed: Walking path did not end in a dict to patch")
-    fill_card_database_with_json_card(qtbot, card_db, json_data)
+    fill_card_database_with_json_card(card_db, json_data)
     with unittest.mock.patch.dict(to_patch, {dict_path[-1]: value}):
-        fill_card_database_with_json_card(qtbot, card_db, json_data)
+        fill_card_database_with_json_card(card_db, json_data)
         # Assert within patched context, so that it can see the changed data in the test case data.
         assert_visible_import(card_db, test_case)
 
@@ -571,15 +571,15 @@ def test_updates_changed_value_on_re_import(
     (TestCaseData("regular_english_card"), ["released_at"], "2020-01-01"),  # English "Fury Sliver" from Time Spiral
 ])
 def test_updates_ignores_changed_value_on_re_import(
-        qtbot, card_db: CardDatabase, test_case: TestCaseData, dict_path: DataPath, value):
+        card_db: CardDatabase, test_case: TestCaseData, dict_path: DataPath, value):
     json_data = test_case.json_dict
     to_patch = json_data
     for item in dict_path[:-1]:
         to_patch = to_patch[item]
     assert_that(to_patch, is_(instance_of(dict)), "Setup failed: Walking path did not end in a dict to patch")
-    fill_card_database_with_json_card(qtbot, card_db, json_data)
+    fill_card_database_with_json_card(card_db, json_data)
     with unittest.mock.patch.dict(to_patch, {dict_path[-1]: value}):
-        fill_card_database_with_json_card(qtbot, card_db, json_data)
+        fill_card_database_with_json_card(card_db, json_data)
     # Outside the patched context to validate against the original data.
     assert_visible_import(card_db, test_case)
 
@@ -609,11 +609,11 @@ def test_updates_ignores_changed_value_on_re_import(
     ]),
 ])
 def test_related_printings(
-        qtbot, card_db: CardDatabase,
+        card_db: CardDatabase,
         cards: list[str], expected_pairs: list[tuple[int, int]]):
     # Cards always relate to exact printings, but which one is chosen is rather arbitrary. E.g. The Underworld Cookbook
     # and Back into a Pie both create a Food token, but are set to different printings of that token card.
-    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    fill_card_database_with_json_cards(card_db, cards)
     data = list(map(tuple, card_db.db.execute("SELECT card_id, related_id FROM RelatedCards")))
     assert_that(
         data,
@@ -628,9 +628,9 @@ def test_related_printings(
     ["Dungeon_of_the_Mad_Mage", "Zombie_Ogre", "Bar_the_Gate"],
     ["The_Ring", "Samwise_the_Stouthearted", "Elrond_Lord_of_Rivendell"],
 ])
-def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, cards: list[str]):
+def test_update_deletes_outdated_related_printing(card_db: CardDatabase, cards: list[str]):
     db = card_db.db
-    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    fill_card_database_with_json_cards(card_db, cards)
     data = list(map(tuple, card_db.db.execute("SELECT card_id, related_id FROM RelatedCards")))
     assert_that(
         data,
@@ -642,7 +642,7 @@ def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, 
         "INSERT INTO RelatedCards (card_id, related_id) VALUES (?, ?)",
         [(1, 2), (1, 3)]
     )
-    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    fill_card_database_with_json_cards(card_db, cards)
     data = list(map(tuple, card_db.db.execute("SELECT card_id, related_id FROM RelatedCards")))
     assert_that(
         data,
@@ -652,10 +652,10 @@ def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, 
 
 
 @pytest.mark.parametrize("exception", [sqlite3.Error, Exception])
-def test_import_works_after_network_error_during_first_try(qtbot, card_db, exception):
+def test_import_works_after_network_error_during_first_try(card_db, exception):
     dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), card_db.db)
     data_raising_exception = unittest.mock.MagicMock().__iter__.side_effect = exception()
     with unittest.mock.patch("mtg_proxy_printer.async_tasks.card_info_downloader.logger.exception") as logger_mock:
         dw.populate_database(data_raising_exception)
     logger_mock.assert_called()
-    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
+    fill_card_database_with_json_card(card_db, "regular_english_card")

@@ -13,8 +13,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-import dataclasses
 import functools
 import itertools
 import json
@@ -23,7 +21,7 @@ import sqlite3
 import typing
 from numbers import Real
 from pathlib import Path
-from typing import Literal, Any, Callable
+from typing import Literal, Any, Callable, Protocol, ClassVar
 from unittest.mock import patch, MagicMock
 
 from PySide6.QtCore import QObject, Slot, QPoint
@@ -33,7 +31,6 @@ from hamcrest import assert_that, is_, empty, contains_inanyorder, has_propertie
     close_to, all_of, greater_than_or_equal_to, less_than_or_equal_to
 from hamcrest.core.description import Description
 from hamcrest.core.matcher import Matcher
-from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.async_tasks.card_info_downloader import ApiStreamTask, DatabaseImportTask
 from mtg_proxy_printer.async_tasks.base import AsyncTask
@@ -114,7 +111,7 @@ def setup_settings_for_testing():
         section[setting] = str(False)
 
 
-def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict):
+def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict | None):
     # Explicitly share the in-memory database connection
     db = card_db.db
     dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), db, ":memory:")
@@ -127,7 +124,7 @@ def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data
 
 
 def update_database_printing_filters(
-        card_db: mtg_proxy_printer.model.carddb.CardDatabase, filter_settings: StrDict) -> StrDict:
+        card_db: mtg_proxy_printer.model.carddb.CardDatabase, filter_settings: StrDict | None) -> StrDict:
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     if filter_settings:
@@ -152,21 +149,19 @@ def load_multiple_json_cards(json_files_or_names: list[str | CardDataType]) -> l
 
 
 def fill_card_database_with_json_cards(
-        _: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-        json_files_or_names: list[str | CardDataType],
-        filter_settings: dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+       json_files_or_names: list[str | CardDataType],
+       filter_settings: dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     data = load_multiple_json_cards(json_files_or_names)
     populate_database(card_db, data, filter_settings)
     return card_db
 
 
 def fill_card_database_with_json_card(
-        _: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-        json_file_or_name: str | CardDataType,
-        filter_settings: dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    return fill_card_database_with_json_cards(_, card_db, [json_file_or_name], filter_settings)
+        json_file_or_name: str | CardDataType, filter_settings: dict[str, str] = None) \
+        -> mtg_proxy_printer.model.carddb.CardDatabase:
+    return fill_card_database_with_json_cards(card_db, [json_file_or_name], filter_settings)
 
 
 def create_save_database_with(
@@ -195,7 +190,7 @@ def assert_relation_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabas
     )
 
 
-def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, test_case=None):
+def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase):
     """
     Checks, if the model is empty. This is used by tests that check if cards are properly skipped based on
     download settings.
@@ -207,24 +202,32 @@ def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, 
         assert_relation_is_empty(card_db, relation)
 
 
+class IsDataclass(Protocol):
+    """https://stackoverflow.com/questions/54668000/type-hint-for-an-instance-of-a-non-specific-dataclass"""
+    # as already noted in comments, checking for this attribute is currently
+    # the most reliable way to ascertain that something is a dataclass
+    __dataclass_fields__: ClassVar[dict[str, Any]]
+    __str__: Callable[[], str]
+
+
 class is_dataclass_equal_to(BaseMatcher):
 
-    def __init__(self, expected: dataclasses.dataclass):
+    def __init__(self, expected: IsDataclass):
         self.expected = expected
 
-    def _matches(self, item: dataclasses.dataclass) -> bool:
+    def _matches(self, item: IsDataclass) -> bool:
         return self._has_annotations(item) and self._has_equal_keys(item) and self._has_equal_values(item)
 
     @staticmethod
-    def _has_annotations(item: dataclasses.dataclass):
+    def _has_annotations(item: IsDataclass):
         return hasattr(item.__class__, "__annotations__")
 
-    def _has_equal_keys(self, item: dataclasses.dataclass) -> bool:
-        return contains_inanyorder(
-            *self.expected.__class__.__annotations__.keys()
-        ).matches(item.__class__.__annotations__.keys())
+    def _has_equal_keys(self, item: IsDataclass) -> bool:
+        expected_keys = list(self.expected.__class__.__annotations__.keys())
+        got_keys = list(item.__class__.__annotations__.keys())
+        return contains_inanyorder(*expected_keys).matches(got_keys)
 
-    def _has_equal_values(self, item: dataclasses.dataclass) -> bool:
+    def _has_equal_values(self, item: IsDataclass) -> bool:
         return has_properties({
             key: equal_to(getattr(self.expected, key))
             for key in self.expected.__class__.__annotations__.keys()
@@ -233,7 +236,7 @@ class is_dataclass_equal_to(BaseMatcher):
     def describe_to(self, description: Description) -> None:
         description.append_text(f"dataclass instance containing values equal to {self.expected} ")
 
-    def describe_mismatch(self, item: dataclasses.dataclass, mismatch_description: Description) -> None:
+    def describe_mismatch(self, item: IsDataclass, mismatch_description: Description) -> None:
         if not self._has_annotations(item):
             mismatch_description.append_text(f"{item} instance has no __annotations__ attribute")
             return
@@ -262,7 +265,7 @@ class is_dataclass_equal_to(BaseMatcher):
 
 class matches_type_annotation(BaseMatcher):
 
-    def _matches(self, item: dataclasses.dataclass) -> bool:
+    def _matches(self, item: IsDataclass) -> bool:
         class_ = item.__class__
         return hasattr(class_, "__annotations__") and has_properties({
                 key: self._get_matcher(annotated_type)
