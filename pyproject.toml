@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Games/Entertainment :: Board Games",
     "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
@@ -75,9 +76,6 @@ mtg-proxy-printer = "mtg_proxy_printer.__main__:main"
 
 [tool.pytest.ini_options]
 # timeout = 10
-
-[tool.setuptools]
-exclude-package-data = {"mtg_proxy_printer" = ["resources", "resources.*"]}
 
 
 [tool.setuptools.packages.find]

@@ -15,7 +15,6 @@
 
 
 import argparse
-import dataclasses
 from pathlib import Path
 
 from . import meta_data
@@ -26,7 +25,6 @@ __all__ = [
 ]
 
 
-@dataclasses.dataclass()
 class Namespace:
     """Namespace used to mock parsed arguments for type-hinting purposes"""
     file: Path | None = None

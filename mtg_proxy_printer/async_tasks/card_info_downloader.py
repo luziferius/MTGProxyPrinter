@@ -62,11 +62,7 @@ __all__ = [
     "FileStreamTask",
 ]
 
-# Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
-# from file system paths.
-looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
 BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data/all-cards"
-
 # Constants determined empirically. These fluctuate a bit over time, but give reasonable estimates.
 AVERAGE_SIZE_PER_UNCOMPRESSED_JSON_ENTRY_IN_BYTES = 4706
 GZIP_COMPRESSION_FACTOR = 7.09
@@ -74,9 +70,7 @@ GZIP_COMPRESSION_FACTOR = 7.09
 # Set a default socket timeout to prevent hanging indefinitely, if the network connection breaks while a download
 # is in progress
 socket.setdefaulttimeout(5)
-QueuedConnection = Qt.ConnectionType.QueuedConnection
 
-IntTuples = list[tuple[int]]
 CardStream = Generator[CardDataType, None, None]
 CardOrFace = CardDataType | FaceDataType
 CardDataQueue = queue.Queue[tuple[CardDataType, ...] | None]

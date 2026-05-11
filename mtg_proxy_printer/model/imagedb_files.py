@@ -28,11 +28,11 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-ItemDataRole = Qt.ItemDataRole
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
 __all__ = [
     "CacheContent",
     "ImageKey",
+    "ImageQuality",
 ]
 
 

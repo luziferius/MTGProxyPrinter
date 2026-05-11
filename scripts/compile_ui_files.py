@@ -175,8 +175,9 @@ def build_class_registry(package_path: Path) -> ClassRegistry:
 def generate_stub(compiled_ui: str, ui_file: Path, class_registry: ClassRegistry) -> str:
     root_node = ast.parse(compiled_ui)
     header = f"# Automatically generated type hinting stub for '{ui_file.name}'. Do not modify."
-    # Keep all imports unmodified
+    # Add the typing import for the TYPE_CHECKING constant
     imports = "import typing\n\n"
+    # Keep all imports unmodified
     imports += "\n".join(
         map(
             ast.unparse,
@@ -194,6 +195,9 @@ def generate_stub(compiled_ui: str, ui_file: Path, class_registry: ClassRegistry
         ast.unparse(class_registry[used_class])
         for used_class in found_class_uses.intersection(class_registry)
     ] or ["pass"]
+    # UI files reference their widget class in the setupUi() signature. Thus there is a circular dependency between
+    # CustomWidget and Ui_CustomWidget classes, causing import failures. For these stubs, hide the import
+    # behind the TYPE_CHECKING guard.
     type_hinting_import_str = "if typing.TYPE_CHECKING:\n"
     type_hinting_import_str += textwrap.indent(
         "\n".join(type_hinting_imports),
