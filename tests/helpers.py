@@ -118,7 +118,7 @@ def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = update_database_printing_filters(card_db, filter_settings)
     db.row_factory = None  # TODO: Determine why patch.object() doesn't properly revert during __exit__()
-    with patch.dict(section, settings_to_use):
+    with patch.dict(section, settings_to_use), patch("mtg_proxy_printer.async_tasks.card_info_downloader.SetIconImportTask.run"):
         dw.populate_database(data)
     db.row_factory = sqlite3.Row
 
