@@ -50,7 +50,6 @@ def card_db(request) -> CardDatabase:
         db.execute("PRAGMA reverse_unordered_selects = TRUE")
     PrintingFilterUpdater(card_db, card_db.db).run()
     yield card_db
-    del card_db.db
     CardDatabase.main_instance = None
     db.close()
 
