@@ -295,7 +295,7 @@ class CardDataType(_CardPreviewFields):
     artist_ids: NotRequired[list[ShouldBeUUID]]
     attraction_lights: NotRequired[IntList]
     booster: bool
-    border_color: str
+    border_color: Literal["black", "white", "borderless", "yellow", "silver", "gold"]
     card_back_id: ShouldBeUUID
     collector_number: str
     content_warning: NotRequired[bool]
@@ -306,10 +306,10 @@ class CardDataType(_CardPreviewFields):
     frame_effects: NotRequired[list[str]]
     frame: str
     full_art: bool
-    games: list[str]
+    games: list[Literal["paper", "arena", "mtgo", "astral", "sega"]]
     highres_image: bool
     illustration_id: NotRequired[ShouldBeUUID]
-    image_status: str
+    image_status: Literal["missing", "placeholder", "lowres", "highres_scan"]
     image_uris: NotRequired[ImageUriType]
     oversized: bool
     prices: dict[Literal["usd", "usd_foil", "usd_etched", "eur", "eur_foil", "eur_etched", "tix"], float]
@@ -333,7 +333,7 @@ class CardDataType(_CardPreviewFields):
     textless: bool
     variation: bool
     variation_of: NotRequired[ShouldBeUUID]
-    security_stamp: NotRequired[str]
+    security_stamp: NotRequired[Literal["oval", "triangle", "acorn", "circle", "arena", "heart"]]
     watermark: NotRequired[str]
 
 
