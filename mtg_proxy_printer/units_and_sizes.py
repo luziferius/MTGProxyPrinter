@@ -377,6 +377,7 @@ class SetsAPIDataType(TypedDict):
     icon_svg_uri: WEB_URI
     search_uri: WEB_URI
 
+
 def _read_enum(container: Type, enum_class: Type[T], accumulator: dict[str, T] = None) -> dict[str, T]:
     if accumulator is None:
         accumulator = {}

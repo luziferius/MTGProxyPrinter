@@ -92,7 +92,7 @@ class MeteredSeekableHTTPFile(QObject):
 
     def content_encoding(self) -> str | None:
         if self.file:
-            return self.file.info().get("Content-Encoding")
+            return self.file.headers.get("Content-Encoding")
         return None
 
     def __enter__(self):

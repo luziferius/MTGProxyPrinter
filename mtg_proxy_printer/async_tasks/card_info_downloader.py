@@ -891,8 +891,7 @@ def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
         # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
         # black-bordered promotional cards, in addition to silver-bordered cards.
         "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
-        # Token cards
-        "hide-token": "Dungeon" in type_line or "Token" in type_line,
+        "hide-token": any(("Dungeon" in type_line, "Token" in type_line, "Emblem" in type_line)),
         "hide-digital-cards": card["digital"],
         "hide-art-series-cards": card["layout"] == "art_series",
         "hide-universes-beyond-cards": "universesbeyond" in card.get("promo_types", ()),

@@ -375,32 +375,37 @@ def generate_test_cases_for_test_print_hiding_filters():
     yield TestCaseData("oversized_card"), "hide-oversized-cards"  # Oversized printing of "Atraxa, Praetors' Voice"
     yield TestCaseData("funny_card_with_silver_border"), "hide-funny-cards"  # Silver-bordered "Aesthetic Consultation" from Unhinged
     yield TestCaseData("funny_card_with_acorn_security_stamp"), "hide-funny-cards"  # Black-bordered "Form of the Approach of the Second Sun" from Unfinity
+
     yield TestCaseData("Food_Token"), "hide-token"
     yield TestCaseData("Undercity"), "hide-token"   # Double-faced Dungeon / The Initiative marker card
     yield TestCaseData("The_Ring"), "hide-token"   # Double-faced Emblem
     yield TestCaseData("gold_bordered_card"), "hide-gold-bordered"
     yield TestCaseData("white_bordered_card"), "hide-white-bordered"
+
     yield TestCaseData("banned_in_brawl"), "hide-banned-in-brawl"
     yield TestCaseData("banned_in_commander"), "hide-banned-in-commander"
     yield TestCaseData("banned_in_historic"), "hide-banned-in-historic"
     yield TestCaseData("banned_in_legacy"), "hide-banned-in-legacy"
     yield TestCaseData("banned_in_modern"), "hide-banned-in-modern"
+
     yield TestCaseData("banned_in_oathbreaker"), "hide-banned-in-oathbreaker"
     yield TestCaseData("banned_in_pauper"), "hide-banned-in-pauper"
     yield TestCaseData("banned_in_penny"), "hide-banned-in-penny"  # The format has zero banned cards. The JSON document was altered to fake a banned card for testing purposes.
     yield TestCaseData("banned_in_pioneer"), "hide-banned-in-pioneer"
     yield TestCaseData("banned_in_standard"), "hide-banned-in-standard"
+
     yield TestCaseData("banned_in_vintage"), "hide-banned-in-vintage"
     yield TestCaseData("digital_only_card"), "hide-digital-cards"
     yield TestCaseData("digital_reprint"), "hide-digital-cards"
     yield TestCaseData("borderless_card"), "hide-borderless"
     yield TestCaseData("extended_art"), "hide-extended-art"
+
     yield TestCaseData("reversible_card"), "hide-reversible-cards"  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
     yield TestCaseData("english_double_faced_art_series_card"), "hide-art-series-cards"
     yield TestCaseData("universes_beyond_card"), "hide-universes-beyond-cards"
     yield TestCaseData("textless_card"), "hide-textless-cards"
     yield TestCaseData("spanish_basic_Forest"), "hide-low-resolution-cards"
-    yield TestCaseData("english_basic_Forest"), "hide-full-art-cards"
+    yield TestCaseData("english_basic_Forest_2"), "hide-full-art-cards"
 
 
 @pytest.mark.parametrize("filter_enabled", [True, False])

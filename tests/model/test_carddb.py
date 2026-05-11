@@ -922,7 +922,7 @@ def test_get_available_sets_for_card(
         filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["card-filter"]}
         update_database_printing_filters(card_db, filters)
     assert_that(card, is_(not_none()), "Test setup failed, card not found")
-    fulfills_matcher = all_of(has_length(len(expected)), contains_exactly(*expected)) if expected else empty()
+    fulfills_matcher = contains_exactly(*expected) if expected else empty()
     assert_that(card_db.get_available_sets_for_card(card), fulfills_matcher)
 
 
