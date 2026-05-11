@@ -869,16 +869,22 @@ def _get_related_cards(card: CardDataType):
 
 def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
     legalities = card["legalities"]
+    image_status = card["image_status"]
+    border_color = card["border_color"]
+    type_line = card["type_line"]
     return {
         # Racism filter
         "hide-cards-depicting-racism": card.get("content_warning", False),
         # Cards with placeholder images (low-res image with "not available in your language" overlay)
-        "hide-cards-without-images": card["image_status"] == "placeholder",
+        "hide-cards-without-images": image_status == "placeholder",
+        "hide-low-resolution-cards": image_status == "lowres",
         "hide-oversized-cards": card["oversized"],
-        # Border filter
-        "hide-white-bordered": card["border_color"] == "white",
-        "hide-gold-bordered": card["border_color"] == "gold",
-        "hide-borderless": card["border_color"] == "borderless",
+        # Frame and border filter
+        "hide-full-art-cards": card["full_art"],
+        "hide-textless-cards": card["textless"],
+        "hide-white-bordered": border_color == "white",
+        "hide-gold-bordered": border_color == "gold",
+        "hide-borderless": border_color == "borderless",
         "hide-extended-art": "extendedart" in card.get("frame_effects", ()),
         # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
         "hide-reversible-cards": card["layout"] == "reversible_card",
@@ -886,7 +892,7 @@ def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
         # black-bordered promotional cards, in addition to silver-bordered cards.
         "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
         # Token cards
-        "hide-token": card["layout"].endswith("token") or card.get("type_line") == "Dungeon",
+        "hide-token": "Dungeon" in type_line or "Token" in type_line,
         "hide-digital-cards": card["digital"],
         "hide-art-series-cards": card["layout"] == "art_series",
         "hide-universes-beyond-cards": "universesbeyond" in card.get("promo_types", ()),

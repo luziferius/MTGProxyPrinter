@@ -398,6 +398,9 @@ def generate_test_cases_for_test_print_hiding_filters():
     yield TestCaseData("reversible_card"), "hide-reversible-cards"  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
     yield TestCaseData("english_double_faced_art_series_card"), "hide-art-series-cards"
     yield TestCaseData("universes_beyond_card"), "hide-universes-beyond-cards"
+    yield TestCaseData("textless_card"), "hide-textless-cards"
+    yield TestCaseData("spanish_basic_Forest"), "hide-low-resolution-cards"
+    yield TestCaseData("english_basic_Forest"), "hide-full-art-cards"
 
 
 @pytest.mark.parametrize("filter_enabled", [True, False])

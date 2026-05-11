@@ -10,7 +10,11 @@
   - The app uses these to calculate the best matching printing whenever it has to choose among multiple choices.
   - Negative values will rank matching printings lower than plain, regular printings, so they will only be chosen,
     if there is no alternative available.
-- Printing filter for Universes Beyond cards
+- New printing filters:
+  - For Universes Beyond cards
+  - For cards with low resolution images
+  - For full-art cards, where the artwork extends below the rules textbox
+  - For textless cards. These are non-basic-land cards without the rules text box
 
 ## Changed features
 

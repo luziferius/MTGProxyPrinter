@@ -1,0 +1,137 @@
+{
+  "object": "card",
+  "id": "1381ec47-55fd-47d9-aded-d21776bc06b9",
+  "oracle_id": "fbfef028-b10c-4ade-9503-d9af5b0c211b",
+  "multiverse_ids": [],
+  "resource_id": "D297A1B14DC795A12A4DC4F16E85A7CED41787AEBD18E5C3FD167BFDA4E74F24",
+  "mtgo_id": 145244,
+  "tcgplayer_id": 648746,
+  "cardmarket_id": 842879,
+  "name": "Toph, the First Metalbender",
+  "lang": "en",
+  "released_at": "2025-11-21",
+  "uri": "https://api.scryfall.com/cards/1381ec47-55fd-47d9-aded-d21776bc06b9",
+  "scryfall_uri": "https://scryfall.com/card/tla/362/toph-the-first-metalbender?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/1/3/1381ec47-55fd-47d9-aded-d21776bc06b9.jpg?1764122669",
+    "normal": "https://cards.scryfall.io/normal/front/1/3/1381ec47-55fd-47d9-aded-d21776bc06b9.jpg?1764122669",
+    "large": "https://cards.scryfall.io/large/front/1/3/1381ec47-55fd-47d9-aded-d21776bc06b9.jpg?1764122669",
+    "png": "https://cards.scryfall.io/png/front/1/3/1381ec47-55fd-47d9-aded-d21776bc06b9.png?1764122669",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/1/3/1381ec47-55fd-47d9-aded-d21776bc06b9.jpg?1764122669",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/1/3/1381ec47-55fd-47d9-aded-d21776bc06b9.jpg?1764122669"
+  },
+  "mana_cost": "{1}{R}{G}{W}",
+  "cmc": 4.0,
+  "type_line": "Legendary Creature — Human Warrior Ally",
+  "oracle_text": "Nontoken artifacts you control are lands in addition to their other types. (They don't gain the ability to {T} for mana.)\nAt the beginning of your end step, earthbend 2. (Target land you control becomes a 0/0 creature with haste that's still a land. Put two +1/+1 counters on it. When it dies or is exiled, return it to the battlefield tapped.)",
+  "power": "3",
+  "toughness": "3",
+  "colors": [
+    "G",
+    "R",
+    "W"
+  ],
+  "color_identity": [
+    "G",
+    "R",
+    "W"
+  ],
+  "keywords": [
+    "Earthbend"
+  ],
+  "legalities": {
+    "standard": "legal",
+    "future": "legal",
+    "historic": "legal",
+    "timeless": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "oathbreaker": "legal",
+    "standardbrawl": "legal",
+    "brawl": "legal",
+    "alchemy": "legal",
+    "paupercommander": "not_legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal",
+    "tlr": "not_legal"
+  },
+  "games": [
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "game_changer": false,
+  "foil": true,
+  "nonfoil": false,
+  "finishes": [
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "118f7e64-5caa-4cb7-99a8-184f4d3a7422",
+  "set": "tla",
+  "set_name": "Avatar: The Last Airbender",
+  "set_type": "expansion",
+  "set_uri": "https://api.scryfall.com/sets/118f7e64-5caa-4cb7-99a8-184f4d3a7422",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Atla&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/tla?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/1381ec47-55fd-47d9-aded-d21776bc06b9/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Afbfef028-b10c-4ade-9503-d9af5b0c211b&unique=prints",
+  "collector_number": "362",
+  "digital": false,
+  "rarity": "rare",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Flavio Girón",
+  "artist_ids": [
+    "466d0e8e-bc19-4897-956d-6405bfd89e46"
+  ],
+  "illustration_id": "638ed1ee-9c0e-4aa6-a851-a31563d81523",
+  "border_color": "borderless",
+  "frame": "2015",
+  "frame_effects": [
+    "inverted",
+    "legendary"
+  ],
+  "security_stamp": "oval",
+  "full_art": true,
+  "textless": true,
+  "booster": false,
+  "story_spotlight": false,
+  "promo_types": [
+    "universesbeyond",
+    "neonink",
+    "boosterfun"
+  ],
+  "edhrec_rank": 3854,
+  "prices": {
+    "usd": null,
+    "usd_foil": "787.25",
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": "515.60",
+    "tix": "0.04"
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DToph%252C%2Bthe%2BFirst%2BMetalbender",
+    "tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DToph%252C%2Bthe%2BFirst%2BMetalbender",
+    "edhrec": "https://edhrec.com/route/?cc=Toph%2C+the+First+Metalbender"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F648746%3Fpage%3D1",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=842879&referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards/145244?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

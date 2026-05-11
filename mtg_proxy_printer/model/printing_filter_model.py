@@ -183,6 +183,10 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Tooltip text"),
                 weight_tooltip, "hide-cards-without-images", None),
             ModelRow.create_item(
+                self.tr("Cards with low-resolution images", "Display text"),
+                self.tr("Cards without high-resolution scans. They appear blurry.", "Tooltip text"),
+                weight_tooltip, "hide-low-resolution-cards", "not:highres"),
+            ModelRow.create_item(
                 self.tr("“Funny” cards",
                         "Display text"),
                 self.tr("“Funny” cards, not legal in any constructed format.\n"
@@ -211,9 +215,19 @@ class PrintingFilterModel(QAbstractTableModel):
                         'Marvel comics, Warhammer 40k, and a lot others.',
                         "Tooltip text"),
                 weight_tooltip, "hide-universes-beyond-cards", "is:universesbeyond"),
-
             ModelRow.create_header(header_font,
-                self.tr("Border style", "Display text. Printing filter section header")),
+                self.tr("Frame and border style", "Display text. Printing filter section header")),
+            ModelRow.create_item(
+                self.tr("Full-art cards", "Display text"),
+                self.tr("Cards with replacing the frame with artwork, featuring a (semi-) transparent text box.\n"
+                        "This by definition also includes text-less cards", "Tooltip text"),
+                weight_tooltip, "hide-full-art-cards", "is:fullart"),
+            ModelRow.create_item(
+                self.tr("Textless cards", "Display text"),
+                self.tr("Cards without textbox showing the rules text,\n"
+                        "only featuring the name, mana cost and power/toughness.\n"
+                        "Does not apply to Basic lands.", "Tooltip text"),
+                weight_tooltip, "hide-textless-cards", "is:textless"),
             ModelRow.create_item(
                 self.tr("White-bordered cards",
                         "Display text"),
