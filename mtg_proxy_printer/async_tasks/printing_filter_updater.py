@@ -31,6 +31,10 @@ logger = get_logger(__name__)
 del get_logger
 
 QueuedConnection = Qt.ConnectionType.QueuedConnection
+__all__ = [
+    "PrintingFilterUpdater",
+    "PrintingPreferenceUpdater",
+]
 
 
 class PrintingFilterUpdater(AsyncTask):
@@ -243,10 +247,12 @@ class PrintingPreferenceUpdater(AsyncTask):
     """
 
     def __init__(
-            self, model: "CardDatabase", preference_weights: set[tuple[str, int]],
+            self, model: "CardDatabase", new_preference_weights: set[tuple[str, int]],
             db_connection: sqlite3.Connection = None, /):
         """
         :param model: CardDatabase instance to work on
+        :param new_preference_weights: The new printing preference weights to use, as a set[tuple[filter_name, weight]],
+          obtained from the PrintingFilterModel used by the settings window.
         :param db_connection: Database connection to use. Only useful for testing. During normal operation, this class opens
           a separate connection by using the database filesystem path stored in the passed-in model.
           This doesn't work for in-memory databases used by unit tests.
@@ -255,7 +261,7 @@ class PrintingPreferenceUpdater(AsyncTask):
         """
         super().__init__()
         self.model = model
-        self.new_preference_weights = preference_weights
+        self.new_preference_weights = new_preference_weights
         self.old_preference_weights = set(model.get_printing_filter_weights().items())
         self.progress = 0
         self.task_completed.connect(model.restart_transaction, QueuedConnection)
