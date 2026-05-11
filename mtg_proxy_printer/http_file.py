@@ -24,8 +24,8 @@ import urllib.request
 from PySide6.QtCore import QObject, Signal
 import delegateto
 
-from mtg_proxy_printer.meta_data import USER_AGENT
-from mtg_proxy_printer.logger import get_logger
+from .meta_data import USER_AGENT
+from .logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
