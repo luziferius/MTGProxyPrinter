@@ -21,6 +21,8 @@ from pathlib import Path
 import dataclasses
 import sys
 import types
+from unittest.mock import MagicMock
+import warnings
 
 from PySide6.QtCore import QCoreApplication, QThreadPool
 
@@ -28,10 +30,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.async_tasks.card_info_downloader
-from mtg_proxy_printer.async_tasks.card_info_downloader import DatabaseImportTask, FileStreamTask
+from mtg_proxy_printer.async_tasks.card_info_downloader import DatabaseImportTask, FileStreamTask, SetIconImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.async_tasks.base import AsyncTaskRunner
-
+SetIconImportTask.run = MagicMock()
 
 @dataclasses.dataclass()
 class Namespace:
@@ -91,7 +93,6 @@ def inject_line_profiler():
             try:
                 func = getattr(module_, func_name)
             except AttributeError:
-                import warnings
                 warnings.warn(f"""Function "{func_name}" in module/class "{module_.__name__}" not found, skipping.""")
             else:
                 # Bypass any functools LRU cache
@@ -116,8 +117,8 @@ if __name__ == "__main__":
         print("Re-use existing database…")
     app = QCoreApplication([], applicationName="BenchmarkCardDataImport")
     tp = QThreadPool.globalInstance()
-    cdb = CardDatabase(args.database_path)
-    fup = PrintingFilterUpdater(cdb)
+    card_db = CardDatabase(args.database_path)
+    fup = PrintingFilterUpdater(card_db)
     fst = FileStreamTask(args.card_data)
     dit = DatabaseImportTask(fst, None, args.database_path)
     # Remove the semaphore protection, because it also checks the QApplication instance to determine if tasks should
