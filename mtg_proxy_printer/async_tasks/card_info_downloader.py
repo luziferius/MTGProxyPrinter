@@ -461,6 +461,7 @@ class DatabaseImportTask(AsyncTask):
         self.db_created = db is None
         self.should_run = True
         self.set_code_cache: dict[str, int] = {}
+        self._printing_filter_dict: dict[str, bool] = {}
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @property
@@ -655,8 +656,8 @@ class DatabaseImportTask(AsyncTask):
         if (set_id := self.set_code_cache.get(set_code)) is None:
             self.set_code_cache[set_code] = set_id = self._insert_or_update_set(card)
         printing_id = self._insert_or_update_printing(card, card_id, set_id)
-        filter_data = _get_card_filter_data(card)
-        self._insert_or_update_card_filters(printing_id, filter_data)
+        _get_card_filter_data(card, self._printing_filter_dict)
+        self._insert_or_update_card_filters(printing_id, self._printing_filter_dict)
         self._insert_or_update_printing_faces(card, printing_id)
 
     def _clean_unused_data(self):
@@ -861,7 +862,7 @@ def _get_related_cards(card: CardDataType):
             yield RelatedPrintingData(card_id, related_id)
 
 
-def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
+def _get_card_filter_data(card: CardDataType, filter_dict: dict[str, bool]):
     legalities = card["legalities"]
     image_status = card["image_status"]
     border_color = card["border_color"]
@@ -869,43 +870,41 @@ def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
     # Performance note: Converting into sets and computing if they are not disjoint is more expensive than this.
     type_line = card.get("type_line") or " // ".join(face["type_line"] for face in card.get("card_faces", ()))
     is_token = any(("Dungeon" in type_line, "Token" in type_line, "Emblem" in type_line))
-    return {
-        # Racism filter
-        "hide-cards-depicting-racism": card.get("content_warning", False),
-        # Cards with placeholder images (low-res image with "not available in your language" overlay)
-        "hide-cards-without-images": image_status == "placeholder",
-        "hide-low-resolution-cards": image_status == "lowres",
-        "hide-oversized-cards": card["oversized"],
-        # Frame and border filter
-        "hide-full-art-cards": card["full_art"],
-        "hide-textless-cards": card["textless"],
-        "hide-white-bordered": border_color == "white",
-        "hide-gold-bordered": border_color == "gold",
-        "hide-borderless": border_color == "borderless",
-        "hide-extended-art": "extendedart" in card.get("frame_effects", ()),
-        # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
-        "hide-reversible-cards": card["layout"] == "reversible_card",
-        # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
-        # black-bordered promotional cards, in addition to silver-bordered cards.
-        "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
-        "hide-token": is_token,
-        "hide-digital-cards": card["digital"],
-        "hide-art-series-cards": card["layout"] == "art_series",
-        "hide-universes-beyond-cards": "universesbeyond" in card.get("promo_types", ()),
-        # Specific format legality. Use .get() with a default instead of [] to not fail
-        # if Scryfall removes one of the listed formats in the future.
-        "hide-banned-in-brawl": legalities.get("brawl") == "banned",
-        "hide-banned-in-commander": legalities.get("commander") == "banned",
-        "hide-banned-in-historic": legalities.get("historic") == "banned",
-        "hide-banned-in-legacy": legalities.get("legacy") == "banned",
-        "hide-banned-in-modern": legalities.get("modern") == "banned",
-        "hide-banned-in-oathbreaker": legalities.get("oathbreaker") == "banned",
-        "hide-banned-in-pauper": legalities.get("pauper") == "banned",
-        "hide-banned-in-penny": legalities.get("penny") == "banned",
-        "hide-banned-in-pioneer": legalities.get("pioneer") == "banned",
-        "hide-banned-in-standard": legalities.get("standard") == "banned",
-        "hide-banned-in-vintage": legalities.get("vintage") == "banned",
-    }
+    # Racism filter
+    filter_dict["hide-cards-depicting-racism"] = card.get("content_warning", False)
+    # Cards with placeholder images (low-res image with "not available in your language" overlay)
+    filter_dict["hide-cards-without-images"] = image_status == "placeholder"
+    filter_dict["hide-low-resolution-cards"] = image_status == "lowres"
+    filter_dict["hide-oversized-cards"] = card["oversized"]
+    # Frame and border filter
+    filter_dict["hide-full-art-cards"] = card["full_art"]
+    filter_dict["hide-textless-cards"] = card["textless"]
+    filter_dict["hide-white-bordered"] = border_color == "white"
+    filter_dict["hide-gold-bordered"] = border_color == "gold"
+    filter_dict["hide-borderless"] = border_color == "borderless"
+    filter_dict["hide-extended-art"] = "extendedart" in card.get("frame_effects", ())
+    # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
+    filter_dict["hide-reversible-cards"] = card["layout"] == "reversible_card"
+    # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
+    # black-bordered promotional cards, in addition to silver-bordered cards.
+    filter_dict["hide-funny-cards"] = card["set_type"] == "funny" and "legal" not in legalities.values()
+    filter_dict["hide-token"] = is_token
+    filter_dict["hide-digital-cards"] = card["digital"]
+    filter_dict["hide-art-series-cards"] = card["layout"] == "art_series"
+    filter_dict["hide-universes-beyond-cards"] = "universesbeyond" in card.get("promo_types", ())
+    # Specific format legality. Use .get() with a default instead of [] to not fail
+    # if Scryfall removes one of the listed formats in the future.
+    filter_dict["hide-banned-in-brawl"] = legalities.get("brawl") == "banned"
+    filter_dict["hide-banned-in-commander"] = legalities.get("commander") == "banned"
+    filter_dict["hide-banned-in-historic"] = legalities.get("historic") == "banned"
+    filter_dict["hide-banned-in-legacy"] = legalities.get("legacy") == "banned"
+    filter_dict["hide-banned-in-modern"] = legalities.get("modern") == "banned"
+    filter_dict["hide-banned-in-oathbreaker"] = legalities.get("oathbreaker") == "banned"
+    filter_dict["hide-banned-in-pauper"] = legalities.get("pauper") == "banned"
+    filter_dict["hide-banned-in-penny"] = legalities.get("penny") == "banned"
+    filter_dict["hide-banned-in-pioneer"] = legalities.get("pioneer") == "banned"
+    filter_dict["hide-banned-in-standard"] = legalities.get("standard") == "banned"
+    filter_dict["hide-banned-in-vintage"] = legalities.get("vintage") == "banned"
 
 
 def _should_skip_card(card: CardDataType) -> bool:
