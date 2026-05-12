@@ -25,6 +25,7 @@ __all__ = [
     "Namespace",
 ]
 
+
 @dataclasses.dataclass
 class Namespace:
     """Namespace used to mock parsed arguments for type-hinting purposes"""

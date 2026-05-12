@@ -29,11 +29,11 @@ from PySide6.QtGui import QPageSize, QPageLayout, QColor
 import pint.facets.context.objects
 import pint
 
+import mtg_proxy_printer.natsort
+
 QuantityT = pint.facets.plain.QuantityT
 Quantity = pint.facets.plain.PlainQuantity
 Unit = pint.facets.plain.PlainUnit
-
-import mtg_proxy_printer.natsort
 
 
 class ToDots(pint.facets.context.objects.Transformation):
@@ -91,7 +91,7 @@ BooleanToCheckStateMap = {
     False: CheckState.Unchecked,
     None: CheckState.PartiallyChecked
 }
-CheckStateToBooleanStrMap = {value: str(key) for key,value in BooleanToCheckStateMap.items()}
+CheckStateToBooleanStrMap = {value: str(key) for key, value in BooleanToCheckStateMap.items()}
 
 
 class SectionProxy(configparser.SectionProxy):
@@ -353,6 +353,7 @@ class BulkDataType(TypedDict):
     content_type: str
     content_encoding: str
 
+
 class SetsAPIDataType(TypedDict):
     object: Literal["set"]
     id: UUID
@@ -361,7 +362,8 @@ class SetsAPIDataType(TypedDict):
     arena_code: NotRequired[str]
     tcgplayer_id: NotRequired[int]
     name: str
-    set_type: Literal["core", "expansion", "masters", "eternal", "alchemy", "masterpiece", "arsenal", "from_the_vault",
+    set_type: Literal[
+        "core", "expansion", "masters", "eternal", "alchemy", "masterpiece", "arsenal", "from_the_vault",
         "spellbook", "premium_deck", "duel_deck", "draft_innovation", "treasure_chest", "commander", "planechase",
         "archenemy", "vanguard", "funny", "starter", "box", "promo", "token", "memorabilia", "minigame"]
     released_at: NotRequired[str]

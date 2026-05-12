@@ -23,7 +23,6 @@ import math
 import shutil
 from gzip import GzipFile
 from pathlib import Path
-import re
 import queue
 import sqlite3
 import socket
@@ -34,7 +33,7 @@ import urllib.request
 from typing import Literal, LiteralString, Any, Iterable
 
 import ijson
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Slot
 
 from mtg_proxy_printer import BlockingQueuedConnection
 from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
@@ -339,7 +338,7 @@ class SetIconImportTask(DownloaderBase):
         db = self.db
         logger.info("About to fetch set symbols.")
         # icon_filename is empty for unset symbols, so they are guaranteed to be unequal to the file name in the URI.
-        symbols_in_db: dict[UUID, str] =  dict(db.execute("SELECT set_scryfall_id, icon_file_name FROM MTGSet"))
+        symbols_in_db: dict[UUID, str] = dict(db.execute("SELECT set_scryfall_id, icon_file_name FROM MTGSet"))
         if not self.should_run: return
         progress_bar_text = self.tr("Download set symbols: ", "Progress bar label")
         self.task_begins.emit(1, progress_bar_text)
@@ -402,7 +401,7 @@ class SetIconImportTask(DownloaderBase):
         :param icon_uris: Mapping from set_scryfall_id to the SVG uri
         :returns: list with tuples [SVG source code, file name, set_scryfall_id]
         """
-        result : list[tuple[bytes, str, UUID]] = []
+        result: list[tuple[bytes, str, UUID]] = []
         for set_scryfall_id, uri in icon_uris.items():
             if not self.should_run: return result
             svg = self.read_from_url(uri,)[0].read()
@@ -410,7 +409,6 @@ class SetIconImportTask(DownloaderBase):
             result.append((svg, filename, set_scryfall_id))
             self.advance_progress.emit()
         return result
-
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -442,6 +440,7 @@ class SetIconImportTask(DownloaderBase):
         logger.info(f"{self.__class__.__name__}: Cancelling…")
         self.should_run = False
         self.task_completed.emit()
+
 
 class DatabaseImportTask(AsyncTask):
     """This class implements importing a CardStream into the given CardDatabase instance"""

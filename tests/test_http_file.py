@@ -20,7 +20,7 @@ import urllib.error
 import urllib.request
 from unittest.mock import patch, MagicMock, DEFAULT
 import http.client
-
+from typing import Literal
 
 from hamcrest import *
 import pytest
@@ -130,7 +130,7 @@ def test_seek_raises_error_if_connection_is_not_seekable(http_file: MeteredSeeka
     (0, 2, 99, 100),
 ])
 def test_seek_moves_to_expected_position(
-        http_file: MeteredSeekableHTTPFile,  offset: int, whence: int, start_pos: int, expected: int):
+        http_file: MeteredSeekableHTTPFile,  offset: int, whence: Literal[0, 1, 2], start_pos: int, expected: int):
     http_file.content_length = 100
     http_file._pos = start_pos
     with patch.object(http_file, "seekable", return_value=True):

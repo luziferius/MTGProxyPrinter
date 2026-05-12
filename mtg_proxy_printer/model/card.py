@@ -35,6 +35,7 @@ SmoothTransformation = Qt.TransformationMode.SmoothTransformation
 IgnoreAspectRatio = Qt.AspectRatioMode.IgnoreAspectRatio
 Mode = QIcon.Mode
 
+
 def _create_corner_mask(size: QSize, corner_radius: int):
     image = QImage(size, QImage.Format.Format_Alpha8)
     image.fill(QColorConstants.Transparent)
@@ -51,6 +52,7 @@ CORNER_MASKS = {
     CardSizes.REGULAR.as_qsize_px(): _create_corner_mask(CardSizes.REGULAR.as_qsize_px(), 32),
     CardSizes.OVERSIZED.as_qsize_px(): _create_corner_mask(CardSizes.OVERSIZED.as_qsize_px(), 50),
 }
+
 
 class SVGIconEngine(QIconEngine):
     """An SVG icon engine"""
@@ -73,6 +75,7 @@ class SVGIconEngine(QIconEngine):
         painter = QPainter(pixmap)
         self.paint(painter, QRect(0, 0, size.width(), size.height()), mode, state)
         return pixmap
+
 
 @dataclasses.dataclass(frozen=True)
 class MTGSet:

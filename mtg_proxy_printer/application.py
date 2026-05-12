@@ -142,14 +142,15 @@ class Application(QApplication):
         elif not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
-        if args.file is not None:
-            if args.file.is_file():
-                QTimer.singleShot(0, lambda: self.run_async_task(DocumentLoader(self.document, args.file)))
-                logger.info(f'Enqueued loading of document "{args.file}"')
-            elif args.file.exists():
-                logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
+        file: pathlib.Path
+        if (file := args.file) is not None:
+            if file.is_file():
+                QTimer.singleShot(0, lambda: self.run_async_task(DocumentLoader(self.document, file)))
+                logger.info(f'Enqueued loading of document "{file}"')
+            elif file.exists():
+                logger.warning(f'Command line argument "{file}" exists, but is not a file. Not loading it.')
             else:
-                logger.warning(f'Command line argument "{args.file}" does not exist. Ignoring it.')
+                logger.warning(f'Command line argument "{file}" does not exist. Ignoring it.')
 
     def _open_databases(self, args: Namespace):
         if args.test_exit_on_launch:
