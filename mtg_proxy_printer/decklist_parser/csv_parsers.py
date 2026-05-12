@@ -17,20 +17,26 @@
 import abc
 import collections
 import csv
+from collections.abc import Sequence, Iterable
+from typing import TypedDict, NotRequired
 
 from PySide6.QtCore import QObject, QCoreApplication
 
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from ..model.card import Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 
 from .common import ParsedDeck, ParserBase
 from mtg_proxy_printer.logger import get_logger
+from ..units_and_sizes import UUID
+
 logger = get_logger(__name__)
 del get_logger
 
 LineParserResult = collections.Counter[Card]
 CsvLine = tuple[str, dict[str, str]]
+GatherStepResult = list[tuple[int, CardIdentificationData]]
 
 __all__ = [
     "ScryfallCSVParser",
@@ -66,7 +72,7 @@ class BaseCSVParser(ParserBase):
                 unmatched_lines.append(source)
         return deck, unmatched_lines
 
-    def _read_lines_from_csv(self, deck_list: str):
+    def _read_lines_from_csv(self, deck_list: str) -> tuple[csv.DictReader[str], Iterable[tuple[str, dict[str, str]]]]:
         lines = deck_list.splitlines()
         # Skip the header line when zipping the original lines and the parsed result.
         reader = csv.DictReader(lines, dialect=self.DIALECT_NAME)
@@ -77,8 +83,46 @@ class BaseCSVParser(ParserBase):
             -> LineParserResult:
         pass
 
+    def gather_card_identification_data_from_list(
+            self, lines: Sequence[dict[str, str]]) -> GatherStepResult:
+        """Extracts the """
+        return list(map(self.gather_card_identification_data, lines))
+
+    @abc.abstractmethod
+    def gather_card_identification_data(self, line: dict[str, str]) -> tuple[int, CardIdentificationData]:
+        pass
+
     def should_skip_entry(self, line: dict[str, str]) -> bool:
         return False
+
+
+class ScryfallCSVLine(TypedDict):
+    """The intersection of both supported Scryfall CSV output formats"""
+    artist: str
+    collector_number: str
+    eur_price: str
+    lang: str
+    mana_cost: str
+    name: str
+    rarity: str
+    scryfall_id: UUID
+    scryfall_uri: str
+    set: str
+    tix_price: str
+    usd_price: str
+    # Only present in deck lists
+    count: NotRequired[str]
+    finish: NotRequired[str]
+    set_code: NotRequired[str]
+    section: NotRequired[str]
+    type: NotRequired[str]
+    # Only present in search results
+    cmc: NotRequired[str]
+    image_uri: NotRequired[str]
+    mtgo_id: NotRequired[str]
+    multiverse_id: NotRequired[str]
+    type_line: NotRequired[str]
+    usd_foil_price: NotRequired[str]
 
 
 class ScryfallCSVParser(BaseCSVParser):
@@ -108,16 +152,31 @@ class ScryfallCSVParser(BaseCSVParser):
 
     DIALECT_NAME = "scryfall_com"
     USED_COLUMNS = {
-        "scryfall_id", "lang",
+        "scryfall_id"
     }
 
     @staticmethod
     def supported_file_types() -> dict[str, list[str]]:
         return {
-            QCoreApplication.translate("ScryfallCSVParser", "Scryfall CSV export"): ["csv"],
+            QCoreApplication.translate(
+                "ScryfallCSVParser", "Scryfall CSV export",
+                "Used as a file type filter in a file selection dialog"): ["csv"],
         }
 
-    def parse_cards_from_line(self, line: dict[str, str], guess_printing: bool, language_override: str = None) \
+    def gather_card_identification_data(self, line: ScryfallCSVLine) -> tuple[int, CardIdentificationData]:
+        copies = int(line.get("count", 1))  # Default to singleton for Scryfall search query results
+        data = CardIdentificationData(
+            #line["lang"],
+            #line["name"],  # Always the English name
+            # Deck lists use "set_code" for the code and "set" contains the human-readable name.
+            # Search result use "set" for the UPPER CASE set code.
+            #line.get("set_code") or line["set"].lower(),
+            #line["collector_number"],
+            line["scryfall_id"],
+        )
+        return copies, data
+
+    def parse_cards_from_line(self, line: ScryfallCSVLine, guess_printing: bool, language_override: str = None) \
             -> LineParserResult:
         cards = collections.Counter()
         scryfall_id = line["scryfall_id"]
@@ -125,11 +184,10 @@ class ScryfallCSVParser(BaseCSVParser):
         language = line["lang"]
         target_language = language_override or language
 
-        if card := self.card_db.get_card_with_scryfall_id(scryfall_id, True):
-            if language_override:
-                card = self.card_db.translate_card(card, target_language)
-            self._add_card_to_deck(cards, card, count)
-        elif card := self._handle_removed_printing(scryfall_id, language, guess_printing):
+        card = self.card_db.get_card_with_scryfall_id(scryfall_id, True) \
+            or self._handle_hidden_printing(scryfall_id, language)\
+            or self._handle_removed_printing(scryfall_id, language, guess_printing)
+        if card:
             if language_override:
                 card = self.card_db.translate_card(card, target_language)
             self._add_card_to_deck(cards, card, count)
@@ -139,8 +197,8 @@ class ScryfallCSVParser(BaseCSVParser):
             set_code = line.get("set_code")
             collector_number = line.get("collector_number")
             if english_name:
-                card_name = english_name if target_language == "en" else self.card_db.translate_card_name(
-                    CardIdentificationData("en", english_name, scryfall_id=scryfall_id), target_language)
+                card_name = english_name if target_language == "en" else self.card_db.translate_card_names(
+                    [CardIdentificationData("en", english_name, scryfall_id=scryfall_id)], target_language)[0]
             else:
                 card_name = english_name
             if card_name or (set_code and collector_number):
@@ -153,7 +211,20 @@ class ScryfallCSVParser(BaseCSVParser):
                 logger.info("Not enough data available to select a printing for the given line. Skipping.")
         return cards
 
-    def _handle_removed_printing(self, scryfall_id: str, language: str, guess_printing: bool) -> Card | None:
+    def _handle_hidden_printing(self, scryfall_id: UUID, language: str) -> Card | None:
+        oracle_id = self.card_db.get_oracle_id(scryfall_id)
+        to_test = [
+            CardIdentificationData(language, oracle_id=oracle_id),
+            CardIdentificationData(
+                mtg_proxy_printer.settings.settings["cards"]["preferred-language"], oracle_id=oracle_id),
+            CardIdentificationData(oracle_id=oracle_id),
+        ]
+        for test in to_test:
+            if result := self.card_db.get_cards_from_data(test):
+                return result[0]
+        return None
+
+    def _handle_removed_printing(self, scryfall_id: UUID, language: str, guess_printing: bool) -> Card | None:
         if self.card_db.is_removed_printing(scryfall_id):
             choices = self.card_db.get_replacement_card_for_unknown_printing(
                 CardIdentificationData(language, scryfall_id=scryfall_id, is_front=True),
@@ -164,6 +235,18 @@ class ScryfallCSVParser(BaseCSVParser):
                              f"using the best match: {result}")
                 return result
         return None
+
+
+class TappedOutCSVLine(TypedDict):
+    Board: str
+    Qty: str
+    Name: str
+    Printing: str
+    Foil: str
+    Alter: str
+    Signed: str
+    Condition: str
+    Language: str
 
 
 class TappedOutCSVParser(BaseCSVParser):
@@ -193,7 +276,9 @@ class TappedOutCSVParser(BaseCSVParser):
     @staticmethod
     def supported_file_types() -> dict[str, list[str]]:
         return {
-            QCoreApplication.translate("TappedOutCSVParser", "Tappedout CSV export"): ["csv"]
+            QCoreApplication.translate(
+                "TappedOutCSVParser", "Tappedout CSV export",
+                "Used as a file type filter in a file selection dialog"): ["csv"]
         }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
@@ -205,14 +290,25 @@ class TappedOutCSVParser(BaseCSVParser):
         if include_acquire_board:
             self.allowed_boards.add("acquire")
 
-    def parse_cards_from_line(self, line: dict[str, str], guess_printing: bool, language_override: str = None) \
+    def gather_card_identification_data(
+            self, line: TappedOutCSVLine) -> tuple[int, CardIdentificationData]:
+        if self.should_skip_entry(line):
+            return 0, CardIdentificationData()
+        copies = int(line["Qty"])  # Quantity (Qty) contains the number of copies
+        target_language = self._read_language(line)
+        set_code = self._read_set_code(line)
+        english_name = line["Name"]
+        return copies, CardIdentificationData(
+            language=target_language, name=english_name, set_code=set_code)
+
+    def parse_cards_from_line(self, line: TappedOutCSVLine, guess_printing: bool, language_override: str = None) \
             -> LineParserResult:
         cards = collections.Counter()
         target_language = language_override or self._read_language(line)
         set_code = self._read_set_code(line)
         english_name = line["Name"]
-        card_name = self.card_db.translate_card_name(
-            CardIdentificationData("en", english_name, set_code), target_language)\
+        card_name = self.card_db.translate_card_names(
+            [CardIdentificationData("en", english_name, set_code)], target_language)[0]\
             if target_language != "en" else english_name
         if english_name and not card_name:
             # Unable to translate card. Missing localized card data? Defaulting to English
@@ -235,14 +331,14 @@ class TappedOutCSVParser(BaseCSVParser):
         return cards
 
     @staticmethod
-    def _read_set_code(line: dict[str, str]) -> str | None:
+    def _read_set_code(line: TappedOutCSVLine) -> str | None:
         set_code = line.get("Printing")
         if set_code:
             # TappedOut uses upper case set codes, so convert to lower case
             set_code = set_code.lower()
         return set_code
 
-    def _read_language(self, line: dict[str, str]):
+    def _read_language(self, line: TappedOutCSVLine):
         try:
             language = line["Language"]
         except KeyError:
@@ -255,7 +351,7 @@ class TappedOutCSVParser(BaseCSVParser):
             language = "en"
         return language
 
-    def should_skip_entry(self, line: dict[str, str]) -> bool:
+    def should_skip_entry(self, line: TappedOutCSVLine) -> bool:
         board = line["Board"]
         return board not in self.allowed_boards
 

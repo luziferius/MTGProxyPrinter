@@ -44,13 +44,13 @@ def card_db(request) -> CardDatabase:
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     with unittest.mock.patch.dict(section, settings_to_use):
-        card_db = CardDatabase(":memory:", check_same_thread=False)
+        CardDatabase.main_instance = card_db = CardDatabase(":memory:", check_same_thread=False)
     db = card_db.db
     if request.param:
         db.execute("PRAGMA reverse_unordered_selects = TRUE")
     PrintingFilterUpdater(card_db, card_db.db).run()
     yield card_db
-    del card_db.db
+    CardDatabase.main_instance = None
     db.close()
 
 
@@ -84,8 +84,8 @@ def image_db(qtbot, tmp_path: Path) -> ImageDatabase:
 
 
 @pytest.fixture
-def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
-    fill_card_database_with_json_cards(qtbot, card_db, [
+def document(card_db: CardDatabase, image_db: ImageDatabase) -> Document:
+    fill_card_database_with_json_cards(card_db, [
         "regular_english_card", "oversized_card", "english_double_faced_card"])
     return Document(card_db, image_db)
 

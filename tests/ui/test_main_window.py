@@ -50,7 +50,7 @@ def _create_task_receiver(main_window: MainWindow) -> AsyncTaskReceiver:
 
 @pytest.fixture(params=[Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, Ui_TabbedCentralWidget])
 def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Generator[MainWindow, None, None]:
-    fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
+    fill_card_database_with_json_cards(card_db, ["regular_english_card", "oversized_card"])
     with patch(
             "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",
             return_value=request.param), \
@@ -61,7 +61,7 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Ge
             patch.object(
                 mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask, "read_json_card_data_from",
                 return_value=iter([10])):
-        main_window = MainWindow(card_db, document.image_db, document, QStringListModel(["en"]))
+        main_window = MainWindow(document.image_db, document, QStringListModel(["en"]))
         qtbot.add_widget(main_window)
         with qtbot.wait_exposed(main_window, timeout=1000):
             main_window.show()
@@ -223,9 +223,10 @@ def test_compacting_document_while_last_page_is_selected_works_without_raising_e
     """
     ui = main_window.ui
     document = main_window.document
+    card_db = CardDatabase.main_instance
     cards = [
-        main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True),
-        main_window.card_database.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
+        card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True),
+        card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
     ]*2
     pages = main_window.document.pages
     document.apply(ActionNewPage(count=len(cards)))
@@ -244,10 +245,11 @@ def test_removing_last_page_while_selected_works_without_raising_exception(main_
     assert_that(main_window.document.rowCount(), is_(1))
 
 
-def test_undo_load_document_with_middle_page_selected_works_without_raising_exception(main_window: MainWindow):
+def test_undo_load_document_with_middle_page_selected_works_without_raising_exception(
+        main_window: MainWindow, card_db: CardDatabase):
     from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
     document = main_window.document
-    card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     action = ActionLoadDocument(pathlib.Path(), [
         [card], [card], [card]
     ], document.page_layout)
@@ -258,10 +260,11 @@ def test_undo_load_document_with_middle_page_selected_works_without_raising_exce
     assert_that(main_window.document.rowCount(), is_(1))
 
 
-def test_undo_import_deck_list_with_last_page_selected_works_without_raising_exception(main_window):
+def test_undo_import_deck_list_with_last_page_selected_works_without_raising_exception(
+        main_window: MainWindow, card_db: CardDatabase):
     from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
     document = main_window.document
-    card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     page_capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
     card.image_file = main_window.image_db.get_blank()
     action = ActionImportDeckList(

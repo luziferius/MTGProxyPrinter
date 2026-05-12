@@ -29,7 +29,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QObject, Signal, Slot
 
 from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, OptionalCard, CardList, CustomCard
-from mtg_proxy_printer.model.imagedb_files import CacheContent
+from mtg_proxy_printer.model.imagedb_files import CacheContent, ImageQuality
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
@@ -48,7 +48,7 @@ SCHEMA_NAME = "carddb"
 # once per month or so.
 MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
 T = TypeVar("T", Card, CheckCard, CustomCard)
-ParameterList = list[str | bool]
+ParameterList = list[str | bool | None]
 write_semaphore = threading.BoundedSemaphore()
 
 __all__ = [
@@ -104,6 +104,7 @@ class CardDatabase(QObject):
     Holds the connection to the local SQLite database that contains the relevant card data.
     Provides methods for data access.
     """
+    main_instance: CardDatabase = None
     card_data_updated = Signal()
     custom_cards: dict[UUID, CustomCard] = {}
 
@@ -153,6 +154,7 @@ class CardDatabase(QObject):
             self.db.rollback()
             self.db.close()
         self.db = db
+        db.row_factory = sqlite3.Row
         self._db_is_temporary = outdated_on_disk
         self.begin_transaction()
         if reopened:
@@ -193,8 +195,8 @@ class CardDatabase(QObject):
     def get_last_card_data_update_timestamp(self) -> datetime.datetime | None:
         """Returns the last card data update timestamp, or None, if no card data was ever imported"""
         query: LiteralString = "SELECT MAX(update_timestamp) FROM LastDatabaseUpdate -- get_last_card_data_update_timestamp\n"
-        result: str = self._read_optional_scalar_from_db(query)
-        return datetime.datetime.fromisoformat(result) if result else None
+        result: int = self._read_optional_scalar_from_db(query)
+        return datetime.datetime.fromtimestamp(result) if result else None
 
     def allow_updating_card_data(self) -> bool:
         """
@@ -208,28 +210,31 @@ class CardDatabase(QObject):
     def get_all_languages(self) -> list[str]:
         """Returns the list of all known and visible languages, sorted ascendingly."""
         logger.debug("Reading all known languages")
-        query: LiteralString = "SELECT language FROM PrintLanguage ORDER BY language ASC -- get_all_languages()\n"
+        query: LiteralString = cached_dedent('''\
+        SELECT DISTINCT "language" -- get_all_languages()
+          FROM Printing
+          ORDER BY language ASC
+        ''')
         return self._read_scalar_list_from_db(query)
 
     def get_card_names(self, language: str, card_name_filter: str = None) -> list[str]:
         """Returns a sorted list with all card names in the given language that match the given filter."""
         logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
+        # This DISTINCT finds all spelling variants within a language,
+        # mostly caused by typos in international printings. Other deduplication methods,
+        # like `GROUP BY card_id, language` will choose an arbitrary spelling that may or may not be correct
         query: LiteralString = cached_dedent('''\
-        SELECT card_name -- get_card_names()
-            FROM FaceName
-            JOIN PrintLanguage USING (language_id)
-            WHERE FaceName.is_hidden IS FALSE
-              AND language = ?
+        SELECT DISTINCT face_name -- get_card_names()
+          FROM Printing 
+          INNER JOIN PrintingFace USING (printing_id)
+            WHERE "language" = ?
+              AND Printing.is_visible IS TRUE
               {name_filter}
-            ORDER BY card_name ASC
+            ORDER BY face_name ASC
         ''')
-        name_filter: LiteralString = 'AND card_name LIKE ?' if card_name_filter else ''
+        name_filter: LiteralString = 'AND face_name GLOB ?' if card_name_filter else ''
         query = query.format(name_filter=name_filter)
-
-        parameters: ParameterList = [language]
-        if card_name_filter:
-            parameters.append(f"{card_name_filter}%")
-
+        parameters = (language, f"{card_name_filter}*") if card_name_filter else (language,)
         return self._read_scalar_list_from_db(query, parameters)
 
     def get_basic_land_oracle_ids(
@@ -242,30 +247,49 @@ class CardDatabase(QObject):
         if include_snow_basics:
             names += [f"Snow-Covered {name}" for name in names]
         query = cached_dedent(f'''\
-            SELECT DISTINCT oracle_id -- get_basic_land_oracle_ids()
-              FROM AllPrintings
-              WHERE language = 'en'
-              AND card_name IN
+            SELECT DISTINCT oracle_id
+              FROM Card
+              INNER JOIN Printing USING (card_id)
+              INNER JOIN PrintingFace USING (printing_id)
+              WHERE "language" = 'en'
+                AND is_card IS TRUE
+                AND face_name IN
                 ({", ".join("?"*len(names))})
         ''')
         return {item for item, in self.db.execute(query, names)}
 
+    def get_oracle_id(self, scryfall_id: UUID) -> UUID | None:
+        # FIXME: THIS IS UNTESTED CODE!
+        row = self.db.execute(cached_dedent("""\
+            SELECT oracle_id -- get_oracle_id()
+              FROM RemovedPrintings
+              WHERE scryfall_id = ?"""), (scryfall_id,)).fetchone() \
+            or self.db.execute(cached_dedent("""\
+            SELECT oracle_id -- get_oracle_id()
+              FROM Printing 
+              INNER JOIN Card USING (card_id)
+              WHERE scryfall_id = ?"""), (scryfall_id,)).fetchone()
+        match row:
+            case sqlite3.Row() as row:
+                return row["oracle_id"]
+            case _:
+                return None
+
     def is_valid_and_unique_card(self, card: CardIdentificationData) -> bool:
+        # FIXME: THIS IS UNTESTED CODE!
         """Checks, if the given card data represents a unique card printing"""
         query = cached_dedent('''\
         SELECT COUNT(*) = 1 AS is_unique -- is_valid_and_unique_card()
-            FROM CardFace
+            FROM PrintingFace
             JOIN Printing USING (printing_id)
             JOIN MTGSet USING (set_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            WHERE Printing.is_hidden IS FALSE
+            WHERE Printing.is_visible IS TRUE
         ''')
 
         where_clause = '    AND "language" = ?\n'
         parameters: ParameterList = [card.language]
         if card.name:
-            where_clause += '    AND card_name = ?\n'
+            where_clause += '    AND face_name = ?\n'
             parameters.append(card.name)
         if card.set_code:
             where_clause += '    AND set_code = ?\n'
@@ -289,57 +313,56 @@ class CardDatabase(QObject):
          :param order_by_print_count: Enable sorting the result list by the recorded print count. Defaults to False
         """
         query = cached_dedent('''\
-        SELECT card_name, set_code, set_name, collector_number, png_image_uri, scryfall_id, is_front,
-                oracle_id, highres_image, is_oversized, face_number, language, is_dfc -- get_cards_from_data()
+        SELECT face_name, set_code, set_name, icon_svg, collector_number, png_image_uri, scryfall_id, is_front,
+                oracle_id, is_highres_image, is_oversized, language, is_dfc -- get_cards_from_data()
             FROM VisiblePrintings
+            WHERE ({columns}) = ({parameters})
+            ORDER BY {order_by_terms}
         ''')
-        if order_by_print_count:
-            query += '    LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)\n'
-        where_clause = ['    WHERE TRUE']
-        where_parameters = []
+        columns: list[LiteralString] = []
+        parameters = []
         if card.language:
-            where_clause.append(f'AND "language" = ?')
-            where_parameters.append(card.language)
+            columns.append('"language"')
+            parameters.append(card.language)
         if card.name:
-            where_clause.append(f'AND card_name = ?')
-            where_parameters.append(card.name)
+            columns.append('face_name')
+            parameters.append(card.name)
         if card.set_code:
-            where_clause.append(f'AND set_code = ?')
-            where_parameters.append(card.set_code)
+            columns.append('set_code')
+            parameters.append(card.set_code)
         if card.collector_number:
-            where_clause.append(f'AND collector_number = ?')
-            where_parameters.append(card.collector_number)
+            columns.append('collector_number')
+            parameters.append(card.collector_number)
         if card.is_front is not None:
-            where_clause.append(f'AND is_front = ?')
-            where_parameters.append(card.is_front)
+            columns.append('is_front')
+            parameters.append(card.is_front)
         if card.scryfall_id:
-            where_clause.append(f'AND scryfall_id = ?')
-            where_parameters.append(card.scryfall_id)
+            columns.append('scryfall_id')
+            parameters.append(card.scryfall_id)
         if card.oracle_id:
-            where_clause.append(f'AND oracle_id = ?')
-            where_parameters.append(card.oracle_id)
-        where_clause.append("")  # Insert final newline after joining
-        query += "\n    ".join(where_clause)
-        order_by_terms = ["is_token ASC"]
+            columns.append('oracle_id')
+            parameters.append(card.oracle_id)
+        order_by_terms = ["is_card DESC", "is_highres_image DESC", "release_date DESC"]
         if order_by_print_count:
-            order_by_terms.append("LastImageUseTimestamps.usage_count DESC NULLS LAST")
-        order_by_terms.append("wackiness_score ASC")
-        order_by_terms.append("highres_image DESC")
-        order_by_terms.append("release_date DESC")
-        query += "ORDER BY " + "\n    ,".join(order_by_terms)
-        return self._get_cards_from_data(query, where_parameters)
+            order_by_terms.insert(1, "usage_count DESC NULLS LAST")
+        query = query.format(
+            columns=', '.join(columns),
+            parameters=', '.join("?"*len(columns)),
+            order_by_terms=", ".join(order_by_terms)
+        )
+
+        return self._get_cards_from_data(query, parameters)
 
     def get_replacement_card_for_unknown_printing(
             self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
         preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
         query = cached_dedent('''\
         -- get_replacement_card_for_unknown_printing()
-        SELECT card_name, set_code, set_name, collector_number, png_image_uri,
-               VisiblePrintings.scryfall_id, is_front, oracle_id, highres_image,
-               is_oversized, face_number, VisiblePrintings.language, is_dfc
+        SELECT face_name, set_code, set_name, icon_svg, collector_number, png_image_uri,
+               VisiblePrintings.scryfall_id AS scryfall_id, is_front, oracle_id, is_highres_image,
+               is_oversized, VisiblePrintings.language AS language, is_dfc
             FROM RemovedPrintings
             JOIN VisiblePrintings USING (oracle_id)
-            LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)
             WHERE RemovedPrintings.scryfall_id = ?
             AND is_front = ?
             ORDER BY
@@ -347,26 +370,27 @@ class CardDatabase(QObject):
                (4*(VisiblePrintings.language == RemovedPrintings.language) +
                 2*(VisiblePrintings.language == ?) +
                   (VisiblePrintings.language == 'en')) DESC NULLS LAST,
-                wackiness_score ASC,
                 release_date DESC
         ''')
         if order_by_print_count:
-            query += '        , LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
+            query += '        , usage_count DESC NULLS LAST\n'
         # Break any remaining ties by preferring high resolution images over low resolution images
-        query += '        , VisiblePrintings.highres_image DESC\n'
+        query += '        , VisiblePrintings.is_highres_image DESC\n'
         return self._get_cards_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
 
     def _get_cards_from_data(self, query, parameters) -> CardList:
         cursor = self.db.execute(query, parameters)
-        return [
+        result = [
             Card(
-                name, MTGSet(set_code, set_name), collector_number,
-                language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), CardSizes.from_bool(is_oversized), face_number, bool(is_dfc),
+                name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
+                collector_number=row["collector_number"], language=row["language"],
+                scryfall_id=row["scryfall_id"], is_front=row["is_front"],  oracle_id=row["oracle_id"],
+                image_uri=row["png_image_uri"], highres_image=row["is_highres_image"],
+                size=CardSizes.from_bool(row["is_oversized"]), is_dfc=row["is_dfc"],
             )
-            for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
-            is_oversized, face_number, language, is_dfc in cursor
+            for row in cursor
         ]
+        return result
 
     def find_related_cards(self, card: Card) -> CardList:
         """
@@ -377,7 +401,8 @@ class CardDatabase(QObject):
         Non-token cards may find anything, including other cards, tokens, emblems, dungeons, planes, etc.
 
         Non-regular cards may not find non-token cards as that would create potentially huge graphs due to
-        evergreen tokens like Treasures, Food, Clues, 2/2 Zombies, The Ring emblem, etc.
+        evergreen tokens like Treasures, Food, Clues, 2/2 Zombies
+        or designations, like Dungeons or The Ring emblem, that are created by a set mechanic.
         """
         query = cached_dedent("""\
         WITH RECURSIVE   -- find_related_cards()
@@ -387,14 +412,14 @@ class CardDatabase(QObject):
             WHERE oracle_id = ?),
           related_oracle_ids(related_id) AS (
             SELECT related_id
-              FROM RelatedPrintings
+              FROM RelatedCards
               JOIN source_oracle_id USING (card_id)
             UNION  -- Deduplicate to break infinite recursion on cross-referenced cards
-            SELECT RelatedPrintings.related_id
-              FROM RelatedPrintings
-              JOIN related_oracle_ids ON RelatedPrintings.card_id = related_oracle_ids.related_id
+            SELECT RelatedCards.related_id
+              FROM RelatedCards
+              JOIN related_oracle_ids ON RelatedCards.card_id = related_oracle_ids.related_id
               -- Do not include the initial input card in the output dataset
-              WHERE RelatedPrintings.related_id NOT IN (SELECT source_oracle_id.card_id FROM source_oracle_id)
+              WHERE RelatedCards.related_id NOT IN (SELECT source_oracle_id.card_id FROM source_oracle_id)
         )
         SELECT oracle_id
           FROM Card
@@ -417,12 +442,16 @@ class CardDatabase(QObject):
                     CardIdentificationData("en", oracle_id=related_oracle_id),
                     order_by_print_count=True)
             if related_cards:
-                cards.append(related_cards[0])
+                found = related_cards[0]
+                cards.append(found)
+                if found.is_dfc:
+                    cards.append(self.get_opposing_face(found))
         return cards
 
     def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> list[str]:
         """
-        Finds all collector numbers matching the given filter. The result contains multiple elements, if the card
+        Finds all visible collector numbers matching the given filter parameters.
+        The result contains multiple elements, if the card
         had multiple variants with distinct collector numbers in the given set.
 
         :param card_name: Card name, matched exactly
@@ -435,16 +464,11 @@ class CardDatabase(QObject):
         # in the AddCardWidget results in a duplicated entry in the collector number selection list.
         query = cached_dedent('''\
         SELECT DISTINCT collector_number -- find_collector_numbers_matching()
-            FROM CardFace
-            JOIN Printing USING (printing_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            JOIN MTGSet USING (set_id)
-            WHERE Printing.is_hidden IS FALSE
-              AND FaceName.is_hidden IS FALSE
-              AND "language" = ?
-              AND set_code = ?
-              AND card_name = ?
+          FROM Printing
+          JOIN PrintingFace USING (printing_id)
+          JOIN MTGSet USING (set_id)
+          WHERE (is_visible, "language", set_code, face_name)
+              = (TRUE,       ?,          ?,        ?)
         ''')
         return natural_sorted(item for item, in self.db.execute(query, (language, set_code, card_name)))
 
@@ -457,34 +481,30 @@ class CardDatabase(QObject):
         :param card_name: Card name, matched exactly
         :param language: card language, matched exactly
         :param set_name_filter: If provided, only return sets with set code or full name beginning with this.
-          Used as a LIKE pattern, supporting SQLite wildcards.
+          Used as a GLOB pattern, supporting * as wildcards.
         :param is_front: Match by front/back. Only relevant when switching printings of SLD reversible cards.
         :return: list of matching sets, as tuples (set_abbreviation, full_english_set_name)
         """
         query = cached_dedent('''\
-        SELECT DISTINCT set_code, set_name  -- find_sets_matching()
-            FROM CardFace
-            JOIN Printing USING (printing_id)
-            JOIN MTGSet USING (set_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            WHERE Printing.is_hidden IS FALSE
-              AND FaceName.is_hidden IS FALSE
-              AND "language" = ?
-              AND card_name = ?
+        SELECT DISTINCT set_code, set_name, icon_svg  -- find_sets_matching()
+          FROM Printing 
+          INNER JOIN PrintingFace USING (printing_id)
+          INNER JOIN MTGSet USING (set_id)
+          WHERE (is_visible, "language", face_name)
+              = (TRUE,       ?,          ?)
               AND COALESCE(is_front = ?, TRUE)
         ''')
         parameters: ParameterList = [language, card_name, is_front]
         if set_name_filter:
-            query += '      AND (set_code LIKE ? OR set_name LIKE ?)\n'
-            parameters += [f"{set_name_filter}%"] * 2
+            query += '      AND (set_code GLOB ? OR set_name GLOB ?)\n'
+            parameters += [f"{set_name_filter}*"] * 2
 
         query += '    ORDER BY set_name ASC\n'
         return list(starmap(MTGSet, self.db.execute(query, parameters)))
 
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         """
-        Returns the printing identified by the scryfall_id and side.
+        Returns the printing identified by the scryfall_id and side, if it is not hidden.
         Returns None, if such printing does not exist, or if the requested printing is hidden.
 
         :param scryfall_id: UUID of the requested printing
@@ -492,23 +512,20 @@ class CardDatabase(QObject):
         :return: A Card, if it exists and is visible, None otherwise
         """
         query = cached_dedent('''\
-        SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
-            highres_image, is_oversized, face_number, is_dfc -- get_card_with_scryfall_id()
+        SELECT face_name, set_code, set_name, icon_svg, collector_number, "language", png_image_uri, oracle_id,
+          is_highres_image, is_oversized, is_dfc -- get_card_with_scryfall_id()
             FROM VisiblePrintings
-            WHERE scryfall_id = ? AND is_front = ?
+            WHERE (scryfall_id, is_front) = (?, ?)
         ''')
-        result = self.db.execute(query, (scryfall_id, is_front)).fetchone()
-        if result is None:
+        if (row := self.db.execute(query, (scryfall_id, is_front)).fetchone()) is None:
             return None
-        else:
-            name, set_code, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
-                is_oversized, face_number, is_dfc = result
-            size = CardSizes.from_bool(is_oversized)
-            return Card(
-                name, MTGSet(set_code, set_name), collector_number,
-                language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), size, face_number, bool(is_dfc),
-            )
+        return Card(
+            name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
+            collector_number=row["collector_number"], language=row["language"], scryfall_id=scryfall_id,
+            is_front=is_front, oracle_id=row["oracle_id"], image_uri=row["png_image_uri"],
+            highres_image=row["is_highres_image"], size=CardSizes.from_bool(row["is_oversized"]),
+            is_dfc=row["is_dfc"]
+        )
 
     def get_all_cards_from_image_cache(self, cache_content: list[CacheContent]) -> ImageDatabaseCards:
         """
@@ -520,29 +537,31 @@ class CardDatabase(QObject):
         Visible and invisible printings are returned as lists containing tuples (Card, CacheContent),
         unknown images are returned as a list with plain CacheContent instances.
         """
+        # FIXME: DEPRECATED. Replace once the image database content is synced each application start
+        #  into the card database PrintingFace.download_status column
         db = self.db
         db.execute("SAVEPOINT 'partition_image_cache' -- get_all_cards_from_image_cache()\n")
         db.execute(cached_dedent('''\
             CREATE TEMP TABLE ImagesOnDisk ( -- get_all_cards_from_image_cache()
               scryfall_id TEXT NOT NULL,
-              is_front INTEGER NOT NULL,
-              highres_on_disk INTEGER NOT NULL,
+              is_front BOOLEAN_INTEGER NOT NULL,
+              highres_on_disk BOOLEAN_INTEGER NOT NULL,
               absolute_path TEXT NOT NULL
             )
         '''))
         db.executemany(
             cached_dedent("""\
             INSERT INTO ImagesOnDisk -- get_all_cards_from_image_cache()
-              (scryfall_id, is_front, highres_on_disk, absolute_path)
-              VALUES (?, ?, ?, ?)"""),
+                     (scryfall_id, is_front, highres_on_disk, absolute_path)
+              VALUES (?,           ?,        ?,               ?)"""),
             map(dataclasses.astuple, cache_content)
         )
         known_images_query = cached_dedent('''\
         SELECT scryfall_id, is_front, highres_on_disk, absolute_path, -- get_all_cards_from_image_cache()
-            card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
-            is_oversized, face_number, is_dfc, is_hidden -- get_all_cards_from_image_cache()
+            face_name, set_code, set_name, icon_svg, collector_number, "language", png_image_uri, oracle_id,
+            is_oversized, is_dfc, is_visible
             FROM AllPrintings
-            NATURAL JOIN ImagesOnDisk
+            INNER JOIN ImagesOnDisk USING (scryfall_id, is_front)
         ''')
         # Using an EXCEPT compound query in the subquery is faster (~80ms) than a NOT IN () subquery (~700ms)
         unknown_images_query = cached_dedent('''\
@@ -554,29 +573,31 @@ class CardDatabase(QObject):
             EXCEPT
             SELECT scryfall_id, is_front
               FROM Printing
-              JOIN CardFace USING (printing_id)
+              JOIN PrintingFace USING (printing_id)
           )
         ''')
         cards = ImageDatabaseCards([], [], [])
+        qualities = {True: ImageQuality.high_resolution, False: ImageQuality.low_resolution}
         cards.unknown[:] = (
-            CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), Path(abs_path))
-            for scryfall_id, is_front, highres_on_disk, abs_path
-            in db.execute(unknown_images_query))
-        for scryfall_id, is_front, highres_on_disk, abs_path, \
-                name, set_code, set_name, collector_number, language, image_uri, oracle_id, \
-                is_oversized, face_number, is_dfc, is_hidden \
-                in db.execute(known_images_query):
-            cache_item = CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), Path(abs_path))
-            size = CardSizes.from_bool(is_oversized)
+            CacheContent(
+                scryfall_id=row["scryfall_id"], is_front=row["is_front"],
+                image_quality=qualities[row["highres_on_disk"]], absolute_path=Path(row["absolute_path"]))
+            for row in db.execute(unknown_images_query))
+
+        for row in db.execute(known_images_query):
+            cache_item = CacheContent(
+                scryfall_id=row["scryfall_id"], is_front=row["is_front"],
+                image_quality=qualities[row["highres_on_disk"]], absolute_path=Path(row["absolute_path"]))
             card = Card(
-                name, MTGSet(set_code, set_name), collector_number,
-                language, cache_item.scryfall_id, cache_item.is_front, oracle_id, image_uri,
-                bool(highres_on_disk), size, face_number, is_dfc
+                row["face_name"], MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
+                row["collector_number"],
+                row["language"], cache_item.scryfall_id, cache_item.is_front, row["oracle_id"], row["png_image_uri"],
+                row["highres_on_disk"], CardSizes.from_bool(row["is_oversized"]), row["is_dfc"]
             )
-            if is_hidden:
-                cards.hidden.append((card, cache_item))
-            else:
+            if row["is_visible"]:
                 cards.visible.append((card, cache_item))
+            else:
+                cards.hidden.append((card, cache_item))
         db.execute("ROLLBACK TRANSACTION TO SAVEPOINT 'partition_image_cache' -- get_all_cards_from_image_cache()\n")
         return cards
 
@@ -590,9 +611,9 @@ class CardDatabase(QObject):
         """Guesses the card language from the card name. Returns None, if no result was found."""
         query = cached_dedent('''\
         SELECT "language" -- guess_language_from_name()
-            FROM FaceName
-            JOIN PrintLanguage USING (language_id)
-            WHERE card_name = ?
+            FROM PrintingFace
+            INNER JOIN Printing USING (printing_id)
+            WHERE face_name = ?
             -- Assume English by default to not match other languages in case their entry misses the proper
             -- localisation and uses the English name as a fallback.
             ORDER BY "language" = 'en' DESC;
@@ -603,74 +624,121 @@ class CardDatabase(QObject):
         """Returns True, if the given two-letter code is a known language. Returns False otherwise."""
         query = cached_dedent('''
         SELECT EXISTS( -- is_known_language()
-            SELECT *
-            FROM PrintLanguage
+            SELECT 42
+            FROM Printing
             WHERE "language" = ?
         )
         ''')
         return bool(self._read_optional_scalar_from_db(query, (language,)))
 
     def is_dfc(self, scryfall_id: str) -> bool:
-        """Returns True, if the given card is a DFC, False otherwise."""
-        # This query returns two values for DFC cards, but that does not pose any issue
+        """Returns True, if the given scryfall_id belongs to a double-faced card, False otherwise."""
         query = cached_dedent('''
         SELECT is_dfc -- is_dfc()
-          FROM AllPrintings
+          FROM Printing
           WHERE "scryfall_id" = ?
         ''')
         return bool(self._read_optional_scalar_from_db(query, (scryfall_id,)))
 
-    def translate_card_name(self, card_data: CardIdentificationData | Card, target_language: str,
-                            include_hidden_names: bool = False) -> str | None:
+    def translate_card_names(self, card_data_list: list[CardIdentificationData | Card],
+                             target_language: str | list[str],
+                             include_hidden_names: bool = False) -> list[str | None]:
         """
-        Translates a card into the target_language. Uses the language in the card data as the source language, if given.
+        Translates a list of card names into the target_language.
+        Data is passed as CardIdentificationData or Card instances to include additional data along the name.
+        Uses the language in the card data as the source language, if given.
         If not, card names across all languages are searched.
 
-        :return: String with the translated card name, or None, if either unknown or unavailable in the target language.
+        If target_language is a list of languages, this method performs an elementwise translation,
+        thus the length must match the card_data_list. Then, the card data list and target language list are
+        zipped together, and each source card is translated to its associated target language. This is primarily useful
+        for translating deck lists, where each line contains the card language together with the English name.
+
+        Can take the source scryfall id or source set code as an optional disambiguation in case
+        that a translation is ambiguous. As an example, “Duress” is translated to “Zwang” in German, except for
+        the one time in the 6th Edition set, where the English “Coercion” was also translated to “Zwang”.
+        So given “Zwang” in German without further context, it may mean one of two cards.
+        If no context is given, because these translation mistakes are outliers,
+        this query performs a majority vote, as that is the most likely expected
+        result. But if context is given by the scryfall id or the set code, the exact, set-specific
+        translation is returned.
+
+        :param card_data_list: A list containing Card or CardIdentificationData instances.
+          Accesses the name, language, scryfall_id and set_code fields
+        :param target_language: Target language or languages list to translate to.
+        :param include_hidden_names: If True, can look at hidden printings.
+          If False, translation can fail if the only potential results are from hidden printings.
+        :return: List of strings with the translated card names. Has same length as the input list.
+          Individual elements can be None, if either unknown or unavailable in the target language.
         """
-        # Implementation note: First two query parameters may be None/NULL and can be used as a disambiguation in case
-        # that a translation is ambiguous. As an example, “Duress” is translated to “Zwang” in German, except for
-        # the one time in the 6th Edition set, where the English “Coercion” was also translated to “Zwang”.
-        # So given “Zwang” in German without further context, it may mean one of two cards.
-        # So if no context is given, this query performs a majority vote, because that is the most likely expected
-        # result. But if context is given, either by the scryfall id or the set code, the exact, set-specific
-        # translation is returned.
-        card_view: LiteralString = "AllPrintings" if include_hidden_names else "VisiblePrintings"
-        query = cached_dedent("""\
-        WITH  -- translate_card_name()
-          source_context (source_scryfall_id, source_set_code) AS (SELECT ?, ?),
-          source_oracle_id (oracle_id, face_number, source_score, source_set_code) AS (
-            SELECT oracle_id, face_number,
-                (SELECT count() FROM Card)
+        if not card_data_list:
+            return []
+        if isinstance(target_language, str):
+            target_language = [target_language]*len(card_data_list)
+
+        # The temporary table itself can stay in the temp namespace after use, but content is cleared at the end
+        self.db.execute(cached_dedent("""\
+        CREATE TEMPORARY TABLE IF NOT EXISTS TranslateCardSourceContext (  -- translate_card_names()
+          source_row         INTEGER PRIMARY KEY NOT NULL,
+          source_scryfall_id TEXT,
+          source_set_code    TEXT,
+          source_name        TEXT NOT NULL,
+          source_language    TEXT,
+          target_language    TEXT NOT NULL
+         )"""))
+        parameters = (
+            (card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_lang)
+            for card_data, target_lang in zip(card_data_list, target_language, strict=True))
+        self.db.executemany(cached_dedent("""\
+        INSERT INTO TranslateCardSourceContext   -- translate_card_names()
+               (source_scryfall_id,    source_set_code,    source_name,    source_language, target_language)
+        VALUES (?,                     ?,                  ?,              ?,               ?)
+        """), parameters)
+        translate_query = cached_dedent("""\
+        WITH  -- translate_card_names()
+          card_count(card_count) AS (SELECT count() FROM Card),
+          source_card_id (source_row, card_id, is_front, set_id, source_score, target_language) AS (
+                SELECT source_row, card_id, is_front, set_id,
+                card_count
                   * (COALESCE(scryfall_id = source_scryfall_id, 0)
                      OR COALESCE(set_code = source_set_code, 0))
-                  + count(oracle_id) AS source_score,
-                set_code AS source_set_code
-            FROM FaceName
-            JOIN PrintLanguage USING (language_id)
-            JOIN CardFace USING (face_name_id)
-            JOIN Printing USING (printing_id)
-            JOIN Card USING (card_id)
-            JOIN MTGSet USING (set_id)
-            JOIN source_context ON (
-               COALESCE(set_code = source_set_code, TRUE) AND
-               COALESCE(scryfall_id = source_scryfall_id, TRUE))
-            WHERE card_name = ? AND COALESCE("language" = ?, TRUE)
-            GROUP BY oracle_id, face_number
+                  + count(oracle_id) AS source_score, target_language
+            FROM card_count
+            INNER JOIN PrintingFace
+            INNER JOIN Printing USING (printing_id)
+            INNER JOIN Card USING (card_id)
+            INNER JOIN MTGSet USING (set_id)
+            INNER JOIN TranslateCardSourceContext ON (
+               face_name = source_name
+               AND COALESCE(language = source_language, TRUE)
+               AND COALESCE(scryfall_id = source_scryfall_id, TRUE)
+               AND COALESCE(set_code = source_set_code, TRUE)
+               )
+            GROUP BY oracle_id, is_front
+          ),
+          english_face_name(card_id, is_front, english_name) AS (
+            SELECT DISTINCT card_id, PrintingFace.is_front, face_name
+            FROM PrintingFace INNER JOIN Printing USING (printing_id)
+            INNER JOIN source_card_id USING (card_id, is_front)
+            WHERE language = 'en'
             )
-        SELECT card_name
-          FROM source_oracle_id
-          JOIN {card_view} USING (oracle_id, face_number)
-          WHERE language = ?
-          GROUP BY card_name
-          -- Some localized names were updated to fix typos and similar, so prefer the newest, matched name
-          ORDER BY source_score DESC, set_code = source_set_code DESC, release_date DESC
-          LIMIT 1
-        ;
-        """).format(card_view=card_view)
-        parameters: ParameterList = [
-            card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language]
-        return self._read_optional_scalar_from_db(query, parameters)
+        SELECT source_row, face_name
+          FROM PrintingFace
+          INNER JOIN Printing USING (printing_id)
+          INNER JOIN source_card_id USING (card_id, is_front, set_id)
+          INNER JOIN english_face_name USING (card_id, is_front)
+          WHERE language = target_language AND (? OR is_visible IS TRUE)
+          -- Some None-English printings have English placeholder names. Exclude those from result sets
+          AND (language = 'en' OR face_name <> english_name)
+          GROUP BY source_row
+          HAVING max(source_score)
+        """)
+        rows = {row["source_row"]: row["face_name"] for row in self.db.execute(
+            translate_query, (include_hidden_names,)
+        )}
+        results = [rows.get(index) for index in range(1, len(card_data_list)+1)]
+        self.db.execute("DELETE FROM TranslateCardSourceContext  -- translate_card_names()\n")
+        return results
 
     def get_available_languages_for_card(self, card: Card) -> list[str]:
         """
@@ -685,11 +753,8 @@ class CardDatabase(QObject):
           SELECT language
             FROM Card
             JOIN Printing USING (card_id)
-            JOIN CardFace USING (printing_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            WHERE oracle_id = ?
-              AND Printing.is_hidden IS FALSE
+            WHERE (is_visible, oracle_id)
+                = (TRUE,       ?)
           )
           ORDER BY language ASC;
         """)
@@ -701,20 +766,15 @@ class CardDatabase(QObject):
         Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
         """
         query = cached_dedent("""\
-        SELECT DISTINCT set_code, set_name FROM ( -- get_available_sets_for_card()
-          SELECT set_code, set_name, release_date
+        SELECT DISTINCT set_code, set_name, icon_svg FROM ( -- get_available_sets_for_card()
+          SELECT set_code, set_name, icon_svg, release_date
           FROM MTGSet
           JOIN Printing USING (set_id)
           JOIN Card USING (card_id)
-          JOIN CardFace USING (printing_id)
-          JOIN FaceName USING (face_name_id)
-          JOIN PrintLanguage USING (language_id)
-          WHERE Printing.is_hidden IS FALSE
-            AND FaceName.is_hidden IS FALSE
-            AND oracle_id = ?
-            AND language = ?
+          WHERE (is_visible, oracle_id, language)
+              = (TRUE,       ?,         ?)
           UNION ALL
-          SELECT set_code, set_name, release_date
+          SELECT set_code, set_name, icon_svg, release_date
             FROM MTGSet
             WHERE set_code = ?
           )
@@ -735,28 +795,27 @@ class CardDatabase(QObject):
             FROM MTGSet
             JOIN Printing USING (set_id)
             JOIN Card USING (card_id)
-            JOIN CardFace USING (printing_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            WHERE Printing.is_hidden IS FALSE
-              AND FaceName.is_hidden IS FALSE
-              AND oracle_id = ?
-              AND set_code = ?
-              AND language = ?
+            WHERE (is_visible, oracle_id, set_code, language) 
+                = (TRUE,       ?,         ?,        ?)
           )
         """)
         parameters: ParameterList = [card.collector_number, card.oracle_id, card.set_code, card.language]
-        return natural_sorted((number for number, in self.db.execute(query, parameters)))
+        return natural_sorted(self._read_scalar_list_from_db(query, parameters))
 
     def _read_optional_scalar_from_db(self, query: LiteralString, parameters: Sequence[Any] = ()):
         """
         Runs the query with the given parameters that is expected to return either a singular value or None,
         and returns the result
         """
-        if result := self.db.execute(query, parameters).fetchone():
-            return result[0]
-        else:
-            return None
+        match self.db.execute(query, parameters).fetchone():
+            case sqlite3.Row() as row if len(row) == 1:
+                return row[0]
+            case None:
+                return None
+            case row, :  # Fallback if the row_factory is unset. Normally dead code, but has no runtime overhead
+                return row
+            case _:
+                raise RuntimeError(f"BUG: {query} result was not a scalar")
 
     def _read_scalar_list_from_db(
             self, query: LiteralString, parameters: Sequence[Any] = ()) -> list[Any]:
@@ -780,9 +839,10 @@ class CardDatabase(QObject):
         """
         query = cached_dedent("""\
         SELECT last_use_date < ? AS last_use_was_before_threshold -- cards_not_used_since()
-            FROM LastImageUseTimestamps
-            WHERE scryfall_id = ?
-              AND is_front = ?
+            FROM PrintingFace
+            INNER JOIN Printing USING (printing_id)
+            WHERE (scryfall_id, is_front) 
+                = (?,           ?)
         """)
         cards_not_used_since = []
         for index, (scryfall_id, is_front) in enumerate(keys):
@@ -802,9 +862,10 @@ class CardDatabase(QObject):
         query = cached_dedent("""\
         SELECT NOT EXISTS ( -- cards_used_less_often_then()
             SELECT scryfall_id
-            FROM LastImageUseTimestamps
-            WHERE scryfall_id = ?
-              AND is_front = ?
+            FROM PrintingFace
+            INNER JOIN Printing USING (printing_id)
+            WHERE (scryfall_id, is_front) 
+                = (?,           ?)
               AND usage_count >= ?
             ) AS hit
         """)
@@ -838,7 +899,7 @@ class CardDatabase(QObject):
             return result
         return to_translate
 
-    def _translate_card(self, card: Card, language_override: str) -> OptionalCard:
+    def _translate_card(self, card: Card, target_language: str) -> OptionalCard:
         """
         Tries to translate the given card into the given language.
         If the card is not available in the requested language, None is returned.
@@ -852,26 +913,28 @@ class CardDatabase(QObject):
         # This was chosen as a performance optimization,
         # because card translation can take considerable time during a deck list import.
         query = cached_dedent("""\
-        SELECT card_name, set_code, set_name, collector_number, -- _translate_card()
-               scryfall_id, png_image_uri, highres_image,
-               is_oversized, face_number, is_dfc,
-               MAX((set_code = ?) + (collector_number = ?)) AS similarity
-            FROM VisiblePrintings
-            WHERE oracle_id = ? AND language = ? AND is_front = ?
+        SELECT -- _translate_card()
+            face_name, set_code, set_name, icon_svg, collector_number, png_image_uri,
+            is_highres_image, is_oversized, is_dfc, scryfall_id,
+            MAX((set_code = ?) + (collector_number = ?)) AS similarity
+          FROM VisiblePrintings
+          WHERE (oracle_id, language, is_front) 
+              = (?,         ?,        ?) 
         """)
-        parameters: ParameterList = [card.set.code, card.collector_number, card.oracle_id, language_override, card.is_front]
+        parameters: ParameterList = [
+            card.set.code, card.collector_number, card.oracle_id, target_language, card.is_front
+        ]
         # Because of the aggregate function used, no hit will result in a single row consisting of only NULL values.
-        result = self.db.execute(query, parameters).fetchone()
-        name, set_code, set_name, collector_number, scryfall_id, image_uri, highres_image, \
-            is_oversized, face_number, is_dfc, similarity = result
-        if similarity is None:
-            logger.debug(f"Found no translations to {language_override} for card '{card.name}'.")
+        row = self.db.execute(query, parameters).fetchone()
+        if row["similarity"] is None:
+            logger.debug(f"Found no translations to {target_language} for card '{card.name}'.")
             return None
-        size = CardSizes.from_bool(is_oversized)
         return Card(
-            name, MTGSet(set_code, set_name), collector_number,
-            language_override, scryfall_id, card.is_front, card.oracle_id, image_uri,
-            bool(highres_image), size, face_number, bool(is_dfc),
+            name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], row["icon_svg"]),
+            collector_number=row["collector_number"], language=target_language, scryfall_id=row["scryfall_id"],
+            is_front=card.is_front, oracle_id=card.oracle_id, image_uri=row["png_image_uri"],
+            highres_image=row["is_highres_image"], size=CardSizes.from_bool(row["is_oversized"]),
+            is_dfc=row["is_dfc"]
         )
 
     def get_custom_card(
@@ -879,8 +942,14 @@ class CardDatabase(QObject):
             size: CardSize, is_front: bool, image: bytes) -> CustomCard:
         card = CustomCard(
             name, MTGSet(set_code, set_name), collector_number, "en",
-            is_front, "", True, size, 1 + (not is_front), False, image)
+            is_front, "", True, size, False, image)
         custom_card_id = card.scryfall_id
         card = self.custom_cards.get(custom_card_id, card)
         self.custom_cards[custom_card_id] = card
         return card
+
+    def get_printing_filter_weights(self) -> dict[str, int]:
+        return dict(self.db.execute(cached_dedent("""\
+            SELECT filter_name, printing_preference_weight FROM PrintingFilters
+        """)))
+

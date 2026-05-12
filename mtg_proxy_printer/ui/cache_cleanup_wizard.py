@@ -12,8 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-
+import itertools
 from collections.abc import Iterable
 import dataclasses
 import datetime
@@ -158,7 +157,6 @@ class KnownCardImageModel(QAbstractTableModel):
     def __init__(self, card_db: CardDatabase, parent: QObject = None):
         super().__init__(parent)
         self.card_db = card_db
-        self.preferred_language: str = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
         self._data: list[KnownCardRow] = []
 
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
@@ -184,17 +182,22 @@ class KnownCardImageModel(QAbstractTableModel):
         position = self.rowCount()
         self.beginInsertRows(INVALID_INDEX, position, position)
         size_bytes = image.absolute_path.stat().st_size
-        if card.language != self.preferred_language:
-            preferred_name = self.card_db.translate_card_name(card, self.preferred_language, True)
-        else:
-            preferred_name = None
         row = KnownCardRow(
             card.name, card.set, card.collector_number, is_hidden,
             image.is_front, image.is_high_resolution, size_bytes, card.scryfall_id, image.absolute_path,
-            preferred_name
+            None
         )
         self._data.append(row)
         self.endInsertRows()
+
+    def set_preferred_language_names(self, names: list[tuple[int, str]]):
+        for row, preferred_language_name in names:
+            self._data[row].preferred_language_name = preferred_language_name
+        self.dataChanged.emit(
+            self.index(0, KnownCardColumns.Name),
+            self.index(self.rowCount(), KnownCardColumns.Name),
+            [ItemDataRole.ToolTipRole]
+        )
 
     def clear(self):
         self.beginResetModel()
@@ -336,13 +339,13 @@ class FilterSetupPage(QWizardPage):
 
 class CardFilterPage(QWizardPage):
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QWidget = None):
+    def __init__(self, image_db: ImageDatabase, parent: QWidget = None):
         super().__init__(parent)
         self.ui = Ui_CardFilterPage()
         self.ui.setupUi(self)
-        self.card_db = card_db
+        self.card_db = CardDatabase.main_instance
         self.image_db = image_db
-        self.card_image_model = KnownCardImageModel(card_db, self)
+        self.card_image_model = KnownCardImageModel(self.card_db, self)
         self.card_image_sort_model = self._setup_card_image_sort_model(self.card_image_model)
         self._setup_card_image_view(self.card_image_sort_model)
         self.unknown_image_model = UnknownCardImageModel(parent=self)
@@ -383,6 +386,16 @@ class CardFilterPage(QWizardPage):
             self.card_image_model.add_row(card, key, True)
         for key in partitioned.unknown:
             self.unknown_image_model.add_row(key)
+
+        preferred_language: str = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
+        need_translation = [
+            (index, card) for index, (card, key)
+            in enumerate(itertools.chain(partitioned.visible, partitioned.hidden))
+            if card.language != preferred_language]
+        cards = [card for index, card in need_translation]
+        translated = self.card_db.translate_card_names(cards, preferred_language, True)
+        names = [(index, translated) for (index, _), translated in zip(need_translation, translated)]
+        self.card_image_model.set_preferred_language_names(names)
         self._apply_filter()
 
     def _apply_filter(self):
@@ -471,12 +484,12 @@ class CacheCleanupWizard(WizardBase):
         QWizard.WizardButton.HelpButton: "help-contents",
     }
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
+    def __init__(self, image_db: ImageDatabase,
                  parent: QWidget = None, flags=Qt.WindowType.Window):
         super().__init__(QSize(1024, 768), parent, flags)
         self.image_db = image_db
         self.addPage(FilterSetupPage(self))
-        self.addPage(CardFilterPage(card_db, image_db, self))
+        self.addPage(CardFilterPage(image_db, self))
         self.addPage(SummaryPage(self))
         self.setWindowTitle(self.tr("Cleanup locally stored card images", "Dialog window title"))
         self.setWindowIcon(QIcon.fromTheme("edit-clear-history"))

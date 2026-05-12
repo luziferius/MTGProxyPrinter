@@ -23,15 +23,17 @@ from abc import abstractmethod
 from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt
 from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon, QColor
 from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QLineEdit, QDoubleSpinBox, \
-    QColorDialog
+    QColorDialog, QPushButton, QHeaderView
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.async_tasks.card_info_downloader import FileDownloadTask, FileStreamTask, DatabaseImportTask
-from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater, PrintingPreferenceUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
+from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel, ScryfallQueryRole, ModelColumns, \
+    IsHeaderRole
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
@@ -53,13 +55,7 @@ except ModuleNotFoundError:
     Ui_PrinterSettingsPage = load_ui_from_file("settings_window/printer_settings_page")
     Ui_ExportSettingsPage = load_ui_from_file("settings_window/export_settings_page")
 
-CheckState = Qt.CheckState
-bool_to_check_state: dict[bool | None, CheckState] = {
-    True: CheckState.Checked,
-    False: CheckState.Unchecked,
-    None: CheckState.PartiallyChecked,
-}
-check_state_to_bool_str: dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
+ParsingMode = QUrl.ParsingMode
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 ItemDataRole = Qt.ItemDataRole
 StandardLocation = QStandardPaths.StandardLocation
@@ -351,7 +347,7 @@ class GeneralSettingsPage(Page):
     def _load_boolean_settings(self, settings: ConfigParser):
         for widget, section_name, setting in self._get_boolean_check_settings_widgets():
             section = settings[section_name]
-            widget.setCheckState(bool_to_check_state[section.getboolean(setting)])
+            widget.setCheckState(section.get_check_state(setting))
 
     def _load_cards_settings(self, settings: ConfigParser):
         section = settings["cards"]
@@ -403,7 +399,7 @@ class GeneralSettingsPage(Page):
     def _save_boolean_settings(self):
         for widget, section_name, setting in self._get_boolean_check_settings_widgets():
             section = mtg_proxy_printer.settings.settings[section_name]
-            section[setting] = check_state_to_bool_str[widget.checkState()]
+            section.set_check_state(setting, widget.checkState())
 
     def _save_look_and_feel_settings(self):
         section = mtg_proxy_printer.settings.settings["gui"]
@@ -426,7 +422,7 @@ class GeneralSettingsPage(Page):
         ui = self.ui
         for widget, section_name, setting in self._get_boolean_check_settings_widgets():
             section = settings[section_name]
-            if section[setting] != check_state_to_bool_str[widget.checkState()]:
+            if section.get_check_state(setting) != widget.checkState():
                 highlight_widget(widget)
 
         section = settings["gui"]
@@ -464,32 +460,62 @@ class HidePrintingsPage(Page):
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
+        self.model = PrintingFilterModel(self)
         self.ui = ui = Ui_HidePrintingsPage()
         ui.setupUi(self)
         self.card_db = None
+        ui.printing_filter_view.setModel(self.model)
+        header = ui.printing_filter_view.horizontalHeader()
+        for column in range(len(ModelColumns)-1):
+            header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        header.resizeSection(ModelColumns.scryfall_query, 32)
+        for row in range(self.model.rowCount()):
+            index = self.model.index(row, ModelColumns.name)
+            if index.data(IsHeaderRole):
+                ui.printing_filter_view.setSpan(row, ModelColumns.name, 1, 4)
+            if query := index.siblingAtColumn(ModelColumns.scryfall_query).data(ScryfallQueryRole):
+                button = self._create_scryfall_query_button(query)
+                ui.printing_filter_view.setIndexWidget(index.siblingAtColumn(ModelColumns.scryfall_query), button)
+
+    def _create_scryfall_query_button(self, query_str: str) -> QPushButton:
+        button = QPushButton(QIcon.fromTheme("globe"), "", self)
+        button.clicked.connect(partial(self.view_query_on_scryfall, query_str))
+        button.setToolTip(self.tr(
+            "View cards hidden by this filter on the Scryfall website.",
+            "Tooltip text on a button next to a printing filter"))
+        return button
+
+    @staticmethod
+    def view_query_on_scryfall(query: str):
+        query_url = QUrl("https://scryfall.com/search", ParsingMode.StrictMode)
+        query_url.setQuery(f"q={query}", ParsingMode.StrictMode)
+        QDesktopServices.openUrl(query_url)
 
     def load(self, settings: ConfigParser):
         ui = self.ui
         section = settings["card-filter"]
         ui.set_filter_settings.setPlainText(section["hidden-sets"])
-        ui.card_filter_general_settings.load_settings(section)
-        ui.card_filter_format_settings.load_settings(section)
+        self.model.load_settings(settings)
 
     def save(self):
         section = mtg_proxy_printer.settings.settings["card-filter"]
         ui = self.ui
-        ui.card_filter_general_settings.save_settings(section)
-        ui.card_filter_format_settings.save_settings(section)
+        self.model.save_settings(mtg_proxy_printer.settings.settings)
         section["hidden-sets"] = ui.set_filter_settings.toPlainText()
+        weights = self.model.get_new_preference_weights()
         self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
+        self.request_run_async_task.emit(PrintingPreferenceUpdater(self.card_db, weights))
 
     def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]
         ui = self.ui
-        ui.card_filter_general_settings.highlight_differing_settings(settings)
-        ui.card_filter_general_settings.highlight_differing_settings(settings)
+        self.model.highlight_differing_settings(settings)
         if section["hidden-sets"] != ui.set_filter_settings.toPlainText():
             highlight_widget(ui.set_filter_settings)
+
+    def clear_highlight(self):
+        super().clear_highlight()
+        self.model.clear_highlight()
 
 
 class DefaultDocumentLayoutSettingsPage(Page, PageConfigContainer):

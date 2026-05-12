@@ -1,0 +1,136 @@
+{
+  "object": "card",
+  "id": "199204f4-a365-42f9-a6fd-fd5ee9722b26",
+  "oracle_id": "d568aab7-0f05-4473-acc7-6a0bb515f1c0",
+  "multiverse_ids": [],
+  "name": "Forest // Forest",
+  "lang": "en",
+  "released_at": "2020-09-25",
+  "uri": "https://api.scryfall.com/cards/199204f4-a365-42f9-a6fd-fd5ee9722b26",
+  "scryfall_uri": "https://scryfall.com/card/aznr/21/forest-forest?utm_source=api",
+  "layout": "art_series",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "cmc": 0.0,
+  "type_line": "Card // Card",
+  "color_identity": [],
+  "keywords": [],
+  "card_faces": [
+    {
+      "object": "card_face",
+      "name": "Forest",
+      "mana_cost": "",
+      "type_line": "Card",
+      "oracle_text": "",
+      "colors": [],
+      "artist": "Tianhua X",
+      "artist_id": "da0e98c9-28a9-41ed-a617-ea94737438c0",
+      "illustration_id": "45be4e62-ce07-4f59-96ac-e6593c7b5a41",
+      "image_uris": {
+        "small": "https://cards.scryfall.io/small/front/1/9/199204f4-a365-42f9-a6fd-fd5ee9722b26.jpg?1678735343",
+        "normal": "https://cards.scryfall.io/normal/front/1/9/199204f4-a365-42f9-a6fd-fd5ee9722b26.jpg?1678735343",
+        "large": "https://cards.scryfall.io/large/front/1/9/199204f4-a365-42f9-a6fd-fd5ee9722b26.jpg?1678735343",
+        "png": "https://cards.scryfall.io/png/front/1/9/199204f4-a365-42f9-a6fd-fd5ee9722b26.png?1678735343",
+        "art_crop": "https://cards.scryfall.io/art_crop/front/1/9/199204f4-a365-42f9-a6fd-fd5ee9722b26.jpg?1678735343",
+        "border_crop": "https://cards.scryfall.io/border_crop/front/1/9/199204f4-a365-42f9-a6fd-fd5ee9722b26.jpg?1678735343"
+      }
+    },
+    {
+      "object": "card_face",
+      "name": "Forest",
+      "mana_cost": "",
+      "type_line": "Card",
+      "oracle_text": "",
+      "colors": [],
+      "artist": "Tianhua X",
+      "artist_id": "da0e98c9-28a9-41ed-a617-ea94737438c0",
+      "illustration_id": "f4d59885-57f6-46bc-860c-5043b0569fa5",
+      "image_uris": {
+        "small": "https://cards.scryfall.io/small/back/1/9/199204f4-a365-42f9-a6fd-fd5ee9722b26.jpg?1678735343",
+        "normal": "https://cards.scryfall.io/normal/back/1/9/199204f4-a365-42f9-a6fd-fd5ee9722b26.jpg?1678735343",
+        "large": "https://cards.scryfall.io/large/back/1/9/199204f4-a365-42f9-a6fd-fd5ee9722b26.jpg?1678735343",
+        "png": "https://cards.scryfall.io/png/back/1/9/199204f4-a365-42f9-a6fd-fd5ee9722b26.png?1678735343",
+        "art_crop": "https://cards.scryfall.io/art_crop/back/1/9/199204f4-a365-42f9-a6fd-fd5ee9722b26.jpg?1678735343",
+        "border_crop": "https://cards.scryfall.io/border_crop/back/1/9/199204f4-a365-42f9-a6fd-fd5ee9722b26.jpg?1678735343"
+      }
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "timeless": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "not_legal",
+    "pauper": "not_legal",
+    "vintage": "not_legal",
+    "penny": "not_legal",
+    "commander": "not_legal",
+    "oathbreaker": "not_legal",
+    "standardbrawl": "not_legal",
+    "brawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "not_legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "game_changer": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "168acc08-0dea-40e7-ab0d-93bb2832e72b",
+  "set": "aznr",
+  "set_name": "Zendikar Rising Art Series",
+  "set_type": "memorabilia",
+  "set_uri": "https://api.scryfall.com/sets/168acc08-0dea-40e7-ab0d-93bb2832e72b",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aaznr&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/aznr?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/199204f4-a365-42f9-a6fd-fd5ee9722b26/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Ad568aab7-0f05-4473-acc7-6a0bb515f1c0&unique=prints",
+  "collector_number": "21",
+  "digital": false,
+  "rarity": "common",
+  "artist": "Tianhua X",
+  "artist_ids": [
+    "da0e98c9-28a9-41ed-a617-ea94737438c0"
+  ],
+  "border_color": "borderless",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": false,
+  "story_spotlight": false,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DForest%2B%252F%252F%2BForest",
+    "tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DForest%2B%252F%252F%2BForest",
+    "edhrec": "https://edhrec.com/route/?cc=Forest"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fmagic%2Fproduct%3FproductLineName%3Dmagic%26q%3DForest%26view%3Dgrid",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Forest&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Forest&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

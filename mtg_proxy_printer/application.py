@@ -80,7 +80,7 @@ class Application(QApplication):
         self.document = self._create_document_instance(self.card_db, self.image_db)
         logger.debug("Creating GUI")
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
-            self.card_db, self.image_db, self.document, self.language_model
+            self.image_db, self.document, self.language_model
         )
         self.main_window.request_run_async_task.connect(self.run_async_task)
         self.update_checker = self._create_update_checker(args)
@@ -162,7 +162,7 @@ class Application(QApplication):
             return card_db, image_db
         logger.debug("Opening Databases")
         mtg_proxy_printer.carddb_migrations.migrate_card_database_location()
-        card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        mtg_proxy_printer.model.carddb.CardDatabase.main_instance = card_db = mtg_proxy_printer.model.carddb.CardDatabase()
         image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         return card_db, image_db
 

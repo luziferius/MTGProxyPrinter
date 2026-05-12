@@ -35,12 +35,12 @@ def card_update_task(card_db: CardDatabase) -> CardDataUpdateCheckTask:
     return task
 
 
-def test_get_total_cards_in_last_update(qtbot: QtBot, card_update_task: CardDataUpdateCheckTask):
+def test_get_total_cards_in_last_update(card_update_task: CardDataUpdateCheckTask):
     card_data = ["regular_english_card"]
-    fill_card_database_with_json_cards(qtbot, card_update_task.card_db, card_data)
+    fill_card_database_with_json_cards(card_update_task.card_db, card_data)
     assert_that(card_update_task.get_total_cards_in_last_update(), is_(len(card_data)))
     card_data.append("english_basic_Forest")
-    fill_card_database_with_json_cards(qtbot, card_update_task.card_db, card_data)
+    fill_card_database_with_json_cards(card_update_task.card_db, card_data)
     assert_that(card_update_task.get_total_cards_in_last_update(), is_(len(card_data)))
 
 
@@ -48,6 +48,6 @@ def test_card_database_has_data_on_empty_database_returns_false(card_update_task
     assert_that(card_update_task.card_database_has_data(), is_(False))
 
 
-def test_card_database_has_data_on_filled_database_returns_true(qtbot: QtBot, card_update_task: CardDataUpdateCheckTask):
-    fill_card_database_with_json_card(qtbot, card_update_task.card_db, "regular_english_card")
+def test_card_database_has_data_on_filled_database_returns_true(card_update_task: CardDataUpdateCheckTask):
+    fill_card_database_with_json_card(card_update_task.card_db, "regular_english_card")
     assert_that(card_update_task.card_database_has_data(), is_(True))

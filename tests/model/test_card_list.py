@@ -53,10 +53,11 @@ def _create_custom_card(size: CardSizes) -> bytes:
 REGULAR_CUSTOM_CARD = _create_custom_card(CardSizes.REGULAR)
 
 
-def _populate_card_db_and_create_model(qtbot, document: Document) -> CardListModel:
+def _populate_card_db_and_create_model(document: Document) -> CardListModel:
     fill_card_database_with_json_cards(
-        qtbot, document.card_db,
-        ["oversized_card", "regular_english_card", "english_basic_Forest", "english_basic_Wastes", "english_basic_Snow_Forest"])
+        document.card_db,
+       ["oversized_card", "regular_english_card", "english_basic_Forest",
+        "english_basic_Wastes", "english_basic_Snow_Forest"])
     model = CardListModel(document)
     return model
 
@@ -74,7 +75,7 @@ def _create_card_image(size: CardSizes) -> bytes:
 
 @pytest.mark.parametrize("count", [1, 2, 10])
 def test_add_oversized_card_updates_oversized_count(qtbot: QtBot, document: Document, count: int):
-    model = _populate_card_db_and_create_model(qtbot, document)
+    model = _populate_card_db_and_create_model(document)
     oversized = document.card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     with qtbot.wait_signal(model.oversized_card_count_changed, check_params_cb=(lambda value: value == count)):
         model.add_cards(Counter({oversized: count}))
@@ -85,8 +86,8 @@ def test_add_oversized_card_updates_oversized_count(qtbot: QtBot, document: Docu
     (-1, 1), (0, 1), (1, 1), (99, 99), (100, 100), (101, 100),
 ])
 def test_add_cards_with_invalid_count_clamped_to_valid_range(
-        qtbot: QtBot, document: Document, count: int, expected: int):
-    model = _populate_card_db_and_create_model(qtbot, document)
+        document: Document, count: int, expected: int):
+    model = _populate_card_db_and_create_model(document)
     card = document.card_db.get_card_with_scryfall_id(REGULAR_ID, True)
     model.add_cards(Counter({card: count}))
     assert_that(model.rowCount(), is_(1))
@@ -96,7 +97,7 @@ def test_add_cards_with_invalid_count_clamped_to_valid_range(
 
 @pytest.mark.parametrize("new_count", [5, 15])
 def test_update_oversized_card_count_updates_oversized_count(qtbot: QtBot, document: Document, new_count: int):
-    model = _populate_card_db_and_create_model(qtbot, document)
+    model = _populate_card_db_and_create_model(document)
     oversized = document.card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     model.add_cards(Counter({oversized: 10}))
     assert_that(model.oversized_card_count, is_(equal_to(10)))
@@ -108,7 +109,7 @@ def test_update_oversized_card_count_updates_oversized_count(qtbot: QtBot, docum
 
 
 def test_remove_oversized_card_updates_oversized_count(qtbot: QtBot, document: Document):
-    model = _populate_card_db_and_create_model(qtbot, document)
+    model = _populate_card_db_and_create_model(document)
     oversized = document.card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     model.add_cards(Counter({oversized: 10}))
     assert_that(model.oversized_card_count, is_(equal_to(10)))
@@ -119,7 +120,7 @@ def test_remove_oversized_card_updates_oversized_count(qtbot: QtBot, document: D
 
 
 def test_replace_oversized_with_regular_card_decrements_oversized_count(qtbot: QtBot, document: Document):
-    model = _populate_card_db_and_create_model(qtbot, document)
+    model = _populate_card_db_and_create_model(document)
     regular = document.card_db.get_card_with_scryfall_id(REGULAR_ID, True)
     oversized = document.card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     regular_data = CardIdentificationData(
@@ -143,7 +144,7 @@ def test_replace_oversized_with_regular_card_decrements_oversized_count(qtbot: Q
 
 
 def test_replace_regular_with_oversized_card_increments_oversized_count(qtbot: QtBot, document: Document):
-    model = _populate_card_db_and_create_model(qtbot, document)
+    model = _populate_card_db_and_create_model(document)
     regular = document.card_db.get_card_with_scryfall_id(REGULAR_ID, True)
     oversized = document.card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     oversized_data = CardIdentificationData(
@@ -183,8 +184,8 @@ def test__merge_ranges(ranges: list[tuple[int, int]], merged: list[tuple[int, in
     )
 
 
-def test_remove_multi_selection(qtbot: QtBot, document: Document):
-    model = _populate_card_db_and_create_model(qtbot, document)
+def test_remove_multi_selection(document: Document):
+    model = _populate_card_db_and_create_model(document)
     regular = CardListModelRow(document.card_db.get_card_with_scryfall_id(REGULAR_ID, True), 1)
     oversized = CardListModelRow(document.card_db.get_card_with_scryfall_id(OVERSIZED_ID, True), 1)
     model.add_cards(Counter({
@@ -242,10 +243,10 @@ def test_remove_multi_selection(qtbot: QtBot, document: Document):
     (True, True, [SNOW_FOREST_ID, WASTES_ID], True),
 ])
 def test_has_basic_lands(
-        qtbot: QtBot, document: Document,
+        document: Document,
         include_wastes: bool, include_snow_basics: bool,
         present_cards: list[str], expected: bool):
-    model = _populate_card_db_and_create_model(qtbot, document)
+    model = _populate_card_db_and_create_model(document)
     model.add_cards(Counter(
         {document.card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_cards}
     ))
@@ -277,10 +278,10 @@ def test_has_basic_lands(
     (True, True, [FOREST_ID], []),
 ])
 def test_remove_all_basic_lands(
-        qtbot: QtBot, document: Document,
+        document: Document,
         remove_wastes: bool, remove_snow_basics: bool,
         present_cards: list[str], expected_remaining: list[str]):
-    model = _populate_card_db_and_create_model(qtbot, document)
+    model = _populate_card_db_and_create_model(document)
     model.add_cards(Counter(
         {document.card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_cards}
     ))
@@ -301,10 +302,10 @@ def test_remove_all_basic_lands(
     (CardListColumns.Copies, 5),
 ])
 def test_editing_custom_card_sets_data(
-        qtbot: QtBot, document: Document, column: CardListColumns, value: typing.Any):
-    model = _populate_card_db_and_create_model(qtbot, document)
+        document: Document, column: CardListColumns, value: typing.Any):
+    model = _populate_card_db_and_create_model(document)
     size = CardSizes.REGULAR
-    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, size, 1, False, REGULAR_CUSTOM_CARD)
+    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, size, False, REGULAR_CUSTOM_CARD)
     model.add_cards(Counter([card]))
     ActionAddCard(card, 1).apply(document)
     card_list_index = model.index(0, column)
@@ -322,10 +323,10 @@ def test_editing_custom_card_sets_data(
     (CardListColumns.Language, "ph"),
 ])
 def test_editing_custom_card_propagates_to_instances_in_the_document(
-        qtbot: QtBot, document: Document, column: CardListColumns, value: typing.Any):
-    model = _populate_card_db_and_create_model(qtbot, document)
+        document: Document, column: CardListColumns, value: typing.Any):
+    model = _populate_card_db_and_create_model(document)
     size = CardSizes.REGULAR
-    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, size, 1, False, REGULAR_CUSTOM_CARD)
+    card = CustomCard("Old Name", MTGSet("", ""), "", "en", True, "", True, size, False, REGULAR_CUSTOM_CARD)
     model.add_cards(Counter([card]))
     ActionAddCard(card, 1).apply(document)
     model.setData(model.index(0, column), value)

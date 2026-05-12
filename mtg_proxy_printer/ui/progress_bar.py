@@ -32,7 +32,7 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 ConnectionType = Qt.ConnectionType
-QueuedConnection = ConnectionType.QueuedConnection
+BlockingQueuedConnection = ConnectionType.BlockingQueuedConnection
 __all__ = [
     "ProgressBarManager",
 ]
@@ -95,8 +95,11 @@ class ProgressBarManager(QWidget):
         logger.debug(f"Adding progress bar for task {task}")
         bar = ProgressBar(task, self)
         layout = self.layout()
-        task.request_register_subtask.connect(lambda subtask: logger.debug(f"Registering subtask {subtask}"))
-        task.request_register_subtask.connect(self.add_task)
+        connection_type = ConnectionType.AutoConnection if self.thread() == task.thread else BlockingQueuedConnection
+        task.request_register_subtask.connect(
+            lambda subtask: logger.debug(f"Registering subtask {subtask}"), connection_type)
+        task.request_register_subtask.connect(
+            self.add_task, connection_type)
         task.task_deleted.connect(lambda: logger.debug(f"Deleting progress bar for task {task}"))
         task.task_deleted.connect(partial(layout.removeWidget, bar))
         task.task_deleted.connect(partial(bar.setParent, None))

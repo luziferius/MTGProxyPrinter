@@ -1,0 +1,137 @@
+{
+  "object": "card",
+  "id": "9ad231e2-f401-4670-b9ec-0d0aa7ea9bae",
+  "oracle_id": "4c6a0c30-b547-4eff-8ff4-0ca25803c076",
+  "multiverse_ids": [],
+  "tcgplayer_id": 562099,
+  "cardmarket_id": 783378,
+  "name": "Urza's Saga",
+  "lang": "en",
+  "released_at": "2024-08-24",
+  "uri": "https://api.scryfall.com/cards/9ad231e2-f401-4670-b9ec-0d0aa7ea9bae",
+  "scryfall_uri": "https://scryfall.com/card/sch/29/urzas-saga?utm_source=api",
+  "layout": "saga",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/9/a/9ad231e2-f401-4670-b9ec-0d0aa7ea9bae.jpg?1761043243",
+    "normal": "https://cards.scryfall.io/normal/front/9/a/9ad231e2-f401-4670-b9ec-0d0aa7ea9bae.jpg?1761043243",
+    "large": "https://cards.scryfall.io/large/front/9/a/9ad231e2-f401-4670-b9ec-0d0aa7ea9bae.jpg?1761043243",
+    "png": "https://cards.scryfall.io/png/front/9/a/9ad231e2-f401-4670-b9ec-0d0aa7ea9bae.png?1761043243",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/9/a/9ad231e2-f401-4670-b9ec-0d0aa7ea9bae.jpg?1761043243",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/9/a/9ad231e2-f401-4670-b9ec-0d0aa7ea9bae.jpg?1761043243"
+  },
+  "mana_cost": "",
+  "cmc": 0.0,
+  "type_line": "Enchantment Land — Urza's Saga",
+  "oracle_text": "(As this Saga enters and after your draw step, add a lore counter. Sacrifice after III.)\nI — This Saga gains \"{T}: Add {C}.\"\nII — This Saga gains \"{2}, {T}: Create a 0/0 colorless Construct artifact creature token with 'This token gets +1/+1 for each artifact you control.'\"\nIII — Search your library for an artifact card with mana cost {0} or {1}, put it onto the battlefield, then shuffle.",
+  "colors": [],
+  "color_identity": [],
+  "keywords": [],
+  "produced_mana": [
+    "C"
+  ],
+  "all_parts": [
+    {
+      "object": "related_card",
+      "id": "9ad231e2-f401-4670-b9ec-0d0aa7ea9bae",
+      "component": "combo_piece",
+      "name": "Urza's Saga",
+      "type_line": "Enchantment Land — Urza's Saga",
+      "uri": "https://api.scryfall.com/cards/9ad231e2-f401-4670-b9ec-0d0aa7ea9bae"
+    },
+    {
+      "object": "related_card",
+      "id": "3877d2d1-61f2-4295-b0fc-827965eaaefc",
+      "component": "token",
+      "name": "Construct",
+      "type_line": "Token Artifact Creature — Construct",
+      "uri": "https://api.scryfall.com/cards/3877d2d1-61f2-4295-b0fc-827965eaaefc"
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "timeless": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "restricted",
+    "penny": "not_legal",
+    "commander": "legal",
+    "oathbreaker": "legal",
+    "standardbrawl": "not_legal",
+    "brawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal",
+    "tlr": "legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "game_changer": false,
+  "foil": true,
+  "nonfoil": false,
+  "finishes": [
+    "foil"
+  ],
+  "oversized": false,
+  "promo": true,
+  "reprint": true,
+  "variation": false,
+  "set_id": "211b56b9-961e-4eab-8245-a2f52dd9af47",
+  "set": "sch",
+  "set_name": "Store Championships",
+  "set_type": "promo",
+  "set_uri": "https://api.scryfall.com/sets/211b56b9-961e-4eab-8245-a2f52dd9af47",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Asch&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/sch?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/9ad231e2-f401-4670-b9ec-0d0aa7ea9bae/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A4c6a0c30-b547-4eff-8ff4-0ca25803c076&unique=prints",
+  "collector_number": "29",
+  "digital": false,
+  "rarity": "rare",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Eytan Zana",
+  "artist_ids": [
+    "0d8d6726-4051-445a-8374-a919aad98f38"
+  ],
+  "illustration_id": "5fd22b32-72fd-4367-987c-0099beefed59",
+  "border_color": "black",
+  "frame": "2015",
+  "security_stamp": "oval",
+  "full_art": true,
+  "textless": true,
+  "booster": false,
+  "story_spotlight": false,
+  "promo_types": [
+    "storechampionship"
+  ],
+  "edhrec_rank": 121,
+  "prices": {
+    "usd": null,
+    "usd_foil": "381.89",
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": "301.37",
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DUrza%2527s%2BSaga",
+    "tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DUrza%2527s%2BSaga",
+    "edhrec": "https://edhrec.com/route/?cc=Urza%27s+Saga"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F562099%3Fpage%3D1",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=783378&referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Urza%27s+Saga&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

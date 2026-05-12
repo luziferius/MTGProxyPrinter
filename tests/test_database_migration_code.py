@@ -101,6 +101,7 @@ def test_migrated_card_database_contains_expected_tables_and_views(old_db: pathl
     runner.run()
     migrated_db = card_db.db
     fresh_db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", "carddb")
+    migrated_db.row_factory = fresh_db.row_factory = None
     assert_that(
         migrated_db.execute("PRAGMA user_version").fetchone()[0],
         is_(equal_to(get_target_database_schema_version("carddb"))),
@@ -132,6 +133,7 @@ def test_migrated_card_database_contains_expected_indices(old_db: pathlib.Path):
     runner.run()
     migrated_db = card_db.db
     fresh_db = mtg_proxy_printer.sqlite_helpers.open_database(":memory:", "carddb")
+    migrated_db.row_factory = fresh_db.row_factory = None
     assert_that(
         migrated_db.execute("PRAGMA user_version").fetchone()[0],
         is_(equal_to(get_target_database_schema_version("carddb"))),
@@ -178,6 +180,7 @@ def test_patch_21_to_22_applies_correctly_without_network_access_using_dummy_val
         runner = DatabaseMigrationTask(card_db, {21: MIGRATION_SCRIPTS[21]})
         runner.run()
     db = mtg_proxy_printer.sqlite_helpers.open_database(card_db.db_path, "carddb")
+    db.row_factory = None
     assert_that(db.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(22)))
     mock.assert_called_once()
     assert_that(
@@ -196,6 +199,7 @@ def test_patch_21_to_22_applies_with_network_access_and_requests_card_count_from
         runner = DatabaseMigrationTask(card_db, {21: MIGRATION_SCRIPTS[21]})
         runner.run()
     db = mtg_proxy_printer.sqlite_helpers.open_database(card_db.db_path, "carddb")
+    db.row_factory = None
     assert_that(db.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(22)))
     mock.assert_called_once()
     assert_that(

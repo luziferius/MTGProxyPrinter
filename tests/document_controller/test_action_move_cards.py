@@ -630,7 +630,7 @@ def document_with_cards(document_light: Document) -> Document:
     return document_light
 
 
-def gather_card_names(document: Document) -> Sequence[str]:
+def gather_card_names(document: Document) -> list[str]:
     return [
         ",".join(container.card.name for container in page)
         for page in document.pages

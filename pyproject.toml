@@ -60,6 +60,7 @@ package = [
 ]
 management = [
     "tox >= 4.41",
+    "line-profiler",
 ]
 
 [project.urls]

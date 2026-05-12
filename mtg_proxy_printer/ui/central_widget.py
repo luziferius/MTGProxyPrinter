@@ -23,7 +23,6 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.document_controller.move_page import ActionMovePage
 from mtg_proxy_printer.model.document import Document, DocumentColumns
-from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 
 try:
@@ -68,30 +67,30 @@ class CentralWidget(QWidget):
         self._currently_edited_page: int = 0
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def set_data(self, document: Document, card_db: CardDatabase, image_db: ImageDatabase):
+    def set_data(self, document: Document, image_db: ImageDatabase):
         logger.debug(f"{self.__class__.__name__} received model instances. Setting up child widgets…")
         self.document = document
         ui = self.ui
         document.current_page_changed.connect(self.on_document_current_page_changed)
-        self._setup_page_card_table_view(ui, document, card_db)
+        self._setup_page_card_table_view(ui, document)
         document.rowsAboutToBeRemoved.connect(self.on_document_rows_about_to_be_removed)
         document.rowsInserted.connect(self.on_document_rows_inserted)
         document.rowsRemoved.connect(self.on_document_rows_removed)
         ui.page_renderer.set_document(document)
-        self._setup_add_card_widget(card_db, image_db)
+        self._setup_add_card_widget(image_db)
         self._setup_document_view(document)
         logger.debug(f"{self.__class__.__name__} setup completed")
 
-    def _setup_page_card_table_view(self, ui: UiInstance, document: Document, card_db: CardDatabase):
+    def _setup_page_card_table_view(self, ui: UiInstance, document: Document):
         view = ui.page_card_table_view
-        view.set_data(document, card_db)
+        view.set_data(document)
         # Have the "delete selected" button enabled iff the current selection is non-empty
         view.changed_selection_is_empty.connect(ui.delete_selected_images_button.setDisabled)
         ui.delete_selected_images_button.clicked.connect(ui.page_card_table_view.delete_selected_images)
         view.request_run_async_task.connect(self.request_run_async_task)
 
-    def _setup_add_card_widget(self, card_db: CardDatabase, image_db: ImageDatabase):
-        self.ui.add_card_widget.set_databases(card_db, image_db)
+    def _setup_add_card_widget(self, image_db: ImageDatabase):
+        self.ui.add_card_widget.set_databases(image_db)
         self.ui.add_card_widget.request_run_async_task.connect(self.request_run_async_task)
 
     def _setup_document_view(self, document: Document):

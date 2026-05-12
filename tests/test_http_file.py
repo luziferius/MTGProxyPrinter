@@ -38,7 +38,9 @@ def http_file():
         file.headers = {}
         file.getheader.return_value = -1
         file.isclosed.return_value = False
-        yield mtg_proxy_printer.http_file.MeteredSeekableHTTPFile("")
+        metered_file = mtg_proxy_printer.http_file.MeteredSeekableHTTPFile("")
+        file.getheader.reset_mock()
+        yield metered_file
     file.__dict__.clear()
 
 
@@ -220,7 +222,7 @@ def test_close_twice(http_file: MeteredSeekableHTTPFile):
 def test_delegates(http_file: MeteredSeekableHTTPFile, method):
     file_method = getattr(http_file.file, method)
     if method in {"getheader"}:  # Used by setup code, reset call_count value.
-        file_method.call_count = 0
+        file_method.reset_mock()
     getattr(http_file, method)()
     file_method.assert_called_once()
     assert_that(
@@ -251,7 +253,6 @@ def test_content_encoding_with_file(http_file: MeteredSeekableHTTPFile):
     (10, "BYTES", True),
 ])
 def test_seekable(http_file: MeteredSeekableHTTPFile, content_length: int, ranges_header_value: str, expected: bool):
-    http_file.file.getheader.call_count = 0
     http_file.content_length = content_length
     http_file.file.getheader.return_value = ranges_header_value
     # Run test twice, verify the value is cached

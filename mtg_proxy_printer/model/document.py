@@ -447,6 +447,8 @@ class Document(QAbstractItemModel):
             elif column == PageColumns.IsFront:
                 return card.is_front if role == ItemDataRole.EditRole else (
                     self.tr("Front", "Magic card side") if card.is_front else self.tr("Back", "Magic card side"))
+        elif role == ItemDataRole.DecorationRole and column == PageColumns.Set:
+            return card.set.data(role)
         return None
 
     def _get_page_preview(self, page: Page):

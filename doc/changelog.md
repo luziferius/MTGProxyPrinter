@@ -2,11 +2,36 @@
 
 # Next version (in development)
 
+## New features
+
+- MTG sets are now shown with their set symbols wherever a set can be selected.
+- Configurable printing preferences:
+  - Add ability to specify positive or negative weights for card properties, like border color, etc.
+  - The app uses these to calculate the best matching printing whenever it has to choose among multiple choices.
+  - Negative values will rank matching printings lower than plain, regular printings, so they will only be chosen,
+    if there is no alternative available.
+- New printing filters:
+  - For Universes Beyond cards
+  - For cards with low resolution images
+  - For full-art cards, where the artwork extends below the rules textbox
+  - For textless cards. These are non-basic-land cards without the rules text box
+
+## Changed features
+
+- Reworked the print hiding user interface in the application settings.
+  - Improved the grouping of printing filters, with closely related filters placed together 
+- Rewrite of the internal card database layout, resulting in performance improvements
+  - Massive speed up in the card image cache cleanup wizard, if many foreign-language cards were previously downloaded
+- Changed search behavior in the built-in card search.
+  - Search is now consistently case-sensitive, even for ASCII characters
+  - The wildcard character to represent "any number of characters" is now `*` instead of `%`
+
 ## Fixed issues
 
+- The card lookup for "related cards" via the context menu now finds both sides of related double-faced cards or tokens.
 - Fixed failure loading documents, caused by a compatibility issue with Python 3.14.
 - Fixed application hang at exit, if a card data update was previously canceled.
-- Fixed Scryfall card data import aborting on some systems with `IncompleteRead` errors
+- Potentially fixed Scryfall card data import aborting on some systems with `IncompleteRead` errors
 
 # Version 0.35.1 (2025-02-25)  <a name="v0_35_1"></a>
 
@@ -827,7 +852,7 @@ capabilities.
   Uses image usage information already available since version 0.9.0
 - Renamed the “vertical” user interface variant in the settings. It is now referred to as “Columnar”,
   because it shows the main window content in four columns.
-- Improved sorting behaviour in the image cache cleanup wizard, when sorting the image table by collector number.
+- Improved sorting behavior in the image cache cleanup wizard, when sorting the image table by collector number.
 - Re-grouped and moved some settings in the settings window, resulting in a more logical options grouping
 - It is now possible to open the log directory from the debug settings tab, to ease log file access,
   when the option to write log files to disk is enabled. 
@@ -1274,7 +1299,7 @@ capabilities.
 
 # Version 0.2.1 (2020-12-02) <a name="v0_2_1"></a>
 
-This version incorporates major performance optimisations.
+This version incorporates major performance optimizations.
 
 ## Important notice
 

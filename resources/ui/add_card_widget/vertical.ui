@@ -95,7 +95,7 @@
       <item>
        <widget class="QLineEdit" name="card_name_filter">
         <property name="toolTip">
-         <string>Filter the list below. Use  % (Percent signs) as wildcards matching any number of characters.</string>
+         <string>Filter the list below. Use * as a wildcard matching any number of characters.</string>
         </property>
         <property name="placeholderText">
          <string>Filter card names</string>

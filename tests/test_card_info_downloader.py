@@ -15,8 +15,10 @@
 
 
 import dataclasses
+import datetime
 import sqlite3
-from typing import NamedTuple
+from collections.abc import Sequence
+from typing import NamedTuple, Callable
 import unittest.mock
 from unittest.mock import MagicMock
 
@@ -24,7 +26,6 @@ from hamcrest import *
 import pytest
 
 import mtg_proxy_printer.async_tasks.card_info_downloader
-from mtg_proxy_printer.async_tasks.card_info_downloader import SetWackinessScore
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.card import MTGSet, Card
 from mtg_proxy_printer.units_and_sizes import UUID, CardSizes
@@ -33,40 +34,58 @@ from .helpers import assert_model_is_empty, fill_card_database_with_json_card, l
     fill_card_database_with_json_cards, CardDataType
 
 
+def row_cursor(db: sqlite3.Connection) -> sqlite3.Cursor:
+    """
+    Returns a cursor for the given database, with sqlite3.Row as the row factory.
+
+    Used in Tests where using Key/value-based lookups result in
+    cleaner test code over brittle 10-tuple unpacking.
+    """
+    cursor = db.cursor()
+    cursor.row_factory = sqlite3.Row
+    return cursor
+
+
 class DatabasePrintingData(NamedTuple):
     """Rows stored in the Printing relation"""
     collector_number: str
+    language: str
     scryfall_id: UUID
     is_oversized: bool
-    highres_image: bool
+    is_highres_image: bool
+    is_dfc: bool
 
 
 class DatabaseCardFaceData(NamedTuple):
     """Rows stored in the CardFace relation"""
+    face_name: str
     image_uri: str
     is_front: bool
-    face_number: int
 
 
 class DatabaseSetData(NamedTuple):
     """Row data stored in the Set relation"""
     set_code: str
     set_name: str
-    set_uri: str
-    release_date: str
+    release_date: datetime.datetime
+    set_scryfall_id: UUID
 
 
 class DatabaseVisiblePrintingsData(NamedTuple):
     """Row retrieved via VisiblePrintings view"""
-    name: str
-    set_code: str
-    language: str
-    collector_number: str
-    scryfall_id: UUID
-    highres_image: bool
-    image_uri: str
+    face_name: str
     is_front: bool
+    set_code: str
+    set_name: str
+    collector_number: str
+    release_date: datetime.datetime
+    scryfall_id: UUID
+    png_image_uri: str
+    oracle_id: UUID
+    language: str
     is_oversized: bool
+    is_highres_image: bool
+    is_dfc: bool
 
 
 @dataclasses.dataclass(frozen=True)
@@ -118,59 +137,78 @@ class TestCaseData:
         return card.get("oracle_id") or card["card_faces"][0]["oracle_id"]
 
     @property
+    def is_dfc(self) -> bool:
+        card = self.json_dict
+        return "card_faces" in card and "image_uris" not in card
+
+    @property
     def is_oversized(self) -> bool:
         return self.json_dict["oversized"]
 
     @property
     def face_data(self) -> list[FaceData]:
         card = self.json_dict
-        if faces := card.get("card_faces"):
-            result = []
-            for face in faces:
-                name = face.get("printed_name", face["name"])
-                images = card.get("image_uris") or face["image_uris"]
-                result.append(FaceData(name, (png_uri := images["png"]), "/front/" in png_uri))
-            return result
-        return [FaceData(card.get("printed_name", card["name"]), card["image_uris"]["png"], True)]
+        card_name = card.get("printed_name") or card["name"]
+        match card:
+            case {"card_faces": [{"image_uris": {"png": first_image}, "printed_name": f}, {"image_uris": {"png": second_image}, "printed_name": b}]}:
+                # non-English DFC
+                return [
+                    FaceData(f, first_image, "/front/" in first_image),
+                    FaceData(b, second_image, "/front/" in second_image),
+                ]
+            case {"card_faces": [{"image_uris": {"png": first_image}, "name": f}, {"image_uris": {"png": second_image}, "name": b}]}:
+                # English DFC
+                return [
+                    FaceData(f, first_image, "/front/" in first_image),
+                    FaceData(b, second_image, "/front/" in second_image),
+                ]
+            # Single-sided cards have a top-level "image_uris" key.
+            case {"card_faces": [{"printed_name": f}, {"printed_name": b}], "image_uris": {"png": first_image}}:
+                # Non-English names
+                # card_faces array without image_uris: Split card, Adventure, Omen, etc…
+                return [FaceData(f"{f} // {b}", first_image, True)]
+            case {"card_faces": [{"name": f}, {"name": b}], "image_uris": {"png": first_image}}:
+                # English names
+                # card_faces array without image_uris: Split card, Adventure, Omen, etc…
+                return [FaceData(f"{f} // {b}", first_image, True)]
+            case {"image_uris": {"png": first_image}}:
+                # Regular card
+                return [FaceData(card_name, first_image, True)]
+            case _:
+                raise RuntimeError(f"Unexpected structure in case {self.json_name}")
 
     @property
     def set(self) -> DatabaseSetData:
         card = self.json_dict
-        return DatabaseSetData(card["set"], card["set_name"], card["scryfall_set_uri"], card["released_at"])
+        release_date = datetime.datetime.fromisoformat(card["released_at"])
+        return DatabaseSetData(card["set"], card["set_name"], release_date, card["set_id"])
 
-    def db_card(self) -> list[tuple[str]]:
-        return [(self.oracle_id,)]
+    def db_card(self) -> tuple[str, str]:
+        return self.oracle_id, self.json_dict["name"]
 
     def db_set(self):
-        return [self.set]
+        return self.set
 
-    def db_print_language(self):
-        return [(self.language,)]
-
-    def db_face_name(self) -> list[tuple[str]]:
-        # De-duplicate face names, in case both sides of a double-faced card have the same name. This is true for
-        # art series cards, certain double-faced tokens (for example the C16 Saproling token) and similar.
-        return list(set((face.name,) for face in self.face_data))
-
-    def db_card_face(self) -> list[DatabaseCardFaceData]:
+    def db_printing_face(self) -> list[DatabaseCardFaceData]:
         return [
-            DatabaseCardFaceData(
-                face.image_uri, face.is_front, face_number)
-            for face_number, face in enumerate(self.face_data)
-        ]
-
-    def db_all_printings(self) -> list[DatabaseVisiblePrintingsData]:
-        return [
-            DatabaseVisiblePrintingsData(
-                face.name, self.set.set_code, self.language, self.collector_number, self.scryfall_id,
-                self.highres_image, face.image_uri, face.is_front, self.is_oversized)
+            DatabaseCardFaceData(face.name, face.image_uri, face.is_front)
             for face in self.face_data
         ]
 
-    def db_printing(self) -> list[DatabasePrintingData]:
+    def db_all_printings(self) -> list[DatabaseVisiblePrintingsData]:
+        set_ = self.set
         return [
-            DatabasePrintingData(self.collector_number, self.scryfall_id, self.is_oversized, self.highres_image)
+            DatabaseVisiblePrintingsData(
+                face.name, face.is_front, set_.set_code, set_.set_name, self.collector_number, set_.release_date,
+                self.scryfall_id,
+                face.image_uri, self.oracle_id, self.language, self.is_oversized, self.highres_image, self.is_dfc
+            )
+            for face in self.face_data
         ]
+
+    def db_printing(self) -> DatabasePrintingData:
+        return DatabasePrintingData(
+            self.collector_number, self.language, self.scryfall_id, self.is_oversized, self.highres_image, self.is_dfc)
 
     def as_card(self, face_id: int = 1) -> Card:
         cd = self.json_dict
@@ -183,106 +221,102 @@ class TestCaseData:
             image_uris = cd.get("image_uris") or face["image_uris"]
             last_image_uris = cd.get("image_uris") or cd["card_faces"][-1]["image_uris"]
             return Card(
-                face.get("printed_name") or face["name"], card_set,
-                cd["collector_number"],  cd["lang"], cd["id"], "/front/" in image_uris["png"], oracle_id,
-                image_uris["png"], cd["highres_image"],
-                size, face_id, "/back/" in last_image_uris["png"], None
+                name=face.get("printed_name") or face["name"], set=card_set, collector_number=cd["collector_number"],
+                language=cd["lang"], scryfall_id=cd["id"], is_front="/front/" in image_uris["png"],
+                oracle_id=oracle_id, image_uri=image_uris["png"], highres_image=cd["highres_image"],
+                size=size, is_dfc="/back/" in last_image_uris["png"]
             )
         return Card(
-            cd.get("printed_name") or cd["name"], card_set,
-            cd["collector_number"],  cd["lang"], cd["id"], True, oracle_id,
-            cd["image_uris"]["png"], cd["highres_image"],
-            size, 0, False, None
+            name=cd.get("printed_name") or cd["name"], set=card_set, collector_number=cd["collector_number"],
+            language=cd["lang"], scryfall_id=cd["id"], is_front=True,
+            oracle_id=oracle_id, image_uri=cd["image_uris"]["png"], highres_image=cd["highres_image"],
+            size=size, is_dfc=False
         )
 
 
 def _assert_card_contains(card_db: CardDatabase, test_case: TestCaseData):
-    """Checks Oracle_id"""
+    """Checks oracle_id"""
+    data: list[tuple[str, str]] = [
+        (row["oracle_id"], row["english_name"])
+        for row in card_db.db.execute('SELECT oracle_id, english_name FROM Card\n')]
     assert_that(
-        data := card_db.db.execute('SELECT oracle_id FROM Card').fetchall(),
-        contains_inanyorder(*test_case.db_card()),
+        data, contains_exactly(test_case.db_card()),
         f"Card relation contains unexpected data: {data}")
-
-
-def _assert_print_language_contains(card_db: CardDatabase, test_case: TestCaseData):
-    """Assert that the card's language is stored in the database"""
-    assert_that(
-        data := card_db.db.execute(f'SELECT "language" FROM PrintLanguage').fetchall(),
-        contains_inanyorder(*test_case.db_print_language()),
-        f"PrintLanguage relation contains unexpected data: {data}")
 
 
 def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
     """
     Asserts that the card's set is stored in the database.
-    Checks columns set_code, set_name, set_uri, release_date
+    Checks columns set_code, set_name, release_date, set_scryfall_id
     """
+    data: list[DatabaseSetData] = [
+        DatabaseSetData(**dict(row)) for row in row_cursor(card_db.db).execute(
+            "SELECT set_code, set_name, release_date, set_scryfall_id FROM MTGSet\n")]
     assert_that(
-        card_db.db.execute("SELECT set_code, set_name, set_uri, release_date FROM MTGSet").fetchall(),
-        contains_inanyorder(*test_case.db_set()),
-        f"Set relation contains unexpected data")
+        data, contains_exactly(test_case.db_set()),
+        "Set relation contains unexpected data")
 
 
-def _assert_face_name_contains(card_db: CardDatabase, test_case: TestCaseData):
-    """Checks card_name"""
+def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *, is_visible: bool = True):
+    cursor = row_cursor(card_db.db)
+    data: list[DatabasePrintingData] = [
+        DatabasePrintingData(**dict(row)) for row
+        in cursor.execute("""\
+        SELECT collector_number, language, scryfall_id, 
+               is_oversized, is_highres_image, is_dfc
+          FROM Printing""")
+    ]
     assert_that(
-        data := card_db.db.execute("SELECT card_name FROM FaceName").fetchall(),
-        contains_inanyorder(*test_case.db_face_name()),
-        f"FaceName relation contains unexpected data: {data}")
-
-
-def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *, is_hidden: bool = False):
-    """Checks collector_number, scryfall_id, is_oversized, highres_image"""
-    assert_that(
-        data := [
-            (collector_number, scryfall_id, bool(is_oversized), bool(highres_image))
-            for collector_number, scryfall_id, is_oversized, highres_image
-            in card_db.db.execute(
-                "SELECT collector_number, scryfall_id, is_oversized, highres_image FROM Printing")
-         ],
-        contains_inanyorder(*test_case.db_printing()),
+        data, contains_exactly(test_case.db_printing()),
         f"Printing relation contains unexpected data: {data}")
-    for item in data:
-        assert_that(
-            bool(card_db.db.execute(
-                "SELECT is_hidden FROM Printing WHERE scryfall_id = ?\n",
-                (item[1],)).fetchone()[0]),
-            is_(is_hidden)
-        )
+    visible_data: Sequence[bool] = [
+        row["is_visible"] for row
+        in cursor.execute(
+            "SELECT is_visible FROM Printing WHERE scryfall_id = ?\n",
+            (test_case.scryfall_id,))
+    ]
+    assert_that(visible_data, contains_exactly(is_visible), "Wrong Printing visibility")
 
 
-def _assert_card_face_contains(card_db: CardDatabase, test_case: TestCaseData, relation_name: str = "CardFace"):
-    """Checks png_image_uri, is_front, face_number"""
+def _assert_printing_face_contains(card_db: CardDatabase, test_case: TestCaseData):
+    data: list[tuple[str, str, bool, int, int | None, int]] = card_db.db.execute("""\
+        SELECT face_name, png_image_uri, is_front, usage_count, last_use_timestamp, download_status
+          FROM PrintingFace""").fetchall()
+    expected = [contains_exactly(*face, 0, none(), 0) for face in test_case.db_printing_face()]
     assert_that(
-        data := card_db.db.execute(f"SELECT png_image_uri, is_front, face_number FROM {relation_name}").fetchall(),
-        contains_inanyorder(*test_case.db_card_face()),
-        f"CardFace relation contains unexpected data: {data}")
+        data,
+        contains_inanyorder(*expected),
+        f"CardFace relation contains unexpected data: {data}"
+    )
 
 
 def _assert_visible_printings_contains(card_db: CardDatabase, test_case: TestCaseData):
     """
     Checks
-      card_name, set_code, "language", collector_number, scryfall_id,
-      highres_image, png_image_uri, is_front, is_oversized
+      face_name, set_code, set_name, collector_number, release_date, scryfall_id,
+      png_image_uri, oracle_id, "language", is_front, is_oversized, is_highres_image, is_dfc
     """
+    data = [
+        DatabaseVisiblePrintingsData(**dict(row))
+        for row in row_cursor(card_db.db).execute("""\
+    SELECT face_name, is_front, set_code, set_name, collector_number, release_date, scryfall_id, 
+     png_image_uri, oracle_id, "language", is_oversized, is_highres_image, is_dfc
+      FROM VisiblePrintings
+    """)]
     assert_that(
-        data := card_db.db.execute(
-            'SELECT card_name, set_code, "language", collector_number, scryfall_id, highres_image, '
-            'png_image_uri, is_front, is_oversized FROM VisiblePrintings').fetchall(),
-        contains_inanyorder(*test_case.db_all_printings()),
-        f"VisiblePrintings relation contains unexpected data: {data}")
+        data, contains_inanyorder(*test_case.db_all_printings()),
+        f"VisiblePrintings relation contains unexpected data: {data}"
+    )
 
 
 def assert_visible_import(card_db: CardDatabase, test_case: TestCaseData):
     """
     Verifies that the printing is both correctly stored, and visible in all VIEWs that filter out unwanted printings.
     """
-    _assert_printing_contains(card_db, test_case, is_hidden=False)
-    _assert_card_face_contains(card_db, test_case)
-    _assert_face_name_contains(card_db, test_case)
+    _assert_printing_contains(card_db, test_case, is_visible=True)
+    _assert_printing_face_contains(card_db, test_case)
     _assert_set_contains(card_db, test_case)
     _assert_card_contains(card_db, test_case)
-    _assert_print_language_contains(card_db, test_case)
     _assert_visible_printings_contains(card_db, test_case)
 
 
@@ -290,10 +324,8 @@ def assert_hidden_import(card_db: CardDatabase, test_case: TestCaseData):
     """
     Verifies that the printing is correctly stored, but invisible in all VIEWs that filter out unwanted printings.
     """
-    _assert_print_language_contains(card_db, test_case)
-    _assert_printing_contains(card_db, test_case, is_hidden=True)
-    _assert_card_face_contains(card_db, test_case)
-    _assert_face_name_contains(card_db, test_case)
+    _assert_printing_contains(card_db, test_case, is_visible=False)
+    _assert_printing_face_contains(card_db, test_case)
     _assert_set_contains(card_db, test_case)
     _assert_card_contains(card_db, test_case)
     for filtered_view in (
@@ -315,7 +347,7 @@ def test_test_case_data():
             "face_data": contains_exactly(
                 FaceData("Atraxa, Praetors' Voice", "https://cards.scryfall.io/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True)
             ),
-            "set": DatabaseSetData("oc16", "Commander 2016 Oversized", "https://scryfall.com/sets/oc16?utm_source=api", "2016-11-11")
+            "set": DatabaseSetData("oc16", "Commander 2016 Oversized", datetime.datetime.fromisoformat("2016-11-11"), UUID("caa8f8c4-d0bf-4848-9c66-e2fcabd1585c"))
         })
     )
 
@@ -332,8 +364,8 @@ def generate_test_cases_for_test_card_import():
 
 
 @pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
-def test_card_import(qtbot, card_db: CardDatabase, test_case: TestCaseData):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict)
+def test_card_import(card_db: CardDatabase, test_case: TestCaseData):
+    fill_card_database_with_json_card(card_db, test_case.json_dict)
     assert_visible_import(card_db, test_case)
 
 
@@ -343,35 +375,44 @@ def generate_test_cases_for_test_print_hiding_filters():
     yield TestCaseData("oversized_card"), "hide-oversized-cards"  # Oversized printing of "Atraxa, Praetors' Voice"
     yield TestCaseData("funny_card_with_silver_border"), "hide-funny-cards"  # Silver-bordered "Aesthetic Consultation" from Unhinged
     yield TestCaseData("funny_card_with_acorn_security_stamp"), "hide-funny-cards"  # Black-bordered "Form of the Approach of the Second Sun" from Unfinity
+
     yield TestCaseData("Food_Token"), "hide-token"
     yield TestCaseData("Undercity"), "hide-token"   # Double-faced Dungeon / The Initiative marker card
     yield TestCaseData("The_Ring"), "hide-token"   # Double-faced Emblem
     yield TestCaseData("gold_bordered_card"), "hide-gold-bordered"
     yield TestCaseData("white_bordered_card"), "hide-white-bordered"
+
     yield TestCaseData("banned_in_brawl"), "hide-banned-in-brawl"
     yield TestCaseData("banned_in_commander"), "hide-banned-in-commander"
     yield TestCaseData("banned_in_historic"), "hide-banned-in-historic"
     yield TestCaseData("banned_in_legacy"), "hide-banned-in-legacy"
     yield TestCaseData("banned_in_modern"), "hide-banned-in-modern"
+
     yield TestCaseData("banned_in_oathbreaker"), "hide-banned-in-oathbreaker"
     yield TestCaseData("banned_in_pauper"), "hide-banned-in-pauper"
     yield TestCaseData("banned_in_penny"), "hide-banned-in-penny"  # The format has zero banned cards. The JSON document was altered to fake a banned card for testing purposes.
     yield TestCaseData("banned_in_pioneer"), "hide-banned-in-pioneer"
     yield TestCaseData("banned_in_standard"), "hide-banned-in-standard"
+
     yield TestCaseData("banned_in_vintage"), "hide-banned-in-vintage"
     yield TestCaseData("digital_only_card"), "hide-digital-cards"
     yield TestCaseData("digital_reprint"), "hide-digital-cards"
     yield TestCaseData("borderless_card"), "hide-borderless"
     yield TestCaseData("extended_art"), "hide-extended-art"
+
     yield TestCaseData("reversible_card"), "hide-reversible-cards"  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
     yield TestCaseData("english_double_faced_art_series_card"), "hide-art-series-cards"
+    yield TestCaseData("universes_beyond_card"), "hide-universes-beyond-cards"
+    yield TestCaseData("textless_card"), "hide-textless-cards"
+    yield TestCaseData("spanish_basic_Forest"), "hide-low-resolution-cards"
+    yield TestCaseData("english_basic_Forest_2"), "hide-full-art-cards"
 
 
 @pytest.mark.parametrize("filter_enabled", [True, False])
 @pytest.mark.parametrize("test_case, filter_name", generate_test_cases_for_test_print_hiding_filters())
 def test_boolean_print_hiding_filters(
-        qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_enabled: bool):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: str(filter_enabled)})
+        card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_enabled: bool):
+    fill_card_database_with_json_card(card_db, test_case.json_dict, {filter_name: str(filter_enabled)})
     if filter_enabled:
         assert_hidden_import(card_db, test_case)
     else:
@@ -380,19 +421,19 @@ def test_boolean_print_hiding_filters(
 
 def generate_test_cases_for_test_set_code_filters():
     sliver = TestCaseData("regular_english_card")  # English "Fury Sliver" from Time Spiral
-    yield sliver, "TSP", True
-    yield sliver, "tsp", True
-    yield sliver, "ABC", False
-    yield sliver, "", False
+    yield sliver, "TSP", assert_hidden_import
+    yield sliver, "tsp", assert_hidden_import
+    yield sliver, "embedded tsp in other words still works", assert_hidden_import
+    yield sliver, "ABC", assert_visible_import
+    yield sliver, "", assert_visible_import
 
 
-@pytest.mark.parametrize("test_case, filter_value, is_hidden", generate_test_cases_for_test_set_code_filters())
-def test_set_code_filters(qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_value: str, is_hidden: bool):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {"hidden-sets": filter_value})
-    if is_hidden:
-        assert_hidden_import(card_db, test_case)
-    else:
-        assert_visible_import(card_db, test_case)
+@pytest.mark.parametrize("test_case, filter_value, expected_result", generate_test_cases_for_test_set_code_filters())
+def test_set_code_filters(
+        card_db: CardDatabase, test_case: TestCaseData, filter_value: str,
+        expected_result: Callable[[CardDatabase, TestCaseData], None]):
+    fill_card_database_with_json_card(card_db, test_case.json_dict, {"hidden-sets": filter_value})
+    expected_result(card_db, test_case)
 
 
 @pytest.mark.parametrize("filter_setting", [True, False])
@@ -400,8 +441,8 @@ def test_set_code_filters(qtbot, card_db: CardDatabase, test_case: TestCaseData,
     (TestCaseData("funny_legal_card"), "hide-funny-cards"),  # Black-bordered, eternal-legal "Aerialephant" from Unfinity
 ])
 def test_download_filters_does_not_affect_unexpected_cards(
-        qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: str(filter_setting)})
+        card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
+    fill_card_database_with_json_card(card_db, test_case.json_dict, {filter_name: str(filter_setting)})
     assert_visible_import(card_db, test_case)
 
 
@@ -409,17 +450,17 @@ def test_download_filters_does_not_affect_unexpected_cards(
     TestCaseData("missing_image_double_faced_card"),
     TestCaseData("double_faced_card_with_missing_back_images"),  # Crash discovered Oct 27th, 2022. The back face of this double faced card has no image_uris key
 ])
-def test_import_card_skips_import_of_card_with_missing_image(qtbot, card_db: CardDatabase, test_case: TestCaseData):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict)
-    assert_model_is_empty(card_db, test_case)
+def test_import_card_skips_import_of_card_with_missing_image(card_db: CardDatabase, test_case: TestCaseData):
+    fill_card_database_with_json_card(card_db, test_case.json_dict)
+    assert_model_is_empty(card_db)
 
 
-def test_two_imports_having_the_same_filtered_out_card_work(qtbot, card_db: CardDatabase):
+def test_two_imports_having_the_same_filtered_out_card_work(card_db: CardDatabase):
     case = TestCaseData("missing_image_double_faced_card")
-    fill_card_database_with_json_card(qtbot, card_db, case.json_dict)
-    assert_model_is_empty(card_db, case)
-    fill_card_database_with_json_card(qtbot, card_db, case.json_dict)
-    assert_model_is_empty(card_db, case)
+    fill_card_database_with_json_card(card_db, case.json_dict)
+    assert_model_is_empty(card_db)
+    fill_card_database_with_json_card(card_db, case.json_dict)
+    assert_model_is_empty(card_db)
 
 
 @pytest.mark.parametrize("filter_name, visible_value, hidden_value", [
@@ -427,59 +468,75 @@ def test_two_imports_having_the_same_filtered_out_card_work(qtbot, card_db: Card
     ("hidden-sets", "", "OC16"),
 ])
 def test_re_import_with_enabled_download_filter_removes_card(
-        qtbot, card_db: CardDatabase, filter_name: str, visible_value: str, hidden_value: str):
+        card_db: CardDatabase, filter_name: str, visible_value: str, hidden_value: str):
     test_case = TestCaseData("oversized_card")  # Oversized printing of "Atraxa, Praetors' Voice"
     # Pass 1: Populate the database and include the card. The card should be in the database afterward
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: visible_value})
+    fill_card_database_with_json_card(card_db, test_case.json_dict, {filter_name: visible_value})
     assert_visible_import(card_db, test_case)
     # Pass 2: Re-Populate the database, but exclude the card now.
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: hidden_value})
+    fill_card_database_with_json_card(card_db, test_case.json_dict, {filter_name: hidden_value})
     # The card should not be visible
     assert_hidden_import(card_db, test_case)
 
 
-@pytest.mark.parametrize("filter_name, visible_value, hidden_value", [
-    ("hide-oversized-cards", "False", "True"),
-    ("hidden-sets", "", "OC16"),
+@pytest.mark.parametrize("unacceptable_card", [
+    "missing_image_double_faced_card",
 ])
-def test_re_import_with_disabled_download_filter_removes_removed_printings_entry(
-        qtbot, card_db: CardDatabase, filter_name: str, visible_value: str, hidden_value: str):
-    test_case = TestCaseData("oversized_card")  # Oversized printing of "Atraxa, Praetors' Voice"
-    # Pass 1: Populate the database and exclude the card. The card should not be visible
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: hidden_value})
-    assert_hidden_import(card_db, test_case)
-    # Pass 2: Re-Populate the database, but include the card now.
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: visible_value})
-    # The card should be in the database. The RemovedPrintings table should be empty
-    assert_visible_import(card_db, test_case)
-    assert_that(
-        card_db.db.execute("SELECT scryfall_id, oracle_id FROM RemovedPrintings").fetchall(),
-        is_(empty()),
-        "RemovedPrintings table not properly cleaned up."
-    )
+def test_removed_printings_table_populated_with_unacceptable_printing(
+        card_db: CardDatabase, unacceptable_card: str):
+    card = load_json(unacceptable_card)
+    fill_card_database_with_json_cards(card_db, [card])
+    db_result = card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings").fetchall()
+    assert_that(db_result, has_length(1))
+    assert_that(dict(db_result[0]), has_entries({
+        "scryfall_id": card["id"],
+        "language": card["lang"],
+        "oracle_id": card["oracle_id"],
+    }))
+
+
+def test_removed_printings_entry_removed_when_printing_becomes_acceptable(
+        card_db: CardDatabase):
+    original = load_json("regular_english_card")
+    modified: CardDataType = original.copy()
+    del modified["image_uris"]
+    modified["image_status"] = "missing"
+    fill_card_database_with_json_cards(card_db, [modified])
+    db_result = card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings").fetchall()
+    assert_that(db_result, has_length(1), "Test setup failed")
+    assert_that(dict(db_result[0]), has_entries({
+        "scryfall_id": original["id"],
+        "language": original["lang"],
+        "oracle_id": original["oracle_id"],
+    }), "Test setup failed")
+    fill_card_database_with_json_cards(card_db, [original])
+    db_result = card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings").fetchall()
+    assert_that(db_result, is_(empty()))
+
+
 
 
 @pytest.mark.parametrize("test_case_data", [
     TestCaseData("regular_english_card"),  # English "Fury Sliver" from Time Spiral
 ])
-def test_re_import_after_card_ban_hides_it(qtbot, card_db: CardDatabase, test_case_data: TestCaseData):
+def test_re_import_after_unban_makes_card_visible(card_db: CardDatabase, test_case_data: TestCaseData):
     card_json = test_case_data.json_dict
     with unittest.mock.patch.dict(card_json["legalities"], {"commander": "banned"}):
-        fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
+        fill_card_database_with_json_card(card_db, card_json, {"hide-banned-in-commander": "True"})
     assert_hidden_import(card_db, test_case_data)
-    fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
+    fill_card_database_with_json_card(card_db, card_json, {"hide-banned-in-commander": "True"})
     assert_visible_import(card_db, test_case_data)
 
 
 @pytest.mark.parametrize("test_case_data", [
     TestCaseData("regular_english_card"),  # English "Fury Sliver" from Time Spiral
 ])
-def test_re_import_after_unban_makes_card_visible(qtbot, card_db: CardDatabase, test_case_data: TestCaseData):
+def test_re_import_after_card_ban_hides_it(card_db: CardDatabase, test_case_data: TestCaseData):
     card_json = test_case_data.json_dict
-    fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
+    fill_card_database_with_json_card(card_db, card_json, {"hide-banned-in-commander": "True"})
     assert_visible_import(card_db, test_case_data)
     with unittest.mock.patch.dict(card_json["legalities"], {"commander": "banned"}):
-        fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
+        fill_card_database_with_json_card(card_db, card_json, {"hide-banned-in-commander": "True"})
     assert_hidden_import(card_db, test_case_data)
 
 
@@ -500,15 +557,15 @@ DataPath = list[str | int]
     (TestCaseData("regular_english_card"), ["image_uris", "png"], "https://c1.scryfall.com/file/front/invalid.png"),
 ])
 def test_updates_changed_value_on_re_import(
-        qtbot, card_db: CardDatabase, test_case: TestCaseData, dict_path: DataPath, value):
+        card_db: CardDatabase, test_case: TestCaseData, dict_path: DataPath, value):
     json_data = test_case.json_dict
     to_patch = json_data
     for item in dict_path[:-1]:
         to_patch = to_patch[item]
     assert_that(to_patch, is_(instance_of(dict)), "Setup failed: Walking path did not end in a dict to patch")
-    fill_card_database_with_json_card(qtbot, card_db, json_data)
+    fill_card_database_with_json_card(card_db, json_data)
     with unittest.mock.patch.dict(to_patch, {dict_path[-1]: value}):
-        fill_card_database_with_json_card(qtbot, card_db, json_data)
+        fill_card_database_with_json_card(card_db, json_data)
         # Assert within patched context, so that it can see the changed data in the test case data.
         assert_visible_import(card_db, test_case)
 
@@ -519,38 +576,17 @@ def test_updates_changed_value_on_re_import(
     (TestCaseData("regular_english_card"), ["released_at"], "2020-01-01"),  # English "Fury Sliver" from Time Spiral
 ])
 def test_updates_ignores_changed_value_on_re_import(
-        qtbot, card_db: CardDatabase, test_case: TestCaseData, dict_path: DataPath, value):
+        card_db: CardDatabase, test_case: TestCaseData, dict_path: DataPath, value):
     json_data = test_case.json_dict
     to_patch = json_data
     for item in dict_path[:-1]:
         to_patch = to_patch[item]
     assert_that(to_patch, is_(instance_of(dict)), "Setup failed: Walking path did not end in a dict to patch")
-    fill_card_database_with_json_card(qtbot, card_db, json_data)
+    fill_card_database_with_json_card(card_db, json_data)
     with unittest.mock.patch.dict(to_patch, {dict_path[-1]: value}):
-        fill_card_database_with_json_card(qtbot, card_db, json_data)
+        fill_card_database_with_json_card(card_db, json_data)
     # Outside the patched context to validate against the original data.
     assert_visible_import(card_db, test_case)
-
-
-@pytest.mark.parametrize("json_name, expected_score", [
-    ("regular_english_card", SetWackinessScore.REGULAR),
-    ("german_basic_Forest", SetWackinessScore.REGULAR),
-    ("prerelease_promo_card", SetWackinessScore.PROMOTIONAL),
-    ("white_bordered_card", SetWackinessScore.WHITE_BORDERED),
-    ("funny_card_with_silver_border", SetWackinessScore.FUNNY),
-    ("gold_bordered_card", SetWackinessScore.GOLD_BORDERED),
-    ("digital_only_card", SetWackinessScore.DIGITAL),
-    ("english_double_faced_art_series_card", SetWackinessScore.ART_SERIES),
-    ("oversized_card", SetWackinessScore.OVERSIZED),
-])
-def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expected_score: SetWackinessScore):
-    fill_card_database_with_json_card(qtbot, card_db, json_name)
-    assert_that(
-        card_db.db.execute('SELECT wackiness_score FROM MTGSet').fetchall(),
-        contains_exactly(
-            (expected_score,)
-        )
-    )
 
 
 @pytest.mark.parametrize("cards, expected_pairs", [
@@ -578,15 +614,14 @@ def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expec
     ]),
 ])
 def test_related_printings(
-        qtbot, card_db: CardDatabase,
+        card_db: CardDatabase,
         cards: list[str], expected_pairs: list[tuple[int, int]]):
-    db = card_db.db
-
     # Cards always relate to exact printings, but which one is chosen is rather arbitrary. E.g. The Underworld Cookbook
     # and Back into a Pie both create a Food token, but are set to different printings of that token card.
-    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    fill_card_database_with_json_cards(card_db, cards)
+    data = list(map(tuple, card_db.db.execute("SELECT card_id, related_id FROM RelatedCards")))
     assert_that(
-        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        data,
         contains_inanyorder(
             *expected_pairs
         )
@@ -598,32 +633,34 @@ def test_related_printings(
     ["Dungeon_of_the_Mad_Mage", "Zombie_Ogre", "Bar_the_Gate"],
     ["The_Ring", "Samwise_the_Stouthearted", "Elrond_Lord_of_Rivendell"],
 ])
-def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, cards: list[str]):
+def test_update_deletes_outdated_related_printing(card_db: CardDatabase, cards: list[str]):
     db = card_db.db
-    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    fill_card_database_with_json_cards(card_db, cards)
+    data = list(map(tuple, card_db.db.execute("SELECT card_id, related_id FROM RelatedCards")))
     assert_that(
-        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        data,
         contains_inanyorder((2, 1), (3, 1)),
         "Test setup failed"
     )
     db.executemany(
         # This inserts the back relation (token → card). These should not exist, and get purged during the next update
-        "INSERT INTO RelatedPrintings (card_id, related_id) VALUES (?, ?)",
+        "INSERT INTO RelatedCards (card_id, related_id) VALUES (?, ?)",
         [(1, 2), (1, 3)]
     )
-    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    fill_card_database_with_json_cards(card_db, cards)
+    data = list(map(tuple, card_db.db.execute("SELECT card_id, related_id FROM RelatedCards")))
     assert_that(
-        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        data,
         contains_inanyorder((2, 1), (3, 1)),
         "Old related printings not cleaned up"
     )
 
 
 @pytest.mark.parametrize("exception", [sqlite3.Error, Exception])
-def test_import_works_after_network_error_during_first_try(qtbot, card_db, exception):
+def test_import_works_after_network_error_during_first_try(card_db, exception):
     dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), card_db.db)
     data_raising_exception = unittest.mock.MagicMock().__iter__.side_effect = exception()
     with unittest.mock.patch("mtg_proxy_printer.async_tasks.card_info_downloader.logger.exception") as logger_mock:
         dw.populate_database(data_raising_exception)
     logger_mock.assert_called()
-    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
+    fill_card_database_with_json_card(card_db, "regular_english_card")

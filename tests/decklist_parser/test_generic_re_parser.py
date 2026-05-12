@@ -35,8 +35,8 @@ def _create_image_db_mock(*already_downloaded: Card) -> ImageDatabase:
 
 @pytest.mark.parametrize("prefer_already_downloaded", [True, False])
 def test_generic_re_parser_with_card_name_only_list(
-        qtbot, card_db: CardDatabase, prefer_already_downloaded: bool):
-    fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "regular_english_card_reprint"])
+        card_db: CardDatabase, prefer_already_downloaded: bool):
+    fill_card_database_with_json_cards(card_db, ["regular_english_card", "regular_english_card_reprint"])
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     image_db = _create_image_db_mock(card)
     parser = GenericRegularExpressionDeckParser(card_db, image_db, r"(?P<name>.+)")
@@ -60,10 +60,9 @@ def test_generic_re_parser_with_card_name_only_list(
 
 @pytest.mark.parametrize("prefer_already_downloaded", [True, False])
 def test_translating_from_hidden_name_works(
-        qtbot, card_db: CardDatabase, prefer_already_downloaded: bool):
-    fill_card_database_with_json_cards(
-        qtbot, card_db, ["english_Back_to_Basics", "german_Back_to_Basics"], {"hide-cards-without-images": "True"}
-    )
+        card_db: CardDatabase, prefer_already_downloaded: bool):
+    fill_card_database_with_json_cards(card_db, ["english_Back_to_Basics", "german_Back_to_Basics"],
+                                       {"hide-cards-without-images": "True"})
     card = card_db.get_card_with_scryfall_id("0600d6c2-0f72-4e79-a55d-1f06dffa48c2", True)
     image_db = _create_image_db_mock(card)
     parser = GenericRegularExpressionDeckParser(card_db, image_db, r"(?P<name>.+)")
@@ -92,10 +91,9 @@ def test_translating_from_hidden_name_works(
 @pytest.mark.parametrize("deck", ["Mentor Corrosivo", "Mentor corrosivo"])  # Portuguese (1st) and Spanish name (2nd)
 @pytest.mark.parametrize("prefer_already_downloaded", [True, False])
 def test_translating_from_name_with_ambiguous_language_works(
-        qtbot, card_db: CardDatabase, prefer_already_downloaded: bool, deck: str):
-    fill_card_database_with_json_cards(
-        qtbot, card_db, ["english_Corrosive_Mentor", "spanish_Corrosive_Mentor", "portuguese_Corrosive_Mentor"]
-    )
+        card_db: CardDatabase, prefer_already_downloaded: bool, deck: str):
+    fill_card_database_with_json_cards(card_db, ["english_Corrosive_Mentor", "spanish_Corrosive_Mentor",
+                                                 "portuguese_Corrosive_Mentor"])
     card = card_db.get_card_with_scryfall_id("140457ff-ee7d-48ec-8b91-ef5c2cc1ed74", True)
     image_db = _create_image_db_mock(card)
     parser = GenericRegularExpressionDeckParser(card_db, image_db, r"(?P<name>.+)")
@@ -120,10 +118,8 @@ def test_translating_from_name_with_ambiguous_language_works(
     )
 
 
-def test_print_guessing_prefers_highres_image_over_newest_printing_with_lowres_image(qtbot, card_db, image_db):
-    fill_card_database_with_json_cards(
-        qtbot, card_db, ["english_basic_Forest_2", "English_basic_Forest_newest_and_low_res"]
-    )
+def test_print_guessing_prefers_highres_image_over_newest_printing_with_lowres_image(card_db, image_db):
+    fill_card_database_with_json_cards(card_db, ["english_basic_Forest_2", "English_basic_Forest_newest_and_low_res"])
     deck = "Forest"
     parser = GenericRegularExpressionDeckParser(card_db, image_db, r"(?P<name>.+)")
     result_deck, unidentified = parser.parse_deck(deck, True, False)

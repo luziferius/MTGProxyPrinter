@@ -61,6 +61,7 @@ Statement = LiteralString | tuple[LiteralString, list[tuple[Any, ...]]]
 @dataclasses.dataclass
 class MigrationScript:
     script: list[Statement] = None
+    disable_foreign_keys: bool = False
 
     def get_script(self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask) -> list[Statement]:
         """Returns the script to run. Can be overridden by subclasses to allow dynamic behavior"""
@@ -77,7 +78,7 @@ class MigrationScript:
         return len(self.script)
 
 
-class Migrate_21_to_22(MigrationScript):
+class Migrate21to22(MigrationScript):
 
     def get_script(
             self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: AsyncTask) -> list[Statement]:
@@ -209,7 +210,6 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         "CREATE INDEX CardFace_card_id_index ON CardFace (card_id, is_front)",
     ]),
     17: MigrationScript([
-        "PRAGMA foreign_keys = OFF",
         dedent("""\
         CREATE TABLE NewFaceName (
           -- The name of a card face in a given language. Cards are not renamed,
@@ -267,11 +267,8 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         "CREATE INDEX CardFaceToCollectorNumberIndex ON CardFace (face_name_id, set_id, collector_number)",
         "CREATE INDEX CardFace_card_id_index ON CardFace (card_id, is_front)",
         "CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front)",
-        "PRAGMA foreign_key_check",
-        "PRAGMA foreign_keys = ON",
-    ]),
+    ], disable_foreign_keys=True),
     18: MigrationScript([
-        "PRAGMA foreign_keys = OFF",
         dedent("""\
         CREATE TABLE Printing (
           -- A specific printing of a card
@@ -328,14 +325,11 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING(face_name_id)
           JOIN PrintLanguage USING(language_id)"""),
-        "PRAGMA foreign_key_check",
-        "PRAGMA foreign_keys = ON",
-    ]),
+    ], disable_foreign_keys=True),
     19: MigrationScript([
         "CREATE INDEX CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front ON CardFace(is_front, printing_id)"
     ]),
     20: MigrationScript([
-        "PRAGMA foreign_keys = OFF",
         "DROP VIEW AllPrintings",
         dedent("""\
         CREATE TABLE CardFaceNew (
@@ -368,10 +362,8 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING(face_name_id)
           JOIN PrintLanguage USING(language_id)"""),
-        "PRAGMA foreign_key_check",
-        "PRAGMA foreign_keys = ON",
-    ]),
-    21: Migrate_21_to_22(),
+    ], disable_foreign_keys=True),
+    21: Migrate21to22(),
     22: MigrationScript([
         dedent("""\
         CREATE TABLE RemovedPrintings (
@@ -445,7 +437,6 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           GROUP BY printing_id"""),
     ]),
     25: MigrationScript([
-        "PRAGMA foreign_keys = OFF",
         dedent("""\
         CREATE TABLE "Set2" (
           set_id   INTEGER PRIMARY KEY NOT NULL,
@@ -479,9 +470,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           JOIN PrintLanguage USING (language_id)
           WHERE Printing.is_hidden IS FALSE
             AND FaceName.is_hidden IS FALSE"""),
-        "PRAGMA foreign_key_check",
-        "PRAGMA foreign_keys = ON",
-    ]),
+    ], disable_foreign_keys=True),
     26: MigrationScript([
         "UPDATE MTGSet SET release_date = '9999-01-01' WHERE release_date = '1970-01-01'",
         "CREATE INDEX FaceName_for_translation ON FaceName(language_id, card_name DESC)",
@@ -696,6 +685,229 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           LEFT OUTER JOIN double_faced_printings USING (printing_id)
           LEFT OUTER JOIN token_printings USING (printing_id)"""),
     ]),
+    34: MigrationScript([
+        "DROP VIEW CurrentlyEnabledSetCodeFilters",
+        "DROP VIEW AllPrintings",
+        "DROP VIEW VisiblePrintings",
+        "DROP VIEW HiddenPrintingIDs",
+        "DELETE FROM RemovedPrintings WHERE scryfall_id IN (SELECT scryfall_id FROM Printing)",
+        dedent("""\
+        CREATE TABLE LastDatabaseUpdate_New (
+          -- Contains the history of all performed card data updates
+          update_id           INTEGER           NOT NULL PRIMARY KEY,
+          update_timestamp    INTEGER_TIMESTAMP NOT NULL DEFAULT (unixepoch(CURRENT_TIMESTAMP)),
+          reported_card_count INTEGER           NOT NULL CHECK (reported_card_count >= 0)
+        )
+        """),
+        dedent("""\
+        INSERT INTO LastDatabaseUpdate_New (update_id,           update_timestamp,         reported_card_count)
+          SELECT                            update_id, unixepoch(update_timestamp, 'utc'), reported_card_count 
+          FROM LastDatabaseUpdate
+        """),
+        "DROP TABLE LastDatabaseUpdate",
+        "ALTER TABLE LastDatabaseUpdate_New RENAME TO LastDatabaseUpdate",
+        dedent("""\
+        CREATE TABLE RelatedCards (
+          -- The related cards of a card are those it references or creates, and those creating or referencing it.
+          -- The relationship is modelled bi-directional for better discoverability, especially for effects
+          -- that search the library for a specific card. Given the target card, this modelling also finds the tutors.
+          card_id    INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          PRIMARY KEY (card_id, related_id) ON CONFLICT IGNORE,
+          CONSTRAINT "No self-reference" CHECK (card_id <> related_id)
+        ) WITHOUT ROWID"""),
+        "INSERT INTO RelatedCards SELECT card_id, related_id FROM RelatedPrintings",
+        "DROP TABLE RelatedPrintings",
+        dedent("""\
+        CREATE TABLE PrintingFilters (
+          -- Contains the available display filters and their current values
+          filter_id                  INTEGER         NOT NULL PRIMARY KEY,
+          filter_name                TEXT            NOT NULL UNIQUE,
+          filter_active              BOOLEAN_INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE)),
+          printing_preference_weight INTEGER         NOT NULL DEFAULT 0
+        )"""),
+        dedent("""\
+        INSERT INTO PrintingFilters (filter_id, filter_name, filter_active)
+          SELECT filter_id, filter_name, filter_active
+          FROM DisplayFilters
+        """),
+        "DROP TABLE DisplayFilters",
+        dedent("""\
+        CREATE TABLE FilterAppliesTo (
+          -- Stores which filter applies to which printing.
+          printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
+          filter_id      INTEGER NOT NULL REFERENCES PrintingFilters (filter_id) ON DELETE CASCADE,
+          PRIMARY KEY (printing_id, filter_id)
+        ) WITHOUT ROWID
+        """),
+        "INSERT INTO FilterAppliesTo SELECT * FROM PrintingDisplayFilter",
+        "DROP TABLE PrintingDisplayFilter",
+        dedent("""\
+        CREATE TABLE MTGSet_new (
+          set_id            INTEGER           NOT NULL PRIMARY KEY,
+          set_code          TEXT              NOT NULL UNIQUE CHECK (set_code <> ''),
+          set_name          TEXT              NOT NULL,
+          release_date      INTEGER_TIMESTAMP NOT NULL,
+          set_filter_active BOOLEAN_INTEGER   NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
+          -- While the SVG is utf-8 text, the Qt API requires them as bytes, so store as blob to
+          -- avoid decoding/encoding round-trips.
+          icon_svg          BLOB                       CHECK (length(icon_svg)>100),
+          -- File name and cache key from the URI. Used to determine if the local copy is outdated.
+          icon_file_name    TEXT              NOT NULL DEFAULT '',
+          set_scryfall_id   TEXT              NOT NULL UNIQUE
+        )"""),
+        dedent("""\
+        INSERT INTO MTGSet_new (set_id, set_code, set_name,           release_date,         set_scryfall_id)
+          SELECT                set_id, set_code, set_name, unixepoch(release_date, 'utc'), set_code
+          FROM MTGSet"""),
+        "DROP TABLE MTGSet",
+        "ALTER TABLE MTGSet_new RENAME TO MTGSet",
+        dedent("""\
+        CREATE TABLE MigratedPrintings (
+          migration_id    TEXT              NOT NULL PRIMARY KEY,
+          old_scryfall_id TEXT              NOT NULL,
+          new_scryfall_id TEXT,
+          performed_at    INTEGER_TIMESTAMP NOT NULL
+        )"""),
+        "CREATE INDEX MigratedPrintingsLookup ON MigratedPrintings(old_scryfall_id, new_scryfall_id)",
+        dedent("""\
+        CREATE TABLE Card_new (
+          card_id      INTEGER         NOT NULL PRIMARY KEY,
+          oracle_id    TEXT            NOT NULL UNIQUE,
+          english_name TEXT            NOT NULL, -- Not UNIQUE. There are some distinct tokens and  Un-set cards sharing names
+          -- There are now tokens sharing names with cards, so state if this is a card that can go into a deck.
+          -- Used by the print selection in the deck list parser to always chose cards over same-name tokens
+          is_card      BOOLEAN_INTEGER NOT NULL CHECK (is_card IN (TRUE, FALSE))
+        )"""),
+        dedent("""\
+        WITH tokens(card_id, is_card) AS (
+          SELECT distinct card_id, FALSE
+            FROM Printing
+            LEFT OUTER JOIN FilterAppliesTo USING (printing_id)
+            LEFT OUTER JOIN PrintingFilters USING (filter_id)
+            WHERE filter_name = 'hide-token'),
+          english_face_name(card_id, english_name) AS (
+            SELECT distinct card_id, group_concat(card_name, ' // ' ORDER BY face_number ASC) AS english_name
+            FROM Card
+            INNER JOIN Printing USING (card_id)
+            INNER JOIN CardFace USING (printing_id)
+            INNER JOIN FaceName USING (face_name_id)
+            INNER JOIN PrintLanguage USING (language_id)
+            WHERE language = 'en'
+            GROUP BY scryfall_id
+          )
+        INSERT INTO Card_new (card_id, oracle_id, english_name,               is_card)
+          SELECT              card_id, oracle_id, coalesce(english_name, ''), coalesce(is_card, TRUE)
+            FROM Card
+            LEFT OUTER JOIN tokens USING (card_id)
+            LEFT OUTER JOIN english_face_name USING (card_id)
+            GROUP BY card_id"""),
+        "DROP TABLE Card",
+        "ALTER TABLE Card_new RENAME TO Card",
+        dedent("""\
+        CREATE TABLE PrintingFace (
+          printing_id        INTEGER            NOT NULL,
+          is_front           BOOLEAN_INTEGER    NOT NULL CHECK (is_front IN (TRUE, FALSE)),
+          face_name          TEXT               NOT NULL CHECK (face_name <> ''),
+          png_image_uri      TEXT               NOT NULL,
+          usage_count        INTEGER            NOT NULL CHECK (usage_count >= 0) DEFAULT 0,
+          last_use_timestamp INTEGER_TIMESTAMP,
+          download_status    INTEGER            NOT NULL CHECK (download_status >=0) DEFAULT 0,
+          PRIMARY KEY(printing_id, is_front)
+        )"""),
+        dedent("""\
+        INSERT INTO PrintingFace
+                (printing_id,    is_front,    png_image_uri,
+                 usage_count,                 last_use_timestamp,
+                 face_name)
+          SELECT cf.printing_id, cf.is_front, cf.png_image_uri,
+                 coalesce(lu.usage_count, 0), unixepoch(lu.last_use_date, 'utc') AS last_use_timestamp,
+                 group_concat(card_name, ' // ' ORDER BY face_number asc) AS face_name
+          FROM CardFace AS cf
+          JOIN Printing USING (printing_id)
+          LEFT OUTER JOIN LastImageUseTimestamps AS lu USING (scryfall_id, is_front)
+          JOIN FaceName AS fn USING (face_name_id)
+          GROUP BY scryfall_id, is_front"""),
+        "DROP TABLE LastImageUseTimestamps",
+        "CREATE INDEX PrintingFace_find_printing_by_name ON PrintingFace(face_name, printing_id)",
+        dedent("""\
+        CREATE TABLE Printing_new (
+          printing_id      INTEGER         NOT NULL PRIMARY KEY,
+          set_id           INTEGER         NOT NULL REFERENCES MTGSet(set_id),
+          collector_number TEXT            NOT NULL,
+          "language"       TEXT            NOT NULL CHECK ("language" <> ''),
+          scryfall_id      TEXT            NOT NULL UNIQUE,
+          card_id          INTEGER         NOT NULL REFERENCES Card(card_id),
+          -- Over-sized card indicator. Over-sized cards (value TRUE) are mostly useless for play,
+          -- so store this to be able to warn the user
+          is_oversized     BOOLEAN_INTEGER NOT NULL CHECK (is_oversized IN (TRUE, FALSE)),
+          -- Indicates if the card has high resolution images.
+          is_highres_image BOOLEAN_INTEGER NOT NULL CHECK (is_highres_image IN (TRUE, FALSE)),
+          -- Result cache for the printing filter evaluation
+          is_visible       BOOLEAN_INTEGER NOT NULL CHECK (is_visible IN (TRUE, FALSE)) DEFAULT TRUE,
+          preference_score INTEGER         NOT NULL DEFAULT 0,
+          is_dfc           BOOLEAN_INTEGER NOT NULL CHECK (is_dfc IN (TRUE, FALSE)) DEFAULT FALSE
+        )"""),
+        dedent("""\
+        INSERT INTO Printing_new
+                (printing_id, set_id, collector_number, scryfall_id, card_id, is_oversized,
+                 is_highres_image, is_visible,              "language")
+          SELECT printing_id, set_id, collector_number, scryfall_id, card_id, is_oversized,
+                 highres_image,    TRUE-Printing.is_hidden, "language"
+            FROM Printing
+            INNER JOIN CardFace USING(printing_id)
+            INNER JOIN FaceName USING(face_name_id)
+            INNER JOIN PrintLanguage USING(language_id)
+            GROUP BY printing_id"""),
+        "DROP TABLE Printing",
+        "ALTER TABLE Printing_new RENAME TO Printing",
+        "DROP TABLE CardFace",
+        "DROP TABLE FaceName",
+        "DROP TABLE PrintLanguage",
+        "CREATE INDEX Printing_find_printing_by_language ON Printing(language)",
+        dedent("""\
+        CREATE VIEW EvaluatePrintingFilters AS SELECT
+          printing_id,
+          coalesce(TRUE-(max(filter_active) OR set_filter_active), TRUE) AS is_visible,
+          coalesce(sum(printing_preference_weight), 0) AS preference_score
+        FROM Printing 
+          INNER JOIN MTGSet USING (set_id)
+          LEFT OUTER JOIN FilterAppliesTo USING (printing_id)
+          LEFT OUTER JOIN PrintingFilters USING (filter_id)
+          GROUP BY printing_id"""),
+        dedent("""\
+        CREATE VIEW AllPrintings AS SELECT
+            face_name, set_code, set_name, icon_svg, collector_number, release_date,
+            scryfall_id, png_image_uri, oracle_id, card_id, "language",
+            is_front, is_card, is_oversized, is_highres_image, is_visible, is_dfc, usage_count,
+            english_name, preference_score
+          FROM Printing
+          INNER JOIN Card USING(card_id)
+          INNER JOIN PrintingFace USING (printing_id)
+          INNER JOIN MTGSet USING (set_id)"""),
+        dedent("""\
+        CREATE VIEW VisiblePrintings AS SELECT 
+            face_name, set_code, set_name, icon_svg, collector_number, release_date,
+            scryfall_id, png_image_uri, oracle_id, card_id, "language",
+            is_front, is_card, is_oversized, is_highres_image, is_dfc, usage_count,
+            english_name, preference_score
+          FROM AllPrintings
+          WHERE is_visible IS TRUE"""),
+        dedent("""\
+        CREATE TRIGGER "Update Printing.preference_score on PrintingFilter.printing_preference_weight update"
+          AFTER UPDATE OF printing_preference_weight ON PrintingFilters
+          FOR EACH ROW
+          WHEN NEW.printing_preference_weight <> OLD.printing_preference_weight
+          BEGIN
+            UPDATE Printing
+              SET preference_score = preference_score + NEW.printing_preference_weight - OLD.printing_preference_weight
+              WHERE Printing.printing_id IN (
+                SELECT FilterAppliesTo.printing_id FROM PrintingFilters
+                  INNER JOIN FilterAppliesTo USING (filter_id)
+                    WHERE PrintingFilters.filter_id = NEW.filter_id
+                );
+        END""")
+    ], disable_foreign_keys=True),
 }
 
 
@@ -722,8 +934,6 @@ class DatabaseMigrationTask(AsyncTask):
 
     def __init__(self, card_db: CardDatabase, migration_scripts: dict[int, MigrationScript] = None):
         super().__init__()
-        self.script_update_signals = AsyncTask()
-        self.inner_tasks.append(self.script_update_signals)
         self.db_path = card_db.db_path
         self.migration_scripts = migration_scripts or MIGRATION_SCRIPTS
         logger.debug(f"Created {self.__class__.__name__} instance.")
@@ -741,6 +951,9 @@ class DatabaseMigrationTask(AsyncTask):
         """
         Run the database update.
         """
+
+        script_update_signals = AsyncTask()
+        self.inner_tasks.append(script_update_signals)
         db = mtg_proxy_printer.sqlite_helpers.open_database(self.db_path, "carddb")
         begin_schema_version = self._get_schema_version(db)
         target_version = max(self.migration_scripts.keys())+1
@@ -752,11 +965,11 @@ class DatabaseMigrationTask(AsyncTask):
         logger.info(f"Migrating database from version {begin_schema_version} to {target_version}. "
                     f"About to run {target_version-begin_schema_version} migration scripts.")
         self._begin_top_level_progress(begin_schema_version, target_version)
-        self.request_register_subtask.emit(self.script_update_signals)
+        self.request_register_subtask.emit(script_update_signals)
         try:
             for source_version in range(begin_schema_version, target_version):
                 script = self.migration_scripts[source_version]
-                self._migrate_version(db, source_version, script)
+                self._migrate_version(db, source_version, script, script_update_signals)
                 self.advance_progress.emit()
             current_schema_version = self._get_schema_version(db)
             logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
@@ -765,7 +978,7 @@ class DatabaseMigrationTask(AsyncTask):
             db.execute("VACUUM\n")
             self.advance_progress.emit()
         except sqlite3.Error as e:
-            self.script_update_signals.task_completed.emit()  # Close the inner progress bar that was left open
+            script_update_signals.task_completed.emit()  # Close the inner progress bar that was left open
             if e.sqlite_errorcode == sqlite3.SQLITE_BUSY:
                 raise e
             else:
@@ -806,18 +1019,20 @@ class DatabaseMigrationTask(AsyncTask):
     def _get_schema_version(db: sqlite3.Connection) -> int:
         return db.execute("PRAGMA user_version; -- DatabaseMigrationRunner\n").fetchone()[0]
 
-    def _migrate_version(self, db: sqlite3.Connection, source_version: int, script: MigrationScript):
+    def _migrate_version(self, db: sqlite3.Connection, source_version: int, script: MigrationScript, signals: AsyncTask):
         next_version = source_version + 1
         suffix: LiteralString = f";  -- Migrate {source_version} to {next_version}\n"
-        signals = self.script_update_signals
-        steps = script.script_length(db, suffix) + 1  # Add 1 for the call to db.commit()
-
-        msg = QCoreApplication.translate(
-            "DatabaseMigrationRunner", "Migrate to version %n:",
-            "The numeric parameter is a version number, and not countable.", source_version)
+        # Add 1 for the call to db.commit(), and 1 for the foreign keys check
+        steps = script.script_length(db, suffix) + 1 + int(script.disable_foreign_keys)
+        msg = self.tr(
+            "Migrate to version %n:",
+            "Progress bar label. The numeric parameter is a version number, and not countable.",
+            next_version)
         signals.task_begins.emit(steps, msg)
 
         logger.debug(f"Starting migration from {source_version}")
+        if script.disable_foreign_keys:
+            db.execute("PRAGMA foreign_keys = OFF" + suffix)
         db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)
         for statement in script.get_script(db, suffix, signals):  # type: Statement
             if isinstance(statement, str):
@@ -829,6 +1044,10 @@ class DatabaseMigrationTask(AsyncTask):
             else:
                 statement, parameters = statement
                 db.executemany(statement + suffix, parameters)
+            signals.advance_progress.emit()
+        if script.disable_foreign_keys:
+            db.execute("PRAGMA foreign_key_check" + suffix)
+            db.execute("PRAGMA foreign_keys = ON" + suffix)
             signals.advance_progress.emit()
         db.execute(f"PRAGMA user_version = {next_version}" + suffix)
         db.commit()
