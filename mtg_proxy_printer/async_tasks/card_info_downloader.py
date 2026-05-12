@@ -461,6 +461,7 @@ class DatabaseImportTask(AsyncTask):
         self.db_created = db is None
         self.should_run = True
         self.set_code_cache: dict[str, int] = {}
+        self._printing_filter_dict: list[str] = []
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @property
@@ -655,8 +656,8 @@ class DatabaseImportTask(AsyncTask):
         if (set_id := self.set_code_cache.get(set_code)) is None:
             self.set_code_cache[set_code] = set_id = self._insert_or_update_set(card)
         printing_id = self._insert_or_update_printing(card, card_id, set_id)
-        filter_data = _get_card_filter_data(card)
-        self._insert_or_update_card_filters(printing_id, filter_data)
+        _get_card_filter_data(card, self._printing_filter_dict)
+        self._insert_or_update_card_filters(printing_id, self._printing_filter_dict)
         self._insert_or_update_printing_faces(card, printing_id)
 
     def _clean_unused_data(self):
@@ -823,12 +824,12 @@ class DatabaseImportTask(AsyncTask):
                 case check_result:
                     raise RuntimeError(f"Unexpected data retuned from query: {check_query} {check_result=}")
 
-    def _insert_or_update_card_filters(self, printing_id: int, filter_data: dict[str, bool]):
-        printing_filter_ids = self._read_available_printing_filters_from_db()
+    def _insert_or_update_card_filters(self, printing_id: int, active_filters: list[str]):
+        printing_filter_ids: dict[str, int] = self._read_available_printing_filters_from_db()
         db = self.db
         active_printing_filters = set(
             (printing_id, printing_filter_ids[filter_name])
-            for filter_name, filter_applies in filter_data.items() if filter_applies
+            for filter_name in active_filters
         )
         stored_printing_filters: set[tuple[int, int]] = set(db.execute(
             "SELECT printing_id, filter_id FROM FilterAppliesTo WHERE printing_id = ?",
@@ -861,7 +862,7 @@ def _get_related_cards(card: CardDataType):
             yield RelatedPrintingData(card_id, related_id)
 
 
-def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
+def _get_card_filter_data(card: CardDataType, active_filters: list[str]):
     legalities = card["legalities"]
     image_status = card["image_status"]
     border_color = card["border_color"]
@@ -869,43 +870,43 @@ def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
     # Performance note: Converting into sets and computing if they are not disjoint is more expensive than this.
     type_line = card.get("type_line") or " // ".join(face["type_line"] for face in card.get("card_faces", ()))
     is_token = any(("Dungeon" in type_line, "Token" in type_line, "Emblem" in type_line))
-    return {
-        # Racism filter
-        "hide-cards-depicting-racism": card.get("content_warning", False),
-        # Cards with placeholder images (low-res image with "not available in your language" overlay)
-        "hide-cards-without-images": image_status == "placeholder",
-        "hide-low-resolution-cards": image_status == "lowres",
-        "hide-oversized-cards": card["oversized"],
-        # Frame and border filter
-        "hide-full-art-cards": card["full_art"],
-        "hide-textless-cards": card["textless"],
-        "hide-white-bordered": border_color == "white",
-        "hide-gold-bordered": border_color == "gold",
-        "hide-borderless": border_color == "borderless",
-        "hide-extended-art": "extendedart" in card.get("frame_effects", ()),
-        # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
-        "hide-reversible-cards": card["layout"] == "reversible_card",
-        # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
-        # black-bordered promotional cards, in addition to silver-bordered cards.
-        "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
-        "hide-token": is_token,
-        "hide-digital-cards": card["digital"],
-        "hide-art-series-cards": card["layout"] == "art_series",
-        "hide-universes-beyond-cards": "universesbeyond" in card.get("promo_types", ()),
-        # Specific format legality. Use .get() with a default instead of [] to not fail
-        # if Scryfall removes one of the listed formats in the future.
-        "hide-banned-in-brawl": legalities.get("brawl") == "banned",
-        "hide-banned-in-commander": legalities.get("commander") == "banned",
-        "hide-banned-in-historic": legalities.get("historic") == "banned",
-        "hide-banned-in-legacy": legalities.get("legacy") == "banned",
-        "hide-banned-in-modern": legalities.get("modern") == "banned",
-        "hide-banned-in-oathbreaker": legalities.get("oathbreaker") == "banned",
-        "hide-banned-in-pauper": legalities.get("pauper") == "banned",
-        "hide-banned-in-penny": legalities.get("penny") == "banned",
-        "hide-banned-in-pioneer": legalities.get("pioneer") == "banned",
-        "hide-banned-in-standard": legalities.get("standard") == "banned",
-        "hide-banned-in-vintage": legalities.get("vintage") == "banned",
-    }
+    active_filters.clear()
+    is_active = active_filters.append
+    # Racism filter
+    if card.get("content_warning", False): is_active("hide-cards-depicting-racism")
+    # Cards with placeholder images (low-res image with "not available in your language" overlay)
+    if image_status == "placeholder": is_active("hide-cards-without-images")
+    if image_status == "lowres": is_active("hide-low-resolution-cards")
+    if card["oversized"]: is_active("hide-oversized-cards")
+    # Frame and border filter
+    if card["full_art"]: is_active("hide-full-art-cards")
+    if card["textless"]: is_active("hide-textless-cards")
+    if border_color == "white": is_active("hide-white-bordered")
+    if border_color == "gold": is_active("hide-gold-bordered")
+    if border_color == "borderless": is_active("hide-borderless")
+    if "extendedart" in card.get("frame_effects", ()): is_active("hide-extended-art")
+    # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
+    if card["layout"] == "reversible_card": is_active("hide-reversible-cards")
+    # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
+    # black-bordered promotional cards, in addition to silver-bordered cards.
+    if card["set_type"] == "funny" and "legal" not in legalities.values(): is_active("hide-funny-cards")
+    if is_token: is_active("hide-token")
+    if card["digital"]: is_active("hide-digital-cards")
+    if card["layout"] == "art_series": is_active("hide-art-series-cards")
+    if "universesbeyond" in card.get("promo_types", ()): is_active("hide-universes-beyond-cards")
+    # Specific format legality. Use .get() with a default instead of [] to not fail
+    # if Scryfall removes one of the listed formats in the future.
+    if legalities.get("brawl") == "banned": is_active("hide-banned-in-brawl")
+    if legalities.get("commander") == "banned": is_active("hide-banned-in-commander")
+    if legalities.get("historic") == "banned": is_active("hide-banned-in-historic")
+    if legalities.get("legacy") == "banned": is_active("hide-banned-in-legacy")
+    if legalities.get("modern") == "banned": is_active("hide-banned-in-modern")
+    if legalities.get("oathbreaker") == "banned": is_active("hide-banned-in-oathbreaker")
+    if legalities.get("pauper") == "banned": is_active("hide-banned-in-pauper")
+    if legalities.get("penny") == "banned": is_active("hide-banned-in-penny")
+    if legalities.get("pioneer") == "banned": is_active("hide-banned-in-pioneer")
+    if legalities.get("standard") == "banned": is_active("hide-banned-in-standard")
+    if legalities.get("vintage") == "banned": is_active("hide-banned-in-vintage")
 
 
 def _should_skip_card(card: CardDataType) -> bool:
