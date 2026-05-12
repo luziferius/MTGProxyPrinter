@@ -236,7 +236,7 @@ class TestCaseData:
 
 def _assert_card_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks oracle_id"""
-    data: Sequence[tuple[str, str]] = [
+    data: list[tuple[str, str]] = [
         (row["oracle_id"], row["english_name"])
         for row in card_db.db.execute('SELECT oracle_id, english_name FROM Card\n')]
     assert_that(
@@ -249,7 +249,7 @@ def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
     Asserts that the card's set is stored in the database.
     Checks columns set_code, set_name, release_date, set_scryfall_id
     """
-    data: Sequence[DatabaseSetData] = [
+    data: list[DatabaseSetData] = [
         DatabaseSetData(**dict(row)) for row in row_cursor(card_db.db).execute(
             "SELECT set_code, set_name, release_date, set_scryfall_id FROM MTGSet\n")]
     assert_that(
@@ -259,7 +259,7 @@ def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
 
 def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *, is_visible: bool = True):
     cursor = row_cursor(card_db.db)
-    data: Sequence[DatabasePrintingData] = [
+    data: list[DatabasePrintingData] = [
         DatabasePrintingData(**dict(row)) for row
         in cursor.execute("""\
         SELECT collector_number, language, scryfall_id, 
@@ -279,7 +279,7 @@ def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *,
 
 
 def _assert_printing_face_contains(card_db: CardDatabase, test_case: TestCaseData):
-    data: Sequence[tuple[str, str, bool, int, int | None, int]] = card_db.db.execute("""\
+    data: list[tuple[str, str, bool, int, int | None, int]] = card_db.db.execute("""\
         SELECT face_name, png_image_uri, is_front, usage_count, last_use_timestamp, download_status
           FROM PrintingFace""").fetchall()
     expected = [contains_exactly(*face, 0, none(), 0) for face in test_case.db_printing_face()]
