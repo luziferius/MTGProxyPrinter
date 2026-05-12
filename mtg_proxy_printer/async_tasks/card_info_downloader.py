@@ -871,7 +871,10 @@ def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
     legalities = card["legalities"]
     image_status = card["image_status"]
     border_color = card["border_color"]
-    type_line = card["type_line"]
+    # The API documentation states the type_line is mandatory, but reversible cards miss it in the parent Card.
+    # Performance note: Converting into sets and computing if they are not disjoint is more expensive than this.
+    type_line = card.get("type_line") or " // ".join(face["type_line"] for face in card.get("card_faces", ()))
+    is_token = any(("Dungeon" in type_line, "Token" in type_line, "Emblem" in type_line))
     return {
         # Racism filter
         "hide-cards-depicting-racism": card.get("content_warning", False),
@@ -891,7 +894,7 @@ def _get_card_filter_data(card: CardDataType) -> dict[str, bool]:
         # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
         # black-bordered promotional cards, in addition to silver-bordered cards.
         "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
-        "hide-token": any(("Dungeon" in type_line, "Token" in type_line, "Emblem" in type_line)),
+        "hide-token": is_token,
         "hide-digital-cards": card["digital"],
         "hide-art-series-cards": card["layout"] == "art_series",
         "hide-universes-beyond-cards": "universesbeyond" in card.get("promo_types", ()),

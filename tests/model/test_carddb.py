@@ -874,52 +874,53 @@ def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(c
     )
 
 
-@pytest.mark.parametrize("jsons, scryfall_id, filter_enabled, expected", [
+@pytest.mark.parametrize("jsons, scryfall_id, filter_name, expected", [
     # Result set with size > 1. Return sets in release order.
     # Also, these three cards have three different printed names
     (["german_Ironroot_Treefolk_1", "german_Ironroot_Treefolk_2", "german_Ironroot_Treefolk_3"],
-     "2520cb2b-47f2-4fb3-a9e7-17ad135562c8", False,
+     "2520cb2b-47f2-4fb3-a9e7-17ad135562c8", "",
      [MTGSet("3ed", "Revised Edition"), MTGSet("4ed", "Fourth Edition"), MTGSet("5ed", "Fifth Edition")]),
     # De-duplicate results
     (["Asmoranomardicadaistinaculdacar", "Asmoranomardicadaistinaculdacar_2"],
-     "d99a9a7d-d9ca-4c11-80ab-e39d5943a315", False,
+     "d99a9a7d-d9ca-4c11-80ab-e39d5943a315", "",
      [MTGSet("mh2", "Modern Horizons 2")]),
     # Only offer sets the card is available in the same language as the source
     (["english_Back_to_Basics", "german_Back_to_Basics"],
-     "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", False,
+     "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", "",
      [MTGSet("usg", "Urza's Saga")]),
     # 1/1 colorless Spirit token offers both TNEO and TC16
     (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
-     "5009729f-6365-42ca-979f-d854a10e463b", False,
+     "5009729f-6365-42ca-979f-d854a10e463b", "",
      [MTGSet("tc16", "Commander 2016 Tokens"), MTGSet("tneo", "Kamigawa: Neon Dynasty Tokens")]),
     (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
-     "ca20548f-6324-4858-adbe-87303ff1ca52", False,
+     "ca20548f-6324-4858-adbe-87303ff1ca52", "",
      [MTGSet("tc16", "Commander 2016 Tokens"), MTGSet("tneo", "Kamigawa: Neon Dynasty Tokens")]),
     # 4/5 green Spirit token from TNEO only offers TNEO
     (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
-     "0f48aaab-dd6e-4bcc-a8fb-d31dd4a098ba", False,
+     "0f48aaab-dd6e-4bcc-a8fb-d31dd4a098ba", "",
      [MTGSet("tneo", "Kamigawa: Neon Dynasty Tokens")]),
     # The first of these has placeholder images, making it affected by a printing filter
     (["german_Duress", "german_Duress_2"],
-     "920e8a8f-3cb4-4f33-8a71-f2524cf63aaf", True,  # ID of the second printing from MID
+     "920e8a8f-3cb4-4f33-8a71-f2524cf63aaf", "hide-cards-without-images",  # ID of the second printing from MID
      [MTGSet("mid", "Innistrad: Midnight Hunt")]),
     # Data of hidden printings present in the document must round-trip.
     # Steps to reproduce: Disable a card filter, add a card affected by it, then re-enable it.
     (["german_Duress", "german_Duress_2"],
-     "51c6ec30-afb2-41e6-895b-92e070aa86f3", True,  # ID of the first printing from 7th Edition
+     "51c6ec30-afb2-41e6-895b-92e070aa86f3", "hide-cards-without-images",  # ID of the first printing from 7th Edition
      [MTGSet("7ed", "Seventh Edition"), MTGSet("mid", "Innistrad: Midnight Hunt")]),
     (["german_Duress"],
-     "51c6ec30-afb2-41e6-895b-92e070aa86f3", True,
+     "51c6ec30-afb2-41e6-895b-92e070aa86f3", "hide-cards-without-images",
      [MTGSet("7ed", "Seventh Edition")]),
     
 ])
 def test_get_available_sets_for_card(
         card_db: CardDatabase,
-        jsons: list[str], scryfall_id: UUID, filter_enabled: bool, expected: list[MTGSet]):
+        jsons: list[str], scryfall_id: UUID, filter_name: str, expected: list[MTGSet]):
     fill_card_database_with_json_cards(card_db, jsons)
     card = card_db.get_card_with_scryfall_id(scryfall_id, True)
-    if filter_enabled:
-        filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["card-filter"]}
+    filters = dict(mtg_proxy_printer.settings.settings["card-filter"])
+    if filter_name:
+        filters[filter_name] = "True"
         update_database_printing_filters(card_db, filters)
     assert_that(card, is_(not_none()), "Test setup failed, card not found")
     fulfills_matcher = contains_exactly(*expected) if expected else empty()
