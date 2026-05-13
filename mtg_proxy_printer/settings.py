@@ -172,6 +172,15 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-full-art-cards": "False",
     "hidden-sets": "",
 }
+CARD_FILTER_DEFAULT_WEIGHTS = defaultdict(int, {
+    "hide-cards-without-images": -100,
+    "hide-oversized-cards": -10,
+    "hide-low-resolution-cards": -20,
+    "hide-gold-bordered": -5,
+    "hide-art-series-cards": -100,
+    "hide-textless-cards": -5,
+})
+
 
 VALID_CUT_MARKER_STYLES: defaultdict[str, PenStyle] = defaultdict(lambda: PenStyle.NoPen, {
     "None": PenStyle.NoPen,
