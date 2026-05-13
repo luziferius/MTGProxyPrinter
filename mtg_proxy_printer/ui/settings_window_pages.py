@@ -43,7 +43,7 @@ try:
     from mtg_proxy_printer.ui.generated.settings_window.decklist_import_settings_page \
         import Ui_DecklistImportSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.general_settings_page import Ui_GeneralSettingsPage
-    from mtg_proxy_printer.ui.generated.settings_window.hide_printings_page import Ui_HidePrintingsPage
+    from mtg_proxy_printer.ui.generated.settings_window.printing_preferences_page import Ui_PrintingPreferencesPage
     from mtg_proxy_printer.ui.generated.settings_window.printer_settings_page import Ui_PrinterSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.export_settings_page import Ui_ExportSettingsPage
 except ModuleNotFoundError:
@@ -51,7 +51,7 @@ except ModuleNotFoundError:
     Ui_DebugSettingsPage = load_ui_from_file("settings_window/debug_settings_page")
     Ui_DecklistImportSettingsPage = load_ui_from_file("settings_window/decklist_import_settings_page")
     Ui_GeneralSettingsPage = load_ui_from_file("settings_window/general_settings_page")
-    Ui_HidePrintingsPage = load_ui_from_file("settings_window/hide_printings_page")
+    Ui_PrintingPreferencesPage = load_ui_from_file("settings_window/printing_preferences_page")
     Ui_PrinterSettingsPage = load_ui_from_file("settings_window/printer_settings_page")
     Ui_ExportSettingsPage = load_ui_from_file("settings_window/export_settings_page")
 
@@ -452,16 +452,19 @@ class GeneralSettingsPage(Page):
         return widgets_with_settings
 
 
-class HidePrintingsPage(Page):
+class PrintingPreferencesPage(Page):
     request_run_async_task = Signal(PrintingFilterUpdater)
 
     def display_metadata(self) -> PageMetadata:
-        return PageMetadata(self.tr("Hide printings"), "view-hidden", self.tr("Hide unwanted printings"))
+        return PageMetadata(
+            self.tr("Printing preferences", "Display text. Page name shown in the settings pages list"),
+            "view-hidden",
+            self.tr("Hide unwanted printings", "Tooltip text for the settings pages list."))
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.model = PrintingFilterModel(self)
-        self.ui = ui = Ui_HidePrintingsPage()
+        self.ui = ui = Ui_PrintingPreferencesPage()
         ui.setupUi(self)
         self.card_db = None
         ui.printing_filter_view.setModel(self.model)

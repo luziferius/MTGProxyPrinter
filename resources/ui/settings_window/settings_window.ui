@@ -33,7 +33,7 @@
      <widget class="ExportSettingsPage" name="export_settings_page"/>
      <widget class="PrinterSettingsPage" name="printer_settings_page"/>
      <widget class="DefaultDocumentLayoutSettingsPage" name="default_document_layout_page"/>
-     <widget class="HidePrintingsPage" name="hide_printings_page"/>
+     <widget class="PrintingPreferencesPage" name="printing_preferences_page"/>
      <widget class="DebugSettingsPage" name="debug_settings_page"/>
     </widget>
    </item>
@@ -91,7 +91,7 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>HidePrintingsPage</class>
+   <class>PrintingPreferencesPage</class>
    <extends>QWidget</extends>
    <header>mtg_proxy_printer.ui.settings_window_pages</header>
    <container>1</container>

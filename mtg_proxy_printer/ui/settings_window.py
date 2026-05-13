@@ -29,7 +29,7 @@ from mtg_proxy_printer.document_controller.edit_document_settings import ActionE
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.ui.settings_window_pages import Page, HidePrintingsPage
+from mtg_proxy_printer.ui.settings_window_pages import Page, PrintingPreferencesPage
 
 try:
     from mtg_proxy_printer.ui.generated.settings_window.settings_window import Ui_SettingsWindow
@@ -95,7 +95,7 @@ class SettingsWindow(QDialog):
         ui.default_document_layout_page.ui.page_config_widget.ui.show_preview_button.clicked.connect(
             lambda: self._adapt_layout_to_size(self.size()), Qt.ConnectionType.QueuedConnection
         )
-        self._setup_hide_printing_page(ui.hide_printings_page, document.card_db)
+        self._setup_hide_printing_page(ui.printing_preferences_page, document.card_db)
         ui.debug_settings_page.request_run_async_task.connect(self.request_run_async_task)
         self._setup_button_box()
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -125,7 +125,7 @@ class SettingsWindow(QDialog):
 
         return model
 
-    def _setup_hide_printing_page(self, page: HidePrintingsPage, card_db):
+    def _setup_hide_printing_page(self, page: PrintingPreferencesPage, card_db):
         page.card_db = card_db
         page.request_run_async_task.connect(self.request_run_async_task)
 

@@ -1742,7 +1742,7 @@ Note: Cards in deck lists use the language as given by the deck list. To overwri
     </message>
   </context>
   <context>
-    <name>HidePrintingsPage</name>
+    <name>PrintingPreferencesPage</name>
     <message>
       <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="458"/>
       <source>Hide printings</source>
@@ -1754,17 +1754,17 @@ Note: Cards in deck lists use the language as given by the deck list. To overwri
       <translation>Hide unwanted printings</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/hide_printings_page.ui" line="17"/>
+      <location filename="../ui/settings_window/printing_preferences_page.ui" line="17"/>
       <source>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists, if possible. If all printings of a card are hidden, it won’t be available at all.</source>
       <translation>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists, if possible. If all printings of a card are hidden, it won’t be available at all.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/hide_printings_page.ui" line="33"/>
+      <location filename="../ui/settings_window/printing_preferences_page.ui" line="33"/>
       <source>Hide specific sets: Add set codes as listed on Scryfall, for example LEA or 2X2. Separate multiple entries with spaces or line breaks. All words not matching an exact set code are ignored.</source>
       <translation>Hide specific sets: Add set codes as listed on Scryfall, for example LEA or 2X2. Separate multiple entries with spaces or line breaks. All words not matching an exact set code are ignored.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/hide_printings_page.ui" line="43"/>
+      <location filename="../ui/settings_window/printing_preferences_page.ui" line="43"/>
       <source>Example:
 
 LEA DDU TC13 J21</source>
@@ -1773,7 +1773,7 @@ LEA DDU TC13 J21</source>
 LEA DDU TC13 J21</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/hide_printings_page.ui" line="51"/>
+      <location filename="../ui/settings_window/printing_preferences_page.ui" line="51"/>
       <source>No sets currently hidden.</source>
       <translation>No sets currently hidden.</translation>
     </message>
