@@ -514,8 +514,6 @@ def test_removed_printings_entry_removed_when_printing_becomes_acceptable(
     assert_that(db_result, is_(empty()))
 
 
-
-
 @pytest.mark.parametrize("test_case_data", [
     TestCaseData("regular_english_card"),  # English "Fury Sliver" from Time Spiral
 ])

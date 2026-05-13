@@ -74,7 +74,7 @@ class CustomCardImportDialog(QDialog):
     def dragdrop_acceptable(event: EventTypes) -> bool:
         urls = event.mimeData().urls()
         local_paths = [Path(url.toLocalFile()) for url in urls]
-        acceptable = local_paths and all((path.is_file() for path in local_paths))
+        acceptable = bool(local_paths) and all((path.is_file() for path in local_paths))
         return acceptable
 
     @Slot()

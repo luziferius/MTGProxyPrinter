@@ -194,11 +194,12 @@ class LoadListPage(QWizardPage):
                 parser.supported_file_types().values() for parser in parsers))
         ))
         # FIXME: This needs to be refactored for proper language-specific template substitution
-        result = self.tr('All Supported ', 'File type filter value') + f'(*.{" *.".join(all_supported)});;' \
-                 + ";;".join(
-                     f'{name} (*.{" *.".join(extensions)})'
-                     for name, extensions in individual_file_types) \
-                 + f";;{everything}"
+        result = self.tr('All Supported ', 'File type filter value') \
+            + f'(*.{" *.".join(all_supported)});;' \
+            + ";;".join(
+                f'{name} (*.{" *.".join(extensions)})'
+                for name, extensions in individual_file_types) \
+            + f";;{everything}"
         return result
 
     @Slot()
@@ -565,8 +566,8 @@ class SummaryPage(QWizardPage):
         wizard.setOption(self.BasicLandRemovalOption, should_offer_basic_land_removal)
         remove_basic_lands_button = wizard.button(self.BasicLandRemovalButton)
         remove_basic_lands_button.setEnabled(self.card_list.has_basic_lands(
-            decklist_import_section.getboolean("remove-basic-wastes"),
-            decklist_import_section.getboolean("remove-snow-basics")))
+            decklist_import_section.getboolean("remove-basic-wastes") or False,
+            decklist_import_section.getboolean("remove-snow-basics") or False))
         remove_basic_lands_button.setText(self.tr("Remove basic lands", "Button text"))
         remove_basic_lands_button.setToolTip(self.tr(
             "Remove all basic lands in the deck list above", "Button tooltip"))

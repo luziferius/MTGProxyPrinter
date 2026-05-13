@@ -173,7 +173,7 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hidden-sets": "",
 }
 
-VALID_CUT_MARKER_STYLES: defaultdict[str, PenStyle] = defaultdict(lambda: PenStyle.NoPen, {
+VALID_CUT_MARKER_STYLES: defaultdict[str, PenStyle] = defaultdict(PenStyle, {
     "None": PenStyle.NoPen,
     "Solid": PenStyle.SolidLine,
     "Dots": PenStyle.DotLine,

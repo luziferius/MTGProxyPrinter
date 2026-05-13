@@ -320,7 +320,6 @@ class PrintingPreferenceUpdater(AsyncTask):
                   SET printing_preference_weight = ?
                   WHERE filter_name = ?
                 """),
-                (weight, name)
-            )
+                       (weight, name))
             self.advance_progress.emit()
             if self.should_abort: break
