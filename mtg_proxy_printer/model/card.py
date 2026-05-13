@@ -52,6 +52,7 @@ CORNER_MASKS = {
     CardSizes.OVERSIZED.as_qsize_px(): _create_corner_mask(CardSizes.OVERSIZED.as_qsize_px(), 50),
 }
 
+
 class SVGIconEngine(QIconEngine):
     """An SVG icon engine"""
     def __init__(self, svg_source: bytes):
