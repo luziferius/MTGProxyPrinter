@@ -48,9 +48,11 @@ TextItemFlags: Qt.ItemFlag = _DataFlags
 IsHiddenItemFlags: Qt.ItemFlag = _DataFlags | Qt.ItemFlag.ItemIsUserCheckable  # The is_hidden column is checkable
 PreferenceWeightFlags: Qt.ItemFlag = _DataFlags | Qt.ItemFlag.ItemIsEditable  # the pref score column is editable
 
+
 class ModelCell(defaultdict):
     def __init__(self, *args, **kwargs):
         super().__init__(lambda: None, *args, **kwargs)
+
 
 MC = ModelCell
 
@@ -92,7 +94,7 @@ class ModelRow:
         """Create a centered, text-only header item for the PrintingFilterModel"""
         return cls(
             MC({ItemFlagsRole: TextItemFlags, DisplayRole: ui_text, ToolTipRole: tooltip, IsHeaderRole: True,
-             ItemDataRole.TextAlignmentRole: Qt.AlignmentFlag.AlignCenter, ItemDataRole.FontRole: header_font}),
+                ItemDataRole.TextAlignmentRole: Qt.AlignmentFlag.AlignCenter, ItemDataRole.FontRole: header_font}),
             MC({ItemFlagsRole: EmptyCellFlags}),
             MC({ItemFlagsRole: EmptyCellFlags}),
             MC({ItemFlagsRole: EmptyCellFlags}),
@@ -146,7 +148,7 @@ class PrintingFilterModel(QAbstractTableModel):
     The settings key used to persist the value is stored via the SettingsKeyRole.
     The Scryfall query showing the affected printings is stored via the ScryfallQueryRole.
     """
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.card_db = CardDatabase.main_instance
         self.items = self._create_items()
@@ -160,7 +162,8 @@ class PrintingFilterModel(QAbstractTableModel):
             "High values encourage choosing this kind of card, negative values discourage choosing it.",
             "Is preference weight column tooltip text")
         return [
-            ModelRow.create_header(header_font,
+            ModelRow.create_header(
+                header_font,
                 self.tr("General card filters", "Display text. Printing filter section header"),
                 None),
             ModelRow.create_item(
@@ -215,7 +218,8 @@ class PrintingFilterModel(QAbstractTableModel):
                         'Marvel comics, Warhammer 40k, and a lot others.',
                         "Tooltip text"),
                 weight_tooltip, "hide-universes-beyond-cards", "is:universesbeyond"),
-            ModelRow.create_header(header_font,
+            ModelRow.create_header(
+                header_font,
                 self.tr("Frame and border style", "Display text. Printing filter section header")),
             ModelRow.create_item(
                 self.tr("Full-art cards", "Display text"),
@@ -257,7 +261,8 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Tooltip text"),
                 weight_tooltip, "hide-extended-art", "is:extended"),
 
-            ModelRow.create_header(header_font,
+            ModelRow.create_header(
+                header_font,
                 self.tr("Non-traditional cards", "Display text. Printing filter section header")),
             ModelRow.create_item(
                 self.tr("Oversized cards",
@@ -281,7 +286,8 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Tooltip text"),
                 None, "hide-art-series-cards", "layout:art-series"),
 
-            ModelRow.create_header(header_font,
+            ModelRow.create_header(
+                header_font,
                 self.tr("Format bans: Hide cards banned in specific formats",
                         "Display text. Section header above MTG format ban filters")),
             ModelRow.create_format_item(
@@ -290,19 +296,19 @@ class PrintingFilterModel(QAbstractTableModel):
                 format_ban_tooltip, "brawl"),
             ModelRow.create_format_item(
                 self.tr("Commander", "Display text. Magic format name. Translations (if one exists) "
-                                 "should probably also include the English name like {translated name}(<english name>)"),
+                        "should probably also include the English name like {translated name}(<english name>)"),
                 format_ban_tooltip, "commander"),
             ModelRow.create_format_item(
                 self.tr("Historic", "Display text. Magic format name. Translations (if one exists) "
-                                 "should probably also include the English name like {translated name}(<english name>)"),
+                        "should probably also include the English name like {translated name}(<english name>)"),
                 format_ban_tooltip, "historic"),
             ModelRow.create_format_item(
                 self.tr("Legacy", "Display text. Magic format name. Translations (if one exists) "
-                                 "should probably also include the English name like {translated name}(<english name>)"),
+                        "should probably also include the English name like {translated name}(<english name>)"),
                 format_ban_tooltip, "legacy"),
             ModelRow.create_format_item(
                 self.tr("Modern", "Display text. Magic format name. Translations (if one exists) "
-                                 "should probably also include the English name like {translated name}(<english name>)"),
+                        "should probably also include the English name like {translated name}(<english name>)"),
                 format_ban_tooltip, "modern"),
             ModelRow.create_format_item(
                 self.tr("Oathbreaker", "Display text. Magic format name. Translations (if one exists) "
@@ -403,7 +409,6 @@ class PrintingFilterModel(QAbstractTableModel):
         )
         return result
 
-
     def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]
         printing_weights_db = self.card_db.get_printing_filter_weights()
@@ -419,7 +424,6 @@ class PrintingFilterModel(QAbstractTableModel):
                 index = self.index(row, ModelColumns.preference_weights)
                 item.preference_weights[BackgroundRole] = highlight_color
                 self.dataChanged.emit(index, index, [BackgroundRole])
-            
 
     def clear_highlight(self):
         for item in self.items:

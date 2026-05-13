@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Games/Entertainment :: Board Games",
     "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
@@ -76,9 +77,6 @@ mtg-proxy-printer = "mtg_proxy_printer.__main__:main"
 
 [tool.pytest.ini_options]
 # timeout = 10
-
-[tool.setuptools]
-exclude-package-data = {"mtg_proxy_printer" = ["resources", "resources.*"]}
 
 
 [tool.setuptools.packages.find]
@@ -240,7 +238,10 @@ base = ["tool.tox.env_pkg_base"]
 description = "Build the application with cx_Freeze and verify it can launch and reach the Qt event loop."
 labels = ["tests"]
 factors = [{ prefix = "cx_8_", start = 5, stop = 6 },]
-allowlist_externals = ["{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter", ]
+allowlist_externals = [
+    { replace = "if", condition = "factor.win32", then = ["{tox_root}{/}scripts{/}clean_windows_build.bat"], extend = true},
+    "{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter",
+]
 deps = [
     {replace = "if", condition = "factor.cx_8_5", then = ["cx_Freeze>=8.5,<8.6"], extend = true},
     {replace = "if", condition = "factor.cx_8_6", then = ["cx_Freeze>=8.6,<8.7"], extend = true},
@@ -252,7 +253,7 @@ commands = [
 ]
 
 
-[tool.tox.env.build_wheel]
+[tool.tox.env.package_wheel]
 base = ["tool.tox.env_pkg_base"]
 description = "Creates sdist and wheel packages."
 commands = [
@@ -260,10 +261,12 @@ commands = [
 ]
 
 
-[tool.tox.env.build_cx_freeze]
+[tool.tox.env.package_cx_freeze]
 base = ["tool.tox.env_pkg_base"]
 description = "Creates a stand-alone build via cx_Freeze, and (on Windows only) also the MSI installer package."
-
+allowlist_externals = [
+    { replace = "if", condition = "factor.win32", then = ["{tox_root}{/}scripts{/}clean_windows_build.bat"], extend = true},
+]
 commands = [
     ["cxfreeze", "build"],
     { replace = "if", condition = "factor.win32", then = [

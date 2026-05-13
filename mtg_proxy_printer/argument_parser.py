@@ -26,7 +26,7 @@ __all__ = [
 ]
 
 
-@dataclasses.dataclass()
+@dataclasses.dataclass
 class Namespace:
     """Namespace used to mock parsed arguments for type-hinting purposes"""
     file: Path | None = None

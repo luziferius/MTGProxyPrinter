@@ -105,7 +105,7 @@ class CutMarkAngleItem(QGraphicsPolygonItem):
         self.setRotation(180 * bottom_left)
         logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
 
-    def setPos(self, pos: QPoint|QPointF, /):
+    def setPos(self, pos: QPoint | QPointF, /):
         bb = self.boundingRect()
         new = QPointF(
             (pos.x()+bb.width()-2*bb.width()*(not self.bottom_left)),

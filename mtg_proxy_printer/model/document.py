@@ -551,8 +551,7 @@ class Document(QAbstractItemModel):
         return (
             ImageKey(card.scryfall_id, card.is_front, card.highres_image)
             for container in page
-            if not (card := container.card).is_custom_card
-               and card.image_file is not image_db.get_blank(card.size))
+            if not (card := container.card).is_custom_card and card.image_file is not image_db.get_blank(card.size))
 
     def get_all_image_keys_in_document(self) -> set[ImageKey]:
         return set(itertools.chain.from_iterable(
