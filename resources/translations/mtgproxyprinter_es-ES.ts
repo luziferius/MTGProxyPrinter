@@ -1729,7 +1729,7 @@ Nota: Las cartas de las listas de mazo utilizan el idioma indicado en la lista. 
     </message>
   </context>
   <context>
-    <name>HidePrintingsPage</name>
+    <name>PrintingPreferencesPage</name>
     <message>
       <location filename="../../mtg_proxy_printer/ui/settings_window_pages.py" line="458"/>
       <source>Hide printings</source>
@@ -1741,17 +1741,17 @@ Nota: Las cartas de las listas de mazo utilizan el idioma indicado en la lista. 
       <translation type="unfinished">Hide unwanted printings</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/hide_printings_page.ui" line="17"/>
+      <location filename="../ui/settings_window/printing_preferences_page.ui" line="17"/>
       <source>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists, if possible. If all printings of a card are hidden, it won’t be available at all.</source>
       <translation>Estas opciones permiten ocultar cartas e impresiones no deseadas. Las impresiones ocultas se tratan como si no existieran. No se pueden encontrar en la búsqueda de cartas y se reemplazan automáticamente en documentos cargados o listas de mazos importados, si es posible. Si todas las impresiones de una tarjeta están ocultas, no estarán disponibles.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/hide_printings_page.ui" line="33"/>
+      <location filename="../ui/settings_window/printing_preferences_page.ui" line="33"/>
       <source>Hide specific sets: Add set codes as listed on Scryfall, for example LEA or 2X2. Separate multiple entries with spaces or line breaks. All words not matching an exact set code are ignored.</source>
       <translation>Ocultar Sets específicos: Añadir códigos de Sets como se indica en Scryfall, por ejemplo LEA o 2X2. Separe múltiples entradas con espacios o saltos de línea. Todas las palabras que no coincidan con un código exacto son ignoradas.</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/hide_printings_page.ui" line="43"/>
+      <location filename="../ui/settings_window/printing_preferences_page.ui" line="43"/>
       <source>Example:
 
 LEA DDU TC13 J21</source>
@@ -1760,7 +1760,7 @@ LEA DDU TC13 J21</source>
 LEA DDU TC13 J21</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/hide_printings_page.ui" line="51"/>
+      <location filename="../ui/settings_window/printing_preferences_page.ui" line="51"/>
       <source>No sets currently hidden.</source>
       <translation>No hay conjuntos ocultos.</translation>
     </message>

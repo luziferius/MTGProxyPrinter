@@ -121,15 +121,18 @@ class PrintingFilterUpdater(AsyncTask):
         if self.should_abort:
             return False
         if changed_or_new_filters:
+            default_weights = mtg_proxy_printer.settings.CARD_FILTER_DEFAULT_WEIGHTS
+            data = ((name, active, default_weights[name]) for name, active in changed_or_new_filters.items())
             logger.info("Printing filters added or changed in the settings, update the database.")
             db.executemany(
                 cached_dedent("""\
-                    INSERT INTO PrintingFilters (filter_name, filter_active) -- store_current_printing_filters()
-                      VALUES                    (?,           ?)
+                    INSERT INTO PrintingFilters  -- store_current_printing_filters()
+                             (filter_name, filter_active, printing_preference_weight)
+                      VALUES (?,           ?,             ?)
                       ON CONFLICT (filter_name) DO UPDATE
                         SET filter_active = excluded.filter_active
                     """),
-                changed_or_new_filters.items()
+                data
             )
             if self.should_abort:
                 return False

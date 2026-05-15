@@ -179,4 +179,5 @@ class AsyncTaskRunner(QRunnable):
             logger.debug(f"Cancel task {task}")
             if task.can_cancel:
                 task.cancel()
+            # TODO: Use task.thread().terminate()?
         cls.INSTANCES.clear()

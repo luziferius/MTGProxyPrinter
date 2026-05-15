@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ENVIRONMENT_NAME="venv"
 
 if [ -e "${ENVIRONMENT_NAME}" ]; then
