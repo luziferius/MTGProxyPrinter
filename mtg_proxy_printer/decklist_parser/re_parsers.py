@@ -36,6 +36,7 @@ __all__ = [
     "MTGArenaParser",
     "MTGOnlineParser",
     "XMageParser",
+    "CardNameListParser",
 ]
 
 try:

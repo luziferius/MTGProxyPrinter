@@ -343,7 +343,7 @@ class CardDatabase(QObject):
         if card.oracle_id:
             columns.append('oracle_id')
             parameters.append(card.oracle_id)
-        order_by_terms = ["is_card DESC", "is_highres_image DESC", "release_date DESC"]
+        order_by_terms = ["is_card DESC", "preference_score DESC", "release_date DESC"]
         if order_by_print_count:
             order_by_terms.insert(1, "usage_count DESC NULLS LAST")
         query = query.format(
@@ -371,12 +371,11 @@ class CardDatabase(QObject):
                (4*(VisiblePrintings.language == RemovedPrintings.language) +
                 2*(VisiblePrintings.language == ?) +
                   (VisiblePrintings.language == 'en')) DESC NULLS LAST,
+                preference_score DESC,
                 release_date DESC
         ''')
         if order_by_print_count:
             query += '        , usage_count DESC NULLS LAST\n'
-        # Break any remaining ties by preferring high resolution images over low resolution images
-        query += '        , VisiblePrintings.is_highres_image DESC\n'
         return self._get_cards_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
 
     def _get_cards_from_data(self, query, parameters) -> CardList:
