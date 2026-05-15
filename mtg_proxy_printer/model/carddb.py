@@ -15,6 +15,7 @@
 
 
 import atexit
+from collections import defaultdict
 from collections.abc import Sequence
 import dataclasses
 import datetime
@@ -948,8 +949,7 @@ class CardDatabase(QObject):
         self.custom_cards[custom_card_id] = card
         return card
 
-    def get_printing_filter_weights(self) -> dict[str, int]:
-        return dict(self.db.execute(cached_dedent("""\
+    def get_printing_filter_weights(self) -> defaultdict[str, int | None]:
+        return defaultdict(lambda: None, self.db.execute(cached_dedent("""\
             SELECT filter_name, printing_preference_weight FROM PrintingFilters
         """)))
-
