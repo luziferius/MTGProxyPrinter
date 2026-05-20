@@ -50,6 +50,7 @@ __all__ = [
     "get_boolean_card_filter_keys",
     "parse_card_set_filters",
     "VALID_CUT_MARKER_STYLES",
+    "CARD_FILTER_DEFAULT_WEIGHTS",
 ]
 
 

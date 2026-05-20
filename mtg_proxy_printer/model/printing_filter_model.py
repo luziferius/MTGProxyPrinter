@@ -21,7 +21,6 @@ from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication
 
-import mtg_proxy_printer
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.settings import DEFAULT_SETTINGS, CARD_FILTER_DEFAULT_WEIGHTS
 from mtg_proxy_printer.units_and_sizes import ConfigParser
