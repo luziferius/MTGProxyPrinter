@@ -694,6 +694,11 @@ class CardDatabase(QObject):
                (source_scryfall_id,    source_set_code,    source_name,    source_language, target_language)
         VALUES (?,                     ?,                  ?,              ?,               ?)
         """), parameters)
+        self.db.execute(cached_dedent("""\
+        CREATE INDEX IF NOT EXISTS TranslateCardSourceContext_idx  -- translate_card_names()
+          ON TranslateCardSourceContext(source_name)
+        """))
+        self.db.execute("ANALYZE temp  -- translate_card_names()\n")
         translate_query = cached_dedent("""\
         WITH  -- translate_card_names()
           card_count(card_count) AS (SELECT count() FROM Card),

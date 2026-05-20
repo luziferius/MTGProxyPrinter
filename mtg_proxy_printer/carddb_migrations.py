@@ -893,6 +893,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
             english_name, preference_score
           FROM AllPrintings
           WHERE is_visible IS TRUE"""),
+        "CREATE INDEX Printing_idx_for_Translation ON Printing(language, card_id, set_id)",
         dedent("""\
         CREATE TRIGGER "Update Printing.preference_score on PrintingFilter.printing_preference_weight update"
           AFTER UPDATE OF printing_preference_weight ON PrintingFilters
