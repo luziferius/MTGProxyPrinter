@@ -42,6 +42,15 @@ from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_datab
     DEFAULT_DATABASE_LOCATION
 from mtg_proxy_printer.sqlite_helpers import cached_dedent
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
+
+# Fallback for itertools.batched which was added in Python 3.12
+if not hasattr(itertools, 'batched'):
+    def _batched(iterable, n):
+        """Batch data into tuples of length n. The last batch may be shorter."""
+        it = iter(iterable)
+        while batch := tuple(itertools.islice(it, n)):
+            yield batch
+    itertools.batched = _batched
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID, SetsAPIDataType
@@ -59,7 +68,7 @@ __all__ = [
     "FileStreamTask",
 ]
 
-BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data/all-cards"
+BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
 # Constants determined empirically. These fluctuate a bit over time, but give reasonable estimates.
 AVERAGE_SIZE_PER_UNCOMPRESSED_JSON_ENTRY_IN_BYTES = 4706
 GZIP_COMPRESSION_FACTOR = 7.09
@@ -91,13 +100,31 @@ class CardInfoDownloadTaskBase(DownloaderBase):
     def get_scryfall_bulk_card_data_url(self) -> tuple[str, int]:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
-        data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
-        with data:
-            item: BulkDataType = next(ijson.items(data, "", use_float=True))
-        uri = item["download_uri"]
-        size = item["size"]
-        logger.debug(f"Bulk data with uncompressed size {size} bytes located at: {uri}")
-        return uri, size
+        try:
+            data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
+            with data:
+                response = next(ijson.items(data, "", use_float=True))
+            logger.debug(f"API response keys: {response.keys() if hasattr(response, 'keys') else 'N/A'}")
+            # The new API returns a list with multiple bulk data types. Find the "all_cards" type.
+            data_items = response.get("data", [])
+            logger.debug(f"Found {len(data_items)} bulk data items in response")
+            all_cards_item = None
+            for item in data_items:
+                item_type = item.get("type", "unknown")
+                logger.debug(f"Checking item type: {item_type}")
+                if item_type == "all_cards":
+                    all_cards_item = item
+                    break
+            if all_cards_item is None:
+                available_types = [item.get("type", "unknown") for item in data_items]
+                raise RuntimeError(f"Could not find 'all_cards' bulk data type in Scryfall API response. Available types: {available_types}")
+            uri = all_cards_item["download_uri"]
+            size = all_cards_item["size"]
+            logger.info(f"Bulk data with uncompressed size {size} bytes located at: {uri}")
+            return uri, size
+        except Exception as e:
+            logger.exception(f"Error getting Scryfall bulk data URL: {e}")
+            raise
 
 
 class FileDownloadTask(CardInfoDownloadTaskBase):
@@ -177,23 +204,23 @@ class StreamTask(CardInfoDownloadTaskBase):
 
     def _enqueue_stream(self, data: CardStream):
         """Put the CardStream into the queue for downstream consumption"""
+        logger.info(f"{self.__class__.__name__}: _enqueue_stream STARTED, data type={type(data)}")
         try:
+            logger.info(f"{self.__class__.__name__}: About to iterate over data stream")
+            batch_count = 0
             for batch in itertools.batched(data, self._batch_size):  # type: tuple[CardDataType, ...]
+                batch_count += 1
+                logger.debug(f"{self.__class__.__name__}: Putting batch {batch_count} into queue")
                 self.queue.put(batch)
-        except AttributeError:  # Cancelling closes and deletes the underlying file, causing an AttributeError in run()
-            logger.info(f"{self.__class__.__name__}: Read operation cancelled")
+            logger.info(f"{self.__class__.__name__}: Stream iteration completed, {batch_count} batches processed")
+        except AttributeError as e:  # Cancelling closes and deletes the underlying file, causing an AttributeError in run()
+            logger.info(f"{self.__class__.__name__}: Read operation cancelled with AttributeError: {e}")
         except Exception as e:
-            # Cancelling also exhausts the queue to prevent deadlocks.
-            # That exhaustion deliberately causes a "read from closed file".
-            # So suppress any error, if the stream no longer exists, as it only disappears through cancel()
-            if self._stream is not None:
-                signal = self.error_occurred if isinstance(self.source, Path) else self.network_error_occurred
-                logger.warning(f"{self.__class__.__name__}: Unexpected end of stream")
-                signal.emit(str(e))
-        else:
-            logger.info(f"{self.__class__.__name__}: Card data exhausted.")
+            logger.exception(f"{self.__class__.__name__}: Unexpected error in _enqueue_stream: {e}")
         finally:
+            logger.info(f"{self.__class__.__name__}: Putting None into queue to signal end of stream")
             self.queue.put(None)
+        logger.info(f"{self.__class__.__name__}: _enqueue_stream FINISHED")
 
     @property
     def report_progress(self):
@@ -209,20 +236,22 @@ class StreamTask(CardInfoDownloadTaskBase):
         return True
 
     def cancel(self):
-        logger.debug(f"{self.__class__.__name__}: entering cancel()")
+        logger.info(f"{self.__class__.__name__}: cancel() CALLED")
+        logger.info(f"{self.__class__.__name__}: self.open_file={self.open_file}, self._stream={self._stream}")
         if self.open_file is not None:
             self.open_file.close()
         self.open_file = self._stream = None
+        queue_flush_count = 0
         while not self.queue.empty():
             # Flush the queue to unblock a potentially blocked writer thread:
             # The consumer thread stops immediately within it's currently processed batch,
             # so may leave the producer in a deadlock waiting for a free queue slot that will never arrive.
             try:
                 self.queue.get(block=False)
+                queue_flush_count += 1
             except queue.Empty:
                 time.sleep(0.1)
-
-        logger.debug(f"{self.__class__.__name__}: Cancel completed")
+        logger.info(f"{self.__class__.__name__}: Cancel completed, flushed {queue_flush_count} items from queue")
 
 
 class FileStreamTask(StreamTask):
@@ -268,9 +297,16 @@ class ApiStreamTask(StreamTask):
     It enqueues a single None as the last value after finishing the last batch.
     """
     def run(self):
+        logger.info(f"{self.__class__.__name__}: run() method STARTED")
         logger.info(f"{self.__class__.__name__}: About to stream card data in batches of {self._batch_size}")
-        data = self.read_json_card_data_from(self.source, self.json_path)
+        logger.info(f"{self.__class__.__name__}: self.source={self.source}, self.json_path={self.json_path}")
+        # Always use None for URL to force bulk data API call, ignore any pre-set source
+        logger.info(f"{self.__class__.__name__}: Calling read_json_card_data_from with None")
+        data = self.read_json_card_data_from(None, self.json_path)
+        logger.info(f"{self.__class__.__name__}: read_json_card_data_from returned, data type={type(data)}")
+        logger.info(f"{self.__class__.__name__}: About to call _enqueue_stream")
         self._enqueue_stream(data)
+        logger.info(f"{self.__class__.__name__}: _enqueue_stream completed")
 
     def read_json_card_data_from(self, url: str = None, json_path: str = "item") -> CardStream:
         """
@@ -281,16 +317,20 @@ class ApiStreamTask(StreamTask):
         So use an iterative parser to generate and yield individual card objects, without having to store the whole
         document in memory.
         """
+        logger.info(f"read_json_card_data_from GENERATOR STARTED with url={url}, json_path={json_path}")
         if url is None:
-            logger.debug("Request bulk data URL from the Scryfall API.")
+            logger.info("Request bulk data URL from the Scryfall API.")
             url, _ = self.get_scryfall_bulk_card_data_url()
-            logger.debug(f"Obtained url: {url}")
+            logger.info(f"Obtained url: {url}")
         else:
-            logger.debug(f"Reading from given URL {url}")
+            logger.info(f"Reading from given URL {url}")
         # Ignore the monitor, because progress reporting is done in the main import loop.
+        logger.info(f"About to call read_from_url with {url}")
         self.open_file, _ = self.read_from_url(url)  # type: GzipFile | MeteredSeekableHTTPFile, MeteredSeekableHTTPFile
+        logger.info(f"Successfully opened URL, about to parse with ijson")
         with self.open_file:
             self._stream = ijson.items(self.open_file, json_path, use_float=True)
+            logger.info(f"Starting to yield from stream")
             yield from self._stream
 
     @functools.cache
@@ -305,7 +345,10 @@ class ApiStreamTask(StreamTask):
         url = f"https://api.scryfall.com/cards/search?{url_parameters}"
         logger.debug(f"Card data update query URL: {url}")
         try:
-            total_cards_available = next(self.read_json_card_data_from(url, "total_cards"))
+            # Use read_from_url directly instead of read_json_card_data_from to avoid interference
+            data, _ = self.read_from_url(url)
+            with data:
+                total_cards_available = next(ijson.items(data, "total_cards", use_float=True))
         except (urllib.error.URLError, socket.timeout, StopIteration) as e:
             logger.warning(
                 "Requesting the number of available cards on Scryfall failed with a network error. "
@@ -335,35 +378,49 @@ class SetIconImportTask(DownloaderBase):
         self.error_occurred.connect(self.cancel)
 
     def run(self):
+        logger.info(f"{self.__class__.__name__}.run() STARTED")
         db = self.db
         logger.info("About to fetch set symbols.")
         # icon_filename is empty for unset symbols, so they are guaranteed to be unequal to the file name in the URI.
+        logger.info("Querying database for existing set symbols")
         symbols_in_db: dict[UUID, str] = dict(db.execute("SELECT set_scryfall_id, icon_file_name FROM MTGSet"))
-        if not self.should_run: return
+        logger.info(f"Found {len(symbols_in_db)} symbols in database")
+        if not self.should_run:
+            logger.info("should_run is False, returning early")
+            return
         progress_bar_text = self.tr("Download set symbols: ", "Progress bar label")
         self.task_begins.emit(1, progress_bar_text)
+        logger.info("Fetching icon URIs to download")
         icon_uris = self._fetch_icon_uris_to_download(symbols_in_db)
+        logger.info(f"Found {len(icon_uris)} icon URIs to download")
         if not icon_uris:
             logger.info("No icons to download.")
             self.task_completed.emit()
             return
         # Now that the number of items to download is known, update the progress bar
         download_count = len(icon_uris)
+        logger.info(f"Updating progress bar for {download_count} downloads")
         self.task_begins.emit(download_count+2, progress_bar_text)
         self.advance_progress.emit()
-        if not self.should_run: return
-        logger.debug(f"Total of {download_count} SVG icon URIs to download, starting downloads…")
+        if not self.should_run:
+            logger.info("should_run is False, returning early")
+            return
+        logger.info(f"Total of {download_count} SVG icon URIs to download, starting downloads…")
         icon_svgs = self._fetch_icon_svgs(icon_uris)
-        if not self.should_run: return
-        logger.debug("SVG icons downloaded, updating the database…")
+        logger.info(f"Downloaded {len(icon_svgs)} SVG icons")
+        if not self.should_run:
+            logger.info("should_run is False, returning early")
+            return
+        logger.info("SVG icons downloaded, updating the database…")
         db.executemany(
             "UPDATE MTGSet SET icon_svg = ?, icon_file_name = ? WHERE set_scryfall_id = ?",
             icon_svgs
         )
-        logger.debug(f"All {download_count} SVG icons updated.")
+        logger.info(f"All {download_count} SVG icons updated.")
         self.advance_progress.emit()
         logger.info("All missing or outdated set symbols downloaded")
         self.task_completed.emit()
+        logger.info(f"{self.__class__.__name__}.run() COMPLETED")
 
     def _fetch_icon_uris_to_download(self, filenames_in_db: dict[UUID, str]) -> dict[UUID, str]:
         """
@@ -469,10 +526,15 @@ class DatabaseImportTask(AsyncTask):
 
     @Slot()
     def cancel(self):
+        logger.info(f"{self.__class__.__name__}: cancel() CALLED")
+        logger.info(f"{self.__class__.__name__}: self._subtask={self._subtask}, self.source={self.source}")
         if self._subtask is not None and self._subtask.can_cancel:
+            logger.info(f"{self.__class__.__name__}: Cancelling subtask")
             self._subtask.cancel()
+        logger.info(f"{self.__class__.__name__}: Cancelling source")
         self.source.cancel()
         self.should_run = False
+        logger.info(f"{self.__class__.__name__}: cancel() completed")
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -503,7 +565,9 @@ class DatabaseImportTask(AsyncTask):
 
     @with_database_write_lock()
     def run(self):
+        logger.info(f"{self.__class__.__name__}.run() STARTED")
         item_count = self.source.item_count
+        logger.info(f"Item count from source: {item_count}")
         file_task = isinstance(self.source, FileStreamTask)
         if file_task:
             logger.info("About to import card data from a local file on disk")
@@ -516,9 +580,13 @@ class DatabaseImportTask(AsyncTask):
                 item_count,
                 self.tr("Update card data from Scryfall:", "Progress bar label text"))
         try:
+            logger.info("About to consume from queue")
             items = self._consume_from_queue(self.source.queue)
+            logger.info("About to populate database")
             self.populate_database(items, total_count=item_count)
+            logger.info("Database population completed")
         except Exception as e:
+            logger.exception(f"Exception during import: {e}")
             self.db.rollback()
             if file_task:
                 logger.exception(
@@ -532,10 +600,14 @@ class DatabaseImportTask(AsyncTask):
                 self.error_occurred.emit(self.tr(
                     "Error during update from Scryfall", "Error message shown in a message box"))
         finally:
+            logger.info("In finally block")
             if self.db_created:
+                logger.info("Closing database connection")
                 self.db.close()
                 self._db = None
+            logger.info("Emitting task_completed")
             self.task_completed.emit()
+            logger.info(f"{self.__class__.__name__}.run() COMPLETED")
 
     def populate_database(self, card_data: CardStream, *, total_count: int = 0):
         """
@@ -563,12 +635,17 @@ class DatabaseImportTask(AsyncTask):
     def _populate_database(self, card_data: CardStream, *, total_count: int) -> int:
         logger.info(f"About to populate the database with card data. Expected cards: {total_count or 'unknown'}")
         db = self.db
+        logger.info(f"Starting database transaction")
         db.execute("BEGIN IMMEDIATE TRANSACTION")  # Acquire the write lock immediately
+        logger.info(f"Database transaction started successfully")
         progress_report_step = total_count // 1000
         skipped_cards = 0
         index = 0
         related_printings: list[RelatedPrintingData] = []
+        logger.info(f"Starting card iteration loop")
         for index, card in enumerate(card_data, start=1):
+            if index % 10000 == 0:
+                logger.info(f"Processed {index} cards so far, skipped {skipped_cards}")
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request or data error.")
                 db.rollback()
@@ -596,6 +673,7 @@ class DatabaseImportTask(AsyncTask):
             if progress_report_step and not index % progress_report_step:
                 self.set_progress.emit(index)
         logger.info(f"Skipped {skipped_cards} cards during the import")
+        logger.info(f"Card iteration loop completed. Total cards processed: {index}")
         if not self.should_run:
             logger.info(f"Aborting card import after {index} cards due to user request or data error.")
             db.rollback()
@@ -604,28 +682,43 @@ class DatabaseImportTask(AsyncTask):
         self.task_begins.emit(
             5 + PrintingFilterUpdater.PROGRESS_STEP_COUNT,
             self.tr("Post-processing card data:", "Progress bar label text"))
+        logger.info(f"Inserting {len(related_printings)} related cards")
         self._insert_related_cards(related_printings)
+        logger.info("Related cards inserted successfully")
         self.advance_progress.emit()
+        logger.info("Cleaning unused data")
         self._clean_unused_data()
+        logger.info("Unused data cleaned successfully")
         self.advance_progress.emit()
+        logger.info("Removing previously unacceptable printings")
         db.execute("""\
         -- Remove previously unacceptable printings, if those were acceptable this import.
         DELETE FROM RemovedPrintings WHERE scryfall_id IN (
           SELECT scryfall_id FROM Printing
         )""")
+        logger.info("Previously unacceptable printings removed")
         self.advance_progress.emit()
+        logger.info("Starting PrintingFilterUpdater")
         self._subtask = updater = PrintingFilterUpdater(
             CardDatabase(self.carddb_path, check_same_thread=True, register_exit_hooks=False),
             self.db, force_update_hidden_column=True)
         updater.advance_progress.connect(self.advance_progress)
         updater.store_current_printing_filters()  # Don't call run() to not deadlock via the db semaphore
+        logger.info("PrintingFilterUpdater completed")
+        logger.info("Starting SetIconImportTask")
         self._subtask = updater = SetIconImportTask(db, self.carddb_path)
         updater.error_occurred.connect(updater.cancel)
         self.request_register_subtask.emit(updater)
         if self.should_run:
+            logger.info("Running SetIconImportTask")
             updater.run()
+            logger.info("SetIconImportTask completed")
+        else:
+            logger.info("Skipping SetIconImportTask due to should_run=False")
         # Store the timestamp of this import.
+        logger.info("Storing import timestamp")
         db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n", (index,))
+        logger.info("Import timestamp stored")
         self.advance_progress.emit()
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
