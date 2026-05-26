@@ -64,7 +64,7 @@ class AddCardWidget(QWidget):
         logger.debug(f"Creating {self.__class__.__name__} instance")
         self.ui = ui_class()
         self.ui.setupUi(self)
-        self.card_db: CardDatabase = CardDatabase.main_instance
+        self.card_db: "CardDatabase" = CardDatabase.main_instance
         self.card_db.card_data_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
         self.image_db: ImageDatabase = None
         self.language_model = self._setup_language_combo_box()
