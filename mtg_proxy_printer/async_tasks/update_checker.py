@@ -184,7 +184,7 @@ class UpdateChecker(QObject):
     network_error_occurred = Signal(str)
     request_run_async_task = Signal(AsyncTask)
 
-    def __init__(self, card_db: CardDatabase, args: Namespace, parent: QObject = None):
+    def __init__(self, card_db: CardDatabase, args: Namespace, parent: QObject | None = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
         self.card_db = card_db

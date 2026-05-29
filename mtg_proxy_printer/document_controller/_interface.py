@@ -52,7 +52,7 @@ class DocumentAction(QObject):
 
     COMPARISON_ATTRIBUTES: list[str] = []  # Defines which attributes have to be compared in __eq__()
 
-    def __init__(self, parent: QObject = None):
+    def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self._already_applied = False
 

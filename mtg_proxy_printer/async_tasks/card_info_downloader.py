@@ -167,7 +167,7 @@ class StreamTask(CardInfoDownloadTaskBase):
     _queue_depth = 5
     _batch_size = 5000
 
-    def __init__(self, source: str | Path = None, json_path: str = "item"):
+    def __init__(self, source: str | Path | None = None, json_path: str = "item"):
         super().__init__()
         self.open_file: GzipFile | MeteredSeekableHTTPFile | None = None
         self.source = source
@@ -272,7 +272,7 @@ class ApiStreamTask(StreamTask):
         data = self.read_json_card_data_from(self.source, self.json_path)
         self._enqueue_stream(data)
 
-    def read_json_card_data_from(self, url: str = None, json_path: str = "item") -> CardStream:
+    def read_json_card_data_from(self, url: str | None = None, json_path: str = "item") -> CardStream:
         """
         Parses the bulk card data JSON from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function takes a URL pointing to the card data JSON array in the Scryfall API.
@@ -305,7 +305,7 @@ class ApiStreamTask(StreamTask):
         url = f"https://api.scryfall.com/cards/search?{url_parameters}"
         logger.debug(f"Card data update query URL: {url}")
         try:
-            total_cards_available = next(self.read_json_card_data_from(url, "total_cards"))
+            total_cards_available: int = next(self.read_json_card_data_from(url, "total_cards"))
         except (urllib.error.URLError, socket.timeout, StopIteration) as e:
             logger.warning(
                 "Requesting the number of available cards on Scryfall failed with a network error. "
@@ -314,7 +314,7 @@ class ApiStreamTask(StreamTask):
                 self.tr(
                     "Requesting the number of available cards on Scryfall failed: \n{error}",
                     "Error message shown in a message box").format(error=e))
-            total_cards_available = 0
+
         logger.debug(f"Total cards currently available: {total_cards_available}")
         return total_cards_available
 
@@ -325,7 +325,8 @@ class ApiStreamTask(StreamTask):
 
 class SetIconImportTask(DownloaderBase):
 
-    def __init__(self, db: sqlite3.Connection = None, carddb_path: Path | Literal[":memory:"] = DEFAULT_DATABASE_LOCATION):
+    def __init__(self, db: sqlite3.Connection | None = None,
+                 carddb_path: Path | Literal[":memory:"] = DEFAULT_DATABASE_LOCATION):
         super().__init__()
         self.carddb_path = carddb_path
         self._db = db
@@ -445,7 +446,7 @@ class SetIconImportTask(DownloaderBase):
 class DatabaseImportTask(AsyncTask):
     """This class implements importing a CardStream into the given CardDatabase instance"""
 
-    def __init__(self, source: StreamTask, db: sqlite3.Connection = None,
+    def __init__(self, source: StreamTask, db: sqlite3.Connection | None = None,
                  carddb_path: Path | Literal[":memory:"] = DEFAULT_DATABASE_LOCATION):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super().__init__()
@@ -701,13 +702,13 @@ class DatabaseImportTask(AsyncTask):
         parameters = [is_card, english_name, oracle_id]
         match db.execute(query, parameters).fetchone():
             case card_id, 0:
-                pass  # Already present and nothing changed
+                return card_id  # Already present and nothing changed
             case None:
-                card_id = db.execute(cached_dedent("""\
+                return db.execute(cached_dedent("""\
                 INSERT INTO Card  -- _insert_or_update_card()
                        (is_card, english_name, oracle_id)
                 VALUES (?,       ?,            ?)
-                """), parameters).lastrowid
+                """), parameters).lastrowid or 0
             case card_id, 1:
                 parameters[-1] = card_id
                 db.execute(cached_dedent("""\
@@ -715,9 +716,9 @@ class DatabaseImportTask(AsyncTask):
                   SET is_card = ?, english_name = ?
                   WHERE card_id = ?
                 """), parameters)
+                return card_id
             case check_result:
                 raise RuntimeError(f"Unexpected data: {check_result}")
-        return card_id
 
     def _insert_or_update_set(self, card: CardDataType) -> int:
         db = self.db
@@ -733,16 +734,16 @@ class DatabaseImportTask(AsyncTask):
         parameters = [card["set_name"], card["released_at"], card["set_id"], set_code]
         match db.execute(query, parameters).fetchone():
             case set_id, 0:
-                pass  # Already present and nothing changed
+                return set_id  # Already present and nothing changed
             case None:
-                set_id = db.execute(cached_dedent("""\
+                return db.execute(cached_dedent("""\
                 INSERT INTO MTGSet  -- _insert_or_update_set()
                        (set_name, release_date,        set_scryfall_id, set_code)
                 VALUES (?,        unixepoch(?, 'utc'), ?,               ?)
                 ON CONFLICT (set_scryfall_id) DO UPDATE 
                   SET set_code = excluded.set_code 
                   WHERE set_scryfall_id = excluded.set_scryfall_id
-                """), parameters).lastrowid
+                """), parameters).lastrowid or 0
             case set_id, 1:
                 parameters[-1] = set_id
                 db.execute(cached_dedent("""\
@@ -751,9 +752,9 @@ class DatabaseImportTask(AsyncTask):
                     = (?,        unixepoch(?, 'utc'), ?)
                   WHERE set_id = ?
                 """), parameters)
+                return set_id
             case check_result:
                 raise RuntimeError(f"Unexpected data: {check_result}")
-        return set_id
 
     def _insert_or_update_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
         db = self.db
@@ -776,11 +777,11 @@ class DatabaseImportTask(AsyncTask):
             card["oversized"], card["highres_image"], is_dfc, card["id"]]
         match db.execute(query, parameters).fetchone():
             case None:                
-                printing_id = db.execute(cached_dedent("""\
+                return db.execute(cached_dedent("""\
                 INSERT INTO Printing  -- _insert_or_update_printing()
                        (set_id, collector_number, language, card_id, is_oversized, is_highres_image, is_dfc, scryfall_id)
                 VALUES (?,      ?,                ?,        ?,       ?,            ?,                ?,      ?)
-                """), parameters).lastrowid
+                """), parameters).lastrowid or 0
             case printing_id, 1:
                 parameters.append(printing_id)
                 db.execute(cached_dedent("""\
@@ -789,13 +790,13 @@ class DatabaseImportTask(AsyncTask):
                     = (?,      ?,                ?,        ?,       ?,            ?,                ?,      ?)
                   WHERE printing_id = ?
                 """), parameters)
+                return printing_id
             case printing_id, 0:
-                pass  # Already present and nothing changed
+                return printing_id  # Already present and nothing changed
             case check_result:
                 raise RuntimeError(f"Unexpected data: {check_result}")
-        return printing_id
 
-    def _insert_or_update_printing_faces(self, card: CardDataType, printing_id: int):
+    def _insert_or_update_printing_faces(self, card: CardDataType, printing_id: int) -> None:
         """Inserts all faces of the given card together with their names."""
         db = self.db
         check_query = cached_dedent("""\

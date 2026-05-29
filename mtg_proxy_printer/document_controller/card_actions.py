@@ -46,7 +46,7 @@ class ActionAddCard(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["card", "count", "added_new_pages", "added_cards_to_existing_pages"]
 
-    def __init__(self, card: AnyCardType, count: int = 1, *, target_page: int = None, parent: QObject = None):
+    def __init__(self, card: AnyCardType, count: int = 1, *, target_page: int = None, parent: QObject | None = None):
         super().__init__(parent)
         self.target_page = target_page
         self.card = card
@@ -174,7 +174,7 @@ class ActionRemoveCards(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["card_ranges_to_remove", "page_number", "removed_cards"]
 
-    def __init__(self, cards_to_remove: Sequence[int], page_number: int = None, parent: QObject = None):
+    def __init__(self, cards_to_remove: Sequence[int], page_number: int = None, parent: QObject | None = None):
         if not cards_to_remove:
             raise ValueError("Parameter cards_to_remove must not be empty")
         super().__init__(parent)

@@ -80,7 +80,7 @@ class KnownCardRow(QObject):
     scryfall_id: str
     path: pathlib.Path
     preferred_language_name: OptStr
-    _parent: QObject = None
+    _parent: QObject | None = None
 
     def __post_init__(self):
         super().__init__(self._parent)  # Call QObject.__init__() without interfering with the dataclass internals
@@ -154,7 +154,7 @@ class KnownCardImageModel(QAbstractTableModel):
                 "Path", "Table header. File system path"),
         }
 
-    def __init__(self, card_db: CardDatabase, parent: QObject = None):
+    def __init__(self, card_db: CardDatabase, parent: QObject | None = None):
         super().__init__(parent)
         self.card_db = card_db
         self._data: list[KnownCardRow] = []
@@ -226,7 +226,7 @@ class UnknownCardRow(QObject):
     has_high_resolution: bool
     size: int
     path: pathlib.Path
-    _parent: QObject = None
+    _parent: QObject | None = None
 
     def __post_init__(self):
         super().__init__(self._parent)  # Call QObject.__init__() without interfering with the dataclass internals
@@ -286,7 +286,7 @@ class UnknownCardImageModel(QAbstractTableModel):
                 "Path", "Table header. File system path"),
         }
 
-    def __init__(self, parent: QObject = None):
+    def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self._data: list[UnknownCardRow] = []
 
@@ -324,7 +324,7 @@ class UnknownCardImageModel(QAbstractTableModel):
 
 class FilterSetupPage(QWizardPage):
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.ui = Ui_FilterSetupPage()
         self.ui.setupUi(self)
@@ -339,7 +339,7 @@ class FilterSetupPage(QWizardPage):
 
 class CardFilterPage(QWizardPage):
 
-    def __init__(self, image_db: ImageDatabase, parent: QWidget = None):
+    def __init__(self, image_db: ImageDatabase, parent: QWidget | None = None):
         super().__init__(parent)
         self.ui = Ui_CardFilterPage()
         self.ui.setupUi(self)
@@ -462,7 +462,7 @@ class CardFilterPage(QWizardPage):
 
 class SummaryPage(QWizardPage):
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.ui = Ui_SummaryPage()
         self.ui.setupUi(self)
@@ -485,7 +485,7 @@ class CacheCleanupWizard(WizardBase):
     }
 
     def __init__(self, image_db: ImageDatabase,
-                 parent: QWidget = None, flags=Qt.WindowType.Window):
+                 parent: QWidget | None = None, flags=Qt.WindowType.Window):
         super().__init__(QSize(1024, 768), parent, flags)
         self.image_db = image_db
         self.addPage(FilterSetupPage(self))

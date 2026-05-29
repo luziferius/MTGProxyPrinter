@@ -50,6 +50,7 @@ __all__ = [
     "get_boolean_card_filter_keys",
     "parse_card_set_filters",
     "VALID_CUT_MARKER_STYLES",
+    "CARD_FILTER_DEFAULT_WEIGHTS",
 ]
 
 
@@ -190,7 +191,7 @@ CARD_FILTER_DEFAULT_WEIGHTS: defaultdict[str, int | None] = defaultdict(lambda: 
 })
 
 
-VALID_CUT_MARKER_STYLES: defaultdict[str, PenStyle] = defaultdict(lambda: PenStyle.NoPen, {
+VALID_CUT_MARKER_STYLES: defaultdict[str, PenStyle] = defaultdict(PenStyle, {
     "None": PenStyle.NoPen,
     "Solid": PenStyle.SolidLine,
     "Dots": PenStyle.DotLine,

@@ -51,7 +51,7 @@ UiInstance = Ui_GroupedCentralWidget | Ui_ColumnarCentralWidget | Ui_TabbedCentr
 class CentralWidget(QWidget):
     request_run_async_task = Signal(AsyncTask)
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         logger.debug(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
         ui_class = get_configured_central_widget_layout_class()

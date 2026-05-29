@@ -41,7 +41,7 @@ class ActionImportDeckList(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["cards", "clear_document", "actions"]
 
-    def __init__(self, cards: "CardCounter", clear_document: bool, parent: QObject = None):
+    def __init__(self, cards: "CardCounter", clear_document: bool, parent: QObject | None = None):
         super().__init__(parent)
         self.cards = cards
         self.clear_document = clear_document

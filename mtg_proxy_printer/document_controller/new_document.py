@@ -40,7 +40,7 @@ class ActionNewDocument(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["old_save_path", "remove_pages_action", "reset_settings_action"]
 
-    def __init__(self, parent: QObject = None):
+    def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self.old_save_path: Path | None = None
         self.remove_pages_action: ActionRemovePage | None = None

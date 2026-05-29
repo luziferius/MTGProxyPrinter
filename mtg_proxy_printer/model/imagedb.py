@@ -71,7 +71,7 @@ class ImageDatabase(QObject):
 
     missing_image_obtained = Signal(QModelIndex)
 
-    def __init__(self, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
+    def __init__(self, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, parent: QObject | None = None):
         super().__init__(parent)
         self.read_disk_cache_content: Callable[[], list[CacheContent]] = functools.partial(
             read_disk_cache_content, db_path)
@@ -99,7 +99,9 @@ class ImageDatabase(QObject):
         """
         return [
             card for card in possible_matches
-            if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk
+            if ImageKey(
+                card.scryfall_id, card.is_front,
+                ImageQuality.high_resolution if card.highres_image else ImageQuality.low_resolution) in self.images_on_disk
         ]
 
     def delete_disk_cache_entries(self, images: Iterable[ImageKey]) -> PathSizeList:

@@ -155,7 +155,7 @@ def load_icon(name: str) -> QIcon:
     return QIcon(file_path)
 
 
-def load_file(file_path_str: str, parent: QObject = None) -> bytes:
+def load_file(file_path_str: str, parent: QObject | None = None) -> bytes:
     """Returns binary content of an arbitrary file in the Qt resources."""
     full_file_path = f"{RESOURCE_PATH_PREFIX}/{file_path_str}"
     file = QFile(full_file_path, parent)

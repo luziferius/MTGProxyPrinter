@@ -290,7 +290,7 @@ Tabbed uses tabs to only show parts of the main window at a time. Best used with
       <item row="2" column="0" colspan="2">
        <widget class="QCheckBox" name="force_use_internal_icons">
         <property name="toolTip">
-         <string>Uuse the integrated icon theme, even on systems with support for system-wide icon themes.
+         <string>Use the integrated icon theme, even on systems with support for system-wide icon themes.
 Useful, if the system-supplied icons are incomplete, or broken</string>
         </property>
         <property name="text">

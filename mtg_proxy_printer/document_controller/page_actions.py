@@ -51,7 +51,8 @@ class ActionNewPage(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["position", "count", "content",]
 
-    def __init__(self, position: int = None, *, count: int = 1, content: ContentType = None, parent: QObject = None):
+    def __init__(self, position: int | None = None, *,
+                 count: int = 1, content: ContentType | None = None, parent: QObject | None = None):
         if count <= 0:
             raise ValueError(f"Invalid page count given: {count}")
         super().__init__(parent)
@@ -105,7 +106,7 @@ class ActionRemovePage(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["position", "count", "removed_all_pages", "currently_edited_page", "removed_pages"]
 
-    def __init__(self, position: int = None, count: int = 1, parent: QObject = None):
+    def __init__(self, position: int | None = None, count: int = 1, parent: QObject | None = None):
         super().__init__(parent)
         self.position = position
         self.count = count

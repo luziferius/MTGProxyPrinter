@@ -60,7 +60,7 @@ class MeteredSeekableHTTPFile(QObject):
     total_bytes_processed = Signal(int)  # Emitted after each read chunk, carries the total number of bytes read
     getcode: Callable[[], int]
 
-    def __init__(self, url: str, headers: dict[str, str] = None, parent: QObject = None, *,
+    def __init__(self, url: str, headers: dict[str, str] | None = None, parent: QObject | None = None, *,
                  ui_hint: str = "", retry_limit: int = 10):
         """
         :param url: The URL to fetch
@@ -127,7 +127,7 @@ class MeteredSeekableHTTPFile(QObject):
             self.file = self._urlopen(self._pos)
         return self.tell()
 
-    def read(self, amt: int = None, /) -> bytes:
+    def read(self, amt: int | None = None, /) -> bytes:
         if self.closed:
             logger.error(msg := "I/O operation on closed file.")
             raise ValueError(msg)

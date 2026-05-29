@@ -44,7 +44,7 @@ class ActionLoadDocument(DocumentAction):
 
     def __init__(
             self, save_path: pathlib.Path, loaded_cards: list[CardList],
-            page_layout: "PageLayoutSettings", parent: QObject = None):
+            page_layout: "PageLayoutSettings", parent: QObject | None = None):
         super().__init__(parent)
         self.save_path = save_path
         self.page_layout = page_layout

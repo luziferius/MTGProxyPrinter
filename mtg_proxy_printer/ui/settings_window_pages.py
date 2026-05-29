@@ -127,7 +127,7 @@ class DebugSettingsPage(Page):
             self.tr("Things useful for investigating bugs in the application", "Tooltip text for the settings pages list."),
         )
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.ui = ui = Ui_DebugSettingsPage()
         ui.setupUi(self)
@@ -242,7 +242,7 @@ class DecklistImportSettingsPage(Page):
             self.tr("Configure the deck list importer", "Tooltip text for the settings pages list."),
         )
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.ui = ui = Ui_DecklistImportSettingsPage()
         ui.setupUi(self)
@@ -316,7 +316,7 @@ class GeneralSettingsPage(Page):
             None,
         )
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.ui = ui = Ui_GeneralSettingsPage()
         ui.setupUi(self)
@@ -489,7 +489,7 @@ class PrintingPreferencesPage(Page):
             self.tr("Hide unwanted printings", "Tooltip text for the settings pages list."),
         )
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.model = PrintingFilterModel(self)
         self.ui = ui = Ui_PrintingPreferencesPage()
@@ -560,7 +560,7 @@ class DefaultDocumentLayoutSettingsPage(Page, PageConfigContainer):
                     "Tooltip text for the settings pages list."),
         )
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.page_config_widget.setTitle(
             self.tr("Default settings for new documents", "Page title, display text")

@@ -46,7 +46,7 @@ class MeteredFile(QObject):
     total_bytes_processed = Signal(int)
     io_end = Signal()
 
-    def __init__(self, file: WrappedIoType, expected_size_bytes: int = 0, parent: QObject = None):
+    def __init__(self, file: WrappedIoType, expected_size_bytes: int = 0, parent: QObject | None = None):
         logger.debug(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
         self.file = file
@@ -74,7 +74,7 @@ class MeteredFile(QObject):
         self._total_bytes_processed += byte_count
         self.total_bytes_processed.emit(self._map_size(self._total_bytes_processed))
 
-    def seek(self, __offset: int, __whence: int = None):
+    def seek(self, __offset: int, __whence: int = 0):
         self.file.seek(__offset, __whence)
         self._total_bytes_processed = __offset
         self.total_bytes_processed.emit(self._map_size(self._total_bytes_processed))
@@ -84,7 +84,7 @@ class MeteredFile(QObject):
         self._processed(len(buffer))
         return buffer
 
-    def read1(self, __size: int = None) -> bytes:
+    def read1(self, __size: int = -1) -> bytes:
         buffer = self.file.read1(__size)
         self._processed(len(buffer))
         return buffer
@@ -104,7 +104,7 @@ class MeteredFile(QObject):
         self._processed(len(line))
         return line
 
-    def readlines(self, __hint: int = None) -> list[bytes]:
+    def readlines(self, __hint: int = -1) -> list[bytes]:
         lines = self.file.readlines(__hint)
         total_bytes = sum(map(len, lines))
         self._processed(total_bytes)

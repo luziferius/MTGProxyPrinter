@@ -55,7 +55,7 @@ class BullseyeMarkItem(QGraphicsSvgItem):
     Draws a Bullseye print target. The used SVG uses centered 1 pixel wide lines on a 32 pixel base.
     Positions and scaling is tuned to not wander off and render on whole pixels
     """
-    def __init__(self, left_aligned: bool, bottom_aligned: bool, parent: QGraphicsItem = None):
+    def __init__(self, left_aligned: bool, bottom_aligned: bool, parent: QGraphicsItem | None = None):
         super().__init__(f"{RESOURCE_PATH_PREFIX}/Common_Registration_Mark.svg", parentItem=parent)
         length = self.boundingRect().width()
         self.setTransformOriginPoint(length*left_aligned, length*bottom_aligned)
@@ -75,7 +75,7 @@ class BullseyeMarkItem(QGraphicsSvgItem):
 
 
 class CutMarkSquareItem(QGraphicsRectItem):
-    def __init__(self, parent: QGraphicsItem = None):
+    def __init__(self, parent: QGraphicsItem | None = None):
         size = round((5.5*unit_registry.mm * RESOLUTION).to("pixel", "print").magnitude)
         super().__init__(QRect(0, 0, size, size), parent)
         self.setZValue(RenderLayers.CUT_LINES_BELOW.value)
@@ -89,7 +89,7 @@ class CutMarkSquareItem(QGraphicsRectItem):
 
 class CutMarkAngleItem(QGraphicsPolygonItem):
 
-    def __init__(self, bottom_left: bool, parent: QGraphicsItem = None):
+    def __init__(self, bottom_left: bool, parent: QGraphicsItem | None = None):
         length_px = round((18*unit_registry.mm*RESOLUTION).to("pixel", "print").magnitude)
         thickness_px = round((1*unit_registry.mm*RESOLUTION).to("pixel", "print").magnitude)
         super().__init__([  # Forms ┓
@@ -206,6 +206,8 @@ class CardBleeds(typing.NamedTuple):
     @classmethod
     def from_card(cls, card: AnyCardType) -> "CardBleeds":
         pixmap = card.image_file
+        if pixmap is None:
+            raise RuntimeError(f"Card {card} pixmap is None")
         width = pixmap.width()
         height = pixmap.height()
         h_size = QSize(width, 1)
@@ -240,7 +242,7 @@ class CardItem(QGraphicsItemGroup):
 
     CORNER_SIZE_PX = 50
 
-    def __init__(self, index: QModelIndex, document: Document, parent: QGraphicsItem = None):
+    def __init__(self, index: QModelIndex, document: Document, parent: QGraphicsItem | None = None):
         super().__init__(parent)
         document.page_layout_changed.connect(self.on_page_layout_changed)
         card: AnyCardType = index.data(ItemDataRole.UserRole)

@@ -105,11 +105,11 @@ class CardDatabase(QObject):
     Holds the connection to the local SQLite database that contains the relevant card data.
     Provides methods for data access.
     """
-    main_instance: CardDatabase = None
+    main_instance: "CardDatabase" = None
     card_data_updated = Signal()
     custom_cards: dict[UUID, CustomCard] = {}
 
-    def __init__(self, db_path: Literal[":memory:"] | Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
+    def __init__(self, db_path: Literal[":memory:"] | Path = DEFAULT_DATABASE_LOCATION, parent: QObject | None = None,
                  check_same_thread: bool = True, register_exit_hooks: bool = True):
         """
         :param db_path: Path to the database file. May be “:memory:” to create an in-memory database for testing
@@ -473,8 +473,8 @@ class CardDatabase(QObject):
         return natural_sorted(item for item, in self.db.execute(query, (language, set_code, card_name)))
 
     def find_sets_matching(
-            self, card_name: str, language: str, set_name_filter: str = None,
-            *, is_front: bool = None) -> list[MTGSet]:
+            self, card_name: str, language: str, set_name_filter: str | None = None,
+            *, is_front: bool | None = None) -> list[MTGSet]:
         """
         Finds all matching sets that the given card was printed in.
 
@@ -694,6 +694,11 @@ class CardDatabase(QObject):
                (source_scryfall_id,    source_set_code,    source_name,    source_language, target_language)
         VALUES (?,                     ?,                  ?,              ?,               ?)
         """), parameters)
+        self.db.execute(cached_dedent("""\
+        CREATE INDEX IF NOT EXISTS TranslateCardSourceContext_idx  -- translate_card_names()
+          ON TranslateCardSourceContext(source_name)
+        """))
+        self.db.execute("ANALYZE temp  -- translate_card_names()\n")
         translate_query = cached_dedent("""\
         WITH  -- translate_card_names()
           card_count(card_count) AS (SELECT count() FROM Card),

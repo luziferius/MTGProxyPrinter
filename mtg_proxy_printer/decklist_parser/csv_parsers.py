@@ -72,7 +72,7 @@ class BaseCSVParser(ParserBase):
                 unmatched_lines.append(source)
         return deck, unmatched_lines
 
-    def _read_lines_from_csv(self, deck_list: str) -> tuple[csv.DictReader[str], Iterable[tuple[str, dict[str, str]]]]:
+    def _read_lines_from_csv(self, deck_list: str) -> tuple["csv.DictReader[str]", Iterable[tuple[str, dict[str, str]]]]:
         lines = deck_list.splitlines()
         # Skip the header line when zipping the original lines and the parsed result.
         reader = csv.DictReader(lines, dialect=self.DIALECT_NAME)
@@ -282,7 +282,7 @@ class TappedOutCSVParser(BaseCSVParser):
         }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
-                 include_maybe_board: bool = False, include_acquire_board: bool = False, parent: QObject = None):
+                 include_maybe_board: bool = False, include_acquire_board: bool = False, parent: QObject | None = None):
         super().__init__(card_db, image_db, parent)
         self.allowed_boards = {"main", "side"}
         if include_maybe_board:

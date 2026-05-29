@@ -131,6 +131,7 @@ FROM Printing
 	LEFT OUTER JOIN PrintingFilters USING (filter_id)
 	GROUP BY printing_id
 ;
+CREATE INDEX Printing_idx_for_Translation ON Printing(language, card_id, set_id);
 
 CREATE VIEW AllPrintings AS SELECT
     face_name, set_code, set_name, icon_svg, collector_number, release_date,

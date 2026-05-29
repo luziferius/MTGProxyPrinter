@@ -37,7 +37,7 @@ class ActionShuffleDocument(DocumentAction):
     """
     COMPARISON_ATTRIBUTES = ["random_seed"]
 
-    def __init__(self, parent: QObject = None):
+    def __init__(self, parent: QObject | None = None):
         # The seed is created at instantiation time and ensures that two runs of apply() return a deterministic
         # order. This ensures that redoing the same action always returns the same result
         super().__init__(parent)

@@ -496,9 +496,8 @@ class DocumentLoader(AsyncTask):
         )
         for key, annotated_type in PageLayoutSettings.__annotations__.items():
             value = getattr(settings, key)
-            if annotated_type is bool:
-                if isinstance(value, str):
-                    value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
+            if annotated_type is bool and isinstance(value, str):
+                value = mtg_proxy_printer.settings.settings._convert_to_boolean(value)
             elif annotated_type is Quantity:
                 # Ensure all floats are within the allowed bounds.
                 limit = mtg_proxy_printer.settings.DOCUMENT_SETTINGS_QUANTITY_LIMITS[key.replace("_", "-")]

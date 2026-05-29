@@ -57,7 +57,7 @@ __all__ = [
 
 class Application(QApplication):
 
-    def __init__(self, args: Namespace, argv: list[str] = None):
+    def __init__(self, args: Namespace, argv: list[str] | None = None):
         if argv is None:
             argv = sys.argv
         logger.info(f"Starting MTGProxyPrinter version {meta_data.__version__}")

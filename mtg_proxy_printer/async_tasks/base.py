@@ -85,7 +85,7 @@ class AsyncTask(QObject):
     # but that can't be specified here, because the name is still undefined in the static class context
     request_register_subtask = Signal(QObject)
 
-    def __init__(self, parent: QObject = None):
+    def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self.inner_tasks: list[AsyncTask] = []
         self._running = False

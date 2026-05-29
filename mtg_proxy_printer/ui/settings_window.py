@@ -80,7 +80,7 @@ class SettingsWindow(QDialog):
     document_settings_updated = Signal(DocumentAction)
     custom_card_corner_style_changed = Signal()
 
-    def __init__(self, language_model: QStringListModel, document: Document, parent: QWidget = None):
+    def __init__(self, language_model: QStringListModel, document: Document, parent: QWidget | None = None):
         super().__init__(parent)
         self.language_model = language_model
         self.document = document

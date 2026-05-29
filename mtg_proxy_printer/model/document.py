@@ -34,13 +34,13 @@ from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 from mtg_proxy_printer.document_controller.move_cards import ActionMoveCardsBetweenPages, ActionMoveCardsWithinPage
 from mtg_proxy_printer.document_controller.move_page import ActionMovePage
-from mtg_proxy_printer.model.imagedb_files import ImageKey
+from mtg_proxy_printer.model.imagedb_files import ImageKey, ImageQuality
 from mtg_proxy_printer.natsort import to_list_of_ranges
 from mtg_proxy_printer.document_controller.edit_custom_card import ActionEditCustomCard
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageColumns
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
-from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType, CustomCard
+from mtg_proxy_printer.model.card import MTGSet, Card, AnyCardType, CustomCard, CheckCard
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
@@ -548,10 +548,15 @@ class Document(QAbstractItemModel):
 
     def _get_page_content_as_image_keys(self, page: Page) -> Iterable[ImageKey]:
         image_db = self.image_db
+        # TODO: This does not handle custom image cards. Introduce ImageQuality.of_card(card),
+        #  which handles all possible combinations internally
         return (
-            ImageKey(card.scryfall_id, card.is_front, card.highres_image)
+            ImageKey(card.scryfall_id, card.is_front,
+                     ImageQuality.high_resolution if card.highres_image else ImageQuality.low_resolution)
             for container in page
-            if not (card := container.card).is_custom_card and card.image_file is not image_db.get_blank(card.size))
+            if not (card := container.card).is_custom_card
+               and not isinstance(card, CheckCard)
+               and card.image_file is not image_db.get_blank(card.size))
 
     def get_all_image_keys_in_document(self) -> set[ImageKey]:
         return set(itertools.chain.from_iterable(

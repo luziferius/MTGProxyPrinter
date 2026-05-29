@@ -190,7 +190,7 @@ class LoadSaveDialog(QFileDialog):
 
 class SaveDocumentAsDialog(LoadSaveDialog):
 
-    def __init__(self, document: "Document", parent: QWidget = None, **kwargs):
+    def __init__(self, document: "Document", parent: QWidget | None = None, **kwargs):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, **kwargs)
@@ -278,12 +278,14 @@ class AboutDialog(QDialog):
 
     @Slot()
     def show_about(self):
-        self.ui.tab_widget.setCurrentWidget(self.ui.tab_widget.findChild(QWidget, "tab_about"))
+        self.ui.tab_widget.setCurrentWidget(
+            self.ui.tab_widget.findChild(QWidget, "tab_about") or QWidget(self))
         mtg_proxy_printer.ui.common.show_wizard_or_dialog(self)
 
     @Slot()
     def show_changelog(self):
-        self.ui.tab_widget.setCurrentWidget(self.ui.tab_widget.findChild(QTextBrowser, "changelog_text_browser"))
+        self.ui.tab_widget.setCurrentWidget(
+            self.ui.tab_widget.findChild(QTextBrowser, "changelog_text_browser") or QWidget(self))
         mtg_proxy_printer.ui.common.show_wizard_or_dialog(self)
 
     @staticmethod
@@ -324,7 +326,7 @@ class AboutDialog(QDialog):
 
 class PrintPreviewDialog(QPrintPreviewDialog):
 
-    def __init__(self, document: "Document", parent: QWidget = None):
+    def __init__(self, document: "Document", parent: QWidget | None = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
         self.q_printer = mtg_proxy_printer.print.create_printer(self.renderer)
         super().__init__(self.q_printer, parent)
@@ -345,7 +347,7 @@ class PrintDialog(QPrintDialog):
 
     request_run_async_task = Signal(PrintCountUpdater)
 
-    def __init__(self, document: "Document", parent: QWidget = None):
+    def __init__(self, document: "Document", parent: QWidget | None = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
         self.q_printer = mtg_proxy_printer.print.create_printer(self.renderer)
         super().__init__(self.q_printer, parent)
@@ -378,7 +380,7 @@ class ChangedSettingsHoverEventFilter(QObject):
 
 class DocumentSettingsDialog(QDialog):
 
-    def __init__(self, document: "Document", parent: QWidget = None):
+    def __init__(self, document: "Document", parent: QWidget | None = None):
         super().__init__(parent)
         self.ui = Ui_DocumentSettingsDialog()
         self.ui.setupUi(self)
@@ -401,11 +403,13 @@ class DocumentSettingsDialog(QDialog):
         button_box = self.ui.button_box
 
         restore_defaults = button_box.button(button_roles.RestoreDefaults)
-        restore_defaults.installEventFilter(ChangedSettingsHoverEventFilter(mtg_proxy_printer.settings.settings, self))
+        restore_defaults.installEventFilter(
+            ChangedSettingsHoverEventFilter(mtg_proxy_printer.settings.settings, self))
         restore_defaults.clicked.connect(self.restore_defaults_button_clicked)
 
         reset = button_box.button(button_roles.Reset)
-        reset.installEventFilter(ChangedSettingsHoverEventFilter(self.document.page_layout, self))
+        reset.installEventFilter(ChangedSettingsHoverEventFilter(
+            self.document.page_layout, self))
         reset.clicked.connect(self.reset_button_clicked)
 
         buttons_with_icons = [
@@ -453,7 +457,7 @@ class ExportCardImagesDialog(QDialog):
 
     error_occurred = Signal(str)
 
-    def __init__(self, document: "Document", parent: QWidget = None):
+    def __init__(self, document: "Document", parent: QWidget | None = None):
         super().__init__(parent)
         self.document = document
         self.ui = ui = Ui_ExportCardImagesDialog()

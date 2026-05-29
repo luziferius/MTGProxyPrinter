@@ -46,7 +46,7 @@ class ActionMoveCardsBetweenPages(DocumentAction):
 
     def __init__(
             self, source: int, cards_to_move: Sequence[int],
-            target_page: int, target_row: int = None, parent: QObject = None):
+            target_page: int, target_row: int | None = None, parent: QObject | None = None):
         """
         :param source: The source page, as integer page number (0-indexed)
         :param cards_to_move: The cards to move, as indices into the source Page. May be in any order. (0-indexed)
@@ -157,7 +157,7 @@ class ActionMoveCardsWithinPage(DocumentAction):
 
     def __init__(
             self, page: int, cards_to_move: Sequence[int],
-            target_row: int | None, parent: QObject = None):
+            target_row: int | None, parent: QObject | None = None):
         """
         :param page: The page with cards, as integer page number (0-indexed)
         :param cards_to_move: The cards to move, as indices into the source Page. May be in any order. (0-indexed)

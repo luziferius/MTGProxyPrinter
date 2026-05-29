@@ -43,7 +43,7 @@ class CardContainer:
 
 class Page(list[CardContainer]):
 
-    def __init__(self, __iterable: Iterable[AnyCardType] = None):
+    def __init__(self, __iterable: Iterable[AnyCardType] | None = None):
         __iterable = __iterable or []
         __iterable = map(partial(CardContainer, self), __iterable)
         super().__init__(__iterable)

@@ -39,7 +39,7 @@ class ActionEditCustomCard(DocumentAction):
     """
     COMPARISON_ATTRIBUTES = ["old_value", "new_value", "page", "row", "column"]
 
-    def __init__(self, index: QModelIndex, value: typing.Any, parent: QObject = None):
+    def __init__(self, index: QModelIndex, value: typing.Any, parent: QObject | None = None):
         super().__init__(parent)
         self.page = index.parent().row()
         self.row = index.row()
