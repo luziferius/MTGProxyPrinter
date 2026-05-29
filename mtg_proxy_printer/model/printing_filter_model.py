@@ -91,7 +91,7 @@ class ModelRow:
         return False
 
     @classmethod
-    def create_header(cls, header_font: QFont, ui_text: str, tooltip: str = None) -> ModelRow:
+    def create_header(cls, header_font: QFont, ui_text: str, tooltip: str | None = None) -> "ModelRow":
         """Create a centered, text-only header item for the PrintingFilterModel"""
         return cls(
             MC({ItemFlagsRole: TextItemFlags, DisplayRole: ui_text, ToolTipRole: tooltip, IsHeaderRole: True,
@@ -103,7 +103,7 @@ class ModelRow:
         )
 
     @classmethod
-    def create_format_item(cls, ui_text: str, tooltip: str, internal_format_key: str) -> ModelRow:
+    def create_format_item(cls, ui_text: str, tooltip: str, internal_format_key: str) -> "ModelRow":
         """
         Creates a PrintingFilterModel row item for MTG format ban filters. These have binary show/hide toggles,
         but no preference score, because the latter does not make sense here.

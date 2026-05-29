@@ -72,7 +72,7 @@ class BaseCSVParser(ParserBase):
                 unmatched_lines.append(source)
         return deck, unmatched_lines
 
-    def _read_lines_from_csv(self, deck_list: str) -> tuple[csv.DictReader[str], Iterable[tuple[str, dict[str, str]]]]:
+    def _read_lines_from_csv(self, deck_list: str) -> tuple["csv.DictReader[str]", Iterable[tuple[str, dict[str, str]]]]:
         lines = deck_list.splitlines()
         # Skip the header line when zipping the original lines and the parsed result.
         reader = csv.DictReader(lines, dialect=self.DIALECT_NAME)
