@@ -46,7 +46,7 @@ class PrintingFilterUpdater(AsyncTask):
     PROGRESS_STEP_COUNT = 4
 
     def __init__(
-            self, model: "CardDatabase", db_connection: sqlite3.Connection = None, *,
+            self, model: "CardDatabase", db_connection: sqlite3.Connection | None = None, *,
             force_update_hidden_column: bool = False):
         """
         :param model: CardDatabase instance to work on
@@ -159,8 +159,8 @@ class PrintingFilterUpdater(AsyncTask):
                 "SELECT filter_name, filter_active FROM PrintingFilters --_get_changed_or_new_filters()\n"
              )
         )
-        boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
-        filters_in_settings: dict[str, bool] = {key: section.getboolean(key) for key in boolean_keys}
+        boolean_keys: list[str] = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
+        filters_in_settings: dict[str, bool] = {key: section.getboolean(key) or False for key in boolean_keys}
         updated_filters_with_new_values = {
             key: new_filter_value
             for key, new_filter_value in filters_in_settings.items()
@@ -253,7 +253,7 @@ class PrintingPreferenceUpdater(AsyncTask):
 
     def __init__(
             self, model: "CardDatabase", new_preference_weights: set[tuple[str, int]],
-            db_connection: sqlite3.Connection = None, /):
+            db_connection: sqlite3.Connection | None = None, /):
         """
         :param model: CardDatabase instance to work on
         :param new_preference_weights: The new printing preference weights to use, as a set[tuple[filter_name, weight]],

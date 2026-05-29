@@ -69,7 +69,7 @@ class PageScene(QGraphicsScene):
 
     scene_size_changed = Signal()
 
-    def __init__(self, document: Document, render_mode: RenderMode, parent: QObject = None):
+    def __init__(self, document: Document, render_mode: RenderMode, parent: QObject | None = None):
         """
         :param document: The document instance
         :param render_mode: Specifies the render mode.

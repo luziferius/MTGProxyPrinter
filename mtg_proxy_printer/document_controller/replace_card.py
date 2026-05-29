@@ -43,7 +43,7 @@ class ActionReplaceCard(DocumentAction):
     """
     COMPARISON_ATTRIBUTES = ["card", "old_card", "page", "slot"]
 
-    def __init__(self, new_card: Card, page: int, slot: int, parent: QObject = None):
+    def __init__(self, new_card: Card, page: int, slot: int, parent: QObject | None = None):
         super().__init__(parent)
         self.card = new_card
         self.old_card: Card | None = None

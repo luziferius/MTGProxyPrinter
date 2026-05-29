@@ -109,7 +109,7 @@ class CardDatabase(QObject):
     card_data_updated = Signal()
     custom_cards: dict[UUID, CustomCard] = {}
 
-    def __init__(self, db_path: Literal[":memory:"] | Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
+    def __init__(self, db_path: Literal[":memory:"] | Path = DEFAULT_DATABASE_LOCATION, parent: QObject | None = None,
                  check_same_thread: bool = True, register_exit_hooks: bool = True):
         """
         :param db_path: Path to the database file. May be “:memory:” to create an in-memory database for testing
@@ -473,8 +473,8 @@ class CardDatabase(QObject):
         return natural_sorted(item for item, in self.db.execute(query, (language, set_code, card_name)))
 
     def find_sets_matching(
-            self, card_name: str, language: str, set_name_filter: str = None,
-            *, is_front: bool = None) -> list[MTGSet]:
+            self, card_name: str, language: str, set_name_filter: str | None = None,
+            *, is_front: bool | None = None) -> list[MTGSet]:
         """
         Finds all matching sets that the given card was printed in.
 

@@ -27,7 +27,7 @@ Orientation = Qt.Orientation
 
 class PrettySetListModel(QAbstractListModel):
 
-    def __init__(self, parent: QObject = None):
+    def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self.header = {
             0: self.tr("Set", "MTG set name"),

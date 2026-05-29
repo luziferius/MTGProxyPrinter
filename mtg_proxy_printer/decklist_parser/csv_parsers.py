@@ -282,7 +282,7 @@ class TappedOutCSVParser(BaseCSVParser):
         }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
-                 include_maybe_board: bool = False, include_acquire_board: bool = False, parent: QObject = None):
+                 include_maybe_board: bool = False, include_acquire_board: bool = False, parent: QObject | None = None):
         super().__init__(card_db, image_db, parent)
         self.allowed_boards = {"main", "side"}
         if include_maybe_board:

@@ -34,7 +34,7 @@ class PageConfigContainer(QWidget):
     """
     Contains a PageConfigWidget and a PageConfigPreviewArea in a side-by-side configuration.
     """
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigContainer()
         ui.setupUi(self)

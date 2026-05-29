@@ -39,7 +39,7 @@ __all__ = [
 
 
 class ProgressBar(QWidget):
-    def __init__(self, task: AsyncTask, parent: QWidget = None, flags=Qt.WindowType(0)):
+    def __init__(self, task: AsyncTask, parent: QWidget | None = None, flags=Qt.WindowType(0)):
         super().__init__(parent, flags)
         self.task = task
         self.ui = ui = Ui_ProgressBar()
@@ -80,7 +80,7 @@ class ProgressBarManager(QWidget):
     """Displays progress bars of currently running async tasks in the status bar."""
     layout: Callable[[], QHBoxLayout]
 
-    def __init__(self, parent: QWidget = None, flags=Qt.WindowType.Widget):
+    def __init__(self, parent: QWidget | None = None, flags=Qt.WindowType.Widget):
         super().__init__(parent, flags)
         self.setLayout(self._setup_layout())
 

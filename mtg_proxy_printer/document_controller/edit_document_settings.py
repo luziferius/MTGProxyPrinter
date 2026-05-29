@@ -53,7 +53,7 @@ class ActionEditDocumentSettings(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["new_settings", "old_settings", "reflow_actions"]
 
-    def __init__(self, new_settings: PageLayoutSettings, parent: QObject = None):
+    def __init__(self, new_settings: PageLayoutSettings, parent: QObject | None = None):
         super().__init__(parent)
         if new_settings.compute_page_card_capacity(PageType.OVERSIZED) < 1:
             raise ValueError("New document settings must allow at least one card per page")

@@ -47,7 +47,7 @@ class CustomCardImportDialog(QDialog):
 
     request_action = Signal(DocumentAction)
 
-    def __init__(self, document: Document, parent: QWidget = None, flags=Qt.WindowType.Window):
+    def __init__(self, document: Document, parent: QWidget | None = None, flags=Qt.WindowType.Window):
         super().__init__(parent, flags)
         self.ui = ui = Ui_CustomCardImportDialog()
         ui.setupUi(self)

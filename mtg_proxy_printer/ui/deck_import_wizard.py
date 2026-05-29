@@ -635,7 +635,7 @@ class DeckImportWizard(WizardBase):
     }
 
     def __init__(self, document: Document, language_model: QStringListModel,
-                 parent: QWidget = None, flags=Qt.WindowType.Window):
+                 parent: QWidget | None = None, flags=Qt.WindowType.Window):
         super().__init__(QSize(1000, 600), parent, flags)
         self.setDefaultProperty("QPlainTextEdit", "plainText", SIGNAL("textChanged()"))
         self.select_deck_parser_page = SelectDeckParserPage(document, self)

@@ -36,7 +36,7 @@ class CardListTableView(QTableView):
     """
     changed_selection_is_empty = Signal(bool)
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self._column_delegates = (
             self._setup_combo_box_item_delegate(),

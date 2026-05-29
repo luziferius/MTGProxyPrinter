@@ -70,7 +70,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
 
     def __init__(
             self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: re.Pattern | str,
-            parent: QObject = None):
+            parent: QObject | None = None):
         super().__init__(card_db, image_db, parent)
         self.parser = regular_expression \
             if isinstance(regular_expression, re.Pattern) \
@@ -183,7 +183,7 @@ class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
 
     PREFIXES_TO_SKIP = frozenset({"//"})
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject | None = None):
         super().__init__(
             card_db, image_db,
             re.compile(r"(SB: {1,2})?(?P<copies>\d+) \[(?P<set_code>\w+)?] (?P<name>.+)"), parent
@@ -211,7 +211,7 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
         "Deck", "Commander", "Sideboard", "Companion",
     ))
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject | None = None):
         super().__init__(
             card_db, image_db,
             # Matcher for the “name” group must be lazy (.+?) to prevent it from swallowing
@@ -237,7 +237,7 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
             QCoreApplication.translate("MTGOnlineParser", "Magic Online (MTGO) deck file"): ["dek", "txt"],
         }
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject | None = None):
         super().__init__(
             card_db, image_db,
             re.compile(r"(?P<copies>\d+) (?P<name>.+)"), parent
@@ -261,7 +261,7 @@ class XMageParser(GenericRegularExpressionDeckParser):
 
     PREFIXES_TO_SKIP = frozenset(("NAME", "LAYOUT"))
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject | None = None):
         super().__init__(
             card_db, image_db,
             re.compile(r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>[^]]+)] (?P<name>.+)"), parent
@@ -272,7 +272,7 @@ class CardNameListParser(GenericRegularExpressionDeckParser):
     """
     A parser for plain card lists. One card name per line.
     """
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject | None = None):
         super().__init__(
             card_db, image_db,
             re.compile(r"(?P<name>.+)"), parent

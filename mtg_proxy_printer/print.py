@@ -166,7 +166,7 @@ class PDFPrinter(QPdfWriter):
     Can be given an optional index and length parameter to only export a chunk of the document for splitting purposes.
     """
 
-    def __init__(self, document: Document, file_path: str, advance_signal: Signal, parent: QObject = None,
+    def __init__(self, document: Document, file_path: str, advance_signal: Signal, parent: QObject | None = None,
                  document_index: int = 0, pages_to_print: int = None):
         """
         Constructs a new PDFPrinter.
@@ -245,7 +245,7 @@ class PDFPrinter(QPdfWriter):
 
 class Renderer(QObject):
 
-    def __init__(self, document: Document, parent: QObject = None):
+    def __init__(self, document: Document, parent: QObject | None = None):
         super().__init__(parent)
         self.document = document
         self.render_mode = RenderMode.ON_PAPER

@@ -46,7 +46,7 @@ class ActionSaveDocument(DocumentAction):
     """
     COMPARISON_ATTRIBUTES = []
 
-    def __init__(self, file_path: Path, parent: QObject = None):
+    def __init__(self, file_path: Path, parent: QObject | None = None):
         super().__init__(parent)
         self.file_path = file_path
 

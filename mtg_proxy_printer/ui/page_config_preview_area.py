@@ -58,7 +58,7 @@ class PageConfigPreviewArea(QWidget):
     """
     Contains a PageRenderer and widgets to select a number of either regular or oversized cards.
     """
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigPreviewArea()
         ui.setupUi(self)

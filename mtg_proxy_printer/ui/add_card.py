@@ -59,7 +59,7 @@ class AddCardWidget(QWidget):
 
     request_run_async_task = Signal(SingleDownloadTask)
 
-    def __init__(self, ui_class: UiTypes, parent: QWidget = None):
+    def __init__(self, ui_class: UiTypes, parent: QWidget | None = None):
         super().__init__(parent)
         logger.debug(f"Creating {self.__class__.__name__} instance")
         self.ui = ui_class()
@@ -290,10 +290,10 @@ class AddCardWidget(QWidget):
 
 class VerticalAddCardWidget(AddCardWidget):
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(Ui_VerticalAddCardWidget, parent)
 
 
 class HorizontalAddCardWidget(AddCardWidget):
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(Ui_HorizontalAddCardWidget, parent)

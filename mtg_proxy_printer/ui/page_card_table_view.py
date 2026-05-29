@@ -46,7 +46,7 @@ class PageCardTableView(QTableView):
     request_run_async_task = Signal(SingleDownloadTask)
     changed_selection_is_empty = Signal(bool)
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.customContextMenuRequested.connect(self.page_table_context_menu_requested)
         self._column_delegates = (

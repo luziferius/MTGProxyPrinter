@@ -71,7 +71,7 @@ def is_pint_point(value: Any) -> bool:
 class PageConfigWidget(QGroupBox):
     page_layout_changed = Signal(PageLayoutSettings)
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigWidget()
         ui.setupUi(self)

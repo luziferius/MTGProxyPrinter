@@ -71,8 +71,10 @@ class FastComboBoxDelegate(QStyledItemDelegate):
         return editor
 
     def eventFilter(self, editor: QComboBox, event: QFocusEvent) -> bool:
+        if editor is None:
+            return False
         # Subclasses may return custom editors for some cases. Only call showPopup(), if it is present.
-        if editor is not None and hasattr(editor, "showPopup") and isinstance(event, QFocusEvent) \
+        if hasattr(editor, "showPopup") and isinstance(event, QFocusEvent) \
                 and event.type() == QEvent.Type.FocusIn \
                 and event.reason() != Qt.FocusReason.PopupFocusReason:
             # When the editor receives focus, but not because its popup closed, show the popup to save a click.
@@ -112,7 +114,7 @@ class SetEditorDelegate(FastComboBoxDelegate):
     """
     class CustomCardSetEditor(QWidget):
         """A widget holding two line edits, allowing the user to freely edit the set name & code of custom cards."""
-        def __init__(self, parent: QWidget = None, flags=Qt.WindowType.Widget):
+        def __init__(self, parent: QWidget | None = None, flags=Qt.WindowType.Widget):
             super().__init__(parent, flags)
             self.ui = ui = Ui_SetEditor()
             ui.setupUi(self)

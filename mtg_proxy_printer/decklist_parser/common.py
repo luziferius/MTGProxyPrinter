@@ -55,7 +55,7 @@ class ParserBase(QObject):
 
     incompatible_file_format = Signal()
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject | None = None):
         super().__init__(parent)
         self.card_db = card_db
         self.image_db = image_db

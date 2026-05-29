@@ -40,14 +40,14 @@ class MissingImagesManager(QObject):
     obtaining_missing_images_failed = Signal(str)
     request_run_async_task = Signal(ObtainMissingImagesTask)
 
-    def __init__(self, document: Document, parent: QObject = None):
+    def __init__(self, document: Document, parent: QObject | None = None):
         super().__init__(parent)
         self.document = document
         self.image_db = document.image_db
-        self.callback = None
+        self.callback = lambda: None
         logger.info(f"Created {self.__class__.__name__} instance")
 
-    def obtain_missing_images(self, callback: Callable[[], Any] = None):
+    def obtain_missing_images(self, callback: Callable[[], Any] = lambda: None) -> None:
         self.callback = callback
         images_to_fetch = list(self.document.get_missing_image_cards())
         logger.debug(f"About to fetch {len(images_to_fetch)} missing images")
@@ -65,6 +65,5 @@ class MissingImagesManager(QObject):
                 "These will be missing in exported or printed documents.",
                 "Warning message. A last attempt at trying to download images of cards with missing images failed.",
                 n))
-        if self.callback is not None:
-            self.callback()
-            self.callback = None
+        self.callback()
+        self.callback = lambda: None

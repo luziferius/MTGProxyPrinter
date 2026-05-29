@@ -43,7 +43,7 @@ class ActionCompactDocument(DocumentAction):
     """
     COMPARISON_ATTRIBUTES = ["actions"]
 
-    def __init__(self, parent: QObject = None):
+    def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self.actions: ActionList = []
 
