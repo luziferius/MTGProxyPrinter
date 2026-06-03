@@ -143,7 +143,7 @@ def read_disk_cache_content(db_path: pathlib.Path) -> list[CacheContent]:
     """
     Returns all entries currently in the given hard disk image cache.
 
-    :returns: list with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
+    :returns: list with a CacheContent instance for each card in the database.
     """
     result: list[CacheContent] = []
     data: Iterable[tuple[pathlib.Path, bool, ImageQuality]] = (
