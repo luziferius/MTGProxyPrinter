@@ -163,11 +163,17 @@ def _migrate_database(db_path: pathlib.Path):
         db_path.mkdir(parents=True)
     version_file = db_path/"version.txt"
     if not version_file.exists():
-        for possible_dir in map("".join, itertools.product(string.hexdigits, string.hexdigits)):
+        # Version 1 did not distinguish between front and back images, thus did not support DFCs. And it did not
+        # store the image resolution. Brunt solution is to wipe the entire cache
+        for possible_dir in map("".join, itertools.product(string.hexdigits, repeat=2)):
             if (path := db_path/possible_dir).exists():
                 shutil.rmtree(path)
         version_file.write_text("2")
-    if version_file.read_text() == "2":
+    current_version = version_file.read_text()
+    if current_version == "2":
+        # Version 2 did not distinguish between blurry low-resolution and high-resolution images. It does not support
+        # re-downloading after the Scryfall CDN upgraded the image to a better scan. Treat all existing images as
+        # being low-resolution. This will cause an immediate re-download for most English cards.
         old_front = db_path/"front"
         old_back = db_path/"back"
         high_res_front = db_path/ImageKey.format_level_1_directory_name(True, ImageQuality.high_resolution)
@@ -184,4 +190,10 @@ def _migrate_database(db_path: pathlib.Path):
             low_res_back.mkdir(exist_ok=True)
         high_res_front.mkdir(exist_ok=True)
         high_res_back.mkdir(exist_ok=True)
-        version_file.write_text("3")
+        version_file.write_text(current_version := "3")
+    if current_version == "3":
+        # Reserve a place for custom image overrides 
+        (db_path/ImageKey.format_level_1_directory_name(True, ImageQuality.custom_card)).mkdir(exist_ok=True)
+        (db_path/ImageKey.format_level_1_directory_name(False, ImageQuality.custom_card)).mkdir(exist_ok=True)
+        version_file.write_text(current_version := "4")
+    logger.info(f"Current image database layout version: {current_version}")
