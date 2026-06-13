@@ -383,8 +383,8 @@ class SetIconImportTask(DownloaderBase):
         # Missing symbols have empty file names in the database, which is a guaranteed to be different
         # from the non-empty file names supplied by the API.
         result: dict[UUID, str] = {}
-        stream: Iterable[SetsAPIDataType] = ijson.items(response, "data.item", use_float=True)
-        for set_item in stream:
+        obtained_set_data: Iterable[SetsAPIDataType] = ijson.items(response, "data.item", use_float=True)
+        for set_item in obtained_set_data:
             set_scryfall_id = set_item["id"]
             uri = set_item["icon_svg_uri"]
             file_name = uri.rsplit("/", 1)[1]

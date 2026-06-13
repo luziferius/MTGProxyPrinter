@@ -15,8 +15,10 @@
 
 
 from typing import Type
+from unittest import case
 
-from PySide6.QtCore import QStringListModel, Slot, Signal, Qt, QItemSelectionModel, QItemSelection
+from PySide6.QtCore import QStringListModel, Slot, Signal, Qt, QItemSelectionModel, QItemSelection, \
+    QSortFilterProxyModel, QModelIndex
 from PySide6.QtWidgets import QWidget, QDialogButtonBox
 from PySide6.QtGui import QIcon
 
@@ -62,13 +64,13 @@ class AddCardWidget(QWidget):
     def __init__(self, ui_class: UiTypes, parent: QWidget | None = None):
         super().__init__(parent)
         logger.debug(f"Creating {self.__class__.__name__} instance")
-        self.ui = ui_class()
-        self.ui.setupUi(self)
+        self.ui = ui = ui_class()
+        ui.setupUi(self)
         self.card_db: CardDatabase = CardDatabase.main_instance
-        self.card_db.card_data_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
+        self.card_db.card_data_updated.connect(lambda: self.card_name_filter_updated(ui.card_name_filter.text()))
         self.image_db: ImageDatabase = None
         self.language_model = self._setup_language_combo_box()
-        self.card_name_model = self._setup_card_name_box()
+        self.card_name_model, self.card_name_filter_model = self._setup_card_name_box()
         self.set_name_model = self._setup_set_name_box()
         self.collector_number_model = self._setup_collector_number_box()
         self._setup_button_box()
@@ -97,12 +99,20 @@ class AddCardWidget(QWidget):
         self.ui.language_combo_box.currentTextChanged.connect(self.language_combo_box_changed)
         return model
 
-    def _setup_card_name_box(self) -> QStringListModel:
-        model = QStringListModel([], self.ui.card_name_list)
-        self.ui.card_name_list.setModel(model)
-        self.ui.card_name_list.selectionModel().selectionChanged.connect(self.card_name_list_selection_changed)
+    def _setup_card_name_box(self) -> tuple[QStringListModel, QSortFilterProxyModel]:
+        card_name_list = self.ui.card_name_list
+        model = QStringListModel([], card_name_list)
+        filter_model = QSortFilterProxyModel(
+            card_name_list, filterCaseSensitivity=Qt.CaseSensitivity.CaseInsensitive,
+            filterKeyColumn=0, filterRole=ItemDataRole.DisplayRole,
+            dynamicSortFilter=True,
+        )
+        filter_model.setSourceModel(model)
+        card_name_list.setModel(filter_model)
+        card_name_list.selectionModel().selectionChanged.connect(self.card_name_list_selection_changed)
+        self.ui.card_name_filter.textChanged.connect(filter_model.setFilterWildcard)
         self.ui.card_name_filter.textChanged.connect(self.card_name_filter_updated)
-        return model
+        return model, filter_model
 
     def _setup_set_name_box(self) -> mtg_proxy_printer.model.string_list.PrettySetListModel:
         model = mtg_proxy_printer.model.string_list.PrettySetListModel(self.ui.set_name_list)
@@ -171,15 +181,7 @@ class AddCardWidget(QWidget):
     def card_name_filter_updated(self, card_name_filter: str):
         logger.debug(f'Card name filter changed to: "{card_name_filter}"')
         selected_card_name = self.current_card_name
-        card_names = self.card_db.get_card_names(self.current_language, card_name_filter)
-        self.card_name_model.setStringList(card_names)
-
-        if selected_card_name in card_names:
-            self.ui.card_name_list.selectionModel().select(
-                self.card_name_model.createIndex(card_names.index(selected_card_name), 0),
-                SelectionFlag.ClearAndSelect
-            )
-        else:
+        if selected_card_name is None:
             self.set_name_model.set_set_data([])
             self.ui.set_name_box.setDisabled(True)
 
@@ -194,8 +196,7 @@ class AddCardWidget(QWidget):
     @Slot(str)
     def language_combo_box_changed(self, new_language: str):
         logger.info(f'Selected language changed to: "{new_language}"')
-        current_filter = self.ui.card_name_filter.text()
-        card_names = self.card_db.get_card_names(new_language, current_filter)
+        card_names = self.card_db.get_card_names(new_language)
         self.card_name_model.setStringList(card_names)
         self.set_name_model.set_set_data([])
         self.ui.set_name_box.setEnabled(False)
@@ -265,27 +266,27 @@ class AddCardWidget(QWidget):
 
     @property
     def current_card_name(self) -> str | None:
-        selected = self.ui.card_name_list.selectedIndexes()
-        if selected:
-            return selected[0].data(ItemDataRole.DisplayRole)
-        else:
-            return None
+        match self.ui.card_name_list.selectedIndexes():
+            case [QModelIndex() as index]:
+                return index.data(ItemDataRole.DisplayRole)
+            case _:
+                return None
 
     @property
     def current_set_name(self) -> str | None:
-        selected = self.ui.set_name_list.selectedIndexes()
-        if selected:
-            return selected[0].data(ItemDataRole.EditRole).code
-        else:
-            return None
+        match self.ui.set_name_list.selectedIndexes():
+            case [QModelIndex() as index]:
+                return index.data(ItemDataRole.EditRole).code
+            case _:
+                return None
 
     @property
     def current_collector_number(self) -> str | None:
-        selected = self.ui.collector_number_list.selectedIndexes()
-        if selected:
-            return selected[0].data(ItemDataRole.DisplayRole)
-        else:
-            return None
+        match self.ui.collector_number_list.selectedIndexes():
+            case [QModelIndex() as index]:
+                return index.data(ItemDataRole.DisplayRole)
+            case _:
+                return None
 
 
 class VerticalAddCardWidget(AddCardWidget):
