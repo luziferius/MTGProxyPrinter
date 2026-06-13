@@ -15,10 +15,9 @@
 
 
 from typing import Type
-from unittest import case
 
 from PySide6.QtCore import QStringListModel, Slot, Signal, Qt, QItemSelectionModel, QItemSelection, \
-    QSortFilterProxyModel, QModelIndex
+    QSortFilterProxyModel, QModelIndex, QAbstractItemModel
 from PySide6.QtWidgets import QWidget, QDialogButtonBox
 from PySide6.QtGui import QIcon
 
@@ -71,7 +70,7 @@ class AddCardWidget(QWidget):
         self.image_db: ImageDatabase = None
         self.language_model = self._setup_language_combo_box()
         self.card_name_model, self.card_name_filter_model = self._setup_card_name_box()
-        self.set_name_model = self._setup_set_name_box()
+        self.set_name_model, self.set_name_filter_model = self._setup_set_name_box()
         self.collector_number_model = self._setup_collector_number_box()
         self._setup_button_box()
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -101,28 +100,32 @@ class AddCardWidget(QWidget):
 
     def _setup_card_name_box(self) -> tuple[QStringListModel, QSortFilterProxyModel]:
         card_name_list = self.ui.card_name_list
-        model = QStringListModel([], card_name_list)
-        filter_model = QSortFilterProxyModel(
-            card_name_list, filterCaseSensitivity=Qt.CaseSensitivity.CaseInsensitive,
-            filterKeyColumn=0, filterRole=ItemDataRole.DisplayRole,
-            dynamicSortFilter=True,
-        )
-        filter_model.setSourceModel(model)
+        model = QStringListModel([], self)
+        filter_model = self._create_filter_model(model)
         card_name_list.setModel(filter_model)
         card_name_list.selectionModel().selectionChanged.connect(self.card_name_list_selection_changed)
         self.ui.card_name_filter.textChanged.connect(filter_model.setFilterWildcard)
         self.ui.card_name_filter.textChanged.connect(self.card_name_filter_updated)
         return model, filter_model
 
-    def _setup_set_name_box(self) -> mtg_proxy_printer.model.string_list.PrettySetListModel:
-        model = mtg_proxy_printer.model.string_list.PrettySetListModel(self.ui.set_name_list)
-        self.card_name_model.rowsRemoved.connect(lambda: self.ui.set_name_box.setEnabled(False))
-        self.card_name_model.rowsRemoved.connect(lambda: model.set_set_data([]))
-
-        self.ui.set_name_list.setModel(model)
-        self.ui.set_name_list.selectionModel().selectionChanged.connect(self.set_name_list_selection_changed)
+    def _setup_set_name_box(self) -> tuple[mtg_proxy_printer.model.string_list.PrettySetListModel, QSortFilterProxyModel]:
+        set_name_list = self.ui.set_name_list
+        model = mtg_proxy_printer.model.string_list.PrettySetListModel(self)
+        filter_model = self._create_filter_model(model)
+        set_name_list.setModel(filter_model)
+        set_name_list.selectionModel().selectionChanged.connect(self.set_name_list_selection_changed)
+        self.ui.set_name_filter.textChanged.connect(filter_model.setFilterWildcard)
         self.ui.set_name_filter.textChanged.connect(self.set_name_filter_updated)
-        return model
+        return model, filter_model
+
+    def _create_filter_model(self, source_model: QAbstractItemModel) -> QSortFilterProxyModel:
+        filter_model = QSortFilterProxyModel(
+            self, filterCaseSensitivity=Qt.CaseSensitivity.CaseInsensitive,
+            filterKeyColumn=0, filterRole=ItemDataRole.DisplayRole,
+            dynamicSortFilter=True,
+        )
+        filter_model.setSourceModel(source_model)
+        return filter_model
 
     def _setup_collector_number_box(self) -> QStringListModel:
         model = QStringListModel([], self.ui.collector_number_list)
@@ -175,23 +178,22 @@ class AddCardWidget(QWidget):
 
     @Slot(QItemSelection)
     def collector_number_list_selection_changed(self, current: QItemSelection):
-        self.ui.button_box.button(StandardButton.Ok).setEnabled(bool(current.indexes()))
+        something_is_selected = bool(current.indexes())
+        self.ui.button_box.button(StandardButton.Ok).setEnabled(something_is_selected)
 
     @Slot(str)
     def card_name_filter_updated(self, card_name_filter: str):
         logger.debug(f'Card name filter changed to: "{card_name_filter}"')
-        selected_card_name = self.current_card_name
-        if selected_card_name is None:
+        if self.current_card_name is None:
             self.set_name_model.set_set_data([])
             self.ui.set_name_box.setDisabled(True)
 
     @Slot(str)
     def set_name_filter_updated(self, set_name_filter: str):
         logger.debug(f'Set name/abbreviation filter changed to: "{set_name_filter}"')
-        set_names = self.card_db.find_sets_matching(
-            self.current_card_name, self.current_language, set_name_filter
-        )
-        self.set_name_model.set_set_data(set_names)
+        if self.current_set_name is None:
+            self.collector_number_model.setStringList([])
+            self.ui.collector_number_box.setDisabled(True)
 
     @Slot(str)
     def language_combo_box_changed(self, new_language: str):
