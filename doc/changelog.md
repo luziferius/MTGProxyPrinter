@@ -23,7 +23,7 @@
 - Rewrite of the internal card database layout, resulting in performance improvements
   - Massive speed up in the card image cache cleanup wizard, if many foreign-language cards were previously downloaded
 - Changed search behavior in the built-in card search.
-  - Search is now consistently case-sensitive, even for ASCII characters
+  - Search is now consistently case-insensitive, even for non-ASCII characters
   - The wildcard character to represent "any number of characters" is now `*` instead of `%`
 
 ## Fixed issues

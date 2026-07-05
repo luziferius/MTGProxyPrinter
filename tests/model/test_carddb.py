@@ -70,20 +70,13 @@ def test_get_all_languages_with_data(card_db: CardDatabase):
     )
 
 
-@pytest.mark.parametrize("card_name, language, prefix, expected_codes", [
-    ("Forest", "en", None, ["anb", "znr"]),
-    ("Forest", "en", "Z", ["znr"]),
-    ("Forest", "en", "ZE", []),
-    ("Forest", "en", "z", ["znr"]),
-    ("Forest", "en", "AAAAAAAA", []),
-    ("Forest", "es", None, []),
-    ("Bosque", "es", None, ["znr"]),
-    ("Bosque", "es", "Zendikar", ["znr"]),
-    ("Growing Rites of Itlimoc", "en", "", ["xln"]),
-    ("Itlimoc, Cradle of the Sun", "en", "", ["xln"]),
+@pytest.mark.parametrize("card_name, language, expected_codes", [
+    ("Forest", "en", ["anb", "znr"]),
+    ("Forest", "es", []),
+    ("Bosque", "es", ["znr"]),
 ])
 def test_find_sets_matching(
-        card_db: CardDatabase, card_name: str, language: str, prefix: str | None,
+        card_db: CardDatabase, card_name: str, language: str,
         expected_codes: list[str]):
     fill_card_database_with_json_cards(card_db, [
         "english_basic_Forest",
@@ -91,21 +84,17 @@ def test_find_sets_matching(
         "spanish_basic_Forest",
         "english_double_faced_card",
     ])
-    found_set_codes = [set_.code for set_ in card_db.find_sets_matching(card_name, language, prefix)]
+    found_set_codes = [set_.code for set_ in card_db.find_sets_matching(card_name, language)]
     assert_that(found_set_codes, contains_inanyorder(*expected_codes))
 
 
-@pytest.mark.parametrize("language, prefix, expected_names", [
-    ("en", None, ["Forest", "Future Sight", "Duress", "Coercion"]),
-    ("en", "Fu", ["Future Sight"]),
-    ("en", "*or", ["Forest"]),
-    ("en", "AAAAAAAA", []),
-    ("en", "F*t", ["Forest", "Future Sight"]),
-    ("de", None, ["Wald", "Zwang"]),  # noqa  # A German Forest and Duress
-    ("es", None, ["Bosque"]),  # noqa  # A Spanish Forest
-    ("Nonexisting language", None, []),
+@pytest.mark.parametrize("language, expected_names", [
+    ("en", ["Forest", "Future Sight", "Duress", "Coercion"]),
+    ("de", ["Wald", "Zwang"]),  # noqa  # A German Forest and Duress
+    ("es", ["Bosque"]),  # noqa  # A Spanish Forest
+    ("Nonexisting language", []),
 ])
-def test_get_card_names(card_db: CardDatabase, language: str, prefix: str | None, expected_names: list[str]):
+def test_get_card_names(card_db: CardDatabase, language: str, expected_names: list[str]):
     fill_card_database_with_json_cards(card_db, [
         "english_Coercion",
         "english_Duress",
@@ -119,7 +108,7 @@ def test_get_card_names(card_db: CardDatabase, language: str, prefix: str | None
         "german_Duress",
     ])
     assert_that(
-        card_db.get_card_names(language, prefix),
+        card_db.get_card_names(language),
         contains_inanyorder(*expected_names)
     )
 
