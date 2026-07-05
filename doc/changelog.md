@@ -32,13 +32,13 @@
 - Fixed application hang at exit, if a card data update was previously canceled.
 - Potentially fixed Scryfall card data import aborting on some systems with `IncompleteRead` errors
 
-# Version 0.35.2 (2025-08-08)  <a name="v0_35_2"></a>
+# Version 0.35.2 (2026-03-08)  <a name="v0_35_2"></a>
 
 ## Fixed issues
 
 - Fixed failure loading documents, caused by a compatibility issue with Python 3.14.
 
-# Version 0.35.1 (2025-02-25)  <a name="v0_35_1"></a>
+# Version 0.35.1 (2026-02-25)  <a name="v0_35_1"></a>
 
 ## New features
 
