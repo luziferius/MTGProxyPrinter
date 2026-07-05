@@ -74,6 +74,13 @@ class CardIdentificationData:
 
 
 class ImageDatabaseCards(NamedTuple):
+    """
+    A helper struct used for partitioning the downloaded images by card status: visible, hidden, or truly unknown.
+
+    An image can be unknown, if the Scryfall ID vanished from the upstream database since the associated image
+    was downloaded, or because the user deliberately placed the image into the image database
+    directory using a syntactically valid name.
+    """
     visible: list[tuple[Card, CacheContent]] = []
     hidden: list[tuple[Card, CacheContent]] = []
     unknown: list[CacheContent] = []
@@ -102,7 +109,7 @@ def with_database_write_lock(semaphore: threading.BoundedSemaphore = write_semap
 
 class CardDatabase(QObject):
     """
-    Holds the connection to the local SQLite database that contains the relevant card data.
+    Holds a connection to the local SQLite database that contains the relevant card data.
     Provides methods for data access.
     """
     main_instance: "CardDatabase" = None
@@ -135,6 +142,13 @@ class CardDatabase(QObject):
 
     @Slot()
     def reopen_database(self) -> None:
+        """(Re-)opens the database connection. If the on-disk database is outdated, this method will refuse to use it
+        and instead use an empty, in-memory database using the newest schema.
+        This prevents crashes in API methods expecting the newest schema. This state is temporary until the
+        asynchronous database migration task for the on-disk database completes and calls this method again.
+        This design was chosen to allow the main window to open as fast as possible, and show progress reports for the
+        potentially lengthy database migration.
+        """
         logger.info(f"About to open card database from {self.db_path}")
         db = open_database(self.db_path, SCHEMA_NAME, check_same_thread=self._db_check_same_thread)
         outdated_on_disk = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, SCHEMA_NAME) > 0
@@ -218,9 +232,9 @@ class CardDatabase(QObject):
         ''')
         return self._read_scalar_list_from_db(query)
 
-    def get_card_names(self, language: str, card_name_filter: str = None) -> list[str]:
-        """Returns a sorted list with all card names in the given language that match the given filter."""
-        logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
+    def get_card_names(self, language: str) -> list[str]:
+        """Returns a sorted list with all card names in the given language."""
+        logger.debug(f'Finding matching card names for language "{language}"')
         # This DISTINCT finds all spelling variants within a language,
         # mostly caused by typos in international printings. Other deduplication methods,
         # like `GROUP BY card_id, language` will choose an arbitrary spelling that may or may not be correct
@@ -230,12 +244,9 @@ class CardDatabase(QObject):
           INNER JOIN PrintingFace USING (printing_id)
             WHERE "language" = ?
               AND Printing.is_visible IS TRUE
-              {name_filter}
             ORDER BY face_name ASC
         ''')
-        name_filter: LiteralString = 'AND face_name GLOB ?' if card_name_filter else ''
-        query = query.format(name_filter=name_filter)
-        parameters = (language, f"{card_name_filter}*") if card_name_filter else (language,)
+        parameters = language,
         return self._read_scalar_list_from_db(query, parameters)
 
     def get_basic_land_oracle_ids(
@@ -473,15 +484,13 @@ class CardDatabase(QObject):
         return natural_sorted(item for item, in self.db.execute(query, (language, set_code, card_name)))
 
     def find_sets_matching(
-            self, card_name: str, language: str, set_name_filter: str | None = None,
+            self, card_name: str, language: str,
             *, is_front: bool | None = None) -> list[MTGSet]:
         """
-        Finds all matching sets that the given card was printed in.
+        Finds all sets that contain a card with the given name in the given language.
 
         :param card_name: Card name, matched exactly
         :param language: card language, matched exactly
-        :param set_name_filter: If provided, only return sets with set code or full name beginning with this.
-          Used as a GLOB pattern, supporting * as wildcards.
         :param is_front: Match by front/back. Only relevant when switching printings of SLD reversible cards.
         :return: list of matching sets, as tuples (set_abbreviation, full_english_set_name)
         """
@@ -495,10 +504,6 @@ class CardDatabase(QObject):
               AND COALESCE(is_front = ?, TRUE)
         ''')
         parameters: ParameterList = [language, card_name, is_front]
-        if set_name_filter:
-            query += '      AND (set_code GLOB ? OR set_name GLOB ?)\n'
-            parameters += [f"{set_name_filter}*"] * 2
-
         query += '    ORDER BY set_name ASC\n'
         return list(starmap(MTGSet, self.db.execute(query, parameters)))
 
