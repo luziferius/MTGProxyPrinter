@@ -391,13 +391,23 @@ class SetIconImportTask(DownloaderBase):
         for set_item in obtained_set_data:
             set_scryfall_id = set_item["id"]
             uri = set_item["icon_svg_uri"]
-            file_name = uri.rsplit("/", 1)[1]
+
+            file_name = self._extract_file_name(uri)
             # If a set is completely skipped during import, this get() avoids a KeyError
             if filenames_in_db.get(set_scryfall_id) != file_name:
                 result[set_scryfall_id] = uri
         # All parsed and filtered
         self.advance_progress.emit()
         return result
+
+    @staticmethod
+    def _extract_file_name(uri: str) -> str:
+        # The attached cache key invalidates each day, causing the application to re-download all set icons
+        # every time the card database is updated. Thus strip the cache key and base it solely on the file name.
+        # New sets get "default.svg" until the proper icon is created, so at least the transition from temporary
+        # icon to the first proper icon works.
+        file_name = uri.rsplit("/", 1)[1].split("?", 1)[0]
+        return file_name
 
     def _fetch_icon_svgs(self, icon_uris: dict[UUID, str]) -> list[tuple[bytes, str, UUID]]:
         """
@@ -410,7 +420,7 @@ class SetIconImportTask(DownloaderBase):
         for set_scryfall_id, uri in icon_uris.items():
             if not self.should_run: return result
             svg = self.read_from_url(uri,)[0].read()
-            filename = uri.rsplit("/", 1)[1]
+            filename = self._extract_file_name(uri)
             result.append((svg, filename, set_scryfall_id))
             self.advance_progress.emit()
         return result
