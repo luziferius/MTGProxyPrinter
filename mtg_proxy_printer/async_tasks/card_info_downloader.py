@@ -141,7 +141,7 @@ class FileDownloadTask(CardInfoDownloadTaskBase):
             self.connection = monitor
             try:
                 shutil.copyfileobj(monitor, download_file)
-            except AttributeError:
+            except (AttributeError, ValueError):
                 failure = True
             else:
                 failure = False
@@ -160,6 +160,10 @@ class FileDownloadTask(CardInfoDownloadTaskBase):
             self.connection.close()
         finally:
             pass
+
+    @property
+    def can_cancel(self):
+        return True
 
 
 class StreamTask(CardInfoDownloadTaskBase):
