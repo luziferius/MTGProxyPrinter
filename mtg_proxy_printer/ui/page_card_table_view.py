@@ -45,6 +45,7 @@ class PageCardTableView(QTableView):
     request_action = Signal(DocumentAction)
     request_run_async_task = Signal(SingleDownloadTask)
     changed_selection_is_empty = Signal(bool)
+    image_db: ImageDatabase
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -54,7 +55,6 @@ class PageCardTableView(QTableView):
             self._setup_language_delegate(),
             self._setup_set_delegate(),
         )
-        self.image_db: ImageDatabase = None
 
     def set_data(self, document: Document):
         self.image_db = document.image_db
@@ -100,6 +100,8 @@ class PageCardTableView(QTableView):
             menu.addSeparator()
             self._create_add_related_actions(menu, related_cards)
         self._add_save_image_action(menu, card)
+        menu.addSeparator()
+        menu.addAction(self._add_delete_cards_action(menu))
         menu.popup(self.viewport().mapToGlobal(pos))
 
     def _create_add_check_card_actions(self, parent: QMenu, card: Card):
@@ -185,11 +187,22 @@ class PageCardTableView(QTableView):
             self.request_action.emit(action)
 
     def _add_save_image_action(self, parent: QMenu, card: AnyCardType):
-        action = QAction(QIcon.fromTheme("document-save"), self.tr("Export image"), parent)
+        action = QAction(
+            QIcon.fromTheme("document-save"),
+            self.tr("Export image", "Context menu entry, display text"),
+            parent)
         action.setData(card)
         action.triggered.connect(self._on_save_image_action_triggered)
         parent.addSeparator()
         parent.addAction(action)
+
+    def _add_delete_cards_action(self, parent: QMenu):
+        action = QAction(
+            QIcon.fromTheme("edit-delete"),
+            self.tr("Remove selected", "Context menu entry, display text"),
+            parent)
+        action.triggered.connect(self.delete_selected_images)
+        return action
 
     @Slot()
     def _on_save_image_action_triggered(self):
@@ -201,8 +214,10 @@ class PageCardTableView(QTableView):
         card: Card = action.data()
         default_save_file = self._get_default_image_save_path(card)
         result, _ = QFileDialog.getSaveFileName(
-            self, self.tr("Save card image"), default_save_file, self.tr("Images (*.png *.bmp *.jpg)"))  # type: str, str
-        if result:
+            self, self.tr("Save card image", "File dialog title text"),
+            default_save_file, self.tr("Images (*.png *.bmp *.jpg)", "File type filter")
+        )
+        if result and card.image_file is not None:
             card.image_file.save(result)
             logger.info(f"Exported image of card {card.name} to {result}")
         else:

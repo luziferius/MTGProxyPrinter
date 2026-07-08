@@ -25,6 +25,7 @@
 - Changed search behavior in the built-in card search.
   - Search is now consistently case-insensitive, even for non-ASCII characters
   - The wildcard character to represent "any number of characters" is now `*` instead of `%`
+- Cards can be removed from the current page via a new context menu entry
 
 ## Fixed issues
 
