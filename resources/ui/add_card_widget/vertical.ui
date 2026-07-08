@@ -11,6 +11,12 @@
    </rect>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item row="3" column="0" colspan="3">
     <widget class="QGroupBox" name="set_name_box">
      <property name="enabled">
