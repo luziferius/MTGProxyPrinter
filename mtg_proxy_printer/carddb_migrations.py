@@ -909,6 +909,19 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
                 );
         END""")
     ], disable_foreign_keys=True),
+    35: MigrationScript([
+        "ALTER TABLE MTGSet ADD COLUMN printing_preference_weight INTEGER           NOT NULL DEFAULT 0",
+        dedent("""\
+        CREATE TRIGGER "Update Printing.preference_score on MTGSet.printing_preference_weight update"
+          AFTER UPDATE OF printing_preference_weight ON MTGSet
+          FOR EACH ROW
+          WHEN NEW.printing_preference_weight <> OLD.printing_preference_weight
+          BEGIN
+            UPDATE Printing
+              SET preference_score = preference_score + NEW.printing_preference_weight - OLD.printing_preference_weight
+              WHERE Printing.set_id = NEW.set_id;
+        END"""),
+    ]),
 }
 
 
