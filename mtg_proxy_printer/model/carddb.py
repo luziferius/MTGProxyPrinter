@@ -959,6 +959,11 @@ class CardDatabase(QObject):
         return card
 
     def get_printing_filter_weights(self) -> defaultdict[str, int | None]:
-        return defaultdict(lambda: None, self.db.execute(cached_dedent("""\
-            SELECT filter_name, printing_preference_weight FROM PrintingFilters
-        """)))
+        return defaultdict(lambda: None, self.db.execute(
+            "SELECT filter_name, printing_preference_weight FROM PrintingFilters -- get_printing_filter_weights()\n"
+        ))
+
+    def get_set_preference_weights(self) -> set[tuple[str, int]]:
+        return set(self.db.execute(
+            "SELECT set_code, printing_preference_weight FROM MTGSet -- get_set_preference_weights()\n"
+        ))

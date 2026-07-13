@@ -30,6 +30,7 @@ from mtg_proxy_printer.units_and_sizes import SectionProxy
 logger = get_logger(__name__)
 del get_logger
 
+WeightsType = set[tuple[str, int]]
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 __all__ = [
     "PrintingFilterUpdater",
@@ -123,8 +124,8 @@ class PrintingFilterUpdater(AsyncTask):
         if changed_or_new_filters:
             # CARD_FILTER_DEFAULT_WEIGHTS contains None values for items that should not have user-settable weights.
             # In those cases, overwrite with numerical zero to satisfy the NOT NULL constraint.
-            default_weights = mtg_proxy_printer.settings.CARD_FILTER_DEFAULT_WEIGHTS
-            data = list((name, active, default_weights.get(name, 0)) for name, active in changed_or_new_filters.items())
+            get_weight = mtg_proxy_printer.settings.CARD_FILTER_DEFAULT_WEIGHTS.get
+            data = list((name, active, get_weight(name, 0)) for name, active in changed_or_new_filters.items())
             logger.info("Printing filters added or changed in the settings, update the database.")
             db.executemany(
                 cached_dedent("""\
@@ -252,7 +253,7 @@ class PrintingPreferenceUpdater(AsyncTask):
     """
 
     def __init__(
-            self, model: "CardDatabase", new_preference_weights: set[tuple[str, int]],
+            self, model: "CardDatabase", new_preference_weights: WeightsType, new_set_weights: WeightsType,
             db_connection: sqlite3.Connection | None = None, /):
         """
         :param model: CardDatabase instance to work on
@@ -268,6 +269,8 @@ class PrintingPreferenceUpdater(AsyncTask):
         self.model = model
         self.new_preference_weights = new_preference_weights
         self.old_preference_weights = set(model.get_printing_filter_weights().items())
+        self.new_set_weights = new_set_weights
+        self.old_set_preference_weights: WeightsType = model.get_set_preference_weights()
         self.progress = 0
         self.task_completed.connect(model.restart_transaction, QueuedConnection)
         self._db = db_connection
@@ -291,14 +294,16 @@ class PrintingPreferenceUpdater(AsyncTask):
     @with_database_write_lock()
     def run(self):
         logger.debug(f"Called {self.__class__.__name__}.run()")
-        needs_update_weights = self.new_preference_weights - self.old_preference_weights
+        updated_filter_weights = self.new_preference_weights - self.old_preference_weights
+        updated_set_weights = self.new_set_weights - self.old_set_preference_weights
+        steps = len(updated_filter_weights) + len(updated_set_weights)
         db = self.db
         try:
             self.task_begins.emit(
-                len(needs_update_weights), self.tr(
+                steps, self.tr(
                     "Processing printing preferences:", "Progress bar label text")
             )
-            self.update_printing_preferences(needs_update_weights)
+            self.update_printing_preferences(updated_filter_weights, updated_set_weights)
             if self.should_abort:
                 db.rollback()
             else:
@@ -315,16 +320,25 @@ class PrintingPreferenceUpdater(AsyncTask):
                 db.close()
                 self._db = None
 
-    def update_printing_preferences(self, needs_update_weights: set[tuple[str, int]]):
+    def update_printing_preferences(self, updated_filter_weights: WeightsType, updated_set_weights: WeightsType):
         db = self.db
         if self.db_connection_self_opened:
             db.execute("BEGIN IMMEDIATE TRANSACTION -- update_printing_preferences()\n")
-        for name, weight in needs_update_weights:
+        for name, weight in updated_filter_weights:
+            parameters = weight, name
             db.execute(cached_dedent("""\
                 UPDATE PrintingFilters  -- update_printing_preferences()
                   SET printing_preference_weight = ?
                   WHERE filter_name = ?
-                """),
-                       (weight, name))
+                """), parameters)
+            self.advance_progress.emit()
+            if self.should_abort: break
+        for name, weight in updated_set_weights:
+            parameters = weight, name
+            db.execute(cached_dedent("""\
+                UPDATE MTGSet -- update_printing_preferences()
+                  SET printing_preference_weight = ?
+                  WHERE set_code = ?
+                """), parameters)
             self.advance_progress.emit()
             if self.should_abort: break
