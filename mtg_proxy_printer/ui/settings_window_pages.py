@@ -258,7 +258,7 @@ class DecklistImportSettingsPage(Page):
     def load(self, settings: ConfigParser):
         section = settings["decklist-import"]
         for widget, setting in self._get_checkbox_widgets():
-            widget.setChecked(section.getboolean(setting))
+            widget.setChecked(section.getboolean(setting) or False)
 
         section = settings["default-filesystem-paths"]
         widgets_with_settings = self._get_save_path_settings_widgets()

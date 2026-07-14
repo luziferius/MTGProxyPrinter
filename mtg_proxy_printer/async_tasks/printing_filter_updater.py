@@ -270,7 +270,7 @@ class PrintingPreferenceUpdater(AsyncTask):
         self.new_preference_weights = new_preference_weights
         self.old_preference_weights = set(model.get_printing_filter_weights().items())
         self.new_set_weights = new_set_weights
-        self.old_set_preference_weights: WeightsType = model.get_set_preference_weights()
+        self.old_set_preference_weights: WeightsType = set()  # TODO.
         self.progress = 0
         self.task_completed.connect(model.restart_transaction, QueuedConnection)
         self._db = db_connection

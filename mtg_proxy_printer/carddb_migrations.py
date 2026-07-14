@@ -947,7 +947,7 @@ class DatabaseMigrationTask(AsyncTask):
     Scripts combining multiple version upgrades in one SQL script are not supported.
     """
 
-    def __init__(self, card_db: CardDatabase, migration_scripts: dict[int, MigrationScript] = None):
+    def __init__(self, card_db: CardDatabase, migration_scripts: dict[int, MigrationScript] | None = None):
         super().__init__()
         self.db_path = card_db.db_path
         self.migration_scripts = migration_scripts or MIGRATION_SCRIPTS
