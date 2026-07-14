@@ -911,6 +911,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
     ], disable_foreign_keys=True),
     35: MigrationScript([
         "ALTER TABLE MTGSet ADD COLUMN printing_preference_weight INTEGER           NOT NULL DEFAULT 0",
+        "ALTER TABLE MTGSet ADD COLUMN parent_set_code            TEXT                       CHECK (parent_set_code <> '')",
         dedent("""\
         CREATE TRIGGER "Update Printing.preference_score on MTGSet.printing_preference_weight update"
           AFTER UPDATE OF printing_preference_weight ON MTGSet
