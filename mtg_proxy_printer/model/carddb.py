@@ -126,15 +126,16 @@ class CardDatabase(QObject):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         self._db_check_same_thread = check_same_thread
         self.db_path = db_path
-        self.db: sqlite3.Connection = None
+        self.db: sqlite3.Connection = None  # noqa
         self._db_is_temporary = False
         try:
             self.reopen_database()
         except sqlite3.DatabaseError as e:
             logger.exception(f"Database corrupt! Re-creating. Reported error: {e}")
-            db_path.unlink()
-            for sub_file in (f"{db_path.name}-shm", f"{db_path.name}-wal"):
-                (db_path.parent/sub_file).unlink(missing_ok=True)
+            if isinstance(db_path, Path):
+                db_path.unlink()
+                for sub_file in (f"{db_path.name}-shm", f"{db_path.name}-wal"):
+                    (db_path.parent/sub_file).unlink(missing_ok=True)
             self.reopen_database()
         self._exit_hook = None
         if db_path != ":memory:" and register_exit_hooks:
@@ -210,7 +211,7 @@ class CardDatabase(QObject):
     def get_last_card_data_update_timestamp(self) -> datetime.datetime | None:
         """Returns the last card data update timestamp, or None, if no card data was ever imported"""
         query: LiteralString = "SELECT MAX(update_timestamp) FROM LastDatabaseUpdate -- get_last_card_data_update_timestamp\n"
-        result: int = self._read_optional_scalar_from_db(query)
+        result: int = self._read_optional_scalar_from_db(query) or 0
         return datetime.datetime.fromtimestamp(result) if result else None
 
     def allow_updating_card_data(self) -> bool:
@@ -885,12 +886,12 @@ class CardDatabase(QObject):
             if self._read_optional_scalar_from_db(query, (scryfall_id, is_front, count))
         ]
 
-    def translate_card(self, to_translate: T, target_language: str = None) -> T:
+    def translate_card(self, to_translate: T, target_language: str | None = None) -> T:
         """
         Returns a new card object representing the card translated into the target language.
 
         The translation step tries to be as faithful as possible to the original printing by matching as many
-        properties as possible, but may have to choose a printing another Magic set, if the source set does not
+        properties as possible. But it may have to choose a printing another Magic set, if the source set does not
         contain the card in the desired language. For example, translating an Alpha printing of a card will always
         yield a Card in a different set. Also, multi-language support for printings of promotional cards in the Scryfall
         database is limited.
@@ -900,10 +901,11 @@ class CardDatabase(QObject):
         """
         if target_language is None or target_language == to_translate.language:
             return to_translate
+        target_language: str
         if isinstance(to_translate, CheckCard):
             return CheckCard(
                 (front := self.translate_card(to_translate.front, target_language)),
-                self.get_opposing_face(front)
+                self.get_opposing_face(front) or front
             )
         if (result := self._translate_card(to_translate, target_language)) is not None:
             return result
@@ -961,9 +963,4 @@ class CardDatabase(QObject):
     def get_printing_filter_weights(self) -> defaultdict[str, int | None]:
         return defaultdict(lambda: None, self.db.execute(
             "SELECT filter_name, printing_preference_weight FROM PrintingFilters -- get_printing_filter_weights()\n"
-        ))
-
-    def get_set_preference_weights(self) -> set[tuple[str, int]]:
-        return set(self.db.execute(
-            "SELECT set_code, printing_preference_weight FROM MTGSet -- get_set_preference_weights()\n"
         ))
