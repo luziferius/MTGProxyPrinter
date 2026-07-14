@@ -106,13 +106,13 @@ INVALID_INDEX = SetTreeIndex()
 
 class MTGSetTreeModel(QAbstractItemModel):
     """
-    A model used to show all MTG sets, with sub-sets as children. Sub-sets are associated token,
-    promo printings, and similar sets.
+    A model used to show all MTG sets, with sub-sets as children. Sub-sets contain associated tokens,
+    promo printings, and similar cards. So for parent set AFR, there's the token set TAFR, and the promo printings in PAFR.
 
     Also exposes the "set_filter_active" flag and "preference score" as editable columns,
     and is used by the PrintingPreferencePage settings page to configure these.
     """
-    createIndex: Callable[[int, int, typing.Any], SetTreeIndex]
+    createIndex: Callable[[int, int, SetContainer], SetTreeIndex]
 
 
     def __init__(self, parent: QObject | None = None):
