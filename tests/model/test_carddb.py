@@ -34,7 +34,7 @@ from mtg_proxy_printer.async_tasks.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.units_and_sizes import UUID
 
-from ..helpers import assert_model_is_empty, fill_card_database_with_json_card, \
+from ..helpers import assert_model_is_empty, fill_card_database_with_json_card, IsDataclass, \
     fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation, update_database_printing_filters
 from ..test_card_info_downloader import TestCaseData
 
@@ -310,8 +310,9 @@ def test_cards_used_less_often_then(card_db: CardDatabase, usage_count: int, exp
     )
 
 
-def _get_card_from_model(card_db: CardDatabase, scryfall_id: str, is_front: bool):
+def _get_card_from_model(card_db: CardDatabase, scryfall_id: str, is_front: bool) -> Card:
     card = card_db.get_card_with_scryfall_id(scryfall_id, is_front)
+    assert card is not None
     assert_that(card, has_properties({
         "scryfall_id": equal_to(scryfall_id),
         "is_front": equal_to(is_front),
@@ -459,14 +460,14 @@ def generate_test_cases_for_test_get_card_with_scryfall_id() -> \
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_card_with_scryfall_id())
 def test_get_card_with_scryfall_id(
         card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card | None):
-    assert_that(
-        card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front),
-        is_(any_of(
-            all_of(
-                none(),
-                instance_of(type(expected))  # None if and only if expected is None
-            ),
-            all_of(
+    assert card_data.scryfall_id is not None and card_data.is_front is not None
+    result = card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front)
+    if expected is None:
+        assert_that(result, is_(None))
+    else:
+        expected: IsDataclass
+        assert_that(
+            result, is_(all_of(
                 is_(instance_of(Card)),
                 matches_type_annotation(),
                 has_properties({
@@ -477,7 +478,7 @@ def test_get_card_with_scryfall_id(
                 }),
                 is_dataclass_equal_to(expected),
             )))
-    )
+
 
 
 @pytest.mark.parametrize("language", ["en", None])
@@ -554,7 +555,9 @@ def generate_test_cases_for_test__translate_card():
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test__translate_card())
 def test__translate_card(card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card):
     is_front = card_data.is_front is None or card_data.is_front
+    assert card_data.scryfall_id is not None
     to_translate = card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, is_front)
+    assert to_translate is not None
     # Use the private method to skip the internal shortcut in translate_card()
     # that skips requested same-language translations.
     assert_that(
@@ -758,7 +761,7 @@ def test_find_related_printings(card_db: CardDatabase, source_id: str, expected_
         "Trailblazers_Torch",
     ])
     source_card = card_db.get_card_with_scryfall_id(source_id, True)
-    assert_that(source_card, is_(not_none()), "Setup failed")
+    assert source_card is not None, "Setup failed"
     related = card_db.find_related_cards(source_card)
     assert_that(
         related, contains_inanyorder(
@@ -826,8 +829,9 @@ def test_get_available_languages_for_card(
         "german_Coercion_with_faulty_translation", "german_Duress", "english_Duress",
         "english_Back_to_Basics", "german_Back_to_Basics",
     ])
+    assert card_data.scryfall_id is not None and card_data.is_front is not None
     card = card_db.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front)
-    assert_that(card, is_(not_none()), "Setup failed, card not found")
+    assert card is not None, "Test setup failed"
     if filter_enabled:
         filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["card-filter"]}
         update_database_printing_filters(card_db, filters)
@@ -907,11 +911,12 @@ def test_get_available_sets_for_card(
         jsons: list[str], scryfall_id: UUID, filter_name: str, expected: list[MTGSet]):
     fill_card_database_with_json_cards(card_db, jsons)
     card = card_db.get_card_with_scryfall_id(scryfall_id, True)
-    filters = dict(mtg_proxy_printer.settings.settings["card-filter"])
+    assert card is not None, "Test setup failed"
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    filters: dict[str, str] = {key: section[key] for key in section.keys()}
     if filter_name:
         filters[filter_name] = "True"
         update_database_printing_filters(card_db, filters)
-    assert_that(card, is_(not_none()), "Test setup failed, card not found")
     fulfills_matcher = contains_exactly(*expected) if expected else empty()
     assert_that(card_db.get_available_sets_for_card(card), fulfills_matcher)
 
@@ -948,7 +953,7 @@ def test_get_available_collector_numbers_for_card_in_set(
         jsons: list[str], scryfall_id: UUID, filter_enabled: bool, expected: list[str]):
     fill_card_database_with_json_cards(card_db, jsons)
     card = card_db.get_card_with_scryfall_id(scryfall_id, True)
-    assert_that(card, is_(not_none()), "Setup failed. Card not found")
+    assert card is not None, "Test setup failed"
     if filter_enabled:
         filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["card-filter"]}
         update_database_printing_filters(card_db, filters)
