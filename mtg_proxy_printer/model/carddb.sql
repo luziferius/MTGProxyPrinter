@@ -82,7 +82,7 @@ CREATE TABLE MTGSet (
   -- File name and cache key from the URI. Used to determine if the local copy is outdated.
   icon_file_name             TEXT              NOT NULL DEFAULT '',
   set_scryfall_id            TEXT              NOT NULL UNIQUE,
-  printing_preference_weight INTEGER           NOT NULL DEFAULT 0,
+  set_preference_weight      INTEGER           NOT NULL DEFAULT 0,
   parent_set_code            TEXT                       CHECK (parent_set_code <> '')
 );
 

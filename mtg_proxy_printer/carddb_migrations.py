@@ -910,7 +910,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         END""")
     ], disable_foreign_keys=True),
     35: MigrationScript([
-        "ALTER TABLE MTGSet ADD COLUMN printing_preference_weight INTEGER           NOT NULL DEFAULT 0",
+        "ALTER TABLE MTGSet ADD COLUMN set_preference_weight      INTEGER           NOT NULL DEFAULT 0",
         "ALTER TABLE MTGSet ADD COLUMN parent_set_code            TEXT                       CHECK (parent_set_code <> '')",
         dedent("""\
         CREATE TRIGGER "Update Printing.preference_score on MTGSet.printing_preference_weight update"
@@ -919,7 +919,17 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
           WHEN NEW.printing_preference_weight <> OLD.printing_preference_weight
           BEGIN
             UPDATE Printing
-              SET preference_score = preference_score + NEW.printing_preference_weight - OLD.printing_preference_weight
+              SET preference_score = preference_score + NEW.printing_all_of(
+                is_(instance_of(Card)),
+                matches_type_annotation(),
+                has_properties({
+                    # Verifies that the expected card matches the given card identification data.
+                    # Not strictly required, but ensures that the test data is consistent
+                    "scryfall_id": card_data.scryfall_id,
+                    "is_front": card_data.is_front,
+                }),
+                is_dataclass_equal_to(expected),
+            ))preference_weight - OLD.printing_preference_weight
               WHERE Printing.set_id = NEW.set_id;
         END"""),
     ]),
