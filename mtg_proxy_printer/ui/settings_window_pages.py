@@ -139,7 +139,7 @@ class DebugSettingsPage(Page):
     def load(self, settings: ConfigParser):
         section = settings["debug"]
         for widget, setting in self._get_debug_settings_checkbox_widgets():
-            widget.setChecked(section.getboolean(setting))
+            widget.setChecked(section.getboolean(setting) or False)
         log_level_combo_box = self.ui.log_level_combo_box
         configured_level_index = log_level_combo_box.findText(section["log-level"])
         log_level_combo_box.setCurrentIndex(configured_level_index)
@@ -515,6 +515,9 @@ class PrintingPreferencesPage(Page):
             "View cards hidden by this filter on the Scryfall website.",
             "Tooltip text on a button next to a printing filter"))
         return button
+
+    def _get_new_set_weights(self):
+        return set()
 
     @staticmethod
     def view_query_on_scryfall(query: str):
