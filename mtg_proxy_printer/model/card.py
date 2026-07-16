@@ -82,9 +82,9 @@ class SVGIconEngine(QIconEngine):
 class MTGSet:
     code: str
     name: str
-    release_date: date
-    is_hidden: bool
-    preference_score: int
+    release_date: date = date.today()
+    is_hidden: bool = False
+    preference_score: int = 0
     parent_set_code: str | None = None
     svg_icon: bytes | None = None
 

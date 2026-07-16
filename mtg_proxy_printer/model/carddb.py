@@ -394,9 +394,7 @@ class CardDatabase(QObject):
         cursor = self.db.execute(query, parameters)
         result = [
             Card(
-                name=row["face_name"], set=MTGSet(
-                    row["set_code"], row["set_name"], datetime.date.today(),
-                    False, 0, None, row["icon_svg"]),
+                name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"]),
                 collector_number=row["collector_number"], language=row["language"],
                 scryfall_id=row["scryfall_id"], is_front=row["is_front"],  oracle_id=row["oracle_id"],
                 image_uri=row["png_image_uri"], highres_image=row["is_highres_image"],
@@ -528,9 +526,7 @@ class CardDatabase(QObject):
         if (row := self.db.execute(query, (scryfall_id, is_front)).fetchone()) is None:
             return None
         return Card(
-            name=row["face_name"], set=MTGSet(
-                row["set_code"], row["set_name"], datetime.date.today(),
-                False, 0, None,row["icon_svg"]),
+            name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"]),
             collector_number=row["collector_number"], language=row["language"], scryfall_id=scryfall_id,
             is_front=is_front, oracle_id=row["oracle_id"], image_uri=row["png_image_uri"],
             highres_image=row["is_highres_image"], size=CardSizes.from_bool(row["is_oversized"]),
@@ -598,7 +594,7 @@ class CardDatabase(QObject):
             cache_item = CacheContent(
                 scryfall_id=row["scryfall_id"], is_front=row["is_front"],
                 image_quality=qualities[row["highres_on_disk"]], absolute_path=Path(row["absolute_path"]))
-            set_ = MTGSet(row["set_code"], row["set_name"], datetime.date.today(), False, 0, None,row["icon_svg"])
+            set_ = MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"])
             card = Card(
                 row["face_name"], set_,
                 row["collector_number"],
@@ -797,7 +793,10 @@ class CardDatabase(QObject):
           ORDER BY release_date ASC
         """)
         parameters: ParameterList = [card.oracle_id, card.language, card.set_code]
-        result = list(starmap(MTGSet, self.db.execute(query, parameters)))
+        result = [
+            MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"])
+            for row in self.db.execute(query, parameters)
+        ]
         if not result:
             result.append(card.set)
         return result
@@ -946,7 +945,7 @@ class CardDatabase(QObject):
         if row["similarity"] is None:
             logger.debug(f"Found no translations to {target_language} for card '{card.name}'.")
             return None
-        set_ = MTGSet(row["set_code"], row["set_name"], datetime.date.today(), False, 0, None, row["icon_svg"])
+        set_ = MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"])
         return Card(
             name=row["face_name"], set=set_,
             collector_number=row["collector_number"], language=target_language, scryfall_id=row["scryfall_id"],
@@ -958,7 +957,7 @@ class CardDatabase(QObject):
     def get_custom_card(
             self, name: str, set_code: str, set_name: str, collector_number: str,
             size: CardSize, is_front: bool, image: bytes) -> CustomCard:
-        set_ = MTGSet(set_code, set_name, datetime.date.today(), False, 0)
+        set_ = MTGSet(set_code, set_name)
         card = CustomCard(
             name, set_, collector_number, "en",
             is_front, "", True, size, False, image)
