@@ -326,8 +326,12 @@ class ApiStreamTask(StreamTask):
     def item_count(self):
         return self.get_available_card_count()
 
+class AdditionalSetData(typing.NamedTuple):
+    svg_icon_uri: str
+    file_name: str
+    parent_set_code: str | None
 
-class SetIconImportTask(DownloaderBase):
+class SetDataImportTask(DownloaderBase):
 
     def __init__(self, db: sqlite3.Connection | None = None,
                  carddb_path: Path | Literal[":memory:"] = DEFAULT_DATABASE_LOCATION):
@@ -358,47 +362,53 @@ class SetIconImportTask(DownloaderBase):
         self.advance_progress.emit()
         if not self.should_run: return
         logger.debug(f"Total of {download_count} SVG icon URIs to download, starting downloads…")
-        icon_svgs = self._fetch_icon_svgs(icon_uris)
+        additional_data = self._fetch_icon_svgs(icon_uris)
         if not self.should_run: return
         logger.debug("SVG icons downloaded, updating the database…")
         db.executemany(
-            "UPDATE MTGSet SET icon_svg = ?, icon_file_name = ? WHERE set_scryfall_id = ?",
-            icon_svgs
+            "UPDATE MTGSet SET parent_set_code = ?, icon_svg = ?, icon_file_name = ? WHERE set_scryfall_id = ?",
+            additional_data
         )
         logger.debug(f"All {download_count} SVG icons updated.")
         self.advance_progress.emit()
         logger.info("All missing or outdated set symbols downloaded")
         self.task_completed.emit()
 
-    def _fetch_icon_uris_to_download(self, filenames_in_db: dict[UUID, str]) -> dict[UUID, str]:
+    def _fetch_icon_uris_to_download(self, filenames_in_db: dict[UUID, str]) -> dict[UUID, AdditionalSetData]:
         """
         Fetches the SVG icon URIs from the Scryfall API.
-        :param filenames_in_db: Mapping of currently downloaded set symbols. Keys are set ids, values are filenames.
+        :param filenames_in_db: Mapping of currently downloaded set symbols. Keys are set scryfall ids, values are filenames.
         :returns: Mapping from set ids to SVG icon URIs
         """
         logger.debug(f"Requesting URIs for all {len(filenames_in_db)} in the database from the set code API end point.")
+        response = self._fetch_sets_list_from_scryfall_api()
+        # Data is fetched. Check against the file names in the database. Any difference will cause a re-download.
+        # Missing symbols have empty file names in the database, which is a guaranteed to be different
+        # from the non-empty file names supplied by the API.
+        result: dict[UUID, AdditionalSetData] = {}
+        obtained_set_data: Iterable[SetsAPIDataType] = ijson.items(response, "data.item", use_float=True)
+        for set_item in obtained_set_data:
+            set_scryfall_id = set_item["id"]
+            data = AdditionalSetData(
+                uri := set_item["icon_svg_uri"],
+                file_name := self._extract_file_name(uri),
+                set_item.get("parent_set_code")
+            )
+            # If a set is completely skipped during import, this get() avoids a KeyError
+            if filenames_in_db.get(set_scryfall_id) != file_name:
+                result[set_scryfall_id] = data
+        # All parsed and filtered
+        self.advance_progress.emit()
+        return result
+
+    def _fetch_sets_list_from_scryfall_api(self) -> bytes:
         # This bulk end point is sometimes slow to react
         socket.setdefaulttimeout(30)
         open_file, _ = self.read_from_url("https://api.scryfall.com/sets")
         with open_file:
             response = open_file.read()
         socket.setdefaulttimeout(5)
-        # Data is fetched. Check against the file names in the database. Any difference will cause a re-download.
-        # Missing symbols have empty file names in the database, which is a guaranteed to be different
-        # from the non-empty file names supplied by the API.
-        result: dict[UUID, str] = {}
-        obtained_set_data: Iterable[SetsAPIDataType] = ijson.items(response, "data.item", use_float=True)
-        for set_item in obtained_set_data:
-            set_scryfall_id = set_item["id"]
-            uri = set_item["icon_svg_uri"]
-
-            file_name = self._extract_file_name(uri)
-            # If a set is completely skipped during import, this get() avoids a KeyError
-            if filenames_in_db.get(set_scryfall_id) != file_name:
-                result[set_scryfall_id] = uri
-        # All parsed and filtered
-        self.advance_progress.emit()
-        return result
+        return response
 
     @staticmethod
     def _extract_file_name(uri: str) -> str:
@@ -409,19 +419,18 @@ class SetIconImportTask(DownloaderBase):
         file_name = uri.rsplit("/", 1)[1].split("?", 1)[0]
         return file_name
 
-    def _fetch_icon_svgs(self, icon_uris: dict[UUID, str]) -> list[tuple[bytes, str, UUID]]:
+    def _fetch_icon_svgs(self, icon_uris: dict[UUID, AdditionalSetData]) -> list[tuple[str | None, bytes, str, UUID]]:
         """
         Fetches the given SVG icons. Note: The returned tuples have the set_scryfall_id at the end, because that's the
         item order expected by the database UPDATE query.
         :param icon_uris: Mapping from set_scryfall_id to the SVG uri
-        :returns: list with tuples [SVG source code, file name, set_scryfall_id]
+        :returns: list with tuples [optional parent set code, SVG source code, file name, set_scryfall_id]
         """
-        result: list[tuple[bytes, str, UUID]] = []
-        for set_scryfall_id, uri in icon_uris.items():
+        result: list[tuple[str | None, bytes, str, UUID]] = []
+        for set_scryfall_id, data in icon_uris.items():
             if not self.should_run: return result
-            svg = self.read_from_url(uri,)[0].read()
-            filename = self._extract_file_name(uri)
-            result.append((svg, filename, set_scryfall_id))
+            svg = self._read_svg(data.svg_icon_uri)
+            result.append((data.parent_set_code, svg, data.file_name, set_scryfall_id))
             self.advance_progress.emit()
         return result
 
@@ -434,6 +443,10 @@ class SetIconImportTask(DownloaderBase):
             logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
             self._db = open_database(self.carddb_path, SCHEMA_NAME)
         return self._db
+
+    def _read_svg(self, uri: str) -> bytes:
+        svg = self.read_from_url(uri,)[0].read()
+        return svg
 
     def _read_optional_scalar_from_db(self, query: LiteralString, parameters: Sequence[Any] = ()):
         """
@@ -634,7 +647,7 @@ class DatabaseImportTask(AsyncTask):
             self.db, force_update_hidden_column=True)
         updater.advance_progress.connect(self.advance_progress)
         updater.store_current_printing_filters()  # Don't call run() to not deadlock via the db semaphore
-        self._subtask = updater = SetIconImportTask(db, self.carddb_path)
+        self._subtask = updater = SetDataImportTask(db, self.carddb_path)
         updater.error_occurred.connect(updater.cancel)
         self.request_register_subtask.emit(updater)
         if self.should_run:

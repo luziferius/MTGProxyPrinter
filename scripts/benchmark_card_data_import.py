@@ -30,10 +30,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.async_tasks.card_info_downloader
-from mtg_proxy_printer.async_tasks.card_info_downloader import DatabaseImportTask, FileStreamTask, SetIconImportTask
+from mtg_proxy_printer.async_tasks.card_info_downloader import DatabaseImportTask, FileStreamTask, SetDataImportTask
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.async_tasks.base import AsyncTaskRunner
-SetIconImportTask.run = MagicMock()
+SetDataImportTask.run = MagicMock()
 
 @dataclasses.dataclass()
 class Namespace:

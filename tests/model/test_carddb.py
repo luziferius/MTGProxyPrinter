@@ -960,3 +960,29 @@ def test_get_available_collector_numbers_for_card_in_set(
 
     fulfills_matcher = all_of(has_length(len(expected)), contains_exactly(*expected)) if expected else empty()
     assert_that(card_db.get_available_collector_numbers_for_card_in_set(card), fulfills_matcher)
+
+
+dt_from_iso = datetime.datetime.fromisoformat
+
+
+@pytest.mark.parametrize("jsons, expected", (
+    # Empty database works
+    ([], []),
+    # No duplicates
+    (["Asmoranomardicadaistinaculdacar", "Asmoranomardicadaistinaculdacar_2"],
+     [MTGSet("mh2", "Modern Horizons 2", dt_from_iso("2021-06-18"), False, 0, None, None)]),
+    # A major set, together with its token set. The card_db parametrized with PRAGMA reverse_unordered_selects = on/off
+    # validates that arbitrary orders result in stable and expected output.
+    (["Flowerfoot_Swordmaster_card", "Flowerfoot_Swordmaster_token"],
+     [MTGSet("blb", "Bloomburrow", dt_from_iso("2024-08-02"), False, 0, None, None), MTGSet("tblb", "Bloomburrow Tokens", dt_from_iso("2024-08-02"), False, 0, "blb", None)]),
+))
+def test_get_all_sets(card_db: CardDatabase, jsons: list[str], expected: list[MTGSet]):
+    # Note: The SVG set symbol data is not present in test databases, thus comparing against None is valid.
+    fill_card_database_with_json_cards(card_db, jsons)
+    result = list(card_db.get_all_sets())
+    expected_sets = list(map(is_dataclass_equal_to, expected))
+    assert_that(
+        result,
+        contains_exactly(*expected_sets),
+        f"Wrong result: {result}"
+    )

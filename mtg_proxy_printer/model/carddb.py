@@ -970,3 +970,19 @@ class CardDatabase(QObject):
         return defaultdict(lambda: None, self.db.execute(
             "SELECT filter_name, printing_preference_weight FROM PrintingFilters -- get_printing_filter_weights()\n"
         ))
+
+    def get_all_sets(self) -> starmap[MTGSet]:
+        """
+        Returns all sets in the database with full details.
+        Sets returned also contain the release date, set_filter_active flag, preference weight,
+        and parent set code, if present.
+        """
+        query_result = self.db.execute(cached_dedent("""\
+            SELECT -- get_all_sets()
+                set_code, set_name, release_date, set_filter_active,
+                set_preference_weight, parent_set_code, icon_svg
+              FROM MTGSet
+              ORDER BY release_date DESC, (parent_set_code IS NOT NULL) ASC
+              """
+        ))
+        return starmap(MTGSet, query_result)

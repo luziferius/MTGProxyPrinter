@@ -912,6 +912,9 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
     35: MigrationScript([
         "ALTER TABLE MTGSet ADD COLUMN set_preference_weight      INTEGER           NOT NULL DEFAULT 0",
         "ALTER TABLE MTGSet ADD COLUMN parent_set_code            TEXT                       CHECK (parent_set_code <> '')",
+        # To populate the parent_set_code column, all rows need to be updated. This is triggered by force-clearing the
+        # icon_file_name column.
+        "UPDATE MTGSet SET (icon_file_name, icon_svg) = ('', NULL)",
         dedent("""\
         CREATE TRIGGER "Update Printing.preference_score on MTGSet.set_preference_weight update"
           AFTER UPDATE OF set_preference_weight ON MTGSet
