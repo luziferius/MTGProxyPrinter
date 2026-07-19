@@ -35,7 +35,8 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.units_and_sizes import UUID
 
 from ..helpers import assert_model_is_empty, fill_card_database_with_json_card, IsDataclass, \
-    fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation, update_database_printing_filters
+    fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation, \
+    update_database_printing_filters, set_icon_svg_for_mtg_set
 from ..test_card_info_downloader import TestCaseData
 
 
@@ -86,6 +87,21 @@ def test_find_sets_matching(
     ])
     found_set_codes = [set_.code for set_ in card_db.find_sets_matching(card_name, language)]
     assert_that(found_set_codes, contains_inanyorder(*expected_codes))
+
+
+def test_find_sets_matching_reads_icon_svg(card_db: CardDatabase):
+    fill_card_database_with_json_card(card_db, "english_basic_Forest")
+    mock_svg = b" " * 101
+    set_icon_svg_for_mtg_set(card_db, "anb", mock_svg)
+    found_sets = card_db.find_sets_matching("Forest", "en")
+    expected_set = MTGSet("anb", "Arena Beginner Set", svg_icon=mock_svg)
+    assert_that(
+        found_sets,
+        contains_exactly(
+            is_dataclass_equal_to(expected_set)
+        )
+    )
+
 
 
 @pytest.mark.parametrize("language, expected_names", [

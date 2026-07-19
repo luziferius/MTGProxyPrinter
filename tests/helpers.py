@@ -167,6 +167,12 @@ def fill_card_database_with_json_card(
     return fill_card_database_with_json_cards(card_db, [json_file_or_name], filter_settings)
 
 
+def set_icon_svg_for_mtg_set(
+        card_db: mtg_proxy_printer.model.carddb.CardDatabase,
+        set_code: str, icon_svg: bytes):
+    card_db.db.execute("UPDATE MTGSet SET icon_svg = ? WHERE set_code = ?", (icon_svg, set_code))
+
+
 def create_save_database_with(
         path_or_connection: Path | Literal[":memory:"] | sqlite3.Connection,
         pages: list[tuple[int, CardSize]],

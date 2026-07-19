@@ -506,7 +506,11 @@ class CardDatabase(QObject):
         ''')
         parameters: ParameterList = [language, card_name, is_front]
         query += '    ORDER BY set_name ASC\n'
-        return list(starmap(MTGSet, self.db.execute(query, parameters)))
+        result = [
+            MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"])
+            for row in self.db.execute(query, parameters)
+        ]
+        return result
 
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         """
