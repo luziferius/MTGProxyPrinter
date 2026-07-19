@@ -900,7 +900,7 @@ def _get_card_filter_data(card: CardDataType, active_filters: list[str]):
     active_filters.clear()
     is_active = active_filters.append
     # Racism filter
-    if card.get("content_warning", False): is_active("hide-cards-depicting-racism")
+    if card.get("content_warning"): is_active("hide-cards-depicting-racism")
     # Cards with placeholder images (low-res image with "not available in your language" overlay)
     if image_status == "placeholder": is_active("hide-cards-without-images")
     if image_status == "lowres": is_active("hide-low-resolution-cards")
@@ -921,7 +921,7 @@ def _get_card_filter_data(card: CardDataType, active_filters: list[str]):
     if card["digital"]: is_active("hide-digital-cards")
     if card["layout"] == "art_series": is_active("hide-art-series-cards")
     if "universesbeyond" in card.get("promo_types", ()): is_active("hide-universes-beyond-cards")
-    # Specific format legality. Use .get() with a default instead of [] to not fail
+    # Specific format legality. Use .get() instead of [] to not fail
     # if Scryfall removes one of the listed formats in the future.
     if legalities.get("brawl") == "banned": is_active("hide-banned-in-brawl")
     if legalities.get("commander") == "banned": is_active("hide-banned-in-commander")
