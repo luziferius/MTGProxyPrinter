@@ -65,33 +65,16 @@ class SetContainer:
     """Tree item stored in the MTGSetTreeModel."""
     set: MTGSet
     scryfall_query: QUrl
-    # Backup copy of the original values as stored in the database.
-    # Used for resets and highlighting differing settings
-    original_is_hidden: bool = dataclasses.field(init=False)
-    original_preference_weight: int = dataclasses.field(init=False)
+    # The editable columns. MTGSet is frozen
+    is_hidden: bool = dataclasses.field(init=False)
+    preference_weight: int = dataclasses.field(init=False)
     # Tree structure
     children: list["SetContainer"] = dataclasses.field(default_factory=list)
     parent: typing.Optional["SetContainer"] = None
 
     def __post_init__(self):
-        self.original_is_hidden = self.set.is_hidden
-        self.original_preference_weight = self.set.preference_weight
-
-    def data(self, column: ModelColumns, role: ItemDataRole):
-        if column == ModelColumns.name:
-            return self.set.data(role)
-        elif column == ModelColumns.is_hidden:
-            if role == CheckStateRole:
-                return CheckState.Checked if self.set.is_hidden else CheckState.Unchecked
-            elif role == DisplayRole:
-                return "Hidden" if self.set.is_hidden else "Visible"  # TODO: Translation support
-        elif column == ModelColumns.preference_weights and role in {DisplayRole, EditRole}:
-            return self.set.preference_weight
-        elif column == ModelColumns.release_date and role == DisplayRole:
-            return self.set.release_date  # TODO: Does that need locale-aware formatting?
-        elif column == ModelColumns.scryfall_query and role == ScryfallQueryRole:
-            return self.scryfall_query
-        return None
+        self.editable_is_hidden = self.set.is_hidden
+        self.editable_preference_weight = self.set.preference_weight
 
 
 class SetTreeIndex(QModelIndex):
@@ -124,8 +107,17 @@ class MTGSetTreeModel(QAbstractItemModel):
             ModelColumns.scryfall_query: "",
         }
         self.set_data: list[SetContainer] = []
+        self._hiding_includes_children = False
 
-    def headerData(self, section: int, orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) \
+    @property
+    def hiding_includes_children(self) -> bool:
+        return self._hiding_includes_children
+
+    @hiding_includes_children.setter
+    def hiding_includes_children(self, value: bool):
+        self._hiding_includes_children = value
+
+    def headerData(self, section: int, orientation: Orientation, role: ItemDataRole = DisplayRole) \
             -> str | None:
         if role == ItemDataRole.DisplayRole and orientation == Orientation.Horizontal:
             # Returns None for unknown columns
@@ -168,15 +160,31 @@ class MTGSetTreeModel(QAbstractItemModel):
         if isinstance(role_data_span, QModelRoleDataSpan):
             for role_data in role_data_span:  # type: QModelRoleData  # noqa
                 role = ItemDataRole(role_data.role())
-                data = item.data(column, role)
+                data = self._data(item, column, role)
                 role_data.setData(data)
         else:
             role = ItemDataRole(role_data_span.role())
-            data = item.data(column, role)
+            data = self._data(item, column, role)
             role_data_span.setData(data)
 
-    def data(self, index: SetTreeIndex, /, role: ItemDataRole = ItemDataRole.DisplayRole):
-        return index.internalPointer().data(ModelColumns(index.column()), role)
+    def data(self, index: SetTreeIndex, /, role: ItemDataRole = DisplayRole):
+        return self._data(index.internalPointer(), ModelColumns(index.column()), role)
+
+    def _data(self, container: SetContainer, column: ModelColumns, role: ItemDataRole):
+        if column == ModelColumns.name:
+            return container.set.data(role)
+        elif column == ModelColumns.is_hidden:
+            if role == CheckStateRole:
+                return CheckState.Checked if container.is_hidden else CheckState.Unchecked
+            elif role == DisplayRole:
+                return "Hidden" if container.is_hidden else "Visible"  # TODO: Translation support
+        elif column == ModelColumns.preference_weights and role in {DisplayRole, EditRole}:
+            return container.preference_weight
+        elif column == ModelColumns.release_date and role == DisplayRole:
+            return container.set.release_date  # TODO: Does that need locale-aware formatting?
+        elif column == ModelColumns.scryfall_query and role == ScryfallQueryRole:
+            return container.scryfall_query
+        return None
 
     def flags(self, index: SetTreeIndex) -> ItemFlag:
         parent = index.internalPointer().parent
@@ -195,6 +203,21 @@ class MTGSetTreeModel(QAbstractItemModel):
                 return ChildPreferenceWeightsFlags
             else:
                 return ChildStaticDataFlags
+
+    def setData(self, index: SetTreeIndex, value: CheckState | int, /, role: ItemDataRole = EditRole) -> bool:
+        item = index.internalPointer()
+        column = ModelColumns(index.column())
+        if column == ModelColumns.is_hidden and role == CheckStateRole:
+            assert isinstance(value, CheckState)
+            item.is_hidden = value == CheckState.Checked
+            self.dataChanged.emit(index, index, [DisplayRole])
+            return True
+        elif column == ModelColumns.preference_weights and role == EditRole:
+            assert isinstance(value, int)
+            item.preference_weight = value
+            self.dataChanged.emit(index, index, [DisplayRole])
+            return True
+        return False
 
     def populate_from_card_db(self):
         set_data = CardDatabase.main_instance.get_all_sets()
