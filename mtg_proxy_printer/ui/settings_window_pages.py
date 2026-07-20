@@ -491,17 +491,17 @@ class PrintingPreferencesPage(Page):
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.model = PrintingFilterModel(self)
+        self.printing_filter_model = PrintingFilterModel(self)
         self.ui = ui = Ui_PrintingPreferencesPage()
         ui.setupUi(self)
         self.card_db = None
-        ui.printing_filter_view.setModel(self.model)
+        ui.printing_filter_view.setModel(self.printing_filter_model)
         header = ui.printing_filter_view.horizontalHeader()
         for column in range(len(ModelColumns)-1):
             header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
         header.resizeSection(ModelColumns.scryfall_query, 32)
-        for row in range(self.model.rowCount()):
-            index = self.model.index(row, ModelColumns.name)
+        for row in range(self.printing_filter_model.rowCount()):
+            index = self.printing_filter_model.index(row, ModelColumns.name)
             if index.data(IsHeaderRole):
                 ui.printing_filter_view.setSpan(row, ModelColumns.name, 1, 4)
             if query := index.siblingAtColumn(ModelColumns.scryfall_query).data(ScryfallQueryRole):
@@ -529,27 +529,27 @@ class PrintingPreferencesPage(Page):
         ui = self.ui
         section = settings["card-filter"]
         ui.set_filter_settings.setPlainText(section["hidden-sets"])
-        self.model.load_settings(settings)
+        self.printing_filter_model.load_settings(settings)
 
     def save(self):
         section = mtg_proxy_printer.settings.settings["card-filter"]
         ui = self.ui
-        self.model.save_settings(mtg_proxy_printer.settings.settings)
+        self.printing_filter_model.save_settings(mtg_proxy_printer.settings.settings)
         section["hidden-sets"] = ui.set_filter_settings.toPlainText()
-        preference_weights = self.model.get_new_preference_weights()
+        preference_weights = self.printing_filter_model.get_new_preference_weights()
         self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
         self.request_run_async_task.emit(PrintingPreferenceUpdater(self.card_db, preference_weights, set()))
 
     def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]
         ui = self.ui
-        self.model.highlight_differing_settings(settings)
+        self.printing_filter_model.highlight_differing_settings(settings)
         if section["hidden-sets"] != ui.set_filter_settings.toPlainText():
             highlight_widget(ui.set_filter_settings)
 
     def clear_highlight(self):
         super().clear_highlight()
-        self.model.clear_highlight()
+        self.printing_filter_model.clear_highlight()
 
 
 class DefaultDocumentLayoutSettingsPage(Page, PageConfigContainer):
@@ -655,9 +655,9 @@ class ExportSettingsPage(Page):
     def load(self, settings: ConfigParser):
         ui = self.ui
         section = settings["export"]
-        ui.pdf_page_count_limit.setValue(section.getint("pdf-page-count-limit"))
+        ui.pdf_page_count_limit.setValue(section.getint("pdf-page-count-limit") or 0)
         ui.export_path.setText(section["export-path"])
-        ui.landscape_workaround.setChecked(section.getboolean("landscape-compatibility-workaround"))
+        ui.landscape_workaround.setChecked(section.getboolean("landscape-compatibility-workaround") or False)
         self._set_png_background_color_display(QColor(section["png-background-color"]))
 
     def save(self):

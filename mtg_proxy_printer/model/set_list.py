@@ -22,6 +22,7 @@ from PySide6.QtCore import Qt, QModelIndex, QAbstractItemModel, QObject, QModelR
 
 from mtg_proxy_printer.model.card import MTGSet
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.model.carddb import CardDatabase
 
 logger = get_logger(__name__)
 del get_logger
@@ -63,8 +64,6 @@ class ModelColumns(enum.IntEnum):
 class SetContainer:
     """Tree item stored in the MTGSetTreeModel."""
     set: MTGSet
-    is_hidden: bool
-    preference_weight: int
     scryfall_query: QUrl
     # Backup copy of the original values as stored in the database.
     # Used for resets and highlighting differing settings
@@ -75,21 +74,21 @@ class SetContainer:
     parent: typing.Optional["SetContainer"] = None
 
     def __post_init__(self):
-        self.original_is_hidden = self.is_hidden
-        self.original_preference_weight = self.preference_weight
+        self.original_is_hidden = self.set.is_hidden
+        self.original_preference_weight = self.set.preference_weight
 
     def data(self, column: ModelColumns, role: ItemDataRole):
         if column == ModelColumns.name:
             return self.set.data(role)
         elif column == ModelColumns.is_hidden:
             if role == CheckStateRole:
-                return CheckState.Checked if self.is_hidden else CheckState.Unchecked
+                return CheckState.Checked if self.set.is_hidden else CheckState.Unchecked
             elif role == DisplayRole:
-                return "Hidden" if self.is_hidden else "Visible"  # TODO: Translation support
+                return "Hidden" if self.set.is_hidden else "Visible"  # TODO: Translation support
         elif column == ModelColumns.preference_weights and role in {DisplayRole, EditRole}:
-            return self.preference_weight
-        elif column == ModelColumns.release_date:
-            return None  # TODO
+            return self.set.preference_weight
+        elif column == ModelColumns.release_date and role == DisplayRole:
+            return self.set.release_date  # TODO: Does that need locale-aware formatting?
         elif column == ModelColumns.scryfall_query and role == ScryfallQueryRole:
             return self.scryfall_query
         return None
@@ -196,3 +195,16 @@ class MTGSetTreeModel(QAbstractItemModel):
                 return ChildPreferenceWeightsFlags
             else:
                 return ChildStaticDataFlags
+
+    def populate_from_card_db(self):
+        set_data = CardDatabase.main_instance.get_all_sets()
+        registry: dict[str, SetContainer] = {}
+        for mtg_set in set_data:
+            if mtg_set.parent_set_code is None:
+                registry[mtg_set.code] = SetContainer(mtg_set, QUrl())
+            else:
+                parent = registry[mtg_set.parent_set_code]
+                parent.children.append(SetContainer(mtg_set, QUrl(), parent=parent))
+        self.beginResetModel()
+        self.set_data[:] = registry.values()
+        self.endResetModel()

@@ -84,7 +84,7 @@ class MTGSet:
     name: str
     release_date: date = date.today()
     is_hidden: bool = False
-    preference_score: int = 0
+    preference_weight: int = 0
     parent_set_code: str | None = None
     svg_icon: bytes | None = None
 
