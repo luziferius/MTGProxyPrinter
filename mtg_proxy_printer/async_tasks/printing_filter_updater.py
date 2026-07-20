@@ -140,6 +140,9 @@ class PrintingFilterUpdater(AsyncTask):
             if self.should_abort:
                 return False
         self.advance_progress.emit()
+        # TODO: Evaluate, If returning early is possible when _update_set_code_filters_in_db returns False.
+        #  _update_cached_data() takes a whole second to evaluate and runs each application start,
+        #  so check if it can be skipped.
         update_ui |= self._update_set_code_filters_in_db()
         if self.should_abort:
             return False
