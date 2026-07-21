@@ -23,6 +23,7 @@ from PySide6.QtCore import Qt, QModelIndex, QAbstractItemModel, QObject, QModelR
 from mtg_proxy_printer.model.card import MTGSet
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.units_and_sizes import ConfigParser
 
 logger = get_logger(__name__)
 del get_logger
@@ -41,14 +42,11 @@ ScryfallQueryRole = ItemDataRole(UserRole.value + 1)
 
 # The flag values
 ItemFlag = Qt.ItemFlag
-ParentStaticDataFlags = ItemFlag.ItemIsEnabled
-ChildStaticDataFlags = ParentStaticDataFlags | ItemFlag.ItemNeverHasChildren  # noqa
-
-ParentIsHiddenFlags =  ItemFlag.ItemIsEnabled | ItemFlag.ItemIsUserCheckable  # noqa
-ChildIsHiddenFlags = ParentIsHiddenFlags | ItemFlag.ItemNeverHasChildren  # noqa
-
-ParentPreferenceWeightsFlags = ItemFlag.ItemIsEnabled | ItemFlag.ItemIsEditable  # noqa
-ChildPreferenceWeightsFlags = ParentPreferenceWeightsFlags | ItemFlag.ItemNeverHasChildren  # noqa
+# Only the first column can have children and be tree nodes. Everything else is a leaf without children
+NodeDataFlags  = ItemFlag.ItemIsEnabled
+LeafDataFlags = NodeDataFlags | ItemFlag.ItemNeverHasChildren  # noqa
+IsHiddenFlags =  LeafDataFlags | ItemFlag.ItemIsUserCheckable  # noqa
+PreferenceWeightsFlags = LeafDataFlags | ItemFlag.ItemIsEditable  # noqa
 
 
 @enum.verify(enum.CONTINUOUS, enum.UNIQUE)
@@ -73,8 +71,8 @@ class SetContainer:
     parent: typing.Optional["SetContainer"] = None
 
     def __post_init__(self):
-        self.editable_is_hidden = self.set.is_hidden
-        self.editable_preference_weight = self.set.preference_weight
+        self.is_hidden = self.set.is_hidden
+        self.preference_weight = self.set.preference_weight
 
 
 class SetTreeIndex(QModelIndex):
@@ -135,6 +133,8 @@ class MTGSetTreeModel(QAbstractItemModel):
                 return len(self.set_data)
 
     def parent(self, child: SetTreeIndex) -> SetTreeIndex:  # noqa
+        if not child.isValid():
+            return INVALID_INDEX
         match child.internalPointer():
             case SetContainer(parent=None):
                 return INVALID_INDEX
@@ -147,9 +147,12 @@ class MTGSetTreeModel(QAbstractItemModel):
                 raise RuntimeError("Invalid child index!")
 
     def index(self, row: int, column: ModelColumns, /, parent: SetTreeIndex = INVALID_INDEX) -> SetTreeIndex:
-        if parent.isValid():
+        parent_valid = parent.isValid()
+        if parent_valid and column == ModelColumns.name:
             parent_set = parent.internalPointer()
             index_set = parent_set.children[row]
+        elif parent_valid:
+            return INVALID_INDEX
         else:
             index_set = self.set_data[row]
         return self.createIndex(row, column, index_set)
@@ -187,22 +190,17 @@ class MTGSetTreeModel(QAbstractItemModel):
         return None
 
     def flags(self, index: SetTreeIndex) -> ItemFlag:
-        parent = index.internalPointer().parent
+        item = index.internalPointer()
+        has_children = bool(item.children)
         column = ModelColumns(index.column())
-        if parent is None:
-            if column == ModelColumns.is_hidden:
-                return ParentIsHiddenFlags
-            elif column == ModelColumns.preference_weights:
-                return ParentPreferenceWeightsFlags
-            else:
-                return ParentStaticDataFlags
+        if column == ModelColumns.name and has_children:
+            return NodeDataFlags
+        elif column == ModelColumns.is_hidden:
+            return IsHiddenFlags
+        elif column == ModelColumns.preference_weights:
+            return PreferenceWeightsFlags
         else:
-            if column == ModelColumns.is_hidden:
-                return ChildIsHiddenFlags
-            elif column == ModelColumns.preference_weights:
-                return ChildPreferenceWeightsFlags
-            else:
-                return ChildStaticDataFlags
+            return LeafDataFlags
 
     def setData(self, index: SetTreeIndex, value: CheckState | int, /, role: ItemDataRole = EditRole) -> bool:
         item = index.internalPointer()
@@ -223,11 +221,18 @@ class MTGSetTreeModel(QAbstractItemModel):
         set_data = CardDatabase.main_instance.get_all_sets()
         registry: dict[str, SetContainer] = {}
         for mtg_set in set_data:
-            if mtg_set.parent_set_code is None:
-                registry[mtg_set.code] = SetContainer(mtg_set, QUrl())
-            else:
+            registry[mtg_set.code] = container = SetContainer(mtg_set, QUrl())
+            if mtg_set.parent_set_code is not None:
                 parent = registry[mtg_set.parent_set_code]
-                parent.children.append(SetContainer(mtg_set, QUrl(), parent=parent))
+                container.parent = parent
+                parent.children.append(container)
         self.beginResetModel()
-        self.set_data[:] = registry.values()
+        self.set_data[:] = (item for item in registry.values() if item.parent is None)
         self.endResetModel()
+
+    def highlight_differing_settings(self, settings: ConfigParser):
+        #TODO
+        pass
+
+    def clear_highlight(self):
+        pass
