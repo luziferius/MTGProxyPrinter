@@ -531,6 +531,7 @@ class PrintingPreferencesPage(Page):
     def load(self, settings: ConfigParser):
         ui = self.ui
         self.set_filter_model.populate_from_card_db()
+        ui.set_filter_view.resizeColumnToContents(0)
         self.printing_filter_model.load_settings(settings)
 
     def save(self):

@@ -15,6 +15,7 @@
 
 import dataclasses
 import enum
+from datetime import date
 from typing import Callable
 import typing
 
@@ -98,10 +99,10 @@ class MTGSetTreeModel(QAbstractItemModel):
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self.header = {
-            ModelColumns.name: self.tr("Set", "Table column header"),
-            ModelColumns.is_hidden: self.tr("Hidden?", "Table column header"),
-            ModelColumns.preference_weights: self.tr("", "Table column header"),
-            ModelColumns.release_date: self.tr("Released", "Table column header"),
+            ModelColumns.name: f'  {self.tr("Set", "Set filter table header")}  ',
+            ModelColumns.is_hidden: f'  {self.tr("Completely hide matching cards", "Set filter table header")}  ',
+            ModelColumns.preference_weights: f'  {self.tr("Set preference", "Set filter table header")}  ',
+            ModelColumns.release_date: f'  {self.tr("Release date", "Set filter table header")}  ',
             ModelColumns.scryfall_query: "",
         }
         self.set_data: list[SetContainer] = []
@@ -186,7 +187,7 @@ class MTGSetTreeModel(QAbstractItemModel):
         elif column == ModelColumns.preference_weights and role in {DisplayRole, EditRole}:
             return container.preference_weight
         elif column == ModelColumns.release_date and role == DisplayRole:
-            return container.set.release_date  # TODO: Does that need locale-aware formatting?
+            return container.set.release_date.isoformat().split("T")[0]  # TODO: Does that need locale-aware formatting?
         elif column == ModelColumns.scryfall_query and role == ScryfallQueryRole:
             return container.scryfall_query
         return None
@@ -208,12 +209,11 @@ class MTGSetTreeModel(QAbstractItemModel):
         item = index.internalPointer()
         column = ModelColumns(index.column())
         if column == ModelColumns.is_hidden and role == CheckStateRole:
-            assert isinstance(value, CheckState)
-            item.is_hidden = value == CheckState.Checked
+            item.is_hidden = CheckState(value) == CheckState.Checked
             self.dataChanged.emit(index, index, [DisplayRole])
             return True
         elif column == ModelColumns.preference_weights and role == EditRole:
-            assert isinstance(value, int)
+            assert isinstance(value, int), f"{type(value)=}"
             item.preference_weight = value
             self.dataChanged.emit(index, index, [DisplayRole])
             return True
