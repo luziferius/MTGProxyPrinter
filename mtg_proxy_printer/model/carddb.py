@@ -977,16 +977,27 @@ class CardDatabase(QObject):
 
     def get_all_sets(self) -> starmap[MTGSet]:
         """
-        Returns all sets in the database with full details.
+        Returns all sets in the database with full details ordered by parent/child relation and release date.
+        It guarantees that each parent set is listed before its children.
+
         Sets returned also contain the release date, set_filter_active flag, preference weight,
         and parent set code, if present.
         """
         query_result = self.db.execute(cached_dedent("""\
-            SELECT -- get_all_sets()
-                set_code, set_name, release_date, set_filter_active,
+              WITH RECURSIVE MTGSetTree AS ( -- get_all_sets()
+                  SELECT 1 AS level, MTGSet.*
+                  FROM MTGSet
+                  WHERE parent_set_code IS NULL
+                UNION ALL
+                  SELECT level+1 AS level, MTGSet.*
+                  FROM MTGSet
+                  INNER JOIN MTGSetTree
+                  WHERE MTGSet.parent_set_code = MTGSetTree.set_code
+                )
+                SELECT set_code, set_name, release_date, set_filter_active,
                 set_preference_weight, parent_set_code, icon_svg
-              FROM MTGSet
-              ORDER BY release_date DESC, (parent_set_code IS NOT NULL) ASC
+                  FROM MTGSetTree
+                  ORDER BY level ASC, release_date ASC;
               """
         ))
         return starmap(MTGSet, query_result)
