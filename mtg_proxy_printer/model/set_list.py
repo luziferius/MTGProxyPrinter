@@ -180,7 +180,9 @@ class MTGSetTreeModel(QAbstractItemModel):
             if role == CheckStateRole:
                 return CheckState.Checked if container.is_hidden else CheckState.Unchecked
             elif role == DisplayRole:
-                return "Hidden" if container.is_hidden else "Visible"  # TODO: Translation support
+                return self.tr("Hidden", "Set filter column display text") \
+                    if container.is_hidden\
+                    else self.tr("Visible", "Set filter column display text")
         elif column == ModelColumns.preference_weights and role in {DisplayRole, EditRole}:
             return container.preference_weight
         elif column == ModelColumns.release_date and role == DisplayRole:
