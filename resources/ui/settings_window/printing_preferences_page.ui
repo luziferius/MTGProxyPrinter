@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>332</width>
-    <height>462</height>
+    <width>1058</width>
+    <height>401</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -28,12 +28,6 @@ A higher weight for a filter means a stronger preference for it. Negative weight
    </item>
    <item>
     <widget class="QTableView" name="printing_filter_view">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>0</horstretch>
-       <verstretch>10</verstretch>
-      </sizepolicy>
-     </property>
      <attribute name="verticalHeaderVisible">
       <bool>false</bool>
      </attribute>
@@ -42,7 +36,7 @@ A higher weight for a filter means a stronger preference for it. Negative weight
    <item>
     <widget class="QLabel" name="set_filter_label">
      <property name="text">
-      <string>Hide specific sets: Add set codes as listed on Scryfall, for example LEA or 2X2. Separate multiple entries with spaces or line breaks. All words not matching an exact set code are ignored.</string>
+      <string>Set preference weights for or completely hide individual Magic sets.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -50,25 +44,7 @@ A higher weight for a filter means a stronger preference for it. Negative weight
     </widget>
    </item>
    <item>
-    <widget class="QPlainTextEdit" name="set_filter_settings">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>0</horstretch>
-       <verstretch>3</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>Example:
-
-LEA DDU TC13 J21</string>
-     </property>
-     <property name="inputMethodHints">
-      <set>Qt::InputMethodHint::ImhLatinOnly|Qt::InputMethodHint::ImhMultiLine|Qt::InputMethodHint::ImhNoAutoUppercase|Qt::InputMethodHint::ImhNoPredictiveText</set>
-     </property>
-     <property name="placeholderText">
-      <string>No sets currently hidden.</string>
-     </property>
-    </widget>
+    <widget class="QTreeView" name="set_filter_view"/>
    </item>
   </layout>
  </widget>
