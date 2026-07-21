@@ -34,6 +34,7 @@ from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel, ScryfallQueryRole, ModelColumns, \
     IsHeaderRole
+from mtg_proxy_printer.model.set_list import MTGSetTreeModel
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
@@ -492,10 +493,12 @@ class PrintingPreferencesPage(Page):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.printing_filter_model = PrintingFilterModel(self)
+        self.set_filter_model = MTGSetTreeModel(self)
         self.ui = ui = Ui_PrintingPreferencesPage()
         ui.setupUi(self)
         self.card_db = None
         ui.printing_filter_view.setModel(self.printing_filter_model)
+        ui.set_filter_view.setModel(self.set_filter_model)
         header = ui.printing_filter_view.horizontalHeader()
         for column in range(len(ModelColumns)-1):
             header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
@@ -527,15 +530,14 @@ class PrintingPreferencesPage(Page):
 
     def load(self, settings: ConfigParser):
         ui = self.ui
-        section = settings["card-filter"]
-        ui.set_filter_settings.setPlainText(section["hidden-sets"])
+        self.set_filter_model.populate_from_card_db()
         self.printing_filter_model.load_settings(settings)
 
     def save(self):
         section = mtg_proxy_printer.settings.settings["card-filter"]
         ui = self.ui
         self.printing_filter_model.save_settings(mtg_proxy_printer.settings.settings)
-        section["hidden-sets"] = ui.set_filter_settings.toPlainText()
+        # TODO: Save set preference weights
         preference_weights = self.printing_filter_model.get_new_preference_weights()
         self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
         self.request_run_async_task.emit(PrintingPreferenceUpdater(self.card_db, preference_weights, set()))
@@ -544,12 +546,12 @@ class PrintingPreferencesPage(Page):
         section = settings["card-filter"]
         ui = self.ui
         self.printing_filter_model.highlight_differing_settings(settings)
-        if section["hidden-sets"] != ui.set_filter_settings.toPlainText():
-            highlight_widget(ui.set_filter_settings)
+        self.set_filter_model.highlight_differing_settings(settings)
 
     def clear_highlight(self):
         super().clear_highlight()
         self.printing_filter_model.clear_highlight()
+        self.set_filter_model.clear_highlight()
 
 
 class DefaultDocumentLayoutSettingsPage(Page, PageConfigContainer):

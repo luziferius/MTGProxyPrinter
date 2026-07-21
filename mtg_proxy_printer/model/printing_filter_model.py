@@ -17,7 +17,7 @@ from collections import defaultdict
 import dataclasses
 import enum
 
-from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication
 
@@ -149,7 +149,7 @@ class PrintingFilterModel(QAbstractTableModel):
     The settings key used to persist the value is stored via the SettingsKeyRole.
     The Scryfall query showing the affected printings is stored via the ScryfallQueryRole.
     """
-    def __init__(self, parent=None):
+    def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self.card_db = CardDatabase.main_instance
         self.items = self._create_items()
