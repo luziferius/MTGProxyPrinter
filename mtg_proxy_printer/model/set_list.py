@@ -146,14 +146,7 @@ class MTGSetTreeModel(QAbstractItemModel):
                 raise RuntimeError("Invalid child index!")
 
     def index(self, row: int, column: ModelColumns, /, parent: SetTreeIndex = INVALID_INDEX) -> SetTreeIndex:
-        parent_valid = parent.isValid()
-        if parent_valid and column == ModelColumns.name:
-            parent_set = parent.internalPointer()
-            index_set = parent_set.children[row]
-        elif parent_valid:
-            return INVALID_INDEX
-        else:
-            index_set = self.set_data[row]
+        index_set = parent.internalPointer().children[row] if parent.isValid() else self.set_data[row]
         return self.createIndex(row, column, index_set)
 
     def multiData(self, index: SetTreeIndex, role_data_span: QModelRoleDataSpan | QModelRoleData, /):
