@@ -15,7 +15,6 @@
 
 import dataclasses
 import enum
-from datetime import date
 from typing import Callable
 import typing
 
@@ -25,6 +24,7 @@ from mtg_proxy_printer.model.card import MTGSet
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.units_and_sizes import ConfigParser
+from mtg_proxy_printer.settings import DEFAULT_SETTINGS
 
 logger = get_logger(__name__)
 del get_logger
@@ -139,10 +139,8 @@ class MTGSetTreeModel(QAbstractItemModel):
         match child.internalPointer():
             case SetContainer(parent=None):
                 return INVALID_INDEX
-            case None:
-                return INVALID_INDEX
-            case SetContainer(parent=SetContainer() as parent):
-                row = parent.children.index(parent)
+            case SetContainer(parent=SetContainer() as parent) as child_container:
+                row = parent.children.index(child_container)
                 return self.createIndex(row, ModelColumns.name, parent)
             case _:
                 raise RuntimeError("Invalid child index!")
@@ -225,16 +223,19 @@ class MTGSetTreeModel(QAbstractItemModel):
         for mtg_set in set_data:
             registry[mtg_set.code] = container = SetContainer(mtg_set, QUrl())
             if mtg_set.parent_set_code is not None:
-                parent = registry[mtg_set.parent_set_code]
-                container.parent = parent
+                # Because of breadth-first set tree traversal, the registry lookup is guaranteed to never fail.
+                container.parent = parent = registry[mtg_set.parent_set_code]
                 parent.children.append(container)
         self.beginResetModel()
         self.set_data[:] = (item for item in registry.values() if item.parent is None)
         self.endResetModel()
 
     def highlight_differing_settings(self, settings: ConfigParser):
+        if settings is DEFAULT_SETTINGS:
+            pass
+        else:
+            pass
         #TODO
-        pass
 
     def clear_highlight(self):
         pass
