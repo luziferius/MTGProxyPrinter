@@ -19,6 +19,8 @@ from typing import Callable
 import typing
 
 from PySide6.QtCore import Qt, QModelIndex, QAbstractItemModel, QObject, QModelRoleDataSpan, QUrl, QModelRoleData
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QApplication
 
 from mtg_proxy_printer.model.card import MTGSet
 from mtg_proxy_printer.logger import get_logger
@@ -39,6 +41,7 @@ EditRole = ItemDataRole.EditRole
 DisplayRole = ItemDataRole.DisplayRole
 UserRole = ItemDataRole.UserRole
 CheckStateRole = ItemDataRole.CheckStateRole
+BackgroundRole = ItemDataRole.BackgroundRole
 ScryfallQueryRole = ItemDataRole(UserRole.value + 1)
 
 # The flag values
@@ -64,9 +67,11 @@ class SetContainer:
     """Tree item stored in the MTGSetTreeModel."""
     set: MTGSet
     scryfall_query: QUrl
-    # The editable columns. MTGSet is frozen
+    # The editable columns. MTGSet is frozen, so store the data in the mutable container
     is_hidden: bool = dataclasses.field(init=False)
     preference_weight: int = dataclasses.field(init=False)
+    highlight_is_hidden: QColor | None = None
+    highlight_preference_weight: QColor | None = None
     # Tree structure
     children: list["SetContainer"] = dataclasses.field(default_factory=list)
     parent: typing.Optional["SetContainer"] = None
@@ -175,8 +180,12 @@ class MTGSetTreeModel(QAbstractItemModel):
                 return self.tr("Hidden", "Set filter column display text") \
                     if container.is_hidden\
                     else self.tr("Visible", "Set filter column display text")
+            elif role == BackgroundRole:
+                return container.highlight_is_hidden
         elif column == ModelColumns.preference_weights and role in {DisplayRole, EditRole}:
             return container.preference_weight
+        elif column == ModelColumns.preference_weights and role == BackgroundRole:
+            return container.highlight_preference_weight
         elif column == ModelColumns.release_date and role == DisplayRole:
             return container.set.release_date.isoformat().split("T")[0]  # TODO: Does that need locale-aware formatting?
         elif column == ModelColumns.scryfall_query and role == ScryfallQueryRole:
@@ -224,11 +233,52 @@ class MTGSetTreeModel(QAbstractItemModel):
         self.endResetModel()
 
     def highlight_differing_settings(self, settings: ConfigParser):
+        # Determine highlighting mode by comparing the identity of the ConfigParser
         if settings is DEFAULT_SETTINGS:
-            pass
+            # Default is False for is_hidden, and zero for preference weights, so any truthy value means data changed
+            def is_hidden_changed(item_: SetContainer) -> bool:
+                return item_.is_hidden
+            def preference_weight_changed(item_: SetContainer) -> bool:
+                return bool(item_.preference_weight)
         else:
-            pass
-        #TODO
+            # When comparing against previously saved data, compare against the MTGSet from the CardDatabase
+            def is_hidden_changed(item_: SetContainer) -> bool:
+                return item_.is_hidden is not item_.set.is_hidden
+            def preference_weight_changed(item_: SetContainer) -> bool:
+                return item_.preference_weight != item_.set.preference_weight
+
+        palette = QApplication.palette()
+        highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
+        highlight_color.setAlpha(64)  # 25% opacity, same as the highlight_widget() implementation
+        queue = [self.index(row, ModelColumns.is_hidden) for row in range(self.rowCount())]
+        while queue:
+            left = right = queue.pop(0)
+            queue += (self.index(row, ModelColumns.is_hidden, left) for row in range(self.rowCount(left)))
+            item = left.internalPointer()
+            emit = False
+            if is_hidden_changed(item):
+                item.highlight_is_hidden = highlight_color
+                emit = True
+            if preference_weight_changed(item):
+                item.highlight_preference_weight = highlight_color
+                right = left.siblingAtColumn(ModelColumns.preference_weights)
+                emit = True
+            if emit:
+                self.dataChanged.emit(left, right, [BackgroundRole])
 
     def clear_highlight(self):
-        pass
+        queue = [self.index(row, ModelColumns.is_hidden) for row in range(self.rowCount())]
+        while queue:
+            left = right = queue.pop(0)
+            queue += (self.index(row, ModelColumns.is_hidden, left) for row in range(self.rowCount(left)))
+            item = left.internalPointer()
+            emit = False
+            if item.highlight_is_hidden is not None:
+                item.highlight_is_hidden = None
+                emit = True
+            if item.highlight_preference_weight is not None:
+                item.highlight_preference_weight = None
+                right = left.siblingAtColumn(ModelColumns.preference_weights)
+                emit = True
+            if emit:
+                self.dataChanged.emit(left, right, [BackgroundRole])
