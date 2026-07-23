@@ -53,7 +53,7 @@ IsHiddenFlags =  LeafDataFlags | ItemFlag.ItemIsUserCheckable  # noqa
 PreferenceWeightsFlags = LeafDataFlags | ItemFlag.ItemIsEditable  # noqa
 
 
-@enum.verify(enum.CONTINUOUS, enum.UNIQUE)
+@enum.verify(enum.EnumCheck.CONTINUOUS, enum.EnumCheck.UNIQUE)
 class ModelColumns(enum.IntEnum):
     name = 0
     is_hidden = enum.auto()

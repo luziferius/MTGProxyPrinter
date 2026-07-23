@@ -342,7 +342,7 @@ class PrintingPreferenceUpdater(AsyncTask):
             parameters = weight, name
             db.execute(cached_dedent("""\
                 UPDATE MTGSet -- update_printing_preferences()
-                  SET printing_preference_weight = ?
+                  SET set_preference_weight = ?
                   WHERE set_code = ?
                 """), parameters)
             self.advance_progress.emit()
