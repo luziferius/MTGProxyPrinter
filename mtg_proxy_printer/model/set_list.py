@@ -233,7 +233,14 @@ class MTGSetTreeModel(QAbstractItemModel):
         self.endResetModel()
 
     def get_new_preference_weights(self) -> set[tuple[str, int]]:
-        return set()
+        """Returns all updated set preference weights"""
+        result = set()
+        for index in self._get_all_indices():
+            set_container = index.internalPointer()
+            mtg_set = set_container.set
+            if set_container.preference_weight != mtg_set.preference_weight:
+                result.add((mtg_set.code, set_container.preference_weight))
+        return result
 
     def highlight_differing_settings(self, settings: ConfigParser):
         # Determine highlighting mode by comparing the identity of the ConfigParser

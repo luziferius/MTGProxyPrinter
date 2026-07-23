@@ -252,7 +252,8 @@ class PrintingPreferenceUpdater(AsyncTask):
     This is a database-writing task, thus has to operate under a database write lock.
     It may take several hundred milliseconds per changed preference weight.
     Many weights only affect a few thousand printings,
-    but some like "borderless card" or "white-bordered card" have over 20k printings that need to be updated.
+    but some like "borderless card" or "white-bordered card" have over 20k printings across all languages
+    that need to be updated.
     """
 
     def __init__(
@@ -260,8 +261,10 @@ class PrintingPreferenceUpdater(AsyncTask):
             db_connection: sqlite3.Connection | None = None, /):
         """
         :param model: CardDatabase instance to work on
-        :param new_preference_weights: The new printing preference weights to use, as a set[tuple[filter_name, weight]],
-          obtained from the PrintingFilterModel used by the settings window.
+        :param new_preference_weights: The new printing preference weights to use, as a set[tuple[filter_name, weight]].
+          Obtained from the PrintingFilterModel used by the settings window.
+        :param new_set_weights: The new set preference weights to use, as a set[tuple[filter_name, weight]].
+          Obtained from the MTGSetTreeModel used by the settings window. Already filtered to only the updated values.
         :param db_connection: Database connection to use. Only useful for testing. During normal operation, this class opens
           a separate connection by using the database filesystem path stored in the passed-in model.
           This doesn't work for in-memory databases used by unit tests.
@@ -273,7 +276,6 @@ class PrintingPreferenceUpdater(AsyncTask):
         self.new_preference_weights = new_preference_weights
         self.old_preference_weights = set(model.get_printing_filter_weights().items())
         self.new_set_weights = new_set_weights
-        self.old_set_preference_weights: WeightsType = set()  # TODO.
         self.progress = 0
         self.task_completed.connect(model.restart_transaction, QueuedConnection)
         self._db = db_connection
@@ -298,7 +300,7 @@ class PrintingPreferenceUpdater(AsyncTask):
     def run(self):
         logger.debug(f"Called {self.__class__.__name__}.run()")
         updated_filter_weights = self.new_preference_weights - self.old_preference_weights
-        updated_set_weights = self.new_set_weights - self.old_set_preference_weights
+        updated_set_weights = self.new_set_weights
         steps = len(updated_filter_weights) + len(updated_set_weights)
         db = self.db
         try:

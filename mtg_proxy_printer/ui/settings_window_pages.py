@@ -535,10 +535,7 @@ class PrintingPreferencesPage(Page):
         self.printing_filter_model.load_settings(settings)
 
     def save(self):
-        section = mtg_proxy_printer.settings.settings["card-filter"]
-        ui = self.ui
         self.printing_filter_model.save_settings(mtg_proxy_printer.settings.settings)
-        # TODO: Save set preference weights
         filter_preference_weights = self.printing_filter_model.get_new_preference_weights()
         set_preference_weights = self.set_filter_model.get_new_preference_weights()
         self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
