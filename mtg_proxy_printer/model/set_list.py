@@ -243,6 +243,10 @@ class MTGSetTreeModel(QAbstractItemModel):
         return result
 
     def highlight_differing_settings(self, settings: ConfigParser):
+        """
+        Highlight any editable cell differing from the application defaults or the last saved values.
+        Highlighting is implemented by setting cell backgrounds to the current palette's ColorRole.Highlight.
+        """
         # Determine highlighting mode by comparing the identity of the ConfigParser
         if settings is DEFAULT_SETTINGS:
             # Default is False for is_hidden, and zero for preference weights, so any truthy value means data changed
@@ -260,6 +264,8 @@ class MTGSetTreeModel(QAbstractItemModel):
         palette = QApplication.palette()
         highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
         highlight_color.setAlpha(64)  # 25% opacity, same as the highlight_widget() implementation
+        # Note: left/right: dataChanged() takes a rectangular region via top-left and bottom-right
+        # If both is_hidden and the preference weight change, the update is grouped using this mechanism.
         for left in self._get_all_indices():
             item = left.internalPointer()
             emit = False
@@ -276,6 +282,7 @@ class MTGSetTreeModel(QAbstractItemModel):
                 self.dataChanged.emit(left, right, [BackgroundRole])
 
     def clear_highlight(self):
+        """Clears any cell highlighting"""
         for left in self._get_all_indices():
             item = left.internalPointer()
             emit = False
@@ -292,6 +299,12 @@ class MTGSetTreeModel(QAbstractItemModel):
                 self.dataChanged.emit(left, right, [BackgroundRole])
 
     def _get_all_indices(self) -> typing.Generator[SetTreeIndex, None, None]:
+        """
+        Yields a SetTreeIndex for each row in the model, including children. Indices point to the
+        ModelColumns.is_hidden column.
+
+        Internally uses a queue to implement a breadth-first tree walk.
+        """
         queue = [self.index(row, ModelColumns.is_hidden) for row in range(self.rowCount())]
         while queue:
             index = queue.pop(0)

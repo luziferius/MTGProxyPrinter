@@ -173,6 +173,21 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-full-art-cards": "False",
     "hidden-sets": "",
 }
+DEFAULT_SETTINGS["printing-weights"] = {
+    "cards-without-images": "-100",
+    "oversized-cards": "-10",
+    "white-bordered": "0",
+    "gold-bordered": "-5",
+    "borderless": "0",
+    "extended-art": "0",
+    "digital-cards": "0",
+    "reversible-cards": "0",
+    "universes-beyond-cards": "0",
+    "low-resolution-cards": "-20",
+    "textless-cards": "-5",
+    "full-art-cards": "0",
+    "sets": "",
+}
 CARD_FILTER_DEFAULT_WEIGHTS: defaultdict[str, int | None] = defaultdict(lambda: None, {
     "hide-cards-without-images": -100,
     "hide-low-resolution-cards": -20,

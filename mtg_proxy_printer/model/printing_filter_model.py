@@ -378,11 +378,12 @@ class PrintingFilterModel(QAbstractTableModel):
 
     def load_settings(self, settings: ConfigParser):
         logger.debug("Loading printing filter state from settings")
-        section = settings["card-filter"]
+        filter_section = settings["card-filter"]
+        printing_weights_section = settings["preference-weights"]
         printing_weights = CARD_FILTER_DEFAULT_WEIGHTS if settings is DEFAULT_SETTINGS else self.card_db.get_printing_filter_weights()
         for row, item in enumerate(self.items):
             if item.is_hidden[CheckStateRole] is not None:
-                self.setData(self.index(row, ModelColumns.is_hidden), section.get_check_state(item._settings_key), CheckStateRole)
+                self.setData(self.index(row, ModelColumns.is_hidden), filter_section.get_check_state(item._settings_key), CheckStateRole)
             if item.preference_weights[EditRole] is not None:
                 item.preference_weights[EditRole] = item.preference_weights[DisplayRole] = printing_weights[item._settings_key]
         self.dataChanged.emit(
