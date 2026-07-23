@@ -539,13 +539,13 @@ class PrintingPreferencesPage(Page):
         ui = self.ui
         self.printing_filter_model.save_settings(mtg_proxy_printer.settings.settings)
         # TODO: Save set preference weights
-        preference_weights = self.printing_filter_model.get_new_preference_weights()
+        filter_preference_weights = self.printing_filter_model.get_new_preference_weights()
+        set_preference_weights = self.set_filter_model.get_new_preference_weights()
         self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
-        self.request_run_async_task.emit(PrintingPreferenceUpdater(self.card_db, preference_weights, set()))
+        self.request_run_async_task.emit(PrintingPreferenceUpdater(
+            self.card_db, filter_preference_weights, set_preference_weights))
 
     def highlight_differing_settings(self, settings: ConfigParser):
-        section = settings["card-filter"]
-        ui = self.ui
         self.printing_filter_model.highlight_differing_settings(settings)
         self.set_filter_model.highlight_differing_settings(settings)
 

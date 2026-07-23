@@ -232,6 +232,9 @@ class MTGSetTreeModel(QAbstractItemModel):
         self.set_data[:] = (item for item in registry.values() if item.parent is None)
         self.endResetModel()
 
+    def get_new_preference_weights(self) -> set[tuple[str, int]]:
+        return set()
+
     def highlight_differing_settings(self, settings: ConfigParser):
         # Determine highlighting mode by comparing the identity of the ConfigParser
         if settings is DEFAULT_SETTINGS:

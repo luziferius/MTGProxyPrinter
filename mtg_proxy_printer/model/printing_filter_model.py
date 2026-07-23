@@ -413,7 +413,9 @@ class PrintingFilterModel(QAbstractTableModel):
 
     def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]
-        printing_weights = CARD_FILTER_DEFAULT_WEIGHTS if settings is DEFAULT_SETTINGS else self.card_db.get_printing_filter_weights()
+        printing_weights = CARD_FILTER_DEFAULT_WEIGHTS \
+            if settings is DEFAULT_SETTINGS \
+            else self.card_db.get_printing_filter_weights()
         palette = QApplication.palette()
         highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
         highlight_color.setAlpha(64)  # 25% opacity, same as the highlight_widget() implementation
