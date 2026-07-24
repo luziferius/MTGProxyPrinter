@@ -115,16 +115,16 @@ class PrintingFilterUpdater(AsyncTask):
         db = self.db
         if self.db_connection_self_opened:
             db.execute("BEGIN IMMEDIATE TRANSACTION\n")
-        section = mtg_proxy_printer.settings.settings["card-filter"]
+        section = mtg_proxy_printer.settings.settings["printing-filter"]
         update_ui = self._remove_old_printing_filters(section)
         changed_or_new_filters = self._get_changed_or_new_filters(section)
         self.advance_progress.emit()
         if self.should_abort:
             return False
         if changed_or_new_filters:
-            # settings["preference_weights"] contains None values for items that should not have user-settable weights.
+            # settings["printing-weights"] contains None values for items that should not have user-settable weights.
             # In those cases, overwrite with numerical zero to satisfy the NOT NULL constraint.
-            get_weight = mtg_proxy_printer.settings.settings["preference_weights"].getint
+            get_weight = mtg_proxy_printer.settings.settings["printing-weights"].getint
             data = list((name, active, get_weight(name, 0)) for name, active in changed_or_new_filters.items())
             logger.info("Printing filters added or changed in the settings, update the database.")
             db.executemany(
@@ -163,7 +163,7 @@ class PrintingFilterUpdater(AsyncTask):
                 "SELECT filter_name, filter_active FROM PrintingFilters --_get_changed_or_new_filters()\n"
              )
         )
-        boolean_keys: list[str] = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
+        boolean_keys: list[str] = mtg_proxy_printer.settings.get_boolean_printing_filter_keys()
         filters_in_settings: dict[str, bool] = {key: section.getboolean(key) or False for key in boolean_keys}
         updated_filters_with_new_values = {
             key: new_filter_value

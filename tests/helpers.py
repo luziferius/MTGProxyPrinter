@@ -105,7 +105,7 @@ def setup_settings_for_testing():
         "mtg_proxy_printer.settings.write_settings_to_file() called within test code!"
     )
     mtg_proxy_printer.settings.settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings["printing-filter"]
     for setting in section.keys():
         # Turn off all card filters, so that the defaults don’t affect the test cases
         section[setting] = str(False)
@@ -115,7 +115,7 @@ def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data
     # Explicitly share the in-memory database connection
     db = card_db.db
     dit = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), db, ":memory:")
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings["printing-filter"]
     settings_to_use = update_database_printing_filters(card_db, filter_settings)
     db.row_factory = None  # TODO: Determine why patch.object() doesn't properly revert during __exit__()
     sets_list_data = read_resource_text("tests.json_samples", f"all_sets_data.json").encode("utf-8")
@@ -128,11 +128,11 @@ def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data
 
 def update_database_printing_filters(
         card_db: mtg_proxy_printer.model.carddb.CardDatabase, filter_settings: StrDict | None) -> StrDict:
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings["printing-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     if filter_settings:
         settings_to_use.update(filter_settings)
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings["printing-filter"]
     with patch.dict(section, settings_to_use):
         PrintingFilterUpdater(card_db, card_db.db, force_update_hidden_column=True).run()
     return settings_to_use

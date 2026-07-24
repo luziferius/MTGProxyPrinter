@@ -665,7 +665,7 @@ def test_is_removed_printing_with_removed_printing_returns_true(card_db: CardDat
 @pytest.mark.parametrize("filter_value", [True, False])
 def test_is_removed_printing_with_hidden_or_visible_printing_returns_false(
         card_db: CardDatabase, filter_value: bool):
-    fill_card_database_with_json_card(card_db, "oversized_card", {"hide-oversized-cards": str(filter_value)})
+    fill_card_database_with_json_card(card_db, "oversized_card", {"oversized-cards": str(filter_value)})
     assert_that(
         card_db.is_removed_printing("650722b4-d72b-4745-a1a5-00a34836282b"),
         is_(False)
@@ -698,7 +698,7 @@ def test_get_replacement_card_for_unknown_printing(
     # Invalid card, because one side has completely missing images, and is therefore removed
     (["missing_image_double_faced_card"], "any", "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", True),
     # It has placeholder images, so is hidden, but not removed
-    (["german_Back_to_Basics"], "hide-cards-without-images", "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", False),
+    (["german_Back_to_Basics"], "cards-without-images", "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", False),
 ])
 def test_is_removed_printing(
         card_db: CardDatabase, cards_to_import, filter_name: str, printing: str, expected: bool):
@@ -789,7 +789,7 @@ def test_find_related_printings(card_db: CardDatabase, source_id: str, expected_
 
 def test_get_all_cards_from_image_cache(card_db: CardDatabase):
     fill_card_database_with_json_cards(card_db, ["regular_english_card", "oversized_card"],
-                                       {"hide-oversized-cards": str(True)})
+                                       {"oversized-cards": str(True)})
     cache_content = [
         CacheContent("650722b4-d72b-4745-a1a5-00a34836282b", True, ImageQuality.high_resolution, Path()),  # Atraxa
         CacheContent("0000579f-7b35-4ed3-b44c-db2a538066fe", True, ImageQuality.high_resolution, Path()),  # Fury Sliver
@@ -849,7 +849,7 @@ def test_get_available_languages_for_card(
     card = card_db.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front)
     assert card is not None, "Test setup failed"
     if filter_enabled:
-        filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["card-filter"]}
+        filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["printing-filter"]}
         update_database_printing_filters(card_db, filters)
     assert_that(
         card_db.get_available_languages_for_card(card),
@@ -910,15 +910,15 @@ def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(c
      [MTGSet("tneo", "Kamigawa: Neon Dynasty Tokens")]),
     # The first of these has placeholder images, making it affected by a printing filter
     (["german_Duress", "german_Duress_2"],
-     "920e8a8f-3cb4-4f33-8a71-f2524cf63aaf", "hide-cards-without-images",  # ID of the second printing from MID
+     "920e8a8f-3cb4-4f33-8a71-f2524cf63aaf", "cards-without-images",  # ID of the second printing from MID
      [MTGSet("mid", "Innistrad: Midnight Hunt")]),
     # Data of hidden printings present in the document must round-trip.
     # Steps to reproduce: Disable a card filter, add a card affected by it, then re-enable it.
     (["german_Duress", "german_Duress_2"],
-     "51c6ec30-afb2-41e6-895b-92e070aa86f3", "hide-cards-without-images",  # ID of the first printing from 7th Edition
+     "51c6ec30-afb2-41e6-895b-92e070aa86f3", "cards-without-images",  # ID of the first printing from 7th Edition
      [MTGSet("7ed", "Seventh Edition"), MTGSet("mid", "Innistrad: Midnight Hunt")]),
     (["german_Duress"],
-     "51c6ec30-afb2-41e6-895b-92e070aa86f3", "hide-cards-without-images",
+     "51c6ec30-afb2-41e6-895b-92e070aa86f3", "cards-without-images",
      [MTGSet("7ed", "Seventh Edition")]),
     
 ])
@@ -928,7 +928,7 @@ def test_get_available_sets_for_card(
     fill_card_database_with_json_cards(card_db, jsons)
     card = card_db.get_card_with_scryfall_id(scryfall_id, True)
     assert card is not None, "Test setup failed"
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings["printing-filter"]
     filters: dict[str, str] = {key: section[key] for key in section.keys()}
     if filter_name:
         filters[filter_name] = "True"
@@ -971,7 +971,7 @@ def test_get_available_collector_numbers_for_card_in_set(
     card = card_db.get_card_with_scryfall_id(scryfall_id, True)
     assert card is not None, "Test setup failed"
     if filter_enabled:
-        filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["card-filter"]}
+        filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["printing-filter"]}
         update_database_printing_filters(card_db, filters)
 
     fulfills_matcher = all_of(has_length(len(expected)), contains_exactly(*expected)) if expected else empty()

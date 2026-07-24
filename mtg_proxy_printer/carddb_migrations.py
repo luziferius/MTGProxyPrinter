@@ -925,6 +925,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
               SET preference_score = preference_score + NEW.set_preference_weight - OLD.set_preference_weight
               WHERE Printing.set_id = NEW.set_id;
         END"""),
+        "UPDATE PrintingFilters SET filter_name = replace(filter_name, 'hide-', '')",
     ]),
 }
 

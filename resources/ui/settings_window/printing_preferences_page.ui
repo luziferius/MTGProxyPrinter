@@ -12,7 +12,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="card_filter_settings_header_label">
+    <widget class="QLabel" name="printing_filter_settings_header_label">
      <property name="text">
       <string>These options determine how printings are chosen.
 
