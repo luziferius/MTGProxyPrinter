@@ -126,7 +126,7 @@ CREATE INDEX MigratedPrintingsLookup ON MigratedPrintings(old_scryfall_id, new_s
 CREATE VIEW EvaluatePrintingFilters AS SELECT
   printing_id,
 	coalesce(TRUE-(max(filter_active) OR set_filter_active), TRUE) AS is_visible,
-	coalesce(sum(printing_preference_weight), 0) AS preference_score
+	coalesce(sum(printing_preference_weight), 0) + sum(set_preference_weight) AS preference_score
 FROM Printing
   INNER JOIN MTGSet USING (set_id)
   LEFT OUTER JOIN FilterAppliesTo USING (printing_id)
