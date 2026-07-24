@@ -322,6 +322,22 @@ def parse_card_set_filters(input_settings: ConfigParser = settings) -> set[str]:
     return deduplicated
 
 
+def parse_set_printing_preference_weights(input_settings: ConfigParser = settings) -> dict[str, int]:
+    raw = input_settings["printing-weights"]["sets"]
+    raw = raw.lower()
+    result: dict[str, int] = {}
+    for word in raw.split():
+        if ":" not in word:
+            continue
+        set_code, weight = word.split(":", 1)
+        try:
+            int_weight = int(weight)
+        except ValueError:
+            continue
+        result[set_code] = int_weight
+    return result
+
+
 def read_settings_from_file():
     global settings, DEFAULT_SETTINGS
     settings.clear()
