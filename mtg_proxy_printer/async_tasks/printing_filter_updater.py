@@ -122,9 +122,9 @@ class PrintingFilterUpdater(AsyncTask):
         if self.should_abort:
             return False
         if changed_or_new_filters:
-            # CARD_FILTER_DEFAULT_WEIGHTS contains None values for items that should not have user-settable weights.
+            # settings["preference_weights"] contains None values for items that should not have user-settable weights.
             # In those cases, overwrite with numerical zero to satisfy the NOT NULL constraint.
-            get_weight = mtg_proxy_printer.settings.CARD_FILTER_DEFAULT_WEIGHTS.get
+            get_weight = mtg_proxy_printer.settings.settings["preference_weights"].getint
             data = list((name, active, get_weight(name, 0)) for name, active in changed_or_new_filters.items())
             logger.info("Printing filters added or changed in the settings, update the database.")
             db.executemany(

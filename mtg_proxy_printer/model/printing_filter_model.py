@@ -22,7 +22,6 @@ from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication
 
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.settings import DEFAULT_SETTINGS, CARD_FILTER_DEFAULT_WEIGHTS
 from mtg_proxy_printer.units_and_sizes import ConfigParser
 from mtg_proxy_printer.logger import get_logger
 
@@ -379,13 +378,16 @@ class PrintingFilterModel(QAbstractTableModel):
     def load_settings(self, settings: ConfigParser):
         logger.debug("Loading printing filter state from settings")
         filter_section = settings["card-filter"]
-        printing_weights_section = settings["preference-weights"]
-        printing_weights = CARD_FILTER_DEFAULT_WEIGHTS if settings is DEFAULT_SETTINGS else self.card_db.get_printing_filter_weights()
+        printing_weights = settings["preference-weights"]
         for row, item in enumerate(self.items):
             if item.is_hidden[CheckStateRole] is not None:
-                self.setData(self.index(row, ModelColumns.is_hidden), filter_section.get_check_state(item._settings_key), CheckStateRole)
+                self.setData(
+                    self.index(row, ModelColumns.is_hidden),
+                    filter_section.get_check_state(item._settings_key),
+                    CheckStateRole)
             if item.preference_weights[EditRole] is not None:
-                item.preference_weights[EditRole] = item.preference_weights[DisplayRole] = printing_weights[item._settings_key]
+                item.preference_weights[EditRole] = item.preference_weights[DisplayRole] = printing_weights.getint(
+                    item._settings_key)
         self.dataChanged.emit(
             self.index(1, ModelColumns.is_hidden),  # First row isn't checkable, so skip it
             self.index(self.rowCount()-1, ModelColumns.is_hidden),
@@ -413,20 +415,18 @@ class PrintingFilterModel(QAbstractTableModel):
         return result
 
     def highlight_differing_settings(self, settings: ConfigParser):
-        section = settings["card-filter"]
-        printing_weights = CARD_FILTER_DEFAULT_WEIGHTS \
-            if settings is DEFAULT_SETTINGS \
-            else self.card_db.get_printing_filter_weights()
+        filter_section = settings["card-filter"]
+        printing_weights = settings["preference-weights"]
         palette = QApplication.palette()
         highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
         highlight_color.setAlpha(64)  # 25% opacity, same as the highlight_widget() implementation
         for row, item in enumerate(self.items):
-            if item.is_hidden[CheckStateRole] != section.get_check_state(item._settings_key):
+            if item.is_hidden[CheckStateRole] != filter_section.get_check_state(item._settings_key):
                 index = self.index(row, ModelColumns.is_hidden)
                 item.is_hidden[BackgroundRole] = highlight_color
                 self.dataChanged.emit(index, index, [BackgroundRole])
             preference_weight = item.preference_weights[EditRole]
-            if preference_weight is not None and preference_weight != printing_weights[item._settings_key]:
+            if preference_weight is not None and preference_weight != printing_weights.getint(item._settings_key):
                 index = self.index(row, ModelColumns.preference_weights)
                 item.preference_weights[BackgroundRole] = highlight_color
                 self.dataChanged.emit(index, index, [BackgroundRole])
