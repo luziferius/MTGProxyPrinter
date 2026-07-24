@@ -43,10 +43,10 @@ IsHeaderRole = ItemDataRole(UserRole.value + 3)
 
 # The flag values
 EmptyCellFlags: Qt.ItemFlag = Qt.ItemFlag.ItemNeverHasChildren
-_DataFlags = Qt.ItemFlag.ItemNeverHasChildren | Qt.ItemFlag.ItemIsEnabled  # Common flags for cells with data
-TextItemFlags: Qt.ItemFlag = _DataFlags
-IsHiddenItemFlags: Qt.ItemFlag = _DataFlags | Qt.ItemFlag.ItemIsUserCheckable  # The is_hidden column is checkable
-PreferenceWeightFlags: Qt.ItemFlag = _DataFlags | Qt.ItemFlag.ItemIsEditable  # the pref score column is editable
+_CommonDataFlags = Qt.ItemFlag.ItemNeverHasChildren | Qt.ItemFlag.ItemIsEnabled
+TextItemFlags: Qt.ItemFlag = _CommonDataFlags
+IsHiddenItemFlags: Qt.ItemFlag = _CommonDataFlags | Qt.ItemFlag.ItemIsUserCheckable  # The is_hidden column is checkable
+PreferenceWeightFlags: Qt.ItemFlag = _CommonDataFlags | Qt.ItemFlag.ItemIsEditable  # the weights column is editable
 
 
 class ModelCell(defaultdict):
@@ -71,7 +71,7 @@ class ModelRow:
     is_hidden: ModelCell
     preference_weights: ModelCell
     scryfall_query: ModelCell
-    _settings_key: str
+    settings_key: str
 
     def data(self, column: ModelColumns, role: ItemDataRole):
         column = ModelColumns(column)
@@ -140,13 +140,15 @@ ModelRows = list[ModelRow]
 
 class PrintingFilterModel(QAbstractTableModel):
     """
-    Model holding the printing filters, used by the settings window to allow the
-    user to set the hidden printings to their liking.
+    Model holding the printing filters and weights, used by the settings window to allow the
+    user to set the hidden printings and printing preference weights to their liking.
     The filter entries store an on/off state editable via the ItemDataRole.CheckStateRole, which makes the UI show a 
     checkbox that can be toggled via clicking it.
     Changed-item highlighting uses the BackgroundRole.
     The settings key used to persist the value is stored via the SettingsKeyRole.
     The Scryfall query showing the affected printings is stored via the ScryfallQueryRole.
+    Header rows carry that information via IsHeaderRole. For headers, the view combines all columns by spanning
+      the first cell across all model columns.
     """
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
@@ -162,6 +164,7 @@ class PrintingFilterModel(QAbstractTableModel):
             "High values encourage choosing this kind of card, negative values discourage choosing it.",
             "Is preference weight column tooltip text")
         return [
+            # ------------ General filters ------------
             ModelRow.create_header(
                 header_font,
                 self.tr("General card filters", "Display text. Printing filter section header"),
@@ -218,6 +221,8 @@ class PrintingFilterModel(QAbstractTableModel):
                         'Marvel comics, Warhammer 40k, and a lot others.',
                         "Tooltip text"),
                 weight_tooltip, "universes-beyond-cards", "is:universesbeyond"),
+
+            # ------------ Frame/border style ------------
             ModelRow.create_header(
                 header_font,
                 self.tr("Frame and border style", "Display text. Printing filter section header")),
@@ -261,6 +266,7 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Tooltip text"),
                 weight_tooltip, "extended-art", "is:extended"),
 
+            # ------------  Non-traditional cards ------------
             ModelRow.create_header(
                 header_font,
                 self.tr("Non-traditional cards", "Display text. Printing filter section header")),
@@ -286,6 +292,7 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Tooltip text"),
                 None, "art-series-cards", "layout:art-series"),
 
+            # ------------  Format bans ------------
             ModelRow.create_header(
                 header_font,
                 self.tr("Format bans: Hide cards banned in specific formats",
@@ -376,18 +383,18 @@ class PrintingFilterModel(QAbstractTableModel):
         return self.data(index, ItemFlagsRole) or Qt.ItemFlag.NoItemFlags
 
     def load_settings(self, settings: ConfigParser):
-        logger.debug("Loading printing filter state from settings")
+        logger.debug("Loading printing filter state and weights from settings")
         filter_section = settings["printing-filter"]
         printing_weights = settings["printing-weights"]
         for row, item in enumerate(self.items):
             if item.is_hidden[CheckStateRole] is not None:
                 self.setData(
                     self.index(row, ModelColumns.is_hidden),
-                    filter_section.get_check_state(item._settings_key),
+                    filter_section.get_check_state(item.settings_key),
                     CheckStateRole)
             if item.preference_weights[EditRole] is not None:
                 item.preference_weights[EditRole] = item.preference_weights[DisplayRole] = printing_weights.getint(
-                    item._settings_key)
+                    item.settings_key)
         self.dataChanged.emit(
             self.index(1, ModelColumns.is_hidden),  # First row isn't checkable, so skip it
             self.index(self.rowCount()-1, ModelColumns.is_hidden),
@@ -403,12 +410,12 @@ class PrintingFilterModel(QAbstractTableModel):
         section = settings["printing-filter"]
         for row, item in enumerate(self.items):
             if item.is_hidden[CheckStateRole] is not None:
-                section.set_check_state(item._settings_key, item.is_hidden[CheckStateRole])
+                section.set_check_state(item.settings_key, item.is_hidden[CheckStateRole])
         logger.debug("Done.")
 
     def get_new_preference_weights(self) -> set[tuple[str, int]]:
-        result = set(
-            (item._settings_key, weight)
+        result: set[tuple[str, int]] = set(
+            (item.settings_key, weight)
             for item in self.items
             if (weight := item.preference_weights[EditRole]) is not None
         )
@@ -421,12 +428,12 @@ class PrintingFilterModel(QAbstractTableModel):
         highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
         highlight_color.setAlpha(64)  # 25% opacity, same as the highlight_widget() implementation
         for row, item in enumerate(self.items):
-            if item.is_hidden[CheckStateRole] != filter_section.get_check_state(item._settings_key):
+            if item.is_hidden[CheckStateRole] != filter_section.get_check_state(item.settings_key):
                 index = self.index(row, ModelColumns.is_hidden)
                 item.is_hidden[BackgroundRole] = highlight_color
                 self.dataChanged.emit(index, index, [BackgroundRole])
             preference_weight = item.preference_weights[EditRole]
-            if preference_weight is not None and preference_weight != printing_weights.getint(item._settings_key):
+            if preference_weight is not None and preference_weight != printing_weights.getint(item.settings_key):
                 index = self.index(row, ModelColumns.preference_weights)
                 item.preference_weights[BackgroundRole] = highlight_color
                 self.dataChanged.emit(index, index, [BackgroundRole])

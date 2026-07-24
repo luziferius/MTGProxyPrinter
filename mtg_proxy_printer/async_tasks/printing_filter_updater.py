@@ -92,8 +92,10 @@ class PrintingFilterUpdater(AsyncTask):
         try:
             self.task_begins.emit(
                 self.PROGRESS_STEP_COUNT, self.tr(
-                    "Processing updated card filters:", "Progress bar label text")
+                    "Processing updated printing filters:", "Progress bar label text")
             )
+
+
             self.update_ui = self.store_current_printing_filters()
             if self.should_abort:
                 self.db.rollback()
