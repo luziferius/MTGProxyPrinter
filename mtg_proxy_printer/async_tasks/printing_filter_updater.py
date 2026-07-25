@@ -259,9 +259,9 @@ class PrintingPreferenceUpdater(AsyncTask):
     """
 
     def __init__(
-            self, model: "CardDatabase", new_preference_weights: WeightsType,
+            self, model: "CardDatabase", new_preference_weights: WeightsType | None = None,
             new_set_weights: WeightsType | None = None,
-            db_connection: sqlite3.Connection | None = None, /):
+            db_connection: sqlite3.Connection | None = None):
         """
         :param model: CardDatabase instance to work on
         :param new_preference_weights: The new printing preference weights to use, as a set[tuple[filter_name, weight]].
@@ -276,7 +276,7 @@ class PrintingPreferenceUpdater(AsyncTask):
         """
         super().__init__()
         self.model = model
-        self.new_preference_weights = new_preference_weights
+        self.new_preference_weights = new_preference_weights or self.get_filter_preference_weights_from_settings()
         self.old_preference_weights = set(model.get_printing_filter_weights().items())
         self.new_set_weights = new_set_weights or self.get_updated_set_preference_weights()
         self.progress = 0
@@ -370,4 +370,14 @@ class PrintingPreferenceUpdater(AsyncTask):
         result = dict(self.db.execute(
                 "SELECT set_code, set_preference_weights FROM MTGSet -- get_all_set_preference_weights_from_db()\n"
         ))
+        return result
+
+    @staticmethod
+    def get_filter_preference_weights_from_settings() -> set[tuple[str, int]]:
+        result = set(
+            (key, int(value))
+            for key, value
+            in mtg_proxy_printer.settings.settings["preference-weights"]
+            if key != "sets"
+            )
         return result

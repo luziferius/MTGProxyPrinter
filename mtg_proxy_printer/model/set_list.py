@@ -310,3 +310,17 @@ class MTGSetTreeModel(QAbstractItemModel):
             index = queue.pop(0)
             queue += (self.index(row, ModelColumns.is_hidden, index) for row in range(self.rowCount(index)))
             yield index
+
+    def save_settings(self, settings: ConfigParser):
+        logger.debug("Saving set filter state to settings.")
+        active_filters: list[str] = []
+        active_weights: list[str] = []
+        for index in self._get_all_indices():
+            item = index.internalPointer()
+            if item.is_hidden:
+                active_filters.append(item.set.code)
+            if item.preference_weight:
+                active_weights.append(f"{item.set.code}:{item.preference_weight}")
+        settings["printing-filter"]["sets"] = " ".join(active_filters)
+        settings["printing-weights"]["sets"] = " ".join(active_weights)
+        logger.debug("Done.")

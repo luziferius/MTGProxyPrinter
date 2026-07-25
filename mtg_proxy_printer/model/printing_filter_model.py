@@ -407,10 +407,14 @@ class PrintingFilterModel(QAbstractTableModel):
 
     def save_settings(self, settings: ConfigParser):
         logger.debug("Saving printing filter state to settings.")
-        section = settings["printing-filter"]
+        filter_section = settings["printing-filter"]
+        weights_section = settings["printing-weights"]
         for row, item in enumerate(self.items):
             if item.is_hidden[CheckStateRole] is not None:
-                section.set_check_state(item.settings_key, item.is_hidden[CheckStateRole])
+                filter_section.set_check_state(item.settings_key, item.is_hidden[CheckStateRole])
+            if item.preference_weights[EditRole] is not None:
+                weights_section[item.settings_key] = item.preference_weights[EditRole]
+
         logger.debug("Done.")
 
     def get_new_preference_weights(self) -> set[tuple[str, int]]:

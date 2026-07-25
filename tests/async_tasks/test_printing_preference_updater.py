@@ -33,7 +33,7 @@ def test_update_only_updates_relevant_printing_preferences(card_db: CardDatabase
         ("universes-beyond-cards", 5), ("low-resolution-cards", -5), ("textless-cards", -7),
         ("full-art-cards", 1)
     }
-    printing_preference_updater = PrintingPreferenceUpdater(card_db, weights, db)
+    printing_preference_updater = PrintingPreferenceUpdater(card_db, weights, db_connection=db)
     printing_preference_updater.run()
     db.row_factory = None
     assert_that(
