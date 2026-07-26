@@ -80,10 +80,10 @@ class Page(QWidget):
         """Returns a list model item for this page, used to represent the page in the settings page selection UI."""
         data = self.display_metadata()
         item = QStandardItem(data.text)
-        if data.icon_name:
-            item.setIcon(QIcon.fromTheme(data.icon_name))
-        if data.tooltip:
-            item.setToolTip(data.tooltip)
+        if (icon_name := data.icon_name) is not None:
+            item.setIcon(QIcon.fromTheme(icon_name))
+        if tooltip := data.tooltip:
+            item.setToolTip(tooltip)
         size = item.sizeHint()
         size.setHeight(32)
         item.setSizeHint(size)
@@ -377,12 +377,17 @@ class GeneralSettingsPage(Page):
             section = settings[section_name]
             widget.setCheckState(section.get_check_state(setting))
 
+    def _get_language_list(self) -> list[str]:
+        model = self.ui.preferred_language_combo_box.model()
+        assert isinstance(model, QStringListModel)
+        return model.stringList()
+
     def _load_cards_settings(self, settings: ConfigParser):
         section = settings["cards"]
         preferred_language_combo_box = self.ui.preferred_language_combo_box
-        preferred_language = section.get("preferred-language")
-        list_model: QStringListModel = preferred_language_combo_box.model()
-        if not (known := list_model.stringList()) or preferred_language not in known:
+        preferred_language = section["preferred-language"]
+        language_list = self._get_language_list()
+        if preferred_language not in language_list:
             preferred_language_combo_box.addItem(preferred_language)
         preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(preferred_language))
 
@@ -406,7 +411,7 @@ class GeneralSettingsPage(Page):
         return widgets_with_settings
 
     def get_index_for_language_code(self, language: str) -> int:
-        languages = self.ui.preferred_language_combo_box.model().stringList()
+        languages = self._get_language_list()
         if language in languages:
             return languages.index(language)
         else:
@@ -619,7 +624,7 @@ class PrinterSettingsPage(Page):
     def load(self, settings: ConfigParser):
         section = settings["printer"]
         for checkbox, setting in self._get_printer_settings_boolean_widgets():
-            checkbox.setChecked(section.getboolean(setting))
+            checkbox.setChecked(section.getboolean(setting) or False)
         for spinbox, setting in self._get_printer_settings_length_widgets():
             # TODO: Not fully unit-aware. Spinbox assumed in mm
             spinbox.setValue(section.get_quantity(setting).to("mm").magnitude)
