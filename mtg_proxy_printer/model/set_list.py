@@ -18,7 +18,9 @@ import enum
 from typing import Callable
 import typing
 
-from PySide6.QtCore import Qt, QModelIndex, QAbstractItemModel, QObject, QModelRoleDataSpan, QUrl, QModelRoleData
+from PySide6 import __version_info__ as PySide6Version
+from PySide6.QtCore import Qt, QModelIndex, QPersistentModelIndex, QAbstractItemModel, QObject, QModelRoleDataSpan, \
+    QUrl, QModelRoleData, QSortFilterProxyModel
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication
 
@@ -324,3 +326,65 @@ class MTGSetTreeModel(QAbstractItemModel):
         settings["printing-filter"]["sets"] = " ".join(active_filters)
         settings["printing-weights"]["sets"] = " ".join(active_weights)
         logger.debug("Done.")
+
+
+class MTGSetTreeFilterModel(QSortFilterProxyModel):
+    sourceModel: Callable[[], MTGSetTreeModel]
+    setSourceModel: Callable[[MTGSetTreeModel], None]
+    mapToSource: Callable[[QModelIndex], SetTreeIndex]
+    
+    def __init__(self, /, parent: QObject | None = None, **kwargs):
+        super().__init__(parent, **kwargs)
+        self.setDynamicSortFilter(False)
+        self.setRecursiveFilteringEnabled(True)
+        self.highlight_mode: bool = False
+
+    def highlight_differing_settings(self, settings: ConfigParser):
+        # Note: Not a version mismatch: https://doc.qt.io/archives/qt-6.9/qsortfilterproxymodel.html#beginFilterChange
+        # < 6.9 uses a single invalidateRowsFilter(),
+        # 6.9.x uses beginFilterChange() with invalidateRowsFilter(), and
+        # > 6.9 uses beginFilterChange() with endFilterChange(Direction)
+        if PySide6Version >= (6, 9):
+            self.beginFilterChange()
+        self.highlight_mode = True
+        self.sourceModel().highlight_differing_settings(settings)
+        if PySide6Version >= (6, 10):
+            self.endFilterChange(QSortFilterProxyModel.Direction.Rows)
+        else:
+            self.invalidateRowsFilter()
+
+    def clear_highlight(self):
+        # Note: Not a version mismatch: See note above in highlight_differing_settings()
+        if PySide6Version >= (6, 9):
+            self.beginFilterChange()
+        self.highlight_mode = False
+        self.sourceModel().clear_highlight()
+        if PySide6Version >= (6, 10):
+            self.endFilterChange(QSortFilterProxyModel.Direction.Rows)
+        else:
+            self.invalidateRowsFilter()
+
+    def filterAcceptsRow(self, source_row: int, source_parent: SetTreeIndex, /) -> bool:
+        if self.highlight_mode:
+            return self._is_highlighted(source_row, source_parent)
+        return True
+
+    def _is_highlighted(
+            self, source_row: int,
+            source_parent: SetTreeIndex, /) -> bool:
+        index = self.sourceModel().index(source_row, MTGSetTreeModel.ModelColumns.is_hidden, source_parent)
+        item = index.internalPointer()
+        return item.highlight_is_hidden is not None or item.highlight_preference_weight is not None
+
+    def _get_all_indices(self) -> typing.Generator[QModelIndex, None, None]:
+        """
+        Yields a SetTreeIndex for each row in the model, including children. Indices point to the
+        ModelColumns.is_hidden column.
+
+        Internally uses a queue to implement a breadth-first tree walk.
+        """
+        queue = [self.index(row, ModelColumns.is_hidden) for row in range(self.rowCount())]
+        while queue:
+            index = queue.pop(0)
+            queue += (self.index(row, ModelColumns.is_hidden, index) for row in range(self.rowCount(index)))
+            yield index

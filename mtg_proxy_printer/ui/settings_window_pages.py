@@ -34,7 +34,7 @@ from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel, ScryfallQueryRole, \
     IsHeaderRole
-from mtg_proxy_printer.model.set_list import MTGSetTreeModel
+from mtg_proxy_printer.model.set_list import MTGSetTreeModel, MTGSetTreeFilterModel
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
@@ -496,11 +496,13 @@ class PrintingPreferencesPage(Page):
         super().__init__(parent)
         self.printing_filter_model = PrintingFilterModel(self)
         self.set_filter_model = MTGSetTreeModel(self)
+        self.set_filter_proxy_model = MTGSetTreeFilterModel(self)
+        self.set_filter_proxy_model.setSourceModel(self.set_filter_model)
         self.ui = ui = Ui_PrintingPreferencesPage()
         ui.setupUi(self)
         self.card_db = None
         ui.printing_filter_view.setModel(self.printing_filter_model)
-        ui.set_filter_view.setModel(self.set_filter_model)
+        ui.set_filter_view.setModel(self.set_filter_proxy_model)
         for column in range(len(MTGSetTreeModel.ModelColumns)-1):  # Last column width is set explicitly
             ui.set_filter_view.resizeColumnToContents(column)
         header = ui.printing_filter_view.horizontalHeader()
@@ -547,12 +549,12 @@ class PrintingPreferencesPage(Page):
 
     def highlight_differing_settings(self, settings: ConfigParser):
         self.printing_filter_model.highlight_differing_settings(settings)
-        self.set_filter_model.highlight_differing_settings(settings)
+        self.set_filter_proxy_model.highlight_differing_settings(settings)
+        self.ui.set_filter_view.expandAll()
 
     def clear_highlight(self):
-        super().clear_highlight()
         self.printing_filter_model.clear_highlight()
-        self.set_filter_model.clear_highlight()
+        self.set_filter_proxy_model.clear_highlight()
 
 
 class DefaultDocumentLayoutSettingsPage(Page, PageConfigContainer):
