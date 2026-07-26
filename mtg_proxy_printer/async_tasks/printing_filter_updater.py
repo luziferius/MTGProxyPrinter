@@ -92,8 +92,10 @@ class PrintingFilterUpdater(AsyncTask):
         try:
             self.task_begins.emit(
                 self.PROGRESS_STEP_COUNT, self.tr(
-                    "Processing updated card filters:", "Progress bar label text")
+                    "Processing updated printing filters:", "Progress bar label text")
             )
+
+
             self.update_ui = self.store_current_printing_filters()
             if self.should_abort:
                 self.db.rollback()
@@ -115,16 +117,16 @@ class PrintingFilterUpdater(AsyncTask):
         db = self.db
         if self.db_connection_self_opened:
             db.execute("BEGIN IMMEDIATE TRANSACTION\n")
-        section = mtg_proxy_printer.settings.settings["card-filter"]
+        section = mtg_proxy_printer.settings.settings["printing-filter"]
         update_ui = self._remove_old_printing_filters(section)
         changed_or_new_filters = self._get_changed_or_new_filters(section)
         self.advance_progress.emit()
         if self.should_abort:
             return False
         if changed_or_new_filters:
-            # CARD_FILTER_DEFAULT_WEIGHTS contains None values for items that should not have user-settable weights.
+            # settings["printing-weights"] contains None values for items that should not have user-settable weights.
             # In those cases, overwrite with numerical zero to satisfy the NOT NULL constraint.
-            get_weight = mtg_proxy_printer.settings.CARD_FILTER_DEFAULT_WEIGHTS.get
+            get_weight = mtg_proxy_printer.settings.settings["printing-weights"].getint
             data = list((name, active, get_weight(name, 0)) for name, active in changed_or_new_filters.items())
             logger.info("Printing filters added or changed in the settings, update the database.")
             db.executemany(
@@ -163,7 +165,7 @@ class PrintingFilterUpdater(AsyncTask):
                 "SELECT filter_name, filter_active FROM PrintingFilters --_get_changed_or_new_filters()\n"
              )
         )
-        boolean_keys: list[str] = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
+        boolean_keys: list[str] = mtg_proxy_printer.settings.get_boolean_printing_filter_keys()
         filters_in_settings: dict[str, bool] = {key: section.getboolean(key) or False for key in boolean_keys}
         updated_filters_with_new_values = {
             key: new_filter_value
@@ -257,8 +259,9 @@ class PrintingPreferenceUpdater(AsyncTask):
     """
 
     def __init__(
-            self, model: "CardDatabase", new_preference_weights: WeightsType, new_set_weights: WeightsType,
-            db_connection: sqlite3.Connection | None = None, /):
+            self, model: "CardDatabase", new_preference_weights: WeightsType | None = None,
+            new_set_weights: WeightsType | None = None,
+            db_connection: sqlite3.Connection | None = None):
         """
         :param model: CardDatabase instance to work on
         :param new_preference_weights: The new printing preference weights to use, as a set[tuple[filter_name, weight]].
@@ -273,9 +276,9 @@ class PrintingPreferenceUpdater(AsyncTask):
         """
         super().__init__()
         self.model = model
-        self.new_preference_weights = new_preference_weights
+        self.new_preference_weights = new_preference_weights or self.get_filter_preference_weights_from_settings()
         self.old_preference_weights = set(model.get_printing_filter_weights().items())
-        self.new_set_weights = new_set_weights
+        self.new_set_weights = new_set_weights or self.get_updated_set_preference_weights()
         self.progress = 0
         self.task_completed.connect(model.restart_transaction, QueuedConnection)
         self._db = db_connection
@@ -347,3 +350,34 @@ class PrintingPreferenceUpdater(AsyncTask):
                 """), parameters)
             self.advance_progress.emit()
             if self.should_abort: break
+
+    def get_updated_set_preference_weights(self) -> set[tuple[str, int]]:
+        # The intersection removes all words that are not known set codes
+        preference_weights_in_settings = mtg_proxy_printer.settings.parse_set_printing_preference_weights()
+        preference_weights_in_db = self.get_all_set_preference_weights_from_db()
+        for garbage in list(preference_weights_in_settings.keys() - preference_weights_in_db.keys()):
+            del preference_weights_in_settings[garbage]
+        result = set(
+            (set_code, weight)
+            for set_code, weight in preference_weights_in_settings.items()
+            if preference_weights_in_db[set_code] != weight
+        )
+        return result
+
+    def get_all_set_preference_weights_from_db(self) -> dict[str, int]:
+        """Returns all known set codes."""
+        logger.debug("Reading all known set codes with their preference weights")
+        result = dict(self.db.execute(
+                "SELECT set_code, set_preference_weights FROM MTGSet -- get_all_set_preference_weights_from_db()\n"
+        ))
+        return result
+
+    @staticmethod
+    def get_filter_preference_weights_from_settings() -> set[tuple[str, int]]:
+        result = set(
+            (key, int(value))
+            for key, value
+            in mtg_proxy_printer.settings.settings["preference-weights"]
+            if key != "sets"
+            )
+        return result

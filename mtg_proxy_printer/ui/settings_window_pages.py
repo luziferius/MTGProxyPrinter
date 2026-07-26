@@ -32,7 +32,7 @@ from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilter
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel, ScryfallQueryRole, ModelColumns, \
+from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel, ScryfallQueryRole, \
     IsHeaderRole
 from mtg_proxy_printer.model.set_list import MTGSetTreeModel
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
@@ -487,7 +487,9 @@ class PrintingPreferencesPage(Page):
         return PageMetadata(
             self.tr("Printing preferences", "Display text. Page name shown in the settings pages list"),
             "view-hidden",
-            self.tr("Hide unwanted printings", "Tooltip text for the settings pages list."),
+            self.tr(
+                "Hide unwanted printings and configure printing choice preferences",
+                "Tooltip text for the settings pages list."),
         )
 
     def __init__(self, parent: QWidget | None = None):
@@ -499,28 +501,28 @@ class PrintingPreferencesPage(Page):
         self.card_db = None
         ui.printing_filter_view.setModel(self.printing_filter_model)
         ui.set_filter_view.setModel(self.set_filter_model)
+        for column in range(len(MTGSetTreeModel.ModelColumns)-1):  # Last column width is set explicitly
+            ui.set_filter_view.resizeColumnToContents(column)
         header = ui.printing_filter_view.horizontalHeader()
-        for column in range(len(ModelColumns)-1):
+        for column in range(len(PrintingFilterModel.ModelColumns)-1):  # Last column width is set explicitly
             header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
-        header.resizeSection(ModelColumns.scryfall_query, 32)
+        header.resizeSection(PrintingFilterModel.ModelColumns.scryfall_query, 32)
         for row in range(self.printing_filter_model.rowCount()):
-            index = self.printing_filter_model.index(row, ModelColumns.name)
+            index = self.printing_filter_model.index(row, PrintingFilterModel.ModelColumns.name)
             if index.data(IsHeaderRole):
-                ui.printing_filter_view.setSpan(row, ModelColumns.name, 1, 4)
-            if query := index.siblingAtColumn(ModelColumns.scryfall_query).data(ScryfallQueryRole):
+                ui.printing_filter_view.setSpan(row, PrintingFilterModel.ModelColumns.name, 1, 4)
+            if query := index.siblingAtColumn(PrintingFilterModel.ModelColumns.scryfall_query).data(ScryfallQueryRole):
                 button = self._create_scryfall_query_button(query)
-                ui.printing_filter_view.setIndexWidget(index.siblingAtColumn(ModelColumns.scryfall_query), button)
+                ui.printing_filter_view.setIndexWidget(
+                    index.siblingAtColumn(PrintingFilterModel.ModelColumns.scryfall_query), button)
 
     def _create_scryfall_query_button(self, query_str: str) -> QPushButton:
         button = QPushButton(QIcon.fromTheme("globe"), "", self)
         button.clicked.connect(partial(self.view_query_on_scryfall, query_str))
         button.setToolTip(self.tr(
-            "View cards hidden by this filter on the Scryfall website.",
+            "View cards affected by this filter on the Scryfall website.",
             "Tooltip text on a button next to a printing filter"))
         return button
-
-    def _get_new_set_weights(self):
-        return set()
 
     @staticmethod
     def view_query_on_scryfall(query: str):
@@ -536,6 +538,7 @@ class PrintingPreferencesPage(Page):
 
     def save(self):
         self.printing_filter_model.save_settings(mtg_proxy_printer.settings.settings)
+        self.set_filter_model.save_settings(mtg_proxy_printer.settings.settings)
         filter_preference_weights = self.printing_filter_model.get_new_preference_weights()
         set_preference_weights = self.set_filter_model.get_new_preference_weights()
         self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))

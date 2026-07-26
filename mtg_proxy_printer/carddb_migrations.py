@@ -915,6 +915,17 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
         # To populate the parent_set_code column, all rows need to be updated. This is triggered by force-clearing the
         # icon_file_name column.
         "UPDATE MTGSet SET (icon_file_name, icon_svg) = ('', NULL)",
+        "DROP VIEW EvaluatePrintingFilters",
+        dedent("""\
+        CREATE VIEW EvaluatePrintingFilters AS SELECT
+          printing_id,
+            coalesce(TRUE-(max(filter_active) OR set_filter_active), TRUE) AS is_visible,
+            coalesce(sum(printing_preference_weight), 0) + set_preference_weight AS preference_score
+        FROM Printing
+          INNER JOIN MTGSet USING (set_id)
+          LEFT OUTER JOIN FilterAppliesTo USING (printing_id)
+            LEFT OUTER JOIN PrintingFilters USING (filter_id)
+            GROUP BY printing_id"""),
         dedent("""\
         CREATE TRIGGER "Update Printing.preference_score on MTGSet.set_preference_weight update"
           AFTER UPDATE OF set_preference_weight ON MTGSet
@@ -925,6 +936,7 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
               SET preference_score = preference_score + NEW.set_preference_weight - OLD.set_preference_weight
               WHERE Printing.set_id = NEW.set_id;
         END"""),
+        "UPDATE PrintingFilters SET filter_name = replace(filter_name, 'hide-', '')",
     ]),
 }
 

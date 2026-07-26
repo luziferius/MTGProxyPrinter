@@ -683,8 +683,8 @@ class DatabaseImportTask(AsyncTask):
         if (set_id := self.set_code_cache.get(set_code)) is None:
             self.set_code_cache[set_code] = set_id = self._insert_or_update_set(card)
         printing_id = self._insert_or_update_printing(card, card_id, set_id)
-        _get_card_filter_data(card, self._printing_filter_dict)
-        self._insert_or_update_card_filters(printing_id, self._printing_filter_dict)
+        _get_printing_filter_data(card, self._printing_filter_dict)
+        self._insert_or_update_printing_filters(printing_id, self._printing_filter_dict)
         self._insert_or_update_printing_faces(card, printing_id)
 
     def _clean_unused_data(self):
@@ -851,7 +851,7 @@ class DatabaseImportTask(AsyncTask):
                 case check_result:
                     raise RuntimeError(f"Unexpected data retuned from query: {check_query} {check_result=}")
 
-    def _insert_or_update_card_filters(self, printing_id: int, active_filters: list[str]):
+    def _insert_or_update_printing_filters(self, printing_id: int, active_filters: list[str]):
         printing_filter_ids: dict[str, int] = self._read_available_printing_filters_from_db()
         db = self.db
         active_printing_filters = set(
@@ -889,7 +889,7 @@ def _get_related_cards(card: CardDataType):
             yield RelatedPrintingData(card_id, related_id)
 
 
-def _get_card_filter_data(card: CardDataType, active_filters: list[str]):
+def _get_printing_filter_data(card: CardDataType, active_filters: list[str]):
     legalities = card["legalities"]
     image_status = card["image_status"]
     border_color = card["border_color"]
@@ -900,40 +900,40 @@ def _get_card_filter_data(card: CardDataType, active_filters: list[str]):
     active_filters.clear()
     is_active = active_filters.append
     # Racism filter
-    if card.get("content_warning"): is_active("hide-cards-depicting-racism")
+    if card.get("content_warning"): is_active("cards-depicting-racism")
     # Cards with placeholder images (low-res image with "not available in your language" overlay)
-    if image_status == "placeholder": is_active("hide-cards-without-images")
-    if image_status == "lowres": is_active("hide-low-resolution-cards")
-    if card["oversized"]: is_active("hide-oversized-cards")
+    if image_status == "placeholder": is_active("cards-without-images")
+    if image_status == "lowres": is_active("low-resolution-cards")
+    if card["oversized"]: is_active("oversized-cards")
     # Frame and border filter
-    if card["full_art"]: is_active("hide-full-art-cards")
-    if card["textless"]: is_active("hide-textless-cards")
-    if border_color == "white": is_active("hide-white-bordered")
-    if border_color == "gold": is_active("hide-gold-bordered")
-    if border_color == "borderless": is_active("hide-borderless")
-    if "extendedart" in card.get("frame_effects", ()): is_active("hide-extended-art")
+    if card["full_art"]: is_active("full-art-cards")
+    if card["textless"]: is_active("textless-cards")
+    if border_color == "white": is_active("white-bordered")
+    if border_color == "gold": is_active("gold-bordered")
+    if border_color == "borderless": is_active("borderless")
+    if "extendedart" in card.get("frame_effects", ()): is_active("extended-art")
     # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
-    if card["layout"] == "reversible_card": is_active("hide-reversible-cards")
+    if card["layout"] == "reversible_card": is_active("reversible-cards")
     # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
     # black-bordered promotional cards, in addition to silver-bordered cards.
-    if card["set_type"] == "funny" and "legal" not in legalities.values(): is_active("hide-funny-cards")
-    if is_token: is_active("hide-token")
-    if card["digital"]: is_active("hide-digital-cards")
-    if card["layout"] == "art_series": is_active("hide-art-series-cards")
-    if "universesbeyond" in card.get("promo_types", ()): is_active("hide-universes-beyond-cards")
+    if card["set_type"] == "funny" and "legal" not in legalities.values(): is_active("funny-cards")
+    if is_token: is_active("token")
+    if card["digital"]: is_active("digital-cards")
+    if card["layout"] == "art_series": is_active("art-series-cards")
+    if "universesbeyond" in card.get("promo_types", ()): is_active("universes-beyond-cards")
     # Specific format legality. Use .get() instead of [] to not fail
     # if Scryfall removes one of the listed formats in the future.
-    if legalities.get("brawl") == "banned": is_active("hide-banned-in-brawl")
-    if legalities.get("commander") == "banned": is_active("hide-banned-in-commander")
-    if legalities.get("historic") == "banned": is_active("hide-banned-in-historic")
-    if legalities.get("legacy") == "banned": is_active("hide-banned-in-legacy")
-    if legalities.get("modern") == "banned": is_active("hide-banned-in-modern")
-    if legalities.get("oathbreaker") == "banned": is_active("hide-banned-in-oathbreaker")
-    if legalities.get("pauper") == "banned": is_active("hide-banned-in-pauper")
-    if legalities.get("penny") == "banned": is_active("hide-banned-in-penny")
-    if legalities.get("pioneer") == "banned": is_active("hide-banned-in-pioneer")
-    if legalities.get("standard") == "banned": is_active("hide-banned-in-standard")
-    if legalities.get("vintage") == "banned": is_active("hide-banned-in-vintage")
+    if legalities.get("brawl") == "banned": is_active("banned-in-brawl")
+    if legalities.get("commander") == "banned": is_active("banned-in-commander")
+    if legalities.get("historic") == "banned": is_active("banned-in-historic")
+    if legalities.get("legacy") == "banned": is_active("banned-in-legacy")
+    if legalities.get("modern") == "banned": is_active("banned-in-modern")
+    if legalities.get("oathbreaker") == "banned": is_active("banned-in-oathbreaker")
+    if legalities.get("pauper") == "banned": is_active("banned-in-pauper")
+    if legalities.get("penny") == "banned": is_active("banned-in-penny")
+    if legalities.get("pioneer") == "banned": is_active("banned-in-pioneer")
+    if legalities.get("standard") == "banned": is_active("banned-in-standard")
+    if legalities.get("vintage") == "banned": is_active("banned-in-vintage")
 
 
 def _should_skip_card(card: CardDataType) -> bool:

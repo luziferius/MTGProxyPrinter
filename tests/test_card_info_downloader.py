@@ -370,42 +370,42 @@ def test_card_import(card_db: CardDatabase, test_case: TestCaseData):
 
 
 def generate_test_cases_for_test_print_hiding_filters():
-    yield TestCaseData("depicting_racism"), "hide-cards-depicting-racism"  # German printing of "Crusade"
-    yield TestCaseData("placeholder_image"), "hide-cards-without-images"  # Spanish printing of "Air Elemental"
-    yield TestCaseData("oversized_card"), "hide-oversized-cards"  # Oversized printing of "Atraxa, Praetors' Voice"
-    yield TestCaseData("funny_card_with_silver_border"), "hide-funny-cards"  # Silver-bordered "Aesthetic Consultation" from Unhinged
-    yield TestCaseData("funny_card_with_acorn_security_stamp"), "hide-funny-cards"  # Black-bordered "Form of the Approach of the Second Sun" from Unfinity
+    yield TestCaseData("depicting_racism"), "cards-depicting-racism"  # German printing of "Crusade"
+    yield TestCaseData("placeholder_image"), "cards-without-images"  # Spanish printing of "Air Elemental"
+    yield TestCaseData("oversized_card"), "oversized-cards"  # Oversized printing of "Atraxa, Praetors' Voice"
+    yield TestCaseData("funny_card_with_silver_border"), "funny-cards"  # Silver-bordered "Aesthetic Consultation" from Unhinged
+    yield TestCaseData("funny_card_with_acorn_security_stamp"), "funny-cards"  # Black-bordered "Form of the Approach of the Second Sun" from Unfinity
 
-    yield TestCaseData("Food_Token"), "hide-token"
-    yield TestCaseData("Undercity"), "hide-token"   # Double-faced Dungeon / The Initiative marker card
-    yield TestCaseData("The_Ring"), "hide-token"   # Double-faced Emblem
-    yield TestCaseData("gold_bordered_card"), "hide-gold-bordered"
-    yield TestCaseData("white_bordered_card"), "hide-white-bordered"
+    yield TestCaseData("Food_Token"), "token"
+    yield TestCaseData("Undercity"), "token"   # Double-faced Dungeon / The Initiative marker card
+    yield TestCaseData("The_Ring"), "token"   # Double-faced Emblem
+    yield TestCaseData("gold_bordered_card"), "gold-bordered"
+    yield TestCaseData("white_bordered_card"), "white-bordered"
 
-    yield TestCaseData("banned_in_brawl"), "hide-banned-in-brawl"
-    yield TestCaseData("banned_in_commander"), "hide-banned-in-commander"
-    yield TestCaseData("banned_in_historic"), "hide-banned-in-historic"
-    yield TestCaseData("banned_in_legacy"), "hide-banned-in-legacy"
-    yield TestCaseData("banned_in_modern"), "hide-banned-in-modern"
+    yield TestCaseData("banned_in_brawl"), "banned-in-brawl"
+    yield TestCaseData("banned_in_commander"), "banned-in-commander"
+    yield TestCaseData("banned_in_historic"), "banned-in-historic"
+    yield TestCaseData("banned_in_legacy"), "banned-in-legacy"
+    yield TestCaseData("banned_in_modern"), "banned-in-modern"
 
-    yield TestCaseData("banned_in_oathbreaker"), "hide-banned-in-oathbreaker"
-    yield TestCaseData("banned_in_pauper"), "hide-banned-in-pauper"
-    yield TestCaseData("banned_in_penny"), "hide-banned-in-penny"  # The format has zero banned cards. The JSON document was altered to fake a banned card for testing purposes.
-    yield TestCaseData("banned_in_pioneer"), "hide-banned-in-pioneer"
-    yield TestCaseData("banned_in_standard"), "hide-banned-in-standard"
+    yield TestCaseData("banned_in_oathbreaker"), "banned-in-oathbreaker"
+    yield TestCaseData("banned_in_pauper"), "banned-in-pauper"
+    yield TestCaseData("banned_in_penny"), "banned-in-penny"  # The format has zero banned cards. The JSON document was altered to fake a banned card for testing purposes.
+    yield TestCaseData("banned_in_pioneer"), "banned-in-pioneer"
+    yield TestCaseData("banned_in_standard"), "banned-in-standard"
 
-    yield TestCaseData("banned_in_vintage"), "hide-banned-in-vintage"
-    yield TestCaseData("digital_only_card"), "hide-digital-cards"
-    yield TestCaseData("digital_reprint"), "hide-digital-cards"
-    yield TestCaseData("borderless_card"), "hide-borderless"
-    yield TestCaseData("extended_art"), "hide-extended-art"
+    yield TestCaseData("banned_in_vintage"), "banned-in-vintage"
+    yield TestCaseData("digital_only_card"), "digital-cards"
+    yield TestCaseData("digital_reprint"), "digital-cards"
+    yield TestCaseData("borderless_card"), "borderless"
+    yield TestCaseData("extended_art"), "extended-art"
 
-    yield TestCaseData("reversible_card"), "hide-reversible-cards"  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
-    yield TestCaseData("english_double_faced_art_series_card"), "hide-art-series-cards"
-    yield TestCaseData("universes_beyond_card"), "hide-universes-beyond-cards"
-    yield TestCaseData("textless_card"), "hide-textless-cards"
-    yield TestCaseData("spanish_basic_Forest"), "hide-low-resolution-cards"
-    yield TestCaseData("english_basic_Forest_2"), "hide-full-art-cards"
+    yield TestCaseData("reversible_card"), "reversible-cards"  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+    yield TestCaseData("english_double_faced_art_series_card"), "art-series-cards"
+    yield TestCaseData("universes_beyond_card"), "universes-beyond-cards"
+    yield TestCaseData("textless_card"), "textless-cards"
+    yield TestCaseData("spanish_basic_Forest"), "low-resolution-cards"
+    yield TestCaseData("english_basic_Forest_2"), "full-art-cards"
 
 
 @pytest.mark.parametrize("filter_enabled", [True, False])
@@ -432,13 +432,13 @@ def generate_test_cases_for_test_set_code_filters():
 def test_set_code_filters(
         card_db: CardDatabase, test_case: TestCaseData, filter_value: str,
         expected_result: Callable[[CardDatabase, TestCaseData], None]):
-    fill_card_database_with_json_card(card_db, test_case.json_dict, {"hidden-sets": filter_value})
+    fill_card_database_with_json_card(card_db, test_case.json_dict, {"sets": filter_value})
     expected_result(card_db, test_case)
 
 
 @pytest.mark.parametrize("filter_setting", [True, False])
 @pytest.mark.parametrize("test_case, filter_name", [
-    (TestCaseData("funny_legal_card"), "hide-funny-cards"),  # Black-bordered, eternal-legal "Aerialephant" from Unfinity
+    (TestCaseData("funny_legal_card"), "funny-cards"),  # Black-bordered, eternal-legal "Aerialephant" from Unfinity
 ])
 def test_download_filters_does_not_affect_unexpected_cards(
         card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
@@ -464,8 +464,8 @@ def test_two_imports_having_the_same_filtered_out_card_work(card_db: CardDatabas
 
 
 @pytest.mark.parametrize("filter_name, visible_value, hidden_value", [
-    ("hide-oversized-cards", "False", "True"),
-    ("hidden-sets", "", "OC16"),
+    ("oversized-cards", "False", "True"),
+    ("sets", "", "OC16"),
 ])
 def test_re_import_with_enabled_download_filter_removes_card(
         card_db: CardDatabase, filter_name: str, visible_value: str, hidden_value: str):
@@ -520,9 +520,9 @@ def test_removed_printings_entry_removed_when_printing_becomes_acceptable(
 def test_re_import_after_unban_makes_card_visible(card_db: CardDatabase, test_case_data: TestCaseData):
     card_json = test_case_data.json_dict
     with unittest.mock.patch.dict(card_json["legalities"], {"commander": "banned"}):
-        fill_card_database_with_json_card(card_db, card_json, {"hide-banned-in-commander": "True"})
+        fill_card_database_with_json_card(card_db, card_json, {"banned-in-commander": "True"})
     assert_hidden_import(card_db, test_case_data)
-    fill_card_database_with_json_card(card_db, card_json, {"hide-banned-in-commander": "True"})
+    fill_card_database_with_json_card(card_db, card_json, {"banned-in-commander": "True"})
     assert_visible_import(card_db, test_case_data)
 
 
@@ -531,10 +531,10 @@ def test_re_import_after_unban_makes_card_visible(card_db: CardDatabase, test_ca
 ])
 def test_re_import_after_card_ban_hides_it(card_db: CardDatabase, test_case_data: TestCaseData):
     card_json = test_case_data.json_dict
-    fill_card_database_with_json_card(card_db, card_json, {"hide-banned-in-commander": "True"})
+    fill_card_database_with_json_card(card_db, card_json, {"banned-in-commander": "True"})
     assert_visible_import(card_db, test_case_data)
     with unittest.mock.patch.dict(card_json["legalities"], {"commander": "banned"}):
-        fill_card_database_with_json_card(card_db, card_json, {"hide-banned-in-commander": "True"})
+        fill_card_database_with_json_card(card_db, card_json, {"banned-in-commander": "True"})
     assert_hidden_import(card_db, test_case_data)
 
 
