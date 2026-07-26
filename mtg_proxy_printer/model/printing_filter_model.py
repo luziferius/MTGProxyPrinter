@@ -413,7 +413,7 @@ class PrintingFilterModel(QAbstractTableModel):
             if item.is_hidden[CheckStateRole] is not None:
                 filter_section.set_check_state(item.settings_key, item.is_hidden[CheckStateRole])
             if item.preference_weights[EditRole] is not None:
-                weights_section[item.settings_key] = item.preference_weights[EditRole]
+                weights_section[item.settings_key] = str(item.preference_weights[EditRole])
 
         logger.debug("Done.")
 
