@@ -99,7 +99,7 @@ class MTGSetTreeModel(QAbstractItemModel):
     and is used by the PrintingPreferencePage settings page to configure these.
     """
     createIndex: Callable[[int, int, SetContainer], SetTreeIndex]
-
+    ModelColumns = ModelColumns
 
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)

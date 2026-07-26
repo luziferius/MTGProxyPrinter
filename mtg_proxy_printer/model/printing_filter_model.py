@@ -150,6 +150,8 @@ class PrintingFilterModel(QAbstractTableModel):
     Header rows carry that information via IsHeaderRole. For headers, the view combines all columns by spanning
       the first cell across all model columns.
     """
+    ModelColumns = ModelColumns
+
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self.card_db = CardDatabase.main_instance
