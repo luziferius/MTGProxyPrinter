@@ -19,7 +19,7 @@ from typing import Callable
 import typing
 
 from PySide6 import __version_info__ as PySide6Version
-from PySide6.QtCore import Qt, QModelIndex, QPersistentModelIndex, QAbstractItemModel, QObject, QModelRoleDataSpan, \
+from PySide6.QtCore import Qt, QModelIndex, QAbstractItemModel, QObject, QModelRoleDataSpan, \
     QUrl, QModelRoleData, QSortFilterProxyModel
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication
@@ -339,30 +339,33 @@ class MTGSetTreeFilterModel(QSortFilterProxyModel):
         self.setRecursiveFilteringEnabled(True)
         self.highlight_mode: bool = False
 
-    def highlight_differing_settings(self, settings: ConfigParser):
-        # Note: Not a version mismatch: https://doc.qt.io/archives/qt-6.9/qsortfilterproxymodel.html#beginFilterChange
-        # < 6.9 uses a single invalidateRowsFilter(),
-        # 6.9.x uses beginFilterChange() with invalidateRowsFilter(), and
-        # > 6.9 uses beginFilterChange() with endFilterChange(Direction)
+    # Wrappers around changed API for filter change notification
+    # Note: Not a version mismatch: https://doc.qt.io/archives/qt-6.9/qsortfilterproxymodel.html#beginFilterChange
+    # < 6.9 uses only a single invalidateRowsFilter() call,
+    # 6.9.x uses beginFilterChange() with invalidateRowsFilter(), and
+    # > 6.9 uses beginFilterChange() with endFilterChange(Direction).
+    # invalidateRowsFilter() is scheduled for removal in 6.13
+    def _begin_filter_change(self):
         if PySide6Version >= (6, 9):
             self.beginFilterChange()
-        self.highlight_mode = True
-        self.sourceModel().highlight_differing_settings(settings)
+
+    def _end_filter_change(self):
         if PySide6Version >= (6, 10):
             self.endFilterChange(QSortFilterProxyModel.Direction.Rows)
         else:
             self.invalidateRowsFilter()
 
+    def highlight_differing_settings(self, settings: ConfigParser):
+        self._begin_filter_change()
+        self.highlight_mode = True
+        self.sourceModel().highlight_differing_settings(settings)
+        self._end_filter_change()
+
     def clear_highlight(self):
-        # Note: Not a version mismatch: See note above in highlight_differing_settings()
-        if PySide6Version >= (6, 9):
-            self.beginFilterChange()
+        self._begin_filter_change()
         self.highlight_mode = False
         self.sourceModel().clear_highlight()
-        if PySide6Version >= (6, 10):
-            self.endFilterChange(QSortFilterProxyModel.Direction.Rows)
-        else:
-            self.invalidateRowsFilter()
+        self._end_filter_change()
 
     def filterAcceptsRow(self, source_row: int, source_parent: SetTreeIndex, /) -> bool:
         if self.highlight_mode:
