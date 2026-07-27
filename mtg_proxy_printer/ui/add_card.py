@@ -167,14 +167,14 @@ class AddCardWidget(QWidget):
         self.ui.collector_number_box.setEnabled(valid)
         if valid:
             mtg_set: MTGSet = current_model_index.data(ItemDataRole.EditRole)
-            collector_numbers = self.card_db.find_collector_numbers_matching(
+            collector_numbers, highest_score_index = self.card_db.find_collector_numbers_matching(
                 self.current_card_name, mtg_set.code, self.current_language
             )
             logger.debug(
                 f'Selected: "{mtg_set.code}", language: {self.current_language}, matching {len(collector_numbers)} prints')
             self.collector_number_model.setStringList(collector_numbers)
             self.ui.collector_number_list.selectionModel().select(
-                self.collector_number_model.createIndex(0, 0), SelectionFlag.ClearAndSelect)
+                self.collector_number_model.createIndex(highest_score_index, 0), SelectionFlag.ClearAndSelect)
 
     @Slot(QItemSelection)
     def collector_number_list_selection_changed(self, current: QItemSelection):

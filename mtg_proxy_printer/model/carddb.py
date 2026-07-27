@@ -460,29 +460,38 @@ class CardDatabase(QObject):
                     cards.append(self.get_opposing_face(found))
         return cards
 
-    def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> list[str]:
+    def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> tuple[list[str], int]:
         """
-        Finds all visible collector numbers matching the given filter parameters.
+        Finds all visible collector numbers matching the given filter parameters,
+        and the first index with the highest preference score.
         The result contains multiple elements, if the card
         had multiple variants with distinct collector numbers in the given set.
 
         :param card_name: Card name, matched exactly
         :param set_code: Set abbreviation, matched exactly
         :param language: Card language, matched exactly
-        :return: Naturally sorted list of collector numbers, i.e. ["2", "10"]
+        :return: Naturally sorted list of collector numbers, and a numerical index into the list
+        i.e. ["2", "10"], 0
         """
-        # Implementation note: DISTINCT is required for double-faced cards where both sides have the same name.
+        # Implementation note: GROUP BY is required for double-faced cards where both sides have the same name.
         # This can be art-series cards or double-faced tokens (e.g. from C16). Without this, selecting such card
         # in the AddCardWidget results in a duplicated entry in the collector number selection list.
         query = cached_dedent('''\
-        SELECT DISTINCT collector_number -- find_collector_numbers_matching()
+        SELECT collector_number, preference_score -- find_collector_numbers_matching()
           FROM Printing
           JOIN PrintingFace USING (printing_id)
           JOIN MTGSet USING (set_id)
           WHERE (is_visible, "language", set_code, face_name)
               = (TRUE,       ?,          ?,        ?)
+          GROUP BY collector_number
         ''')
-        return natural_sorted(item for item, in self.db.execute(query, (language, set_code, card_name)))
+        data: dict[str, int] = dict(self.db.execute(query, (language, set_code, card_name)))
+        collector_numbers = natural_sorted(data.keys())
+        highscore = max(data.values())
+        for highscore_index, collector_number in enumerate(collector_numbers):
+            if data[collector_number] == highscore:
+                return collector_numbers, highscore_index
+        return [], 0
 
     def find_sets_matching(
             self, card_name: str, language: str,
