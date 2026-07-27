@@ -933,8 +933,9 @@ def test_get_available_sets_for_card(
     if filter_name:
         filters[filter_name] = "True"
         update_database_printing_filters(card_db, filters)
-    fulfills_matcher = contains_exactly(*expected) if expected else empty()
-    assert_that(card_db.get_available_sets_for_card(card), fulfills_matcher)
+    fulfills_matcher = contains_exactly(*map(is_dataclass_equal_to, expected)) if expected else empty()
+    result = card_db.get_available_sets_for_card(card)
+    assert_that(result, fulfills_matcher)
 
 
 @pytest.mark.parametrize("jsons, scryfall_id, filter_enabled, expected", [

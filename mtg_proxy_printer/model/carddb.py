@@ -782,19 +782,15 @@ class CardDatabase(QObject):
         Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
         """
         query = cached_dedent("""\
-        SELECT DISTINCT set_code, set_name, icon_svg FROM ( -- get_available_sets_for_card()
-          SELECT set_code, set_name, icon_svg, release_date
-          FROM MTGSet
-          JOIN Printing USING (set_id)
-          JOIN Card USING (card_id)
-          WHERE (is_visible, oracle_id, language)
-              = (TRUE,       ?,         ?)
-          UNION ALL
-          SELECT set_code, set_name, icon_svg, release_date
+        SELECT set_code, set_name, icon_svg -- get_available_sets_for_card()
             FROM MTGSet
-            WHERE set_code = ?
-          )
-          ORDER BY release_date ASC
+            JOIN Printing USING (set_id)
+            JOIN Card USING (card_id)
+            WHERE (oracle_id, language)
+                = (?,         ?)
+               AND (is_visible IS TRUE OR set_code = ?)
+            GROUP BY set_id
+            ORDER BY release_date ASC
         """)
         parameters: ParameterList = [card.oracle_id, card.language, card.set_code]
         result = [
