@@ -487,7 +487,7 @@ class CardDatabase(QObject):
         ''')
         data: dict[str, int] = dict(self.db.execute(query, (language, set_code, card_name)))
         collector_numbers = natural_sorted(data.keys())
-        highscore = max(data.values())
+        highscore = max(data.values() or [0])
         for highscore_index, collector_number in enumerate(collector_numbers):
             if data[collector_number] == highscore:
                 return collector_numbers, highscore_index
@@ -506,31 +506,27 @@ class CardDatabase(QObject):
           pointing to the first set that contains the printing with the highest preference score.
         """
         query = cached_dedent('''\
-        SELECT DISTINCT set_code, set_name, icon_svg, max(preference_score) as preference_score  -- find_sets_matching()
+        SELECT set_code, set_name, icon_svg, max(preference_score) as preference_score  -- find_sets_matching()
           FROM Printing 
           INNER JOIN PrintingFace USING (printing_id)
           INNER JOIN MTGSet USING (set_id)
           WHERE (is_visible, "language", face_name)
               = (TRUE,       ?,          ?)
             AND COALESCE(is_front = ?, TRUE)
+          GROUP BY set_id
           ORDER BY set_name ASC
         ''')
         parameters: ParameterList = [language, card_name, is_front]
-        db_result: list[tuple[MTGSet, int]] = [
-            (MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"]), row["preference_score"])
+        db_result: dict[MTGSet, int] = {
+            MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"]): row["preference_score"]
             for row in self.db.execute(query, parameters)
-        ]
-        if not db_result:
-            return [], 0
-        highscore_index = 0
-        highscore: int = db_result[0][1]
-        result: list[MTGSet] = []
-        for index, (mtg_set, preference_score) in enumerate(db_result):
-            result.append(mtg_set)
-            if preference_score > highscore:
-                highscore_index = index
-                highscore = preference_score
-        return result, highscore_index
+        }
+        result = list(db_result.keys())
+        highscore = max(db_result.values() or [0])
+        for highscore_index, mtg_set in enumerate(db_result.keys()):
+            if db_result[mtg_set] == highscore:
+                return result, highscore_index
+        return [], 0
 
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         """
