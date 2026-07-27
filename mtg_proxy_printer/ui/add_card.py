@@ -149,12 +149,12 @@ class AddCardWidget(QWidget):
         self.ui.set_name_box.setEnabled(valid)
         if valid:
             card_name = current_model_index.data(ItemDataRole.DisplayRole)
-            sets = self.card_db.find_sets_matching(card_name, self.current_language)
+            sets, highest_score_index = self.card_db.find_sets_matching(card_name, self.current_language)
             logger.debug(f'Selected: "{card_name}", language: {self.current_language}, matching {len(sets)} sets')
             self.set_name_model.set_set_data(sets)
             self.ui.set_name_filter.clear()
             self.ui.set_name_list.selectionModel().select(
-                self.set_name_model.createIndex(0, 0), SelectionFlag.ClearAndSelect)
+                self.set_name_model.createIndex(highest_score_index, 0), SelectionFlag.ClearAndSelect)
 
     @Slot(QItemSelection)
     def set_name_list_selection_changed(self, current: QItemSelection):

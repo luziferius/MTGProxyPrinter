@@ -93,7 +93,7 @@ def test_find_sets_matching_reads_icon_svg(card_db: CardDatabase):
     fill_card_database_with_json_card(card_db, "english_basic_Forest")
     mock_svg = b" " * 101
     set_icon_svg_for_mtg_set(card_db, "anb", mock_svg)
-    found_sets = card_db.find_sets_matching("Forest", "en")
+    found_sets, highscore_index = card_db.find_sets_matching("Forest", "en")
     expected_set = MTGSet("anb", "Arena Beginner Set", svg_icon=mock_svg)
     assert_that(
         found_sets,

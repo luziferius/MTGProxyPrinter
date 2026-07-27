@@ -495,31 +495,42 @@ class CardDatabase(QObject):
 
     def find_sets_matching(
             self, card_name: str, language: str,
-            *, is_front: bool | None = None) -> list[MTGSet]:
+            *, is_front: bool | None = None) -> tuple[list[MTGSet], int]:
         """
         Finds all sets that contain a card with the given name in the given language.
 
         :param card_name: Card name, matched exactly
         :param language: card language, matched exactly
         :param is_front: Match by front/back. Only relevant when switching printings of SLD reversible cards.
-        :return: list of matching sets, as tuples (set_abbreviation, full_english_set_name)
+        :return: list of matching sets, and index into the list,
+          pointing to the first set that contains the printing with the highest preference score.
         """
         query = cached_dedent('''\
-        SELECT DISTINCT set_code, set_name, icon_svg  -- find_sets_matching()
+        SELECT DISTINCT set_code, set_name, icon_svg, max(preference_score) as preference_score  -- find_sets_matching()
           FROM Printing 
           INNER JOIN PrintingFace USING (printing_id)
           INNER JOIN MTGSet USING (set_id)
           WHERE (is_visible, "language", face_name)
               = (TRUE,       ?,          ?)
-              AND COALESCE(is_front = ?, TRUE)
+            AND COALESCE(is_front = ?, TRUE)
+          ORDER BY set_name ASC
         ''')
         parameters: ParameterList = [language, card_name, is_front]
-        query += '    ORDER BY set_name ASC\n'
-        result = [
-            MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"])
+        db_result: list[tuple[MTGSet, int]] = [
+            (MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"]), row["preference_score"])
             for row in self.db.execute(query, parameters)
         ]
-        return result
+        if not db_result:
+            return [], 0
+        highscore_index = 0
+        highscore: int = db_result[0][1]
+        result: list[MTGSet] = []
+        for index, (mtg_set, preference_score) in enumerate(db_result):
+            result.append(mtg_set)
+            if preference_score > highscore:
+                highscore_index = index
+                highscore = preference_score
+        return result, highscore_index
 
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         """
