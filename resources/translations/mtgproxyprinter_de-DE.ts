@@ -333,27 +333,27 @@ mit %n Seiten {cards_total}</numerusform>
   <context>
     <name>CardFilterPage</name>
     <message>
-      <location filename="../ui/cache_cleanup_wizard/card_filter_page.ui" line="14"/>
+      <location filename="../ui/cache_cleanup_wizard/printing_filter_page.ui" line="14"/>
       <source>Select images for removal</source>
       <translation>Bilder zum Löschen auswählen</translation>
     </message>
     <message>
-      <location filename="../ui/cache_cleanup_wizard/card_filter_page.ui" line="17"/>
+      <location filename="../ui/cache_cleanup_wizard/printing_filter_page.ui" line="17"/>
       <source>Click on entries in the tables below to mark or un-mark them for removal. All selected entries will be removed.</source>
       <translation>Klicken Sie auf Einträge in den Tabellen unten, um diese zum Löschen auszuwählen. Alle ausgewählten Einträge werden entfernt.</translation>
     </message>
     <message>
-      <location filename="../ui/cache_cleanup_wizard/card_filter_page.ui" line="30"/>
+      <location filename="../ui/cache_cleanup_wizard/printing_filter_page.ui" line="30"/>
       <source>All images currently stored on disk:</source>
       <translation>Alle aktuell auf der Festplatte gespeicherten Bilder:</translation>
     </message>
     <message>
-      <location filename="../ui/cache_cleanup_wizard/card_filter_page.ui" line="69"/>
+      <location filename="../ui/cache_cleanup_wizard/printing_filter_page.ui" line="69"/>
       <source>Images found on disk that can not be associated with any card.</source>
       <translation>Auf der Festplatte gefundene Bilder, die mit keiner Karte verknüpft werden können.</translation>
     </message>
     <message>
-      <location filename="../ui/cache_cleanup_wizard/card_filter_page.ui" line="72"/>
+      <location filename="../ui/cache_cleanup_wizard/printing_filter_page.ui" line="72"/>
       <source>Unknown images:</source>
       <translation>Unbekannte Bilder:</translation>
     </message>

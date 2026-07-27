@@ -326,8 +326,12 @@ class ApiStreamTask(StreamTask):
     def item_count(self):
         return self.get_available_card_count()
 
+class AdditionalSetData(typing.NamedTuple):
+    svg_icon_uri: str
+    file_name: str
+    parent_set_code: str | None
 
-class SetIconImportTask(DownloaderBase):
+class SetDataImportTask(DownloaderBase):
 
     def __init__(self, db: sqlite3.Connection | None = None,
                  carddb_path: Path | Literal[":memory:"] = DEFAULT_DATABASE_LOCATION):
@@ -358,47 +362,53 @@ class SetIconImportTask(DownloaderBase):
         self.advance_progress.emit()
         if not self.should_run: return
         logger.debug(f"Total of {download_count} SVG icon URIs to download, starting downloads…")
-        icon_svgs = self._fetch_icon_svgs(icon_uris)
+        additional_data = self._fetch_icon_svgs(icon_uris)
         if not self.should_run: return
         logger.debug("SVG icons downloaded, updating the database…")
         db.executemany(
-            "UPDATE MTGSet SET icon_svg = ?, icon_file_name = ? WHERE set_scryfall_id = ?",
-            icon_svgs
+            "UPDATE MTGSet SET parent_set_code = ?, icon_svg = ?, icon_file_name = ? WHERE set_scryfall_id = ?",
+            additional_data
         )
         logger.debug(f"All {download_count} SVG icons updated.")
         self.advance_progress.emit()
         logger.info("All missing or outdated set symbols downloaded")
         self.task_completed.emit()
 
-    def _fetch_icon_uris_to_download(self, filenames_in_db: dict[UUID, str]) -> dict[UUID, str]:
+    def _fetch_icon_uris_to_download(self, filenames_in_db: dict[UUID, str]) -> dict[UUID, AdditionalSetData]:
         """
         Fetches the SVG icon URIs from the Scryfall API.
-        :param filenames_in_db: Mapping of currently downloaded set symbols. Keys are set ids, values are filenames.
+        :param filenames_in_db: Mapping of currently downloaded set symbols. Keys are set scryfall ids, values are filenames.
         :returns: Mapping from set ids to SVG icon URIs
         """
         logger.debug(f"Requesting URIs for all {len(filenames_in_db)} in the database from the set code API end point.")
+        response = self._fetch_sets_list_from_scryfall_api()
+        # Data is fetched. Check against the file names in the database. Any difference will cause a re-download.
+        # Missing symbols have empty file names in the database, which is a guaranteed to be different
+        # from the non-empty file names supplied by the API.
+        result: dict[UUID, AdditionalSetData] = {}
+        obtained_set_data: Iterable[SetsAPIDataType] = ijson.items(response, "data.item", use_float=True)
+        for set_item in obtained_set_data:
+            set_scryfall_id = set_item["id"]
+            data = AdditionalSetData(
+                uri := set_item["icon_svg_uri"],
+                file_name := self._extract_file_name(uri),
+                set_item.get("parent_set_code")
+            )
+            # If a set is completely skipped during import, this get() avoids a KeyError
+            if filenames_in_db.get(set_scryfall_id) != file_name:
+                result[set_scryfall_id] = data
+        # All parsed and filtered
+        self.advance_progress.emit()
+        return result
+
+    def _fetch_sets_list_from_scryfall_api(self) -> bytes:
         # This bulk end point is sometimes slow to react
         socket.setdefaulttimeout(30)
         open_file, _ = self.read_from_url("https://api.scryfall.com/sets")
         with open_file:
             response = open_file.read()
         socket.setdefaulttimeout(5)
-        # Data is fetched. Check against the file names in the database. Any difference will cause a re-download.
-        # Missing symbols have empty file names in the database, which is a guaranteed to be different
-        # from the non-empty file names supplied by the API.
-        result: dict[UUID, str] = {}
-        obtained_set_data: Iterable[SetsAPIDataType] = ijson.items(response, "data.item", use_float=True)
-        for set_item in obtained_set_data:
-            set_scryfall_id = set_item["id"]
-            uri = set_item["icon_svg_uri"]
-
-            file_name = self._extract_file_name(uri)
-            # If a set is completely skipped during import, this get() avoids a KeyError
-            if filenames_in_db.get(set_scryfall_id) != file_name:
-                result[set_scryfall_id] = uri
-        # All parsed and filtered
-        self.advance_progress.emit()
-        return result
+        return response
 
     @staticmethod
     def _extract_file_name(uri: str) -> str:
@@ -409,19 +419,18 @@ class SetIconImportTask(DownloaderBase):
         file_name = uri.rsplit("/", 1)[1].split("?", 1)[0]
         return file_name
 
-    def _fetch_icon_svgs(self, icon_uris: dict[UUID, str]) -> list[tuple[bytes, str, UUID]]:
+    def _fetch_icon_svgs(self, icon_uris: dict[UUID, AdditionalSetData]) -> list[tuple[str | None, bytes, str, UUID]]:
         """
         Fetches the given SVG icons. Note: The returned tuples have the set_scryfall_id at the end, because that's the
         item order expected by the database UPDATE query.
         :param icon_uris: Mapping from set_scryfall_id to the SVG uri
-        :returns: list with tuples [SVG source code, file name, set_scryfall_id]
+        :returns: list with tuples [optional parent set code, SVG source code, file name, set_scryfall_id]
         """
-        result: list[tuple[bytes, str, UUID]] = []
-        for set_scryfall_id, uri in icon_uris.items():
+        result: list[tuple[str | None, bytes, str, UUID]] = []
+        for set_scryfall_id, data in icon_uris.items():
             if not self.should_run: return result
-            svg = self.read_from_url(uri,)[0].read()
-            filename = self._extract_file_name(uri)
-            result.append((svg, filename, set_scryfall_id))
+            svg = self._read_svg(data.svg_icon_uri)
+            result.append((data.parent_set_code, svg, data.file_name, set_scryfall_id))
             self.advance_progress.emit()
         return result
 
@@ -434,6 +443,10 @@ class SetIconImportTask(DownloaderBase):
             logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
             self._db = open_database(self.carddb_path, SCHEMA_NAME)
         return self._db
+
+    def _read_svg(self, uri: str) -> bytes:
+        svg = self.read_from_url(uri,)[0].read()
+        return svg
 
     def _read_optional_scalar_from_db(self, query: LiteralString, parameters: Sequence[Any] = ()):
         """
@@ -634,7 +647,7 @@ class DatabaseImportTask(AsyncTask):
             self.db, force_update_hidden_column=True)
         updater.advance_progress.connect(self.advance_progress)
         updater.store_current_printing_filters()  # Don't call run() to not deadlock via the db semaphore
-        self._subtask = updater = SetIconImportTask(db, self.carddb_path)
+        self._subtask = updater = SetDataImportTask(db, self.carddb_path)
         updater.error_occurred.connect(updater.cancel)
         self.request_register_subtask.emit(updater)
         if self.should_run:
@@ -670,8 +683,8 @@ class DatabaseImportTask(AsyncTask):
         if (set_id := self.set_code_cache.get(set_code)) is None:
             self.set_code_cache[set_code] = set_id = self._insert_or_update_set(card)
         printing_id = self._insert_or_update_printing(card, card_id, set_id)
-        _get_card_filter_data(card, self._printing_filter_dict)
-        self._insert_or_update_card_filters(printing_id, self._printing_filter_dict)
+        _get_printing_filter_data(card, self._printing_filter_dict)
+        self._insert_or_update_printing_filters(printing_id, self._printing_filter_dict)
         self._insert_or_update_printing_faces(card, printing_id)
 
     def _clean_unused_data(self):
@@ -838,7 +851,7 @@ class DatabaseImportTask(AsyncTask):
                 case check_result:
                     raise RuntimeError(f"Unexpected data retuned from query: {check_query} {check_result=}")
 
-    def _insert_or_update_card_filters(self, printing_id: int, active_filters: list[str]):
+    def _insert_or_update_printing_filters(self, printing_id: int, active_filters: list[str]):
         printing_filter_ids: dict[str, int] = self._read_available_printing_filters_from_db()
         db = self.db
         active_printing_filters = set(
@@ -876,7 +889,7 @@ def _get_related_cards(card: CardDataType):
             yield RelatedPrintingData(card_id, related_id)
 
 
-def _get_card_filter_data(card: CardDataType, active_filters: list[str]):
+def _get_printing_filter_data(card: CardDataType, active_filters: list[str]):
     legalities = card["legalities"]
     image_status = card["image_status"]
     border_color = card["border_color"]
@@ -887,40 +900,40 @@ def _get_card_filter_data(card: CardDataType, active_filters: list[str]):
     active_filters.clear()
     is_active = active_filters.append
     # Racism filter
-    if card.get("content_warning", False): is_active("hide-cards-depicting-racism")
+    if card.get("content_warning"): is_active("cards-depicting-racism")
     # Cards with placeholder images (low-res image with "not available in your language" overlay)
-    if image_status == "placeholder": is_active("hide-cards-without-images")
-    if image_status == "lowres": is_active("hide-low-resolution-cards")
-    if card["oversized"]: is_active("hide-oversized-cards")
+    if image_status == "placeholder": is_active("cards-without-images")
+    if image_status == "lowres": is_active("low-resolution-cards")
+    if card["oversized"]: is_active("oversized-cards")
     # Frame and border filter
-    if card["full_art"]: is_active("hide-full-art-cards")
-    if card["textless"]: is_active("hide-textless-cards")
-    if border_color == "white": is_active("hide-white-bordered")
-    if border_color == "gold": is_active("hide-gold-bordered")
-    if border_color == "borderless": is_active("hide-borderless")
-    if "extendedart" in card.get("frame_effects", ()): is_active("hide-extended-art")
+    if card["full_art"]: is_active("full-art-cards")
+    if card["textless"]: is_active("textless-cards")
+    if border_color == "white": is_active("white-bordered")
+    if border_color == "gold": is_active("gold-bordered")
+    if border_color == "borderless": is_active("borderless")
+    if "extendedart" in card.get("frame_effects", ()): is_active("extended-art")
     # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
-    if card["layout"] == "reversible_card": is_active("hide-reversible-cards")
+    if card["layout"] == "reversible_card": is_active("reversible-cards")
     # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
     # black-bordered promotional cards, in addition to silver-bordered cards.
-    if card["set_type"] == "funny" and "legal" not in legalities.values(): is_active("hide-funny-cards")
-    if is_token: is_active("hide-token")
-    if card["digital"]: is_active("hide-digital-cards")
-    if card["layout"] == "art_series": is_active("hide-art-series-cards")
-    if "universesbeyond" in card.get("promo_types", ()): is_active("hide-universes-beyond-cards")
-    # Specific format legality. Use .get() with a default instead of [] to not fail
+    if card["set_type"] == "funny" and "legal" not in legalities.values(): is_active("funny-cards")
+    if is_token: is_active("token")
+    if card["digital"]: is_active("digital-cards")
+    if card["layout"] == "art_series": is_active("art-series-cards")
+    if "universesbeyond" in card.get("promo_types", ()): is_active("universes-beyond-cards")
+    # Specific format legality. Use .get() instead of [] to not fail
     # if Scryfall removes one of the listed formats in the future.
-    if legalities.get("brawl") == "banned": is_active("hide-banned-in-brawl")
-    if legalities.get("commander") == "banned": is_active("hide-banned-in-commander")
-    if legalities.get("historic") == "banned": is_active("hide-banned-in-historic")
-    if legalities.get("legacy") == "banned": is_active("hide-banned-in-legacy")
-    if legalities.get("modern") == "banned": is_active("hide-banned-in-modern")
-    if legalities.get("oathbreaker") == "banned": is_active("hide-banned-in-oathbreaker")
-    if legalities.get("pauper") == "banned": is_active("hide-banned-in-pauper")
-    if legalities.get("penny") == "banned": is_active("hide-banned-in-penny")
-    if legalities.get("pioneer") == "banned": is_active("hide-banned-in-pioneer")
-    if legalities.get("standard") == "banned": is_active("hide-banned-in-standard")
-    if legalities.get("vintage") == "banned": is_active("hide-banned-in-vintage")
+    if legalities.get("brawl") == "banned": is_active("banned-in-brawl")
+    if legalities.get("commander") == "banned": is_active("banned-in-commander")
+    if legalities.get("historic") == "banned": is_active("banned-in-historic")
+    if legalities.get("legacy") == "banned": is_active("banned-in-legacy")
+    if legalities.get("modern") == "banned": is_active("banned-in-modern")
+    if legalities.get("oathbreaker") == "banned": is_active("banned-in-oathbreaker")
+    if legalities.get("pauper") == "banned": is_active("banned-in-pauper")
+    if legalities.get("penny") == "banned": is_active("banned-in-penny")
+    if legalities.get("pioneer") == "banned": is_active("banned-in-pioneer")
+    if legalities.get("standard") == "banned": is_active("banned-in-standard")
+    if legalities.get("vintage") == "banned": is_active("banned-in-vintage")
 
 
 def _should_skip_card(card: CardDataType) -> bool:

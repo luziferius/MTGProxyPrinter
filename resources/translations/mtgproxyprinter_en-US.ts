@@ -336,27 +336,27 @@ containing %n pages {cards_total}</numerusform>
   <context>
     <name>CardFilterPage</name>
     <message>
-      <location filename="../ui/cache_cleanup_wizard/card_filter_page.ui" line="14"/>
+      <location filename="../ui/cache_cleanup_wizard/printing_filter_page.ui" line="14"/>
       <source>Select images for removal</source>
       <translation>Select images for removal</translation>
     </message>
     <message>
-      <location filename="../ui/cache_cleanup_wizard/card_filter_page.ui" line="17"/>
+      <location filename="../ui/cache_cleanup_wizard/printing_filter_page.ui" line="17"/>
       <source>Click on entries in the tables below to mark or un-mark them for removal. All selected entries will be removed.</source>
       <translation>Click on entries in the tables below to mark or un-mark them for removal. All selected entries will be removed.</translation>
     </message>
     <message>
-      <location filename="../ui/cache_cleanup_wizard/card_filter_page.ui" line="30"/>
+      <location filename="../ui/cache_cleanup_wizard/printing_filter_page.ui" line="30"/>
       <source>All images currently stored on disk:</source>
       <translation>All images currently stored on disk:</translation>
     </message>
     <message>
-      <location filename="../ui/cache_cleanup_wizard/card_filter_page.ui" line="69"/>
+      <location filename="../ui/cache_cleanup_wizard/printing_filter_page.ui" line="69"/>
       <source>Images found on disk that can not be associated with any card.</source>
       <translation>Images found on disk that can not be associated with any card.</translation>
     </message>
     <message>
-      <location filename="../ui/cache_cleanup_wizard/card_filter_page.ui" line="72"/>
+      <location filename="../ui/cache_cleanup_wizard/printing_filter_page.ui" line="72"/>
       <source>Unknown images:</source>
       <translation>Unknown images:</translation>
     </message>

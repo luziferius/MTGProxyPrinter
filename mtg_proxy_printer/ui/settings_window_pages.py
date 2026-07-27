@@ -32,8 +32,9 @@ from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilter
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel, ScryfallQueryRole, ModelColumns, \
+from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel, ScryfallQueryRole, \
     IsHeaderRole
+from mtg_proxy_printer.model.set_list import MTGSetTreeModel, MTGSetTreeFilterModel
 from mtg_proxy_printer.ui.common import highlight_widget, load_file, get_widget_background_color
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser, unit_registry, Quantity
 from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
@@ -79,10 +80,10 @@ class Page(QWidget):
         """Returns a list model item for this page, used to represent the page in the settings page selection UI."""
         data = self.display_metadata()
         item = QStandardItem(data.text)
-        if data.icon_name:
-            item.setIcon(QIcon.fromTheme(data.icon_name))
-        if data.tooltip:
-            item.setToolTip(data.tooltip)
+        if (icon_name := data.icon_name) is not None:
+            item.setIcon(QIcon.fromTheme(icon_name))
+        if tooltip := data.tooltip:
+            item.setToolTip(tooltip)
         size = item.sizeHint()
         size.setHeight(32)
         item.setSizeHint(size)
@@ -139,7 +140,7 @@ class DebugSettingsPage(Page):
     def load(self, settings: ConfigParser):
         section = settings["debug"]
         for widget, setting in self._get_debug_settings_checkbox_widgets():
-            widget.setChecked(section.getboolean(setting))
+            widget.setChecked(section.getboolean(setting) or False)
         log_level_combo_box = self.ui.log_level_combo_box
         configured_level_index = log_level_combo_box.findText(section["log-level"])
         log_level_combo_box.setCurrentIndex(configured_level_index)
@@ -258,7 +259,7 @@ class DecklistImportSettingsPage(Page):
     def load(self, settings: ConfigParser):
         section = settings["decklist-import"]
         for widget, setting in self._get_checkbox_widgets():
-            widget.setChecked(section.getboolean(setting))
+            widget.setChecked(section.getboolean(setting) or False)
 
         section = settings["default-filesystem-paths"]
         widgets_with_settings = self._get_save_path_settings_widgets()
@@ -376,12 +377,17 @@ class GeneralSettingsPage(Page):
             section = settings[section_name]
             widget.setCheckState(section.get_check_state(setting))
 
+    def _get_language_list(self) -> list[str]:
+        model = self.ui.preferred_language_combo_box.model()
+        assert isinstance(model, QStringListModel)
+        return model.stringList()
+
     def _load_cards_settings(self, settings: ConfigParser):
         section = settings["cards"]
         preferred_language_combo_box = self.ui.preferred_language_combo_box
-        preferred_language = section.get("preferred-language")
-        list_model: QStringListModel = preferred_language_combo_box.model()
-        if not (known := list_model.stringList()) or preferred_language not in known:
+        preferred_language = section["preferred-language"]
+        language_list = self._get_language_list()
+        if preferred_language not in language_list:
             preferred_language_combo_box.addItem(preferred_language)
         preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(preferred_language))
 
@@ -405,7 +411,7 @@ class GeneralSettingsPage(Page):
         return widgets_with_settings
 
     def get_index_for_language_code(self, language: str) -> int:
-        languages = self.ui.preferred_language_combo_box.model().stringList()
+        languages = self._get_language_list()
         if language in languages:
             return languages.index(language)
         else:
@@ -486,33 +492,42 @@ class PrintingPreferencesPage(Page):
         return PageMetadata(
             self.tr("Printing preferences", "Display text. Page name shown in the settings pages list"),
             "view-hidden",
-            self.tr("Hide unwanted printings", "Tooltip text for the settings pages list."),
+            self.tr(
+                "Hide unwanted printings and configure printing choice preferences",
+                "Tooltip text for the settings pages list."),
         )
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self.model = PrintingFilterModel(self)
+        self.printing_filter_model = PrintingFilterModel(self)
+        self.set_filter_model = MTGSetTreeModel(self)
+        self.set_filter_proxy_model = MTGSetTreeFilterModel(self)
+        self.set_filter_proxy_model.setSourceModel(self.set_filter_model)
         self.ui = ui = Ui_PrintingPreferencesPage()
         ui.setupUi(self)
         self.card_db = None
-        ui.printing_filter_view.setModel(self.model)
+        ui.printing_filter_view.setModel(self.printing_filter_model)
+        ui.set_filter_view.setModel(self.set_filter_proxy_model)
+        for column in range(len(MTGSetTreeModel.ModelColumns)-1):  # Last column width is set explicitly
+            ui.set_filter_view.resizeColumnToContents(column)
         header = ui.printing_filter_view.horizontalHeader()
-        for column in range(len(ModelColumns)-1):
+        for column in range(len(PrintingFilterModel.ModelColumns)-1):  # Last column width is set explicitly
             header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
-        header.resizeSection(ModelColumns.scryfall_query, 32)
-        for row in range(self.model.rowCount()):
-            index = self.model.index(row, ModelColumns.name)
+        header.resizeSection(PrintingFilterModel.ModelColumns.scryfall_query, 32)
+        for row in range(self.printing_filter_model.rowCount()):
+            index = self.printing_filter_model.index(row, PrintingFilterModel.ModelColumns.name)
             if index.data(IsHeaderRole):
-                ui.printing_filter_view.setSpan(row, ModelColumns.name, 1, 4)
-            if query := index.siblingAtColumn(ModelColumns.scryfall_query).data(ScryfallQueryRole):
+                ui.printing_filter_view.setSpan(row, PrintingFilterModel.ModelColumns.name, 1, 4)
+            if query := index.siblingAtColumn(PrintingFilterModel.ModelColumns.scryfall_query).data(ScryfallQueryRole):
                 button = self._create_scryfall_query_button(query)
-                ui.printing_filter_view.setIndexWidget(index.siblingAtColumn(ModelColumns.scryfall_query), button)
+                ui.printing_filter_view.setIndexWidget(
+                    index.siblingAtColumn(PrintingFilterModel.ModelColumns.scryfall_query), button)
 
     def _create_scryfall_query_button(self, query_str: str) -> QPushButton:
         button = QPushButton(QIcon.fromTheme("globe"), "", self)
         button.clicked.connect(partial(self.view_query_on_scryfall, query_str))
         button.setToolTip(self.tr(
-            "View cards hidden by this filter on the Scryfall website.",
+            "View cards affected by this filter on the Scryfall website.",
             "Tooltip text on a button next to a printing filter"))
         return button
 
@@ -524,29 +539,27 @@ class PrintingPreferencesPage(Page):
 
     def load(self, settings: ConfigParser):
         ui = self.ui
-        section = settings["card-filter"]
-        ui.set_filter_settings.setPlainText(section["hidden-sets"])
-        self.model.load_settings(settings)
+        self.set_filter_model.populate_from_card_db()
+        ui.set_filter_view.resizeColumnToContents(0)
+        self.printing_filter_model.load_settings(settings)
 
     def save(self):
-        section = mtg_proxy_printer.settings.settings["card-filter"]
-        ui = self.ui
-        self.model.save_settings(mtg_proxy_printer.settings.settings)
-        section["hidden-sets"] = ui.set_filter_settings.toPlainText()
-        weights = self.model.get_new_preference_weights()
+        self.printing_filter_model.save_settings(mtg_proxy_printer.settings.settings)
+        self.set_filter_model.save_settings(mtg_proxy_printer.settings.settings)
+        filter_preference_weights = self.printing_filter_model.get_new_preference_weights()
+        set_preference_weights = self.set_filter_model.get_new_preference_weights()
         self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
-        self.request_run_async_task.emit(PrintingPreferenceUpdater(self.card_db, weights))
+        self.request_run_async_task.emit(PrintingPreferenceUpdater(
+            self.card_db, filter_preference_weights, set_preference_weights))
 
     def highlight_differing_settings(self, settings: ConfigParser):
-        section = settings["card-filter"]
-        ui = self.ui
-        self.model.highlight_differing_settings(settings)
-        if section["hidden-sets"] != ui.set_filter_settings.toPlainText():
-            highlight_widget(ui.set_filter_settings)
+        self.printing_filter_model.highlight_differing_settings(settings)
+        self.set_filter_proxy_model.highlight_differing_settings(settings)
+        self.ui.set_filter_view.expandAll()
 
     def clear_highlight(self):
-        super().clear_highlight()
-        self.model.clear_highlight()
+        self.printing_filter_model.clear_highlight()
+        self.set_filter_proxy_model.clear_highlight()
 
 
 class DefaultDocumentLayoutSettingsPage(Page, PageConfigContainer):
@@ -611,7 +624,7 @@ class PrinterSettingsPage(Page):
     def load(self, settings: ConfigParser):
         section = settings["printer"]
         for checkbox, setting in self._get_printer_settings_boolean_widgets():
-            checkbox.setChecked(section.getboolean(setting))
+            checkbox.setChecked(section.getboolean(setting) or False)
         for spinbox, setting in self._get_printer_settings_length_widgets():
             # TODO: Not fully unit-aware. Spinbox assumed in mm
             spinbox.setValue(section.get_quantity(setting).to("mm").magnitude)
@@ -652,9 +665,9 @@ class ExportSettingsPage(Page):
     def load(self, settings: ConfigParser):
         ui = self.ui
         section = settings["export"]
-        ui.pdf_page_count_limit.setValue(section.getint("pdf-page-count-limit"))
+        ui.pdf_page_count_limit.setValue(section.getint("pdf-page-count-limit") or 0)
         ui.export_path.setText(section["export-path"])
-        ui.landscape_workaround.setChecked(section.getboolean("landscape-compatibility-workaround"))
+        ui.landscape_workaround.setChecked(section.getboolean("landscape-compatibility-workaround") or False)
         self._set_png_background_color_display(QColor(section["png-background-color"]))
 
     def save(self):

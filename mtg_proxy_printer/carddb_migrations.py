@@ -909,6 +909,35 @@ MIGRATION_SCRIPTS: dict[int, MigrationScript] = {
                 );
         END""")
     ], disable_foreign_keys=True),
+    35: MigrationScript([
+        "ALTER TABLE MTGSet ADD COLUMN set_preference_weight      INTEGER           NOT NULL DEFAULT 0",
+        "ALTER TABLE MTGSet ADD COLUMN parent_set_code            TEXT                       CHECK (parent_set_code <> '')",
+        # To populate the parent_set_code column, all rows need to be updated. This is triggered by force-clearing the
+        # icon_file_name column.
+        "UPDATE MTGSet SET (icon_file_name, icon_svg) = ('', NULL)",
+        "DROP VIEW EvaluatePrintingFilters",
+        dedent("""\
+        CREATE VIEW EvaluatePrintingFilters AS SELECT
+          printing_id,
+            coalesce(TRUE-(max(filter_active) OR set_filter_active), TRUE) AS is_visible,
+            coalesce(sum(printing_preference_weight), 0) + set_preference_weight AS preference_score
+        FROM Printing
+          INNER JOIN MTGSet USING (set_id)
+          LEFT OUTER JOIN FilterAppliesTo USING (printing_id)
+            LEFT OUTER JOIN PrintingFilters USING (filter_id)
+            GROUP BY printing_id"""),
+        dedent("""\
+        CREATE TRIGGER "Update Printing.preference_score on MTGSet.set_preference_weight update"
+          AFTER UPDATE OF set_preference_weight ON MTGSet
+          FOR EACH ROW
+          WHEN NEW.set_preference_weight <> OLD.set_preference_weight
+          BEGIN
+            UPDATE Printing
+              SET preference_score = preference_score + NEW.set_preference_weight - OLD.set_preference_weight
+              WHERE Printing.set_id = NEW.set_id;
+        END"""),
+        "UPDATE PrintingFilters SET filter_name = replace(filter_name, 'hide-', '')",
+    ]),
 }
 
 
@@ -933,7 +962,7 @@ class DatabaseMigrationTask(AsyncTask):
     Scripts combining multiple version upgrades in one SQL script are not supported.
     """
 
-    def __init__(self, card_db: CardDatabase, migration_scripts: dict[int, MigrationScript] = None):
+    def __init__(self, card_db: CardDatabase, migration_scripts: dict[int, MigrationScript] | None = None):
         super().__init__()
         self.db_path = card_db.db_path
         self.migration_scripts = migration_scripts or MIGRATION_SCRIPTS

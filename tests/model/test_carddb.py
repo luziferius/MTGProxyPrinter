@@ -34,8 +34,9 @@ from mtg_proxy_printer.async_tasks.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.units_and_sizes import UUID
 
-from ..helpers import assert_model_is_empty, fill_card_database_with_json_card, \
-    fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation, update_database_printing_filters
+from ..helpers import assert_model_is_empty, fill_card_database_with_json_card, IsDataclass, \
+    fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation, \
+    update_database_printing_filters, set_icon_svg_for_mtg_set
 from ..test_card_info_downloader import TestCaseData
 
 
@@ -86,6 +87,21 @@ def test_find_sets_matching(
     ])
     found_set_codes = [set_.code for set_ in card_db.find_sets_matching(card_name, language)]
     assert_that(found_set_codes, contains_inanyorder(*expected_codes))
+
+
+def test_find_sets_matching_reads_icon_svg(card_db: CardDatabase):
+    fill_card_database_with_json_card(card_db, "english_basic_Forest")
+    mock_svg = b" " * 101
+    set_icon_svg_for_mtg_set(card_db, "anb", mock_svg)
+    found_sets, highscore_index = card_db.find_sets_matching("Forest", "en")
+    expected_set = MTGSet("anb", "Arena Beginner Set", svg_icon=mock_svg)
+    assert_that(
+        found_sets,
+        contains_exactly(
+            is_dataclass_equal_to(expected_set)
+        )
+    )
+
 
 
 @pytest.mark.parametrize("language, expected_names", [
@@ -310,8 +326,9 @@ def test_cards_used_less_often_then(card_db: CardDatabase, usage_count: int, exp
     )
 
 
-def _get_card_from_model(card_db: CardDatabase, scryfall_id: str, is_front: bool):
+def _get_card_from_model(card_db: CardDatabase, scryfall_id: str, is_front: bool) -> Card:
     card = card_db.get_card_with_scryfall_id(scryfall_id, is_front)
+    assert card is not None
     assert_that(card, has_properties({
         "scryfall_id": equal_to(scryfall_id),
         "is_front": equal_to(is_front),
@@ -459,14 +476,14 @@ def generate_test_cases_for_test_get_card_with_scryfall_id() -> \
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_card_with_scryfall_id())
 def test_get_card_with_scryfall_id(
         card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card | None):
-    assert_that(
-        card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front),
-        is_(any_of(
-            all_of(
-                none(),
-                instance_of(type(expected))  # None if and only if expected is None
-            ),
-            all_of(
+    assert card_data.scryfall_id is not None and card_data.is_front is not None
+    result = card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front)
+    if expected is None:
+        assert_that(result, is_(None))
+    else:
+        expected: IsDataclass
+        assert_that(
+            result, is_(all_of(
                 is_(instance_of(Card)),
                 matches_type_annotation(),
                 has_properties({
@@ -477,7 +494,7 @@ def test_get_card_with_scryfall_id(
                 }),
                 is_dataclass_equal_to(expected),
             )))
-    )
+
 
 
 @pytest.mark.parametrize("language", ["en", None])
@@ -554,7 +571,9 @@ def generate_test_cases_for_test__translate_card():
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test__translate_card())
 def test__translate_card(card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card):
     is_front = card_data.is_front is None or card_data.is_front
+    assert card_data.scryfall_id is not None
     to_translate = card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, is_front)
+    assert to_translate is not None
     # Use the private method to skip the internal shortcut in translate_card()
     # that skips requested same-language translations.
     assert_that(
@@ -646,7 +665,7 @@ def test_is_removed_printing_with_removed_printing_returns_true(card_db: CardDat
 @pytest.mark.parametrize("filter_value", [True, False])
 def test_is_removed_printing_with_hidden_or_visible_printing_returns_false(
         card_db: CardDatabase, filter_value: bool):
-    fill_card_database_with_json_card(card_db, "oversized_card", {"hide-oversized-cards": str(filter_value)})
+    fill_card_database_with_json_card(card_db, "oversized_card", {"oversized-cards": str(filter_value)})
     assert_that(
         card_db.is_removed_printing("650722b4-d72b-4745-a1a5-00a34836282b"),
         is_(False)
@@ -679,7 +698,7 @@ def test_get_replacement_card_for_unknown_printing(
     # Invalid card, because one side has completely missing images, and is therefore removed
     (["missing_image_double_faced_card"], "any", "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", True),
     # It has placeholder images, so is hidden, but not removed
-    (["german_Back_to_Basics"], "hide-cards-without-images", "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", False),
+    (["german_Back_to_Basics"], "cards-without-images", "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", False),
 ])
 def test_is_removed_printing(
         card_db: CardDatabase, cards_to_import, filter_name: str, printing: str, expected: bool):
@@ -758,7 +777,7 @@ def test_find_related_printings(card_db: CardDatabase, source_id: str, expected_
         "Trailblazers_Torch",
     ])
     source_card = card_db.get_card_with_scryfall_id(source_id, True)
-    assert_that(source_card, is_(not_none()), "Setup failed")
+    assert source_card is not None, "Setup failed"
     related = card_db.find_related_cards(source_card)
     assert_that(
         related, contains_inanyorder(
@@ -770,7 +789,7 @@ def test_find_related_printings(card_db: CardDatabase, source_id: str, expected_
 
 def test_get_all_cards_from_image_cache(card_db: CardDatabase):
     fill_card_database_with_json_cards(card_db, ["regular_english_card", "oversized_card"],
-                                       {"hide-oversized-cards": str(True)})
+                                       {"oversized-cards": str(True)})
     cache_content = [
         CacheContent("650722b4-d72b-4745-a1a5-00a34836282b", True, ImageQuality.high_resolution, Path()),  # Atraxa
         CacheContent("0000579f-7b35-4ed3-b44c-db2a538066fe", True, ImageQuality.high_resolution, Path()),  # Fury Sliver
@@ -826,10 +845,11 @@ def test_get_available_languages_for_card(
         "german_Coercion_with_faulty_translation", "german_Duress", "english_Duress",
         "english_Back_to_Basics", "german_Back_to_Basics",
     ])
+    assert card_data.scryfall_id is not None and card_data.is_front is not None
     card = card_db.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front)
-    assert_that(card, is_(not_none()), "Setup failed, card not found")
+    assert card is not None, "Test setup failed"
     if filter_enabled:
-        filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["card-filter"]}
+        filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["printing-filter"]}
         update_database_printing_filters(card_db, filters)
     assert_that(
         card_db.get_available_languages_for_card(card),
@@ -890,15 +910,15 @@ def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(c
      [MTGSet("tneo", "Kamigawa: Neon Dynasty Tokens")]),
     # The first of these has placeholder images, making it affected by a printing filter
     (["german_Duress", "german_Duress_2"],
-     "920e8a8f-3cb4-4f33-8a71-f2524cf63aaf", "hide-cards-without-images",  # ID of the second printing from MID
+     "920e8a8f-3cb4-4f33-8a71-f2524cf63aaf", "cards-without-images",  # ID of the second printing from MID
      [MTGSet("mid", "Innistrad: Midnight Hunt")]),
     # Data of hidden printings present in the document must round-trip.
     # Steps to reproduce: Disable a card filter, add a card affected by it, then re-enable it.
     (["german_Duress", "german_Duress_2"],
-     "51c6ec30-afb2-41e6-895b-92e070aa86f3", "hide-cards-without-images",  # ID of the first printing from 7th Edition
+     "51c6ec30-afb2-41e6-895b-92e070aa86f3", "cards-without-images",  # ID of the first printing from 7th Edition
      [MTGSet("7ed", "Seventh Edition"), MTGSet("mid", "Innistrad: Midnight Hunt")]),
     (["german_Duress"],
-     "51c6ec30-afb2-41e6-895b-92e070aa86f3", "hide-cards-without-images",
+     "51c6ec30-afb2-41e6-895b-92e070aa86f3", "cards-without-images",
      [MTGSet("7ed", "Seventh Edition")]),
     
 ])
@@ -907,13 +927,15 @@ def test_get_available_sets_for_card(
         jsons: list[str], scryfall_id: UUID, filter_name: str, expected: list[MTGSet]):
     fill_card_database_with_json_cards(card_db, jsons)
     card = card_db.get_card_with_scryfall_id(scryfall_id, True)
-    filters = dict(mtg_proxy_printer.settings.settings["card-filter"])
+    assert card is not None, "Test setup failed"
+    section = mtg_proxy_printer.settings.settings["printing-filter"]
+    filters: dict[str, str] = {key: section[key] for key in section.keys()}
     if filter_name:
         filters[filter_name] = "True"
         update_database_printing_filters(card_db, filters)
-    assert_that(card, is_(not_none()), "Test setup failed, card not found")
-    fulfills_matcher = contains_exactly(*expected) if expected else empty()
-    assert_that(card_db.get_available_sets_for_card(card), fulfills_matcher)
+    fulfills_matcher = contains_exactly(*map(is_dataclass_equal_to, expected)) if expected else empty()
+    result = card_db.get_available_sets_for_card(card)
+    assert_that(result, fulfills_matcher)
 
 
 @pytest.mark.parametrize("jsons, scryfall_id, filter_enabled, expected", [
@@ -948,10 +970,36 @@ def test_get_available_collector_numbers_for_card_in_set(
         jsons: list[str], scryfall_id: UUID, filter_enabled: bool, expected: list[str]):
     fill_card_database_with_json_cards(card_db, jsons)
     card = card_db.get_card_with_scryfall_id(scryfall_id, True)
-    assert_that(card, is_(not_none()), "Setup failed. Card not found")
+    assert card is not None, "Test setup failed"
     if filter_enabled:
-        filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["card-filter"]}
+        filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["printing-filter"]}
         update_database_printing_filters(card_db, filters)
 
     fulfills_matcher = all_of(has_length(len(expected)), contains_exactly(*expected)) if expected else empty()
     assert_that(card_db.get_available_collector_numbers_for_card_in_set(card), fulfills_matcher)
+
+
+dt_from_iso = datetime.datetime.fromisoformat
+
+
+@pytest.mark.parametrize("jsons, expected", (
+    # Empty database works
+    ([], []),
+    # No duplicates
+    (["Asmoranomardicadaistinaculdacar", "Asmoranomardicadaistinaculdacar_2"],
+     [MTGSet("mh2", "Modern Horizons 2", dt_from_iso("2021-06-18"), False, 0, None, None)]),
+    # A major set, together with its token set. The card_db parametrized with PRAGMA reverse_unordered_selects = on/off
+    # validates that arbitrary orders result in stable and expected output.
+    (["Flowerfoot_Swordmaster_card", "Flowerfoot_Swordmaster_token"],
+     [MTGSet("blb", "Bloomburrow", dt_from_iso("2024-08-02"), False, 0, None, None), MTGSet("tblb", "Bloomburrow Tokens", dt_from_iso("2024-08-02"), False, 0, "blb", None)]),
+))
+def test_get_all_sets(card_db: CardDatabase, jsons: list[str], expected: list[MTGSet]):
+    # Note: The SVG set symbol data is not present in test databases, thus comparing against None is valid.
+    fill_card_database_with_json_cards(card_db, jsons)
+    result = list(card_db.get_all_sets())
+    expected_sets = list(map(is_dataclass_equal_to, expected))
+    assert_that(
+        result,
+        contains_exactly(*expected_sets),
+        f"Wrong result: {result}"
+    )

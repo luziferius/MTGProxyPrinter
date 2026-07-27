@@ -69,7 +69,7 @@ def test_local_header_conforms_to_current_scryfall_return_data(url: str, header:
     ])
 def test_excluded_printing_is_replaced_with_an_available_printing(
         card_db, image_db, cards_to_import: list[str], deck_list: str, expected_card: CardIdentificationData):
-    fill_card_database_with_json_cards(card_db, cards_to_import, {"hide-cards-without-images": "True"})
+    fill_card_database_with_json_cards(card_db, cards_to_import, {"cards-without-images": "True"})
     card = _get_expected_card_from_database(card_db, expected_card)
     parser = ScryfallCSVParser(card_db, image_db)
     assert_that(
@@ -136,7 +136,7 @@ def generate_test_cases_for_translation_and_replacement():
     "cards_to_import, deck_list, target_card", generate_test_cases_for_translation_and_replacement())
 def test_deck_list_translation_works(
         card_db, image_db, cards_to_import: list[str], deck_list: str, target_card: CardIdentificationData):
-    fill_card_database_with_json_cards(card_db, cards_to_import, {"hide-cards-without-images": "False"})
+    fill_card_database_with_json_cards(card_db, cards_to_import, {"cards-without-images": "False"})
     card = _get_expected_card_from_database(card_db, target_card)
     parser = ScryfallCSVParser(card_db, image_db)
     assert_that(
@@ -191,7 +191,7 @@ def generate_test_cases_for_test_card_identification_works_in_simple_cases():
     generate_test_cases_for_test_card_identification_works_in_simple_cases())
 def test_card_identification_works_in_simple_cases(
         card_db, image_db, cards_to_import: list[str], deck_list: str, expected_card: CardIdentificationData):
-    fill_card_database_with_json_cards(card_db, cards_to_import, {"hide-digital-cards": "False"})
+    fill_card_database_with_json_cards(card_db, cards_to_import, {"digital-cards": "False"})
     card = _get_expected_card_from_database(card_db, expected_card)
     parser = ScryfallCSVParser(card_db, image_db)
     with unittest.mock.patch.object(CardDatabase, "translate_card") as translate_card:

@@ -66,7 +66,7 @@ close_to_: Callable[[Real], Matcher[Real]] = functools.partial(close_to, delta=0
 class AsyncTaskReceiver(QObject):
     """Collects tasks received via its slot method"""
 
-    def __init__(self, parent: QObject = None):
+    def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self.tasks: list[AsyncTask] = []
 
@@ -105,7 +105,7 @@ def setup_settings_for_testing():
         "mtg_proxy_printer.settings.write_settings_to_file() called within test code!"
     )
     mtg_proxy_printer.settings.settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings["printing-filter"]
     for setting in section.keys():
         # Turn off all card filters, so that the defaults don’t affect the test cases
         section[setting] = str(False)
@@ -114,22 +114,25 @@ def setup_settings_for_testing():
 def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict | None):
     # Explicitly share the in-memory database connection
     db = card_db.db
-    dw = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), db, ":memory:")
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    dit = mtg_proxy_printer.async_tasks.card_info_downloader.DatabaseImportTask(MagicMock(), db, ":memory:")
+    section = mtg_proxy_printer.settings.settings["printing-filter"]
     settings_to_use = update_database_printing_filters(card_db, filter_settings)
     db.row_factory = None  # TODO: Determine why patch.object() doesn't properly revert during __exit__()
-    with patch.dict(section, settings_to_use), patch("mtg_proxy_printer.async_tasks.card_info_downloader.SetIconImportTask.run"):
-        dw.populate_database(data)
+    sets_list_data = read_resource_text("tests.json_samples", f"all_sets_data.json").encode("utf-8")
+    with patch.dict(section, settings_to_use), \
+            patch("mtg_proxy_printer.async_tasks.card_info_downloader.SetDataImportTask._read_svg", return_value=None), \
+            patch("mtg_proxy_printer.async_tasks.card_info_downloader.SetDataImportTask._fetch_sets_list_from_scryfall_api", return_value=sets_list_data):
+        dit.populate_database(data)
     db.row_factory = sqlite3.Row
 
 
 def update_database_printing_filters(
         card_db: mtg_proxy_printer.model.carddb.CardDatabase, filter_settings: StrDict | None) -> StrDict:
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings["printing-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     if filter_settings:
         settings_to_use.update(filter_settings)
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings["printing-filter"]
     with patch.dict(section, settings_to_use):
         PrintingFilterUpdater(card_db, card_db.db, force_update_hidden_column=True).run()
     return settings_to_use
@@ -151,7 +154,7 @@ def load_multiple_json_cards(json_files_or_names: list[str | CardDataType]) -> l
 def fill_card_database_with_json_cards(
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
        json_files_or_names: list[str | CardDataType],
-       filter_settings: dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+       filter_settings: dict[str, str] | None = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     data = load_multiple_json_cards(json_files_or_names)
     populate_database(card_db, data, filter_settings)
     return card_db
@@ -159,9 +162,15 @@ def fill_card_database_with_json_cards(
 
 def fill_card_database_with_json_card(
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-        json_file_or_name: str | CardDataType, filter_settings: dict[str, str] = None) \
+        json_file_or_name: str | CardDataType, filter_settings: dict[str, str] | None = None) \
         -> mtg_proxy_printer.model.carddb.CardDatabase:
     return fill_card_database_with_json_cards(card_db, [json_file_or_name], filter_settings)
+
+
+def set_icon_svg_for_mtg_set(
+        card_db: mtg_proxy_printer.model.carddb.CardDatabase,
+        set_code: str, icon_svg: bytes):
+    card_db.db.execute("UPDATE MTGSet SET icon_svg = ? WHERE set_code = ?", (icon_svg, set_code))
 
 
 def create_save_database_with(
@@ -210,7 +219,7 @@ class IsDataclass(Protocol):
     __str__: Callable[[], str]
 
 
-class is_dataclass_equal_to(BaseMatcher):
+class IsDataclassEqualTo(BaseMatcher):
 
     def __init__(self, expected: IsDataclass):
         self.expected = expected
@@ -263,7 +272,7 @@ class is_dataclass_equal_to(BaseMatcher):
         )
 
 
-class matches_type_annotation(BaseMatcher):
+class MatchesTypeAnnotation(BaseMatcher):
 
     def _matches(self, item: IsDataclass) -> bool:
         class_ = item.__class__
@@ -280,6 +289,10 @@ class matches_type_annotation(BaseMatcher):
 
     def describe_to(self, description: Description) -> None:
         description.append_text(f"dataclass instance containing correct types")
+
+
+matches_type_annotation = MatchesTypeAnnotation
+is_dataclass_equal_to = IsDataclassEqualTo
 
 
 def quantity_close_to(value: Quantity):
@@ -301,7 +314,8 @@ def quantity_between(lower: Quantity, upper: Quantity):
     )
 
 
-def create_card(name: str, size: CardSize = CardSizes.REGULAR, image_uri: str = "", pixmap: QPixmap = None) -> Card:
+def create_card(
+        name: str, size: CardSize = CardSizes.REGULAR, image_uri: str = "", pixmap: QPixmap | None = None) -> Card:
     """Creates a Card with given name and size. Most properties are empty."""
     return Card(
         name=name, set=MTGSet("", ""), collector_number="", language="", scryfall_id="",
