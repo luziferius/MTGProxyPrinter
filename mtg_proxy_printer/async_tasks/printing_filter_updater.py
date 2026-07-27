@@ -278,7 +278,7 @@ class PrintingPreferenceUpdater(AsyncTask):
         self.model = model
         self.new_preference_weights = new_preference_weights or self.get_filter_preference_weights_from_settings()
         self.old_preference_weights = set(model.get_printing_filter_weights().items())
-        self.new_set_weights = new_set_weights or self.get_updated_set_preference_weights()
+        self.new_set_weights = new_set_weights or self.get_updated_set_preference_weights(model)
         self.progress = 0
         self.task_completed.connect(model.restart_transaction, QueuedConnection)
         self._db = db_connection
@@ -351,10 +351,10 @@ class PrintingPreferenceUpdater(AsyncTask):
             self.advance_progress.emit()
             if self.should_abort: break
 
-    def get_updated_set_preference_weights(self) -> set[tuple[str, int]]:
+    def get_updated_set_preference_weights(self, card_db: "CardDatabase") -> set[tuple[str, int]]:
         # The intersection removes all words that are not known set codes
         preference_weights_in_settings = mtg_proxy_printer.settings.parse_set_printing_preference_weights()
-        preference_weights_in_db = self.get_all_set_preference_weights_from_db()
+        preference_weights_in_db = self.get_all_set_preference_weights_from_db(card_db)
         for garbage in list(preference_weights_in_settings.keys() - preference_weights_in_db.keys()):
             del preference_weights_in_settings[garbage]
         result = set(
@@ -364,11 +364,12 @@ class PrintingPreferenceUpdater(AsyncTask):
         )
         return result
 
-    def get_all_set_preference_weights_from_db(self) -> dict[str, int]:
+    @staticmethod
+    def get_all_set_preference_weights_from_db(card_db: "CardDatabase") -> dict[str, int]:
         """Returns all known set codes."""
         logger.debug("Reading all known set codes with their preference weights")
-        result = dict(self.db.execute(
-                "SELECT set_code, set_preference_weights FROM MTGSet -- get_all_set_preference_weights_from_db()\n"
+        result = dict(card_db.db.execute(
+                "SELECT set_code, set_preference_weight FROM MTGSet -- get_all_set_preference_weights_from_db()\n"
         ))
         return result
 
