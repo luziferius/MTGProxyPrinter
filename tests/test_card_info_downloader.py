@@ -406,7 +406,10 @@ def generate_test_cases_for_test_print_hiding_filters():
     yield TestCaseData("textless_card"), "textless-cards"
     yield TestCaseData("spanish_basic_Forest"), "low-resolution-cards"
     yield TestCaseData("english_basic_Forest_2"), "full-art-cards"
-
+    yield TestCaseData("promo_prerelease"), "promo"
+    yield TestCaseData("promo_promopack"), "promo"
+    yield TestCaseData("promo_prerelease"), "promo-prerelease"
+    yield TestCaseData("promo_promopack"), "promo-promopack"
 
 @pytest.mark.parametrize("filter_enabled", [True, False])
 @pytest.mark.parametrize("test_case, filter_name", generate_test_cases_for_test_print_hiding_filters())

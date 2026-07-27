@@ -164,7 +164,7 @@ class PrintingFilterModel(QAbstractTableModel):
         header_font.setBold(True)
         weight_tooltip = self.tr(
             "High values encourage choosing this kind of card, negative values discourage choosing it.",
-            "Is preference weight column tooltip text")
+            "Preference weight column tooltip text")
         return [
             # ------------ General filters ------------
             ModelRow.create_header(
@@ -223,6 +223,21 @@ class PrintingFilterModel(QAbstractTableModel):
                         'Marvel comics, Warhammer 40k, and a lot others.',
                         "Tooltip text"),
                 weight_tooltip, "universes-beyond-cards", "is:universesbeyond"),
+            ModelRow.create_item(
+                self.tr("Promotional cards", "Display text"),
+                self.tr("Any kind of promotional cards", "Tooltip text"),
+                weight_tooltip, "promo", "is:promo"
+            ),
+            ModelRow.create_item(
+                self.tr("Prerelease event promos", "Display text"),
+                self.tr("Date-stamped foil promos from Pre-release kits", "Tooltip text"),
+                weight_tooltip, "promo-prerelease", "is:prerelease"
+            ),
+            ModelRow.create_item(
+                self.tr("WPN promo-pack cards", "Display text"),
+                self.tr("Cards from WPN promo packs with planeswalker symbol stamps", "Tooltip text"),
+                weight_tooltip, "promo-promopack", "is:promopack"
+            ),
 
             # ------------ Frame/border style ------------
             ModelRow.create_header(

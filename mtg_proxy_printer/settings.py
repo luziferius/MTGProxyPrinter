@@ -170,6 +170,9 @@ DEFAULT_SETTINGS["printing-filter"] = {
     "low-resolution-cards": "False",
     "textless-cards": "False",
     "full-art-cards": "False",
+    "promo": "False",
+    "promo-prerelease": "False",
+    "promo-promopack": "False",
     "sets": "",
 }
 DEFAULT_SETTINGS["printing-weights"] = {
@@ -185,6 +188,9 @@ DEFAULT_SETTINGS["printing-weights"] = {
     "low-resolution-cards": "-20",
     "textless-cards": "-5",
     "full-art-cards": "0",
+    "promo": "0",
+    "promo-prerelease": "0",
+    "promo-promopack": "0",
     "sets": "",
 }
 
@@ -244,7 +250,6 @@ DOCUMENT_SETTINGS_QUANTITY_LIMITS = {
     "watermark-pos-y": QuantityLimits(-100*mm, 100*mm, {mm}, mm),
     "watermark-angle": QuantityLimits(-360*degree, 360*degree, {degree}, degree),
 }
-
 
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),

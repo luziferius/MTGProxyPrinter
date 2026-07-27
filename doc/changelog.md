@@ -15,6 +15,9 @@
   - For cards with low resolution images
   - For full-art cards, where the artwork extends below the rules textbox
   - For textless cards. These are non-basic-land cards without the rules text box
+  - Any promotional printings
+  - (Date-stamped) foil pre-release promo cards
+  - Planeswalker-symbol-stamped WPN promo pack cards
 
 ## Changed features
 

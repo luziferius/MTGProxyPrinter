@@ -893,47 +893,52 @@ def _get_printing_filter_data(card: CardDataType, active_filters: list[str]):
     legalities = card["legalities"]
     image_status = card["image_status"]
     border_color = card["border_color"]
+    promo_types = set(card.get("promo_types", ()))
     # The API documentation states the type_line is mandatory, but reversible cards miss it in the parent Card.
     # Performance note: Converting into sets and computing if they are not disjoint is more expensive than this.
     type_line = card.get("type_line") or " // ".join(face["type_line"] for face in card.get("card_faces", ()))
     is_token = any(("Dungeon" in type_line, "Token" in type_line, "Emblem" in type_line))
     active_filters.clear()
-    is_active = active_filters.append
+    filter_applies = active_filters.append
     # Racism filter
-    if card.get("content_warning"): is_active("cards-depicting-racism")
+    if card.get("content_warning"): filter_applies("cards-depicting-racism")
     # Cards with placeholder images (low-res image with "not available in your language" overlay)
-    if image_status == "placeholder": is_active("cards-without-images")
-    if image_status == "lowres": is_active("low-resolution-cards")
-    if card["oversized"]: is_active("oversized-cards")
+    if image_status == "placeholder": filter_applies("cards-without-images")
+    if image_status == "lowres": filter_applies("low-resolution-cards")
+    if card["oversized"]: filter_applies("oversized-cards")
     # Frame and border filter
-    if card["full_art"]: is_active("full-art-cards")
-    if card["textless"]: is_active("textless-cards")
-    if border_color == "white": is_active("white-bordered")
-    if border_color == "gold": is_active("gold-bordered")
-    if border_color == "borderless": is_active("borderless")
-    if "extendedart" in card.get("frame_effects", ()): is_active("extended-art")
+    if card["full_art"]: filter_applies("full-art-cards")
+    if card["textless"]: filter_applies("textless-cards")
+    if border_color == "white": filter_applies("white-bordered")
+    if border_color == "gold": filter_applies("gold-bordered")
+    if border_color == "borderless": filter_applies("borderless")
+    if "extendedart" in card.get("frame_effects", ()): filter_applies("extended-art")
     # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
-    if card["layout"] == "reversible_card": is_active("reversible-cards")
+    if card["layout"] == "reversible_card": filter_applies("reversible-cards")
     # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
     # black-bordered promotional cards, in addition to silver-bordered cards.
-    if card["set_type"] == "funny" and "legal" not in legalities.values(): is_active("funny-cards")
-    if is_token: is_active("token")
-    if card["digital"]: is_active("digital-cards")
-    if card["layout"] == "art_series": is_active("art-series-cards")
-    if "universesbeyond" in card.get("promo_types", ()): is_active("universes-beyond-cards")
+    if card["set_type"] == "funny" and "legal" not in legalities.values(): filter_applies("funny-cards")
+    if is_token: filter_applies("token")
+    if card["digital"]: filter_applies("digital-cards")
+    if card["layout"] == "art_series": filter_applies("art-series-cards")
+    #Promotional cards
+    if card["promo"]: filter_applies("promo")
+    if "universesbeyond" in promo_types: filter_applies("universes-beyond-cards")
+    if "prerelease" in promo_types: filter_applies("promo-prerelease")
+    if "promopack" in promo_types: filter_applies("promo-promopack")
     # Specific format legality. Use .get() instead of [] to not fail
     # if Scryfall removes one of the listed formats in the future.
-    if legalities.get("brawl") == "banned": is_active("banned-in-brawl")
-    if legalities.get("commander") == "banned": is_active("banned-in-commander")
-    if legalities.get("historic") == "banned": is_active("banned-in-historic")
-    if legalities.get("legacy") == "banned": is_active("banned-in-legacy")
-    if legalities.get("modern") == "banned": is_active("banned-in-modern")
-    if legalities.get("oathbreaker") == "banned": is_active("banned-in-oathbreaker")
-    if legalities.get("pauper") == "banned": is_active("banned-in-pauper")
-    if legalities.get("penny") == "banned": is_active("banned-in-penny")
-    if legalities.get("pioneer") == "banned": is_active("banned-in-pioneer")
-    if legalities.get("standard") == "banned": is_active("banned-in-standard")
-    if legalities.get("vintage") == "banned": is_active("banned-in-vintage")
+    if legalities.get("brawl") == "banned": filter_applies("banned-in-brawl")
+    if legalities.get("commander") == "banned": filter_applies("banned-in-commander")
+    if legalities.get("historic") == "banned": filter_applies("banned-in-historic")
+    if legalities.get("legacy") == "banned": filter_applies("banned-in-legacy")
+    if legalities.get("modern") == "banned": filter_applies("banned-in-modern")
+    if legalities.get("oathbreaker") == "banned": filter_applies("banned-in-oathbreaker")
+    if legalities.get("pauper") == "banned": filter_applies("banned-in-pauper")
+    if legalities.get("penny") == "banned": filter_applies("banned-in-penny")
+    if legalities.get("pioneer") == "banned": filter_applies("banned-in-pioneer")
+    if legalities.get("standard") == "banned": filter_applies("banned-in-standard")
+    if legalities.get("vintage") == "banned": filter_applies("banned-in-vintage")
 
 
 def _should_skip_card(card: CardDataType) -> bool:
