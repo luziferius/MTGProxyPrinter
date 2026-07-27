@@ -782,7 +782,7 @@ class CardDatabase(QObject):
         Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
         """
         query = cached_dedent("""\
-        SELECT set_code, set_name, icon_svg -- get_available_sets_for_card()
+        SELECT set_code, set_name, icon_svg, max(preference_score) as preference_score -- get_available_sets_for_card()
             FROM MTGSet
             JOIN Printing USING (set_id)
             JOIN Card USING (card_id)
@@ -803,18 +803,15 @@ class CardDatabase(QObject):
 
     def get_available_collector_numbers_for_card_in_set(self, card: Card) -> list[str]:
         query = cached_dedent("""\
-        SELECT DISTINCT collector_number FROM ( -- get_available_collector_numbers_for_card_in_set()
-          SELECT ? AS collector_number
-          UNION ALL
-          SELECT collector_number
-            FROM MTGSet
-            JOIN Printing USING (set_id)
-            JOIN Card USING (card_id)
-            WHERE (is_visible, oracle_id, set_code, language) 
-                = (TRUE,       ?,         ?,        ?)
-          )
-        """)
-        parameters: ParameterList = [card.collector_number, card.oracle_id, card.set_code, card.language]
+        SELECT collector_number
+          FROM MTGSet
+          JOIN Printing USING (set_id)
+          JOIN Card USING (card_id)
+          WHERE (oracle_id, set_code, language) 
+              = (?,         ?,        ?)
+            AND (is_visible IS TRUE OR collector_number = ?)
+                """)
+        parameters: ParameterList = [card.oracle_id, card.set_code, card.language, card.collector_number]
         return natural_sorted(self._read_scalar_list_from_db(query, parameters))
 
     def _read_optional_scalar_from_db(self, query: LiteralString, parameters: Sequence[Any] = ()):
