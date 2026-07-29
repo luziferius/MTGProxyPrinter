@@ -32,6 +32,7 @@
 
 ## Fixed issues
 
+- Fixed broken card data update, that stopped workin on July 20th 2026 due to a change in the Scryfall API
 - The card lookup for "related cards" via the context menu now finds both sides of related double-faced cards or tokens.
 - Fixed application hang at exit, if a card data update was previously canceled.
 - Potentially fixed Scryfall card data import aborting on some systems with `IncompleteRead` errors

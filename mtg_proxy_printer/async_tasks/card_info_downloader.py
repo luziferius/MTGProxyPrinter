@@ -19,7 +19,7 @@ from collections.abc import Generator, Sequence
 import functools
 import gzip
 import itertools
-import math
+import json
 import shutil
 from gzip import GzipFile
 from pathlib import Path
@@ -89,13 +89,16 @@ class CardInfoDownloadTaskBase(DownloaderBase):
     """Base class for tasks that fetch card data from the Scryfall bulk-data API."""
 
     def get_scryfall_bulk_card_data_url(self) -> tuple[str, int]:
-        """Returns the bulk data URL and item count"""
+        """Returns the bulk data URL and compressed size in bytes"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
         data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
         with data:
             item: BulkDataType = next(ijson.items(data, "", use_float=True))
-        uri = item["download_uri"]
-        size = item["size"]
+        try:
+            uri = item["jsonl_download_uri"]
+            size = item["compressed_size"]
+        except KeyError as e:
+            raise RuntimeError("Required data not found in API response. Format change?") from e
         logger.debug(f"Bulk data with uncompressed size {size} bytes located at: {uri}")
         return uri, size
 
@@ -126,13 +129,6 @@ class FileDownloadTask(CardInfoDownloadTaskBase):
         monitor = self._open_url(
             url,
             self.tr("Downloading card data:", "Progress bar label text"))
-        # Hack: As of writing this, the CDN does not offer the size of the gzip-compressed data.
-        # The API also only offers the uncompressed size. So divide the API-provided size by an empirically
-        # determined compression factor to estimate the download size. Only do so, if the CDN does not offer the size.
-        if monitor.content_encoding() == "gzip":
-            file_name += ".gz"
-            size = math.floor(size / GZIP_COMPRESSION_FACTOR)
-            logger.info(f"Content length estimated as {size} bytes")
         if monitor.content_length <= 0:
             monitor.content_length = size
         download_file_path = self.download_path/file_name
@@ -171,13 +167,12 @@ class StreamTask(CardInfoDownloadTaskBase):
     _queue_depth = 5
     _batch_size = 5000
 
-    def __init__(self, source: str | Path | None = None, json_path: str = "item"):
+    def __init__(self, source: str | Path | None = None, json_path: str = ""):
         super().__init__()
         self.open_file: GzipFile | MeteredSeekableHTTPFile | None = None
         self.source = source
         self.json_path = json_path
         self.queue: CardDataQueue = queue.Queue(self._queue_depth)
-        self._stream = None
 
     def _enqueue_stream(self, data: CardStream):
         """Put the CardStream into the queue for downstream consumption"""
@@ -186,14 +181,6 @@ class StreamTask(CardInfoDownloadTaskBase):
                 self.queue.put(batch)
         except AttributeError:  # Cancelling closes and deletes the underlying file, causing an AttributeError in run()
             logger.info(f"{self.__class__.__name__}: Read operation cancelled")
-        except Exception as e:
-            # Cancelling also exhausts the queue to prevent deadlocks.
-            # That exhaustion deliberately causes a "read from closed file".
-            # So suppress any error, if the stream no longer exists, as it only disappears through cancel()
-            if self._stream is not None:
-                signal = self.error_occurred if isinstance(self.source, Path) else self.network_error_occurred
-                logger.warning(f"{self.__class__.__name__}: Unexpected end of stream")
-                signal.emit(str(e))
         else:
             logger.info(f"{self.__class__.__name__}: Card data exhausted.")
         finally:
@@ -216,7 +203,6 @@ class StreamTask(CardInfoDownloadTaskBase):
         logger.debug(f"{self.__class__.__name__}: entering cancel()")
         if self.open_file is not None:
             self.open_file.close()
-        self.open_file = self._stream = None
         while not self.queue.empty():
             # Flush the queue to unblock a potentially blocked writer thread:
             # The consumer thread stops immediately within it's currently processed batch,
@@ -236,14 +222,14 @@ class FileStreamTask(StreamTask):
         data = self.read_json_card_data_from(self.source, self.json_path)
         self._enqueue_stream(data)
 
-    def read_json_card_data_from(self, file_path: Path, json_path: str = "item") -> CardStream:
+    def read_json_card_data_from(self, file_path: Path, json_path: str = "") -> CardStream:
         file_size = file_path.stat().st_size
         raw_file = file_path.open("rb")
         with self._wrap_in_metered_file(raw_file, file_size) as file:
             if file_path.suffix.casefold() == ".gz":
                 self.open_file = file = gzip.open(file, "rb")
-            self._stream = ijson.items(file, json_path, use_float=True)
-            yield from self._stream
+            while line := file.readline():
+                yield json.loads(line)
 
     def _wrap_in_metered_file(self, raw_file, file_size: int):
         monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size)
@@ -273,10 +259,13 @@ class ApiStreamTask(StreamTask):
     """
     def run(self):
         logger.info(f"{self.__class__.__name__}: About to stream card data in batches of {self._batch_size}")
-        data = self.read_json_card_data_from(self.source, self.json_path)
-        self._enqueue_stream(data)
+        data = self.read_json_card_data_from(self.source)
+        try:
+            self._enqueue_stream(data)
+        except ValueError:  # Cancelling raises ValueError
+            return
 
-    def read_json_card_data_from(self, url: str | None = None, json_path: str = "item") -> CardStream:
+    def read_json_card_data_from(self, url: str | None = None) -> CardStream:
         """
         Parses the bulk card data JSON from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function takes a URL pointing to the card data JSON array in the Scryfall API.
@@ -294,8 +283,9 @@ class ApiStreamTask(StreamTask):
         # Ignore the monitor, because progress reporting is done in the main import loop.
         self.open_file, _ = self.read_from_url(url)  # type: GzipFile | MeteredSeekableHTTPFile, MeteredSeekableHTTPFile
         with self.open_file:
-            self._stream = ijson.items(self.open_file, json_path, use_float=True)
-            yield from self._stream
+            while line := self.open_file.readline():
+                yield json.loads(line)
+
 
     @functools.cache
     def get_available_card_count(self) -> int:
@@ -309,7 +299,7 @@ class ApiStreamTask(StreamTask):
         url = f"https://api.scryfall.com/cards/search?{url_parameters}"
         logger.debug(f"Card data update query URL: {url}")
         try:
-            total_cards_available: int = next(self.read_json_card_data_from(url, "total_cards"))
+            total_cards_available: int = json.load(self.read_from_url(url)[0])["total_cards"]
         except (urllib.error.URLError, socket.timeout, StopIteration) as e:
             logger.warning(
                 "Requesting the number of available cards on Scryfall failed with a network error. "
@@ -326,10 +316,12 @@ class ApiStreamTask(StreamTask):
     def item_count(self):
         return self.get_available_card_count()
 
+
 class AdditionalSetData(typing.NamedTuple):
     svg_icon_uri: str
     file_name: str
     parent_set_code: str | None
+
 
 class SetDataImportTask(DownloaderBase):
 

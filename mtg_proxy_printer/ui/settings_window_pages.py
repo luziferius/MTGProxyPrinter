@@ -212,7 +212,7 @@ class DebugSettingsPage(Page):
                 "File selection dialog caption. User should select a previously downloaded card data file.",
             ),
             QStandardPaths.locate(StandardLocation.DownloadLocation, "", LocateOption.LocateDirectory),
-            self.tr("Scryfall card data (*.json *.json.gz)", "File dialog file-type filter."))
+            self.tr("Scryfall card data (*.jsonl *.jsonl.gz)", "File dialog file-type filter."))
         logger.info(f"{location=}")
         if not location:
             logger.debug("User cancelled file selection. Not importing.")
