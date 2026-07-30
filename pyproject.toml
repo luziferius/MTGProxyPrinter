@@ -47,7 +47,7 @@ dynamic = [
 
 [dependency-groups]
 tests = [
-    "pytest >= 6.0",
+    "pytest >= 6.0, < 10",
     "pytest-cov",
     "pytest-timeout",
     "pytest-qt >= 4.5",
