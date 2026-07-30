@@ -190,13 +190,19 @@ factors = [
 [tool.tox.env_base.qt]
 base = ["tox.tool.env_run_base"]
 factors = [
-    { prefix = "Qt6_", start = 7, stop = 10 },
+    { prefix = "Qt6_", start = 7, stop = 11 },
 ]
 deps = [
     {replace = "if", condition = "factor.Qt6_7", then = ["PySide6-Essentials>=6.7,<6.8"], extend = true},
     {replace = "if", condition = "factor.Qt6_8", then = ["PySide6-Essentials>=6.8,<6.9"], extend = true},
     {replace = "if", condition = "factor.Qt6_9", then = ["PySide6-Essentials>=6.9,<6.10"], extend = true},
     {replace = "if", condition = "factor.Qt6_10", then = ["PySide6-Essentials>=6.10,<6.11"], extend = true},
+    {replace = "if", condition = "factor.Qt6_11", then = ["PySide6-Essentials>=6.11,<6.12"], extend = true},
+]
+basepython = [
+    {replace = "if", condition = "factor.Qt6_7", then = "3.11"},
+    {replace = "if", condition = "factor.Qt6_8", then = "3.12"},
+    {replace = "if", condition = "factor.Qt6_9", then = "3.12"},
 ]
 
 [tool.tox.env_base.minimum_version]
