@@ -486,7 +486,7 @@ class GeneralSettingsPage(Page):
 
 
 class PrintingPreferencesPage(Page):
-    request_run_async_task = Signal(PrintingFilterUpdater)
+    request_run_async_task = Signal(AsyncTask)
 
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(
