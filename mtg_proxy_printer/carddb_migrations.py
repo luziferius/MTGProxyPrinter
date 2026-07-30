@@ -104,7 +104,7 @@ class Migrate21to22(MigrationScript):
                 "q": f"date>1970-01-01 date<={timestamp.date()}"
             })
             try:
-                card_count = next(aw.get_available_card_count())
+                card_count = aw.get_available_card_count()
             except (urllib.error.URLError, socket.error):
                 card_count = 0
             data.append((id_, timestamp.isoformat(), card_count))

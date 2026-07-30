@@ -85,7 +85,8 @@ def test_find_sets_matching(
         "spanish_basic_Forest",
         "english_double_faced_card",
     ])
-    found_set_codes = [set_.code for set_ in card_db.find_sets_matching(card_name, language)]
+    found_sets, _ = card_db.find_sets_matching(card_name, language)
+    found_set_codes = [set_.code for set_ in found_sets]
     assert_that(found_set_codes, contains_inanyorder(*expected_codes))
 
 

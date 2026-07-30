@@ -289,18 +289,10 @@ class ApiStreamTask(StreamTask):
 
     @functools.cache
     def get_available_card_count(self) -> int:
-        url_parameters = urllib.parse.urlencode({
-            "include_multilingual": "true",
-            "include_variations": "true",
-            "include_extras": "true",
-            "unique": "prints",
-            "q": "date>1970-01-01"
-        })
-        url = f"https://api.scryfall.com/cards/search?{url_parameters}"
-        logger.debug(f"Card data update query URL: {url}")
         try:
-            total_cards_available: int = json.load(self.read_from_url(url)[0])["total_cards"]
+            total_cards_available: int = self._read_total_cards_available()
         except (urllib.error.URLError, socket.timeout, StopIteration) as e:
+            total_cards_available = 0
             logger.warning(
                 "Requesting the number of available cards on Scryfall failed with a network error. "
                 "Report zero available cards.")
@@ -311,6 +303,18 @@ class ApiStreamTask(StreamTask):
 
         logger.debug(f"Total cards currently available: {total_cards_available}")
         return total_cards_available
+
+    def _read_total_cards_available(self) -> Any:
+        url_parameters = urllib.parse.urlencode({
+            "include_multilingual": "true",
+            "include_variations": "true",
+            "include_extras": "true",
+            "unique": "prints",
+            "q": "date>1970-01-01"
+        })
+        url = f"https://api.scryfall.com/cards/search?{url_parameters}"
+        logger.debug(f"Read from card data update query URL: {url}")
+        return json.load(self.read_from_url(url)[0])["total_cards"]
 
     @property
     def item_count(self):

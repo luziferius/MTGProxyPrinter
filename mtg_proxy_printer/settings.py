@@ -786,8 +786,11 @@ def _13_migrate_card_filter_to_printing_filter(to_migrate: ConfigParser):
     old_section = to_migrate["card-filter"]
     to_migrate.add_section("printing-filter")
     new_section = to_migrate["printing-filter"]
-    new_section["sets"] = old_section["hidden-sets"]
-    del old_section["hidden-sets"]
+    try:
+        new_section["sets"] = old_section["hidden-sets"]
+        del old_section["hidden-sets"]
+    except KeyError:
+        new_section["sets"] = ""
     for key, value in old_section.items():
         new_section[key.removeprefix("hide-")] = value
 
