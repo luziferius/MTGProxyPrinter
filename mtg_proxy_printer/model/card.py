@@ -17,6 +17,7 @@ import dataclasses
 import hashlib
 import enum
 import functools
+from datetime import date
 from typing import Union
 
 from PySide6.QtCore import QRect, QPoint, QSize, Qt, QPointF
@@ -81,7 +82,11 @@ class SVGIconEngine(QIconEngine):
 class MTGSet:
     code: str
     name: str
-    svg_icon: bytes = None
+    release_date: date = date.today()
+    is_hidden: bool = False
+    preference_weight: int = 0
+    parent_set_code: str | None = None
+    svg_icon: bytes | None = None
 
     def data(self, role: ItemDataRole):
         """data getter used for Qt Model API based access"""

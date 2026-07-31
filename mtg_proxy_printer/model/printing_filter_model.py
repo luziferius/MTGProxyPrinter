@@ -17,12 +17,11 @@ from collections import defaultdict
 import dataclasses
 import enum
 
-from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication
 
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.settings import DEFAULT_SETTINGS, CARD_FILTER_DEFAULT_WEIGHTS
 from mtg_proxy_printer.units_and_sizes import ConfigParser
 from mtg_proxy_printer.logger import get_logger
 
@@ -44,10 +43,10 @@ IsHeaderRole = ItemDataRole(UserRole.value + 3)
 
 # The flag values
 EmptyCellFlags: Qt.ItemFlag = Qt.ItemFlag.ItemNeverHasChildren
-_DataFlags = Qt.ItemFlag.ItemNeverHasChildren | Qt.ItemFlag.ItemIsEnabled  # Common flags for cells with data
-TextItemFlags: Qt.ItemFlag = _DataFlags
-IsHiddenItemFlags: Qt.ItemFlag = _DataFlags | Qt.ItemFlag.ItemIsUserCheckable  # The is_hidden column is checkable
-PreferenceWeightFlags: Qt.ItemFlag = _DataFlags | Qt.ItemFlag.ItemIsEditable  # the pref score column is editable
+_CommonDataFlags = Qt.ItemFlag.ItemNeverHasChildren | Qt.ItemFlag.ItemIsEnabled
+TextItemFlags: Qt.ItemFlag = _CommonDataFlags
+IsHiddenItemFlags: Qt.ItemFlag = _CommonDataFlags | Qt.ItemFlag.ItemIsUserCheckable  # The is_hidden column is checkable
+PreferenceWeightFlags: Qt.ItemFlag = _CommonDataFlags | Qt.ItemFlag.ItemIsEditable  # the weights column is editable
 
 
 class ModelCell(defaultdict):
@@ -72,7 +71,7 @@ class ModelRow:
     is_hidden: ModelCell
     preference_weights: ModelCell
     scryfall_query: ModelCell
-    _settings_key: str
+    settings_key: str
 
     def data(self, column: ModelColumns, role: ItemDataRole):
         column = ModelColumns(column)
@@ -113,7 +112,7 @@ class ModelRow:
             MC({ItemFlagsRole: IsHiddenItemFlags, CheckStateRole: CheckState.Unchecked}),
             MC({ItemFlagsRole: EmptyCellFlags}),
             MC({ItemFlagsRole: EmptyCellFlags, ScryfallQueryRole: f"banned:{internal_format_key}"}),
-            f"hide-banned-in-{internal_format_key}",
+            f"banned-in-{internal_format_key}",
         )
     
     @classmethod
@@ -141,15 +140,19 @@ ModelRows = list[ModelRow]
 
 class PrintingFilterModel(QAbstractTableModel):
     """
-    Model holding the printing filters, used by the settings window to allow the
-    user to set the hidden printings to their liking.
+    Model holding the printing filters and weights, used by the settings window to allow the
+    user to set the hidden printings and printing preference weights to their liking.
     The filter entries store an on/off state editable via the ItemDataRole.CheckStateRole, which makes the UI show a 
     checkbox that can be toggled via clicking it.
     Changed-item highlighting uses the BackgroundRole.
     The settings key used to persist the value is stored via the SettingsKeyRole.
     The Scryfall query showing the affected printings is stored via the ScryfallQueryRole.
+    Header rows carry that information via IsHeaderRole. For headers, the view combines all columns by spanning
+      the first cell across all model columns.
     """
-    def __init__(self, parent=None):
+    ModelColumns = ModelColumns
+
+    def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self.card_db = CardDatabase.main_instance
         self.items = self._create_items()
@@ -161,8 +164,9 @@ class PrintingFilterModel(QAbstractTableModel):
         header_font.setBold(True)
         weight_tooltip = self.tr(
             "High values encourage choosing this kind of card, negative values discourage choosing it.",
-            "Is preference weight column tooltip text")
+            "Preference weight column tooltip text")
         return [
+            # ------------ General filters ------------
             ModelRow.create_header(
                 header_font,
                 self.tr("General card filters", "Display text. Printing filter section header"),
@@ -177,7 +181,7 @@ class PrintingFilterModel(QAbstractTableModel):
                         "These cards are banned in all sanctioned tournament formats and several\n"
                         "community formats like Commander, Oathbreaker and others.",
                         "Tooltip text"),
-                None, "hide-cards-depicting-racism", "is:content_warning"),
+                None, "cards-depicting-racism", "is:content_warning"),
             ModelRow.create_item(
                 self.tr("Cards with placeholder images",
                         "Display text"),
@@ -185,11 +189,11 @@ class PrintingFilterModel(QAbstractTableModel):
                         "English placeholder images containing an overlay text stating\n"
                         "“This card is not available in the selected language.”",
                         "Tooltip text"),
-                weight_tooltip, "hide-cards-without-images", None),
+                weight_tooltip, "cards-without-images", None),
             ModelRow.create_item(
                 self.tr("Cards with low-resolution images", "Display text"),
                 self.tr("Cards without high-resolution scans. They appear blurry.", "Tooltip text"),
-                weight_tooltip, "hide-low-resolution-cards", "not:highres"),
+                weight_tooltip, "low-resolution-cards", "not:highres"),
             ModelRow.create_item(
                 self.tr("“Funny” cards",
                         "Display text"),
@@ -198,27 +202,44 @@ class PrintingFilterModel(QAbstractTableModel):
                         "cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),\n"
                         "some black-bordered promotional cards with non-standard back faces,\nand potentially others.",
                         "Tooltip text"),
-                None, "hide-funny-cards", "is:funny"),
+                None, "funny-cards", "is:funny"),
             ModelRow.create_item(
                 self.tr("Digital-only cards or printings",
                         "Display text"),
                 self.tr("Cards and printings that are only available on digital platforms. "
                         "This includes all kinds of digital printings.",
                         "Tooltip text"),
-                weight_tooltip, "hide-digital-cards", "is:digital"),
+                weight_tooltip, "digital-cards", "is:digital"),
             ModelRow.create_item(
                 self.tr("Reversible cards",
                         "Display text"),
                 self.tr("Some single-sided cards are re-printed as two-sided, reversible cards in some "
                         "Secret Lair releases.",
                         "Tooltip text"),
-                weight_tooltip, "hide-reversible-cards", "is:reversible"),
+                weight_tooltip, "reversible-cards", "is:reversible"),
             ModelRow.create_item(
                 self.tr("Universes Beyond cards", "Display text"),
                 self.tr('"Universes Beyond" are cards coming from other, non-Magic IPs, like Lord of the Ring, '
                         'Marvel comics, Warhammer 40k, and a lot others.',
                         "Tooltip text"),
-                weight_tooltip, "hide-universes-beyond-cards", "is:universesbeyond"),
+                weight_tooltip, "universes-beyond-cards", "is:universesbeyond"),
+            ModelRow.create_item(
+                self.tr("Promotional cards", "Display text"),
+                self.tr("Any kind of promotional cards", "Tooltip text"),
+                weight_tooltip, "promo", "is:promo"
+            ),
+            ModelRow.create_item(
+                self.tr("Prerelease event promos", "Display text"),
+                self.tr("Date-stamped foil promos from Pre-release kits", "Tooltip text"),
+                weight_tooltip, "promo-prerelease", "is:prerelease"
+            ),
+            ModelRow.create_item(
+                self.tr("WPN promo-pack cards", "Display text"),
+                self.tr("Cards from WPN promo packs with planeswalker symbol stamps", "Tooltip text"),
+                weight_tooltip, "promo-promopack", "is:promopack"
+            ),
+
+            # ------------ Frame/border style ------------
             ModelRow.create_header(
                 header_font,
                 self.tr("Frame and border style", "Display text. Printing filter section header")),
@@ -226,18 +247,18 @@ class PrintingFilterModel(QAbstractTableModel):
                 self.tr("Full-art cards", "Display text"),
                 self.tr("Cards with replacing the frame with artwork, featuring a (semi-) transparent text box.\n"
                         "This by definition also includes text-less cards", "Tooltip text"),
-                weight_tooltip, "hide-full-art-cards", "is:fullart"),
+                weight_tooltip, "full-art-cards", "is:fullart"),
             ModelRow.create_item(
                 self.tr("Textless cards", "Display text"),
                 self.tr("Cards without textbox showing the rules text,\n"
                         "only featuring the name, mana cost and power/toughness.\n"
                         "Does not apply to Basic lands.", "Tooltip text"),
-                weight_tooltip, "hide-textless-cards", "is:textless"),
+                weight_tooltip, "textless-cards", "is:textless"),
             ModelRow.create_item(
                 self.tr("White-bordered cards",
                         "Display text"),
                 None,
-                weight_tooltip, "hide-white-bordered", "border:white"),
+                weight_tooltip, "white-bordered", "border:white"),
             ModelRow.create_item(
                 self.tr("Gold-bordered cards",
                         "Display text"),
@@ -246,22 +267,23 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Many also have printed signatures of the involved players in "
                         "the text box.\n\nThese are not tournament legal",
                         "Tooltip text"),
-                weight_tooltip, "hide-gold-bordered", "border:gold"),
+                weight_tooltip, "gold-bordered", "border:gold"),
             ModelRow.create_item(
                 self.tr("Borderless cards",
                         "Display text"),
                 self.tr("Cards without a defined, solid-color border.\n"
                         "Those require higher cutting precision to get right.",
                         "Tooltip text"),
-                weight_tooltip, "hide-borderless", "border:borderless"),
+                weight_tooltip, "borderless", "border:borderless"),
             ModelRow.create_item(
                 self.tr("Extended-art cards",
                         "Display text"),
                 self.tr("Cards with artwork extending to the left and right card border.\n"
                         "Similar to borderless cards, these require higher precision during the cutting process.",
                         "Tooltip text"),
-                weight_tooltip, "hide-extended-art", "is:extended"),
+                weight_tooltip, "extended-art", "is:extended"),
 
+            # ------------  Non-traditional cards ------------
             ModelRow.create_header(
                 header_font,
                 self.tr("Non-traditional cards", "Display text. Printing filter section header")),
@@ -272,21 +294,22 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Includes Archenemy schemes, Planechase planes and\noversized commander creature or "
                         "Planeswalker cards included in some pre-constructed Commander decks.",
                         "Tooltip text"),
-                weight_tooltip, "hide-oversized-cards", "is:oversized"),
+                weight_tooltip, "oversized-cards", "is:oversized"),
             ModelRow.create_item(
                 self.tr("Tokens",
                         "Display text"),
                 self.tr("The official Tokens, used to represent permanents created by card effects.\n"
                         "Not part of deck-building. Obscure ones can be relatively rare",
                         "Tooltip text"),
-                None, "hide-token", "is:token"),
+                None, "token", "is:token"),
             ModelRow.create_item(
                 self.tr("Art Series cards",
                         "Display text"),
                 self.tr("Artwork cards that can be found in Set Boosters or Play Boosters",
                         "Tooltip text"),
-                None, "hide-art-series-cards", "layout:art-series"),
+                None, "art-series-cards", "layout:art-series"),
 
+            # ------------  Format bans ------------
             ModelRow.create_header(
                 header_font,
                 self.tr("Format bans: Hide cards banned in specific formats",
@@ -377,14 +400,18 @@ class PrintingFilterModel(QAbstractTableModel):
         return self.data(index, ItemFlagsRole) or Qt.ItemFlag.NoItemFlags
 
     def load_settings(self, settings: ConfigParser):
-        logger.debug("Loading printing filter state from settings")
-        section = settings["card-filter"]
-        printing_weights = CARD_FILTER_DEFAULT_WEIGHTS if settings is DEFAULT_SETTINGS else self.card_db.get_printing_filter_weights()
+        logger.debug("Loading printing filter state and weights from settings")
+        filter_section = settings["printing-filter"]
+        printing_weights = settings["printing-weights"]
         for row, item in enumerate(self.items):
             if item.is_hidden[CheckStateRole] is not None:
-                self.setData(self.index(row, ModelColumns.is_hidden), section.get_check_state(item._settings_key), CheckStateRole)
+                self.setData(
+                    self.index(row, ModelColumns.is_hidden),
+                    filter_section.get_check_state(item.settings_key),
+                    CheckStateRole)
             if item.preference_weights[EditRole] is not None:
-                item.preference_weights[EditRole] = item.preference_weights[DisplayRole] = printing_weights[item._settings_key]
+                item.preference_weights[EditRole] = item.preference_weights[DisplayRole] = printing_weights.getint(
+                    item.settings_key)
         self.dataChanged.emit(
             self.index(1, ModelColumns.is_hidden),  # First row isn't checkable, so skip it
             self.index(self.rowCount()-1, ModelColumns.is_hidden),
@@ -397,33 +424,37 @@ class PrintingFilterModel(QAbstractTableModel):
 
     def save_settings(self, settings: ConfigParser):
         logger.debug("Saving printing filter state to settings.")
-        section = settings["card-filter"]
+        filter_section = settings["printing-filter"]
+        weights_section = settings["printing-weights"]
         for row, item in enumerate(self.items):
             if item.is_hidden[CheckStateRole] is not None:
-                section.set_check_state(item._settings_key, item.is_hidden[CheckStateRole])
+                filter_section.set_check_state(item.settings_key, item.is_hidden[CheckStateRole])
+            if item.preference_weights[EditRole] is not None:
+                weights_section[item.settings_key] = str(item.preference_weights[EditRole])
+
         logger.debug("Done.")
 
     def get_new_preference_weights(self) -> set[tuple[str, int]]:
-        result = set(
-            (item._settings_key, weight)
+        result: set[tuple[str, int]] = set(
+            (item.settings_key, weight)
             for item in self.items
             if (weight := item.preference_weights[EditRole]) is not None
         )
         return result
 
     def highlight_differing_settings(self, settings: ConfigParser):
-        section = settings["card-filter"]
-        printing_weights = CARD_FILTER_DEFAULT_WEIGHTS if settings is DEFAULT_SETTINGS else self.card_db.get_printing_filter_weights()
+        filter_section = settings["printing-filter"]
+        printing_weights = settings["printing-weights"]
         palette = QApplication.palette()
         highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
         highlight_color.setAlpha(64)  # 25% opacity, same as the highlight_widget() implementation
         for row, item in enumerate(self.items):
-            if item.is_hidden[CheckStateRole] != section.get_check_state(item._settings_key):
+            if item.is_hidden[CheckStateRole] != filter_section.get_check_state(item.settings_key):
                 index = self.index(row, ModelColumns.is_hidden)
                 item.is_hidden[BackgroundRole] = highlight_color
                 self.dataChanged.emit(index, index, [BackgroundRole])
             preference_weight = item.preference_weights[EditRole]
-            if preference_weight is not None and preference_weight != printing_weights[item._settings_key]:
+            if preference_weight is not None and preference_weight != printing_weights.getint(item.settings_key):
                 index = self.index(row, ModelColumns.preference_weights)
                 item.preference_weights[BackgroundRole] = highlight_color
                 self.dataChanged.emit(index, index, [BackgroundRole])

@@ -136,7 +136,7 @@ class AsyncTask(QObject):
         pass
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}. Running: {self._running}, Processing task:'{self._ui_hint}'"
+        return f"{self.__class__.__name__}. Running: {self._running}, Processing task: '{self._ui_hint}'"
 
 
 class AsyncTaskRunner(QRunnable):

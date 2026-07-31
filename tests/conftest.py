@@ -41,7 +41,7 @@ from tests.helpers import fill_card_database_with_json_cards, is_dataclass_equal
 
 @pytest.fixture(params=[False, True])
 def card_db(request) -> CardDatabase:
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings["printing-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     with unittest.mock.patch.dict(section, settings_to_use):
         CardDatabase.main_instance = card_db = CardDatabase(":memory:", check_same_thread=False)

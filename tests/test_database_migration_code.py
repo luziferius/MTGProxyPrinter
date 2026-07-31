@@ -175,8 +175,8 @@ def test_patch_21_to_22_applies_correctly_without_network_access_using_dummy_val
         card_db_at_version_21: pathlib.Path, possible_error: BaseException):
     card_db = CardDatabase(card_db_at_version_21)
     with unittest.mock.patch(
-            "mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask.read_json_card_data_from") as mock:
-        mock.side_effect = possible_error
+            "mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask._read_total_cards_available",
+            side_effect=possible_error) as mock:
         runner = DatabaseMigrationTask(card_db, {21: MIGRATION_SCRIPTS[21]})
         runner.run()
     db = mtg_proxy_printer.sqlite_helpers.open_database(card_db.db_path, "carddb")
@@ -194,8 +194,8 @@ def test_patch_21_to_22_applies_with_network_access_and_requests_card_count_from
         card_db_at_version_21: pathlib.Path, expected):
     card_db = CardDatabase(card_db_at_version_21)
     with unittest.mock.patch(
-            "mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask.read_json_card_data_from") as mock:
-        mock.return_value = iter((expected,))
+            "mtg_proxy_printer.async_tasks.card_info_downloader.ApiStreamTask._read_total_cards_available",
+            return_value=expected) as mock:
         runner = DatabaseMigrationTask(card_db, {21: MIGRATION_SCRIPTS[21]})
         runner.run()
     db = mtg_proxy_printer.sqlite_helpers.open_database(card_db.db_path, "carddb")

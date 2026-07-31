@@ -62,7 +62,7 @@ def test_generic_re_parser_with_card_name_only_list(
 def test_translating_from_hidden_name_works(
         card_db: CardDatabase, prefer_already_downloaded: bool):
     fill_card_database_with_json_cards(card_db, ["english_Back_to_Basics", "german_Back_to_Basics"],
-                                       {"hide-cards-without-images": "True"})
+                                       {"cards-without-images": "True"})
     card = card_db.get_card_with_scryfall_id("0600d6c2-0f72-4e79-a55d-1f06dffa48c2", True)
     image_db = _create_image_db_mock(card)
     parser = GenericRegularExpressionDeckParser(card_db, image_db, r"(?P<name>.+)")

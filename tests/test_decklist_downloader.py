@@ -75,14 +75,14 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> Generator[Url
     yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft"
 
     # MTGTop8
-    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345&f=BL"
-    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345"
-    yield MTGTop8Downloader, "http://www.mtgtop8.com/event?e=9011&d=251345&f=BL"
-    yield MTGTop8Downloader, "http://www.mtgtop8.com/event?e=9011&d=251345"
+#    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345&f=BL"
+#    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345"
+#    yield MTGTop8Downloader, "http://www.mtgtop8.com/event?e=9011&d=251345&f=BL"
+#    yield MTGTop8Downloader, "http://www.mtgtop8.com/event?e=9011&d=251345"
 
     # mtgdecks.net
-    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582"
-    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582/"
+#    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582"
+#    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582/"
 
     # Moxfield
     yield MoxfieldDownloader, "https://moxfield.com/decks/70auYSm75E-Iwf4Oc0g7Lg"

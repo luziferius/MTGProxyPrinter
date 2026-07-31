@@ -33,7 +33,7 @@ classifiers = [
 # falling back to the slow pure Python backend.
 dependencies = [
     "platformdirs >= 2.6.0",
-    "PySide6_Essentials >= 6.7.0",
+    "PySide6_Essentials >= 6.8.0",
     "ijson >= 3.2.1",
     "Pint >= 0.24.4",
     "delegateto == 1.5",
@@ -47,7 +47,7 @@ dynamic = [
 
 [dependency-groups]
 tests = [
-    "pytest >= 6.0",
+    "pytest >= 6.0, < 10",
     "pytest-cov",
     "pytest-timeout",
     "pytest-qt >= 4.5",
@@ -190,13 +190,17 @@ factors = [
 [tool.tox.env_base.qt]
 base = ["tox.tool.env_run_base"]
 factors = [
-    { prefix = "Qt6_", start = 7, stop = 10 },
+    { prefix = "Qt6_", start = 8, stop = 11 },
 ]
 deps = [
-    {replace = "if", condition = "factor.Qt6_7", then = ["PySide6-Essentials>=6.7,<6.8"], extend = true},
     {replace = "if", condition = "factor.Qt6_8", then = ["PySide6-Essentials>=6.8,<6.9"], extend = true},
     {replace = "if", condition = "factor.Qt6_9", then = ["PySide6-Essentials>=6.9,<6.10"], extend = true},
     {replace = "if", condition = "factor.Qt6_10", then = ["PySide6-Essentials>=6.10,<6.11"], extend = true},
+    {replace = "if", condition = "factor.Qt6_11", then = ["PySide6-Essentials>=6.11,<6.12"], extend = true},
+]
+basepython = [
+    {replace = "if", condition = "factor.Qt6_8", then = "3.12"},
+    {replace = "if", condition = "factor.Qt6_9", then = "3.12"},
 ]
 
 [tool.tox.env_base.minimum_version]
