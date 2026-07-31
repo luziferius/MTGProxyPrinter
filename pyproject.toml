@@ -97,7 +97,7 @@ version = {attr= "mtg_proxy_printer.meta_data.__version__"}
 requires = [
     "setuptools >= 77",
     "wheel >= 0.45",
-    "PySide6_Essentials >= 6.7.0",
+    "PySide6_Essentials >= 6.8.0",
     "build > 1.2.2",
 ]
 build-backend = "setuptools.build_meta"
