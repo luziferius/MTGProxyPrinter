@@ -984,7 +984,7 @@ class CardDatabase(QObject):
             "SELECT filter_name, printing_preference_weight FROM PrintingFilters -- get_printing_filter_weights()\n"
         ))
 
-    def get_all_sets(self) -> starmap[MTGSet]:
+    def get_all_sets(self) -> "starmap[MTGSet]":
         """
         Returns all sets in the database with full details ordered by parent/child relation and release date.
         It guarantees that each parent set is listed before its children.
