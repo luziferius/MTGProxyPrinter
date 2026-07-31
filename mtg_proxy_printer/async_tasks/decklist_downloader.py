@@ -90,7 +90,7 @@ class DecklistDownloader(DownloaderBase):
     def post_process(data: bytes) -> str:
         """
         Takes the raw, downloaded data and post-processes them into a user-presentable string.
-        Default replaces \r\n to \n and decodes bytes to str using utf-8 encoding
+        Default replaces \r\n with \n and decodes bytes to str using utf-8 encoding
         """
         deck_list = data.replace(b"\r\n", b"\n")
         deck_list = deck_list.decode("utf-8")
