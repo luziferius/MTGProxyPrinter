@@ -13,8 +13,20 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import itertools
+
 import PySide6.QtCore
 
 from mtg_proxy_printer.meta_data import __version__
 
 BlockingQueuedConnection = PySide6.QtCore.Qt.ConnectionType.BlockingQueuedConnection
+
+# Fallback for itertools.batched which was added in Python 3.12
+if not hasattr(itertools, 'batched'):
+    def _batched(iterable, n):
+        """Batch data into tuples of length n. The last batch may be shorter."""
+        it = iter(iterable)
+        while batch := tuple(itertools.islice(it, n)):
+            yield batch
+    itertools.batched = _batched
+    del _batched

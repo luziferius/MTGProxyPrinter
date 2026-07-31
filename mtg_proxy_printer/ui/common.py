@@ -12,7 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import typing
 from functools import lru_cache, cache
 from pathlib import Path
 import platform
@@ -101,7 +101,7 @@ def show_wizard_or_dialog(wizard: QDialog | QWizard):
 def highlight_widget(widgets: QWidget | Sequence[QWidget]) -> None:
     """Sets a visual highlight on the given widget to make it stand out"""
     if isinstance(widgets, QWidget):
-        widgets = [widgets]
+        widgets = widgets,
     for widget in widgets:
         palette = widget.palette()
         highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
@@ -158,7 +158,7 @@ def load_icon(name: str) -> QIcon:
 def load_file(file_path_str: str, parent: QObject | None = None) -> bytes:
     """Returns binary content of an arbitrary file in the Qt resources."""
     full_file_path = f"{RESOURCE_PATH_PREFIX}/{file_path_str}"
-    file = QFile(full_file_path, parent)
+    file = QFile(full_file_path, parent) if parent is not None else QFile(full_file_path)
     data = b''
     if file.open(QIODevice.OpenModeFlag.ReadOnly):
         try:

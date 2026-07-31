@@ -41,7 +41,7 @@ class DownloaderBase(AsyncTask):
         """
         monitor = self._open_url(url, ui_hint)
         encoding = monitor.content_encoding()
-        if encoding == "gzip":
+        if encoding == "gzip" or self._extract_file_name(url).endswith(".gz"):
             data = gzip.open(monitor, "rb")
         elif encoding in ("identity", None):  # Implicit "identity" if the Content-Encoding header is missing.
             data = monitor
@@ -61,3 +61,9 @@ class DownloaderBase(AsyncTask):
             response.total_bytes_processed.connect(self.set_progress)
             response.io_begin.connect(self.task_begins)
         return response
+
+    @staticmethod
+    def _extract_file_name(url: str):
+        filename = url.split("/")[-1]
+        filename = filename.split("?")[0]
+        return filename

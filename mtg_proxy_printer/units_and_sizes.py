@@ -344,14 +344,12 @@ class BulkDataType(TypedDict):
     """
     id: ShouldBeUUID
     uri: str
-    type: str
+    type: Literal["oracle_cards", "unique_artwork", "default_cards", "all_cards", "rulings", "art_tags", "oracle_tags"]
     name: str
     description: str
-    download_uri: str
     updated_at: str
-    size: int
-    content_type: str
-    content_encoding: str
+    jsonl_download_uri: API_URI
+    compressed_size: int
 
 
 class SetsAPIDataType(TypedDict):

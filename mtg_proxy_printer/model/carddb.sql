@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 35;
+PRAGMA user_version = 36;
 PRAGMA foreign_keys = on;
 PRAGMA journal_mode = 'wal';
 BEGIN TRANSACTION;
@@ -71,17 +71,19 @@ CREATE TABLE PrintingFace (
 CREATE INDEX PrintingFace_find_printing_by_name ON PrintingFace(face_name, printing_id);
 
 CREATE TABLE MTGSet (
-  set_id            INTEGER           NOT NULL PRIMARY KEY,
-  set_code          TEXT              NOT NULL UNIQUE CHECK (set_code <> ''),
-  set_name          TEXT              NOT NULL,
-  release_date      INTEGER_TIMESTAMP NOT NULL,
-  set_filter_active BOOLEAN_INTEGER   NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
+  set_id                     INTEGER           NOT NULL PRIMARY KEY,
+  set_code                   TEXT              NOT NULL UNIQUE CHECK (set_code <> ''),
+  set_name                   TEXT              NOT NULL,
+  release_date               INTEGER_TIMESTAMP NOT NULL,
+  set_filter_active          BOOLEAN_INTEGER   NOT NULL CHECK (set_filter_active IN (TRUE, FALSE)) DEFAULT FALSE,
   -- While the SVG is utf-8 text, the Qt API requires them as bytes, so store as blob to
   -- avoid decoding/encoding round-trips
-  icon_svg          BLOB                       CHECK (length(icon_svg)>100),
+  icon_svg                   BLOB                       CHECK (length(icon_svg)>100),
   -- File name and cache key from the URI. Used to determine if the local copy is outdated.
-  icon_file_name    TEXT              NOT NULL DEFAULT '',
-  set_scryfall_id   TEXT              NOT NULL UNIQUE
+  icon_file_name             TEXT              NOT NULL DEFAULT '',
+  set_scryfall_id            TEXT              NOT NULL UNIQUE,
+  set_preference_weight      INTEGER           NOT NULL DEFAULT 0,
+  parent_set_code            TEXT                       CHECK (parent_set_code <> '')
 );
 
 CREATE TABLE LastDatabaseUpdate (
@@ -124,7 +126,7 @@ CREATE INDEX MigratedPrintingsLookup ON MigratedPrintings(old_scryfall_id, new_s
 CREATE VIEW EvaluatePrintingFilters AS SELECT
   printing_id,
 	coalesce(TRUE-(max(filter_active) OR set_filter_active), TRUE) AS is_visible,
-	coalesce(sum(printing_preference_weight), 0) AS preference_score
+	coalesce(sum(printing_preference_weight), 0) + sum(set_preference_weight) AS preference_score
 FROM Printing
   INNER JOIN MTGSet USING (set_id)
   LEFT OUTER JOIN FilterAppliesTo USING (printing_id)
@@ -166,5 +168,16 @@ CREATE TRIGGER "Update Printing.preference_score on PrintingFilter.printing_pref
 	        WHERE PrintingFilters.filter_id = NEW.filter_id
 	    );
 END;
+
+CREATE TRIGGER "Update Printing.preference_score on MTGSet.set_preference_weight update"
+  AFTER UPDATE OF set_preference_weight ON MTGSet
+  FOR EACH ROW
+  WHEN NEW.set_preference_weight <> OLD.set_preference_weight
+  BEGIN
+    UPDATE Printing
+      SET preference_score = preference_score + NEW.set_preference_weight - OLD.set_preference_weight
+      WHERE Printing.set_id = NEW.set_id;
+END;
+
 
 COMMIT;

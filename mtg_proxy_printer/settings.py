@@ -47,10 +47,9 @@ __all__ = [
     "write_settings_to_file",
     "validate_settings",
     "update_stored_version_string",
-    "get_boolean_card_filter_keys",
+    "get_boolean_printing_filter_keys",
     "parse_card_set_filters",
     "VALID_CUT_MARKER_STYLES",
-    "CARD_FILTER_DEFAULT_WEIGHTS",
 ]
 
 
@@ -143,53 +142,57 @@ DEFAULT_SETTINGS["cards"] = {
     "automatically-add-opposing-faces": "True",
     "custom-cards-force-round-corners": "True",
 }
-DEFAULT_SETTINGS["card-filter"] = {
-    "hide-cards-depicting-racism": "True",
-    "hide-cards-without-images": "True",
-    "hide-oversized-cards": "False",
-    "hide-banned-in-brawl": "False",
-    "hide-banned-in-commander": "False",
-    "hide-banned-in-historic": "False",
-    "hide-banned-in-legacy": "False",
-    "hide-banned-in-modern": "False",
-    "hide-banned-in-oathbreaker": "False",
-    "hide-banned-in-pauper": "False",
-    "hide-banned-in-penny": "False",
-    "hide-banned-in-pioneer": "False",
-    "hide-banned-in-standard": "False",
-    "hide-banned-in-vintage": "False",
-    "hide-white-bordered": "False",
-    "hide-gold-bordered": "False",
-    "hide-borderless": "False",
-    "hide-extended-art": "False",
-    "hide-funny-cards": "False",
-    "hide-token": "False",
-    "hide-digital-cards": "True",
-    "hide-reversible-cards": "False",
-    "hide-art-series-cards": "False",
-    "hide-universes-beyond-cards": "False",
-    "hide-low-resolution-cards": "False",
-    "hide-textless-cards": "False",
-    "hide-full-art-cards": "False",
-    "hidden-sets": "",
+DEFAULT_SETTINGS["printing-filter"] = {
+    "cards-depicting-racism": "True",
+    "cards-without-images": "True",
+    "oversized-cards": "False",
+    "banned-in-brawl": "False",
+    "banned-in-commander": "False",
+    "banned-in-historic": "False",
+    "banned-in-legacy": "False",
+    "banned-in-modern": "False",
+    "banned-in-oathbreaker": "False",
+    "banned-in-pauper": "False",
+    "banned-in-penny": "False",
+    "banned-in-pioneer": "False",
+    "banned-in-standard": "False",
+    "banned-in-vintage": "False",
+    "white-bordered": "False",
+    "gold-bordered": "False",
+    "borderless": "False",
+    "extended-art": "False",
+    "funny-cards": "False",
+    "token": "False",
+    "digital-cards": "True",
+    "reversible-cards": "False",
+    "art-series-cards": "False",
+    "universes-beyond-cards": "False",
+    "low-resolution-cards": "False",
+    "textless-cards": "False",
+    "full-art-cards": "False",
+    "promo": "False",
+    "promo-prerelease": "False",
+    "promo-promopack": "False",
+    "sets": "",
 }
-CARD_FILTER_DEFAULT_WEIGHTS: defaultdict[str, int | None] = defaultdict(lambda: None, {
-    "hide-cards-without-images": -100,
-    "hide-low-resolution-cards": -20,
-    "hide-digital-cards": 0,
-    "hide-reversible-cards": 0,
-    "hide-universes-beyond-cards": 0,
-
-    "hide-full-art-cards": 0,
-    "hide-textless-cards": -5,
-    "hide-white-bordered": 0,
-    "hide-gold-bordered": -5,
-    "hide-borderless": 0,
-    "hide-extended-art": 0,
-
-    "hide-oversized-cards": -10,
-})
-
+DEFAULT_SETTINGS["printing-weights"] = {
+    "cards-without-images": "-100",
+    "oversized-cards": "-10",
+    "white-bordered": "0",
+    "gold-bordered": "-5",
+    "borderless": "0",
+    "extended-art": "0",
+    "digital-cards": "0",
+    "reversible-cards": "0",
+    "universes-beyond-cards": "0",
+    "low-resolution-cards": "-20",
+    "textless-cards": "-5",
+    "full-art-cards": "0",
+    "promo": "0",
+    "promo-prerelease": "0",
+    "promo-promopack": "0",
+    "sets": "",
+}
 
 VALID_CUT_MARKER_STYLES: defaultdict[str, PenStyle] = defaultdict(PenStyle, {
     "None": PenStyle.NoPen,
@@ -247,7 +250,6 @@ DOCUMENT_SETTINGS_QUANTITY_LIMITS = {
     "watermark-pos-y": QuantityLimits(-100*mm, 100*mm, {mm}, mm),
     "watermark-angle": QuantityLimits(-360*degree, 360*degree, {degree}, degree),
 }
-
 
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(StandardLocation.DocumentsLocation, "", LocateOption.LocateDirectory),
@@ -310,19 +312,35 @@ def clamp_to_supported_range(value: Quantity, limits: QuantityLimits) -> Quantit
     return min(max(value, limits.minimum),  limits.maximum)
 
 
-def get_boolean_card_filter_keys():
+def get_boolean_printing_filter_keys():
     """Returns all keys for boolean card filter settings."""
-    keys = DEFAULT_SETTINGS["card-filter"].keys()
-    keys = [item for item in keys if item.startswith("hide-")]
+    keys = DEFAULT_SETTINGS["printing-filter"].keys()
+    keys = [item for item in keys if item != "sets"]
     return keys
 
 
 def parse_card_set_filters(input_settings: ConfigParser = settings) -> set[str]:
     """Parses the hidden sets filter setting into a set of lower-case MTG set codes."""
-    raw = input_settings["card-filter"]["hidden-sets"]
+    raw = input_settings["printing-filter"]["sets"]
     raw = raw.lower()
     deduplicated = set(raw.split())
     return deduplicated
+
+
+def parse_set_printing_preference_weights(input_settings: ConfigParser = settings) -> dict[str, int]:
+    raw = input_settings["printing-weights"]["sets"]
+    raw = raw.lower()
+    result: dict[str, int] = {}
+    for word in raw.split():
+        if ":" not in word:
+            continue
+        set_code, weight = word.split(":", 1)
+        try:
+            int_weight = int(weight)
+        except ValueError:
+            continue
+        result[set_code] = int_weight
+    return result
 
 
 def read_settings_from_file():
@@ -381,7 +399,7 @@ def validate_settings(read_settings: ConfigParser):
     I.e. checks that settings that should contain booleans do contain valid booleans, options that should contain
     non-negative integers do so, etc. If an option contains an invalid value, the default value is restored.
     """
-    _validate_card_filter_section(read_settings)
+    _validate_printing_filter_section(read_settings)
     _validate_images_section(read_settings)
     _validate_documents_section(read_settings)
     _validate_update_checks_section(read_settings)
@@ -393,10 +411,10 @@ def validate_settings(read_settings: ConfigParser):
     _validate_export_section(read_settings)
 
 
-def _validate_card_filter_section(to_validate: ConfigParser, section_name: str = "card-filter"):
+def _validate_printing_filter_section(to_validate: ConfigParser, section_name: str = "printing-filter"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
-    boolean_keys = get_boolean_card_filter_keys()
+    boolean_keys = get_boolean_printing_filter_keys()
     for key in boolean_keys:
         _validate_boolean(section, defaults, key)
 
@@ -612,6 +630,7 @@ def migrate_settings(to_migrate: ConfigParser):
     _10_migrate_export_section(to_migrate)
     _11_migrate_custom_paper_size_keys(to_migrate)
     _12_migrate_to_cut_marker_style_key(to_migrate)
+    _13_migrate_card_filter_to_printing_filter(to_migrate)
 
 
 def _01_migrate_layout_setting(to_migrate: ConfigParser):
@@ -627,6 +646,8 @@ def _01_migrate_layout_setting(to_migrate: ConfigParser):
 
 
 def _02_migrate_download_settings(to_migrate: ConfigParser):
+    if "printing-filter" in to_migrate:
+        return
     target_section_name = "card-filter"
     if to_migrate.has_section(target_section_name) or not to_migrate.has_section("downloads"):
         return
@@ -758,6 +779,21 @@ def _12_migrate_to_cut_marker_style_key(to_migrate: ConfigParser):
         del section["print-cut-marker"]
     except KeyError:
         pass
+
+def _13_migrate_card_filter_to_printing_filter(to_migrate: ConfigParser):
+    if "card-filter" not in to_migrate or "printing-filter" in to_migrate:
+        return
+    old_section = to_migrate["card-filter"]
+    to_migrate.add_section("printing-filter")
+    new_section = to_migrate["printing-filter"]
+    try:
+        new_section["sets"] = old_section["hidden-sets"]
+        del old_section["hidden-sets"]
+    except KeyError:
+        new_section["sets"] = ""
+    for key, value in old_section.items():
+        new_section[key.removeprefix("hide-")] = value
+
 
 
 # Read the settings from file during module import

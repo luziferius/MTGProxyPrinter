@@ -136,7 +136,7 @@ class MeteredSeekableHTTPFile(QObject):
             try:
                 buffer = self.file.read(amt)
                 buffer_length = len(buffer)
-                if buffer_length < amt and self._pos+buffer_length < self.content_length:
+                if amt is not None and buffer_length < amt and self._pos+buffer_length < self.content_length:
                     raise ConnectionAbortedError(f"Incomplete read({amt}) returned {buffer_length} bytes")
             except (ConnectionAbortedError, TimeoutError) as e:
                 last_error = e
