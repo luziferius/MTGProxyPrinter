@@ -13,8 +13,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+import json
 import gzip
+import typing
 
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.logger import get_logger
@@ -48,6 +49,13 @@ class DownloaderBase(AsyncTask):
         else:
             raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
         return data, monitor
+
+    def read_json_from_url(self, url: str, ui_hint: str = ""):
+        """Reads a given URL pointing to a JSON file, and returns it as a decoded dict"""
+        data, _ = self.read_from_url(url, ui_hint)
+        with data:
+            json_data = json.load(data)
+        return json_data
 
     def _open_url(self, url: str, ui_hint: str) -> mtg_proxy_printer.http_file.MeteredSeekableHTTPFile:
         headers = {
