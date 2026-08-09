@@ -203,15 +203,7 @@ class StreamTask(CardInfoDownloadTaskBase):
         logger.debug(f"{self.__class__.__name__}: entering cancel()")
         if self.open_file is not None:
             self.open_file.close()
-        while not self.queue.empty():
-            # Flush the queue to unblock a potentially blocked writer thread:
-            # The consumer thread stops immediately within it's currently processed batch,
-            # so may leave the producer in a deadlock waiting for a free queue slot that will never arrive.
-            try:
-                self.queue.get(block=False)
-            except queue.Empty:
-                time.sleep(0.1)
-
+        self.queue.shutdown(True)
         logger.debug(f"{self.__class__.__name__}: Cancel completed")
 
 
@@ -219,8 +211,11 @@ class FileStreamTask(StreamTask):
     """Reads card data from a local file and streams the content"""
 
     def run(self):
-        data = self.read_json_card_data_from(self.source, self.json_path)
-        self._enqueue_stream(data)
+        try:
+            data = self.read_json_card_data_from(self.source, self.json_path)
+            self._enqueue_stream(data)
+        except queue.ShutDown:
+            return
 
     def read_json_card_data_from(self, file_path: Path, json_path: str = "") -> CardStream:
         file_size = file_path.stat().st_size
@@ -262,7 +257,7 @@ class ApiStreamTask(StreamTask):
         data = self.read_json_card_data_from(self.source)
         try:
             self._enqueue_stream(data)
-        except ValueError:  # Cancelling raises ValueError
+        except (ValueError, queue.ShutDown):  # Cancelling raises ValueError
             return
 
     def read_json_card_data_from(self, url: str | None = None) -> CardStream:

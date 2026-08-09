@@ -103,7 +103,7 @@ def inject_line_profiler():
                 setattr(module_, func_name, func)
 
 
-if __name__ == "__main__":
+def main():
     if is_running_with_kernprof():
         print("Running with kernprof. Injecting profile decorator.")
         inject_line_profiler()
@@ -128,7 +128,14 @@ if __name__ == "__main__":
 
     print("Starting benchmark…")
     fup.run()
-    tp.start(AsyncTaskRunner(fst))
-    dit.run()
+    try:
+        tp.start(AsyncTaskRunner(fst))
+        dit.run()
+    except KeyboardInterrupt:
+        fst.cancel()
     tp.waitForDone()
     print("Done")
+    return app
+
+if __name__ == "__main__":
+    _ = main()
