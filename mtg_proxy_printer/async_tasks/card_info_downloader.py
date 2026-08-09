@@ -44,7 +44,8 @@ from mtg_proxy_printer.sqlite_helpers import cached_dedent
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID, SetsAPIDataType
+from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID, SetsAPIDataType, \
+    SetsListAPIDataType
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 
@@ -382,8 +383,8 @@ class SetDataImportTask(DownloaderBase):
         # Missing symbols have empty file names in the database, which is a guaranteed to be different
         # from the non-empty file names supplied by the API.
         result: dict[UUID, AdditionalSetData] = {}
-        obtained_set_data: Iterable[SetsAPIDataType] = ijson.items(response, "data.item", use_float=True)
-        for set_item in obtained_set_data:
+        obtained_set_data: SetsListAPIDataType = json.loads(response)
+        for set_item in obtained_set_data["data"]:
             set_scryfall_id = set_item["id"]
             data = AdditionalSetData(
                 uri := set_item["icon_svg_uri"],

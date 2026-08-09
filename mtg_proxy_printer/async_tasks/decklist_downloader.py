@@ -427,6 +427,8 @@ class CubeCobraDownloader(DecklistDownloader):
         return f"https://cubecobra.com/cube/download/xmage/{cube_name}"
 
 
+
+
 class ManaboxDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
         r"https://(www\.)?manabox\.app/decks/(?P<deck_id>[a-zA-Z0-9_-]{22})/?.*"

@@ -378,6 +378,29 @@ class SetsAPIDataType(TypedDict):
     search_uri: WEB_URI
 
 
+class SetsListAPIDataType(TypedDict):
+    object: Literal["list"]
+    has_more: bool
+    data: list[SetsAPIDataType]
+
+
+class UpdateCheckAPIPayloadType(TypedDict):
+    """Fossil JSON API endpoint. Payload data, i.e. the actual response content"""
+    raw: bool
+    includeTickets: bool
+    tags: list[str]
+
+
+class UpdateCheckAPIDataType(TypedDict):
+    """Fossil JSON API endpoint. Query result in the payload key."""
+    fossil: str
+    timestamp: int
+    command: Literal["tag/list"]
+    procTimeUs: int
+    procTimeMs: int
+    payload: UpdateCheckAPIPayloadType
+
+
 def _read_enum(container: Type, enum_class: Type[T], accumulator: dict[str, T] = None) -> dict[str, T]:
     if accumulator is None:
         accumulator = {}
