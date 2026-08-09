@@ -22,11 +22,12 @@ from collections.abc import Iterable
 import csv
 import html.parser
 import io
+import json
 import urllib.parse
 from io import StringIO
 import platform
 import re
-from typing import Type, Counter, Any, Union
+from typing import Type, Counter, TypedDict, Union
 
 import ijson
 from PySide6.QtGui import QValidator
@@ -37,6 +38,8 @@ from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser, Tap
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MagicWorkstationDeckDataFormatParser, \
     XMageParser
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.units_and_sizes import UUID
+
 logger = get_logger(__name__)
 del get_logger
 
@@ -372,7 +375,7 @@ class TCGPlayerDownloader(DecklistDownloader):
         deck_id = match.group("deck_id")
         # cards enables inclusion of card data (in the form of a mapping from internal card id to card data).
         # subDecks enables inclusion of mainboard/sideboard as a tuple stream (internal card id, quantity).
-        # stats enables irrelevant, additional card meta-data, like pricing and such, and is disabled.
+        # stats enables irrelevant, additional card metadata, like pricing and such, and is disabled.
         return f"https://infinite-api.tcgplayer.com/deck/magic/{deck_id}/?subDecks=true&cards=true&stats=false"
 
     def post_process(self, data: bytes) -> str:
@@ -427,6 +430,23 @@ class CubeCobraDownloader(DecklistDownloader):
         return f"https://cubecobra.com/cube/download/xmage/{cube_name}"
 
 
+class ManaBoxCardDataType(TypedDict):
+    cvId: int
+    collectorNumber: str
+    scryfallId: str
+    name: str
+    setId: str
+    setName: str
+    quantity: int
+
+
+class ManaBoxDeckDataType(TypedDict):
+    """Stripped-down response from the ManaBox API."""
+    id: UUID
+    name: str
+    colors: str
+    editDataUTC: int
+    cards: list[ManaBoxCardDataType]
 
 
 class ManaboxDownloader(DecklistDownloader):
@@ -442,7 +462,8 @@ class ManaboxDownloader(DecklistDownloader):
         return f"https://cloud.manabox.app/decks/{deck_id}"
 
     def post_process(self, data: bytes) -> str:
-        cards: Iterable[dict[str, Any]] = ijson.items(data, "cards.item")
+        response: ManaBoxDeckDataType = json.loads(data)
+        cards = response["cards"]
         buffer = io.StringIO()
         writer = csv.writer(buffer, self.PARSER_CLASS.Dialect)
         writer.writerow(("scryfall_id", "count", "lang", "name", "set_code", "collector_number"))

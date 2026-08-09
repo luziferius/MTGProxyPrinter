@@ -252,7 +252,7 @@ class ApiStreamTask(StreamTask):
     This class implements reading the card data from the Scryfall API as a CardStream.
 
     When used as a Task, it streams the decoded card data from the API and batches the result.
-    This encapsulates requesting data via HTTPS, decryption, gzip stream decompression and parsing into dicts via ijson.
+    This encapsulates requesting data via HTTPS, decryption, gzip stream decompression and parsing into dicts.
     It enqueues a single None as the last value after finishing the last batch.
     """
     def run(self):
