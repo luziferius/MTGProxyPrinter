@@ -27,9 +27,10 @@ import urllib.parse
 from io import StringIO
 import platform
 import re
-from typing import Type, Counter, TypedDict, Union
+from typing import Type, Counter, TypedDict, Union, Literal
 
 import ijson
+import itertools
 from PySide6.QtGui import QValidator
 
 from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
@@ -362,6 +363,39 @@ class MtgDecksNetDownloader(DecklistDownloader):
         deck_list = deck_list.replace("/", " // ")
         return deck_list
 
+class TCGPlayerCardDataType(TypedDict):
+    displayName: str
+    name: str
+    scryfallImageURL: str
+    set: str
+    setName: str
+    object: Literal["card"]
+    oracleID: UUID
+    locale: str
+
+
+class TCGPlayerSubdeckEntry(TypedDict):
+    cardID: int
+    quantity: int
+
+
+class TCGPlayerDeckType(TypedDict):
+    format: str
+    name: str
+    subDecks: dict[str, list[TCGPlayerSubdeckEntry]]
+
+
+class TCGPlayerResultType(TypedDict):
+    id: int
+    deck: TCGPlayerDeckType
+    imageURL: str
+    cards: dict[int, TCGPlayerCardDataType]
+    canonicalURL: str
+
+
+class TCGPlayerResponseType(TypedDict):
+    result: TCGPlayerResultType
+
 
 class TCGPlayerDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
@@ -387,29 +421,31 @@ class TCGPlayerDownloader(DecklistDownloader):
           an image URL containing the Scryfall-id, the internal_card_id also used in result.deck.subDecks
           and some other fields.
         """
-        card_counts = self._gather_card_counts(data)
+        response: TCGPlayerResponseType = json.loads(data)
+        card_counts = self._gather_card_counts(response)
         buffer = StringIO()
         scryfall_id_re = re.compile(r"(?P<scryfall_id>[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12})")
         writer = csv.writer(buffer, ScryfallCSVParser.Dialect)
         writer.writerow(["scryfall_id", "count", "lang", "name", "set_code", "collector_number"])
-        items: JSONKeyValueType = ijson.kvitems(data, "result.cards")
+        items = response["result"]["cards"]
         # The data contains a URL to an image hosted on scryfall that contains the scryfall id
-        # The data does not contain a card language, so hard-code English
         writer.writerows(
             (scryfall_id_re.search(card_data["scryfallImageURL"])["scryfall_id"], card_counts[card_id],
-             "en", card_data["name"], card_data["set"].lower(), "")
+             card_data["locale"], card_data["name"], card_data["set"].lower(), "")
             for card_id, card_data in items
         )
         return buffer.getvalue()
 
     @staticmethod
-    def _gather_card_counts(data: bytes) -> Counter[str]:
-        items: JSONKeyValueType = ijson.kvitems(data, "result.deck.subDecks")
+    def _gather_card_counts(response: TCGPlayerResponseType) -> Counter[str]:
+        subdecks = response["result"]["deck"]["subDecks"]
+        counts: Iterable[TCGPlayerSubdeckEntry] = itertools.chain.from_iterable(
+            subdecks.values()
+        )  # Ignore the board type "maindeck"/"sideboard"
         result = Counter()
-        for _, counts in items:  # Ignore the board type "maindeck"/"sideboard"
-            for card in counts:  # type: dict[str, int]
-                # card IDs are supplied as integers, but used elsewhere as strings. So convert them to strings
-                result[str(card["cardID"])] += card["quantity"]
+        for entry in counts:
+            # card IDs are supplied as integers, but used elsewhere as strings. So convert them to strings
+            result[str(entry["cardID"])] += entry["quantity"]
         return result
 
 
@@ -430,7 +466,7 @@ class CubeCobraDownloader(DecklistDownloader):
         return f"https://cubecobra.com/cube/download/xmage/{cube_name}"
 
 
-class ManaBoxCardDataType(TypedDict):
+class ManaboxCardDataType(TypedDict):
     cvId: int
     collectorNumber: str
     scryfallId: str
@@ -440,13 +476,13 @@ class ManaBoxCardDataType(TypedDict):
     quantity: int
 
 
-class ManaBoxDeckDataType(TypedDict):
+class ManaboxDeckDataType(TypedDict):
     """Stripped-down response from the ManaBox API."""
     id: UUID
     name: str
     colors: str
     editDataUTC: int
-    cards: list[ManaBoxCardDataType]
+    cards: list[ManaboxCardDataType]
 
 
 class ManaboxDownloader(DecklistDownloader):
@@ -462,7 +498,7 @@ class ManaboxDownloader(DecklistDownloader):
         return f"https://cloud.manabox.app/decks/{deck_id}"
 
     def post_process(self, data: bytes) -> str:
-        response: ManaBoxDeckDataType = json.loads(data)
+        response: ManaboxDeckDataType = json.loads(data)
         cards = response["cards"]
         buffer = io.StringIO()
         writer = csv.writer(buffer, self.PARSER_CLASS.Dialect)
