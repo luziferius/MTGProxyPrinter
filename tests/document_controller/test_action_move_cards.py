@@ -14,7 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Optional, Sequence
+from typing import Optional
 
 import pytest
 from hamcrest import *
@@ -373,7 +373,8 @@ def test___total_moved_cards(indices: IntList):
 
 
 def _create_applied_action(
-        source: int, cards_to_move: list[int], target_page: int, target_row: int = None) -> ActionMoveCardsBetweenPages:
+        source: int, cards_to_move: list[int],
+        target_page: int, target_row: int | None = None) -> ActionMoveCardsBetweenPages:
     action = ActionMoveCardsBetweenPages(source, cards_to_move, target_page, target_row)
     action._already_applied = True
     return action
