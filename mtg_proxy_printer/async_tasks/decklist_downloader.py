@@ -405,7 +405,7 @@ class TCGPlayerResultType(TypedDict):
     id: int
     deck: TCGPlayerDeckType
     imageURL: str
-    cards: dict[int, TCGPlayerCardDataType]
+    cards: dict[str, TCGPlayerCardDataType]
     canonicalURL: str
 
 
@@ -448,7 +448,7 @@ class TCGPlayerDownloader(DecklistDownloader):
         writer.writerows(
             (scryfall_id_re.search(card_data["scryfallImageURL"])["scryfall_id"], card_counts[card_id],
              card_data["locale"], card_data["name"], card_data["set"].lower(), "")
-            for card_id, card_data in items
+            for card_id, card_data in items.items()
         )
         return buffer.getvalue()
 
