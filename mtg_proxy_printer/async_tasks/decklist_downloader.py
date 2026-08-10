@@ -291,6 +291,17 @@ class DeckstatsDownloader(DecklistDownloader):
                f"include_comments=0&do_not_include_printings=0&export_mtgarena=1"
 
 
+class ArchidektCardType(TypedDict):
+    name: str
+    set: str
+    setCode: str
+    oracleCardUid: UUID
+    uid: UUID
+    collectorNumber: str
+    lang: str
+    qty: int
+
+
 class ArchidektHTMLParser(html.parser.HTMLParser):
 
     def __init__(self, *, convert_charrefs: bool = True):
@@ -334,18 +345,22 @@ class ArchidektDownloader(DecklistDownloader):
         buffer = StringIO()
         writer = csv.writer(buffer, ScryfallCSVParser.Dialect)
         writer.writerow(["scryfall_id", "count", "lang", "name", "set_code", "collector_number"])
-        encoded = json_str.encode("utf-8")
-        # The cards are stored in a map, which looks like it uses some base64 keys of unknown origin/meaning
-        # (e.g. "7ToxQpQbV") and card dicts as values.
-        # We are interested in the map values, so access the map items via ijson.kvitems() and throw the keys away
-        deck_items: JSONKeyValueType = ijson.kvitems(
-            encoded, "props.pageProps.redux.deck.cardMap", use_float=True)
+        deck_items = ArchidektDownloader._extract_cards_list(json_str)
         writer.writerows(
             # The data does not contain a card language, so hard-code English
             (card["uid"], card["qty"], "en", card["name"], card["setCode"], card["collectorNumber"])
-            for _, card in deck_items
+            for card in deck_items
         )
         return buffer.getvalue()
+
+    @staticmethod
+    def _extract_cards_list(json_str: str | bytes) -> Iterable[ArchidektCardType]:
+        # The cards are stored in a map at path props.pageProps.redux.deck.cardMap,
+        # which looks like it uses some base64 keys of unknown origin/meaning (e.g. "7ToxQpQbV")
+        # and ArchidektCardType dicts as values.
+        parsed = json.loads(json_str)
+        card_map: dict[str, ArchidektCardType] = parsed["props"]["pageProps"]["redux"]["deck"]["cardMap"]
+        return card_map.values()
 
 
 class MtgDecksNetDownloader(DecklistDownloader):
@@ -362,6 +377,7 @@ class MtgDecksNetDownloader(DecklistDownloader):
         deck_list = super().post_process(data)
         deck_list = deck_list.replace("/", " // ")
         return deck_list
+
 
 class TCGPlayerCardDataType(TypedDict):
     displayName: str
