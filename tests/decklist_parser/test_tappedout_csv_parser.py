@@ -57,7 +57,9 @@ def generate_test_cases_for_translation_and_replacement():
 
 
 @pytest.mark.parametrize(
-    "cards_to_import, deck_list, expected_card", generate_test_cases_for_translation_and_replacement())
+    "cards_to_import, deck_list, expected_card",
+    list(generate_test_cases_for_translation_and_replacement())
+)
 def test_excluded_printing_is_replaced_with_an_available_printing(
         card_db, image_db, cards_to_import: list[str], deck_list: str, expected_card: CardIdentificationData):
     fill_card_database_with_json_cards(card_db, cards_to_import, {"cards-without-images": "True"})
@@ -76,7 +78,10 @@ def test_excluded_printing_is_replaced_with_an_available_printing(
     )
 
 
-@pytest.mark.parametrize("cards_to_import, deck_list, expected_card", generate_test_cases_for_translation_and_replacement())
+@pytest.mark.parametrize(
+    "cards_to_import, deck_list, expected_card",
+    list(generate_test_cases_for_translation_and_replacement())
+)
 def test_deck_list_translation_works(
         card_db, image_db, cards_to_import: list[str], deck_list: str, expected_card: CardIdentificationData):
     fill_card_database_with_json_cards(card_db, cards_to_import)
@@ -113,7 +118,8 @@ def generate_test_cases_for_test_card_identification_works_in_simple_cases():
 
 @pytest.mark.parametrize(
     "cards_to_import, deck_list, expected_card",
-    generate_test_cases_for_test_card_identification_works_in_simple_cases())
+    list(generate_test_cases_for_test_card_identification_works_in_simple_cases())
+)
 def test_card_identification_works_in_simple_cases(
         card_db, image_db, cards_to_import: list[str], deck_list: str, expected_card: CardIdentificationData):
     fill_card_database_with_json_cards(card_db, cards_to_import, {"digital-cards": "False"})
