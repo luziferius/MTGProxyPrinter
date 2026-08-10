@@ -30,9 +30,8 @@ import typing
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Literal, LiteralString, Any, Iterable
+from typing import Literal, LiteralString, Any
 
-import ijson
 from PySide6.QtCore import Slot
 
 from mtg_proxy_printer import BlockingQueuedConnection
@@ -44,7 +43,8 @@ from mtg_proxy_printer.sqlite_helpers import cached_dedent
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID, SetsAPIDataType
+from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID, \
+    SetsListAPIDataType
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 
@@ -91,9 +91,7 @@ class CardInfoDownloadTaskBase(DownloaderBase):
     def get_scryfall_bulk_card_data_url(self) -> tuple[str, int]:
         """Returns the bulk data URL and compressed size in bytes"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
-        data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
-        with data:
-            item: BulkDataType = next(ijson.items(data, "", use_float=True))
+        item: BulkDataType = self.read_json_from_url(BULK_DATA_API_END_POINT)
         try:
             uri = item["jsonl_download_uri"]
             size = item["compressed_size"]
@@ -249,7 +247,7 @@ class ApiStreamTask(StreamTask):
     This class implements reading the card data from the Scryfall API as a CardStream.
 
     When used as a Task, it streams the decoded card data from the API and batches the result.
-    This encapsulates requesting data via HTTPS, decryption, gzip stream decompression and parsing into dicts via ijson.
+    This encapsulates requesting data via HTTPS, decryption, gzip stream decompression and parsing into dicts.
     It enqueues a single None as the last value after finishing the last batch.
     """
     def run(self):
@@ -309,7 +307,8 @@ class ApiStreamTask(StreamTask):
         })
         url = f"https://api.scryfall.com/cards/search?{url_parameters}"
         logger.debug(f"Read from card data update query URL: {url}")
-        return json.load(self.read_from_url(url)[0])["total_cards"]
+        data = self.read_json_from_url(url)
+        return data["total_cards"]
 
     @property
     def item_count(self):
@@ -377,8 +376,8 @@ class SetDataImportTask(DownloaderBase):
         # Missing symbols have empty file names in the database, which is a guaranteed to be different
         # from the non-empty file names supplied by the API.
         result: dict[UUID, AdditionalSetData] = {}
-        obtained_set_data: Iterable[SetsAPIDataType] = ijson.items(response, "data.item", use_float=True)
-        for set_item in obtained_set_data:
+        obtained_set_data: SetsListAPIDataType = json.loads(response)
+        for set_item in obtained_set_data["data"]:
             set_scryfall_id = set_item["id"]
             data = AdditionalSetData(
                 uri := set_item["icon_svg_uri"],

@@ -22,13 +22,14 @@ from collections.abc import Iterable
 import csv
 import html.parser
 import io
+import json
 import urllib.parse
 from io import StringIO
 import platform
 import re
-from typing import Type, Counter, Any, Union
+from typing import Type, Counter, TypedDict, Union, Literal
 
-import ijson
+import itertools
 from PySide6.QtGui import QValidator
 
 from mtg_proxy_printer.async_tasks.downloader_base import DownloaderBase
@@ -37,6 +38,8 @@ from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser, Tap
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MagicWorkstationDeckDataFormatParser, \
     XMageParser
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.units_and_sizes import UUID
+
 logger = get_logger(__name__)
 del get_logger
 
@@ -234,6 +237,20 @@ class TappedOutDownloader(DecklistDownloader):
         return f"https://tappedout.net/mtg-decks/{name}/?fmt=csv"
 
 
+class MoxfieldCardType(TypedDict):
+    scryfall_id: UUID
+    set: str
+    set_name: str
+    cn: str
+    lang: str
+    name: str
+
+
+class MoxfieldCardContainerType(TypedDict):
+    quantity: int
+    card:MoxfieldCardType
+
+
 class MoxfieldDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
         r"https://(www\.)?moxfield\.com/decks/(?P<moxfield_id>[-\w_]+)/?"
@@ -244,10 +261,13 @@ class MoxfieldDownloader(DecklistDownloader):
     @staticmethod
     def post_process(data: bytes) -> str:
         cards = []
+        response = json.loads(data)
+        boards = response["boards"]
         for board in (
                 "mainboard", "sideboard", "commanders", "companions", "signatureSpells",
                 "attractions", "stickers", "contraptions", "planes", "schemes"):
-            cards += MoxfieldDownloader._read_board(data, f"boards.{board}.cards")
+            if boards[board]["count"]:
+                cards += MoxfieldDownloader._read_board(boards[board])
         buffer = StringIO(newline="")
         writer = csv.writer(buffer, MoxfieldDownloader.PARSER_CLASS.Dialect)
         writer.writerow(("count", "scryfall_id", "lang", "name", "set_code", "collector_number"))
@@ -255,9 +275,12 @@ class MoxfieldDownloader(DecklistDownloader):
         return buffer.getvalue()
 
     @staticmethod
-    def _read_board(data: bytes, board: str) -> list[tuple[str, str, str, str, str, str]]:
+    def _read_board(
+            data: dict[str, MoxfieldCardContainerType]
+    ) -> list[tuple[str, str, str, str, str, str]]:
+        card_containers = data["cards"]
         result = []
-        for entry in next(ijson.items(data, board)).values():
+        for entry in card_containers.values():
             card = entry["card"]
             result.append(
                 (str(entry["quantity"]), card["scryfall_id"], card["lang"], card["name"], card["set"], card["cn"]))
@@ -285,6 +308,17 @@ class DeckstatsDownloader(DecklistDownloader):
         # The hyphen itself is required. Without it, the server returns the user's deck list directory.
         return f"https://deckstats.net/decks/{user}/{deck_id}-?" \
                f"include_comments=0&do_not_include_printings=0&export_mtgarena=1"
+
+
+class ArchidektCardType(TypedDict):
+    name: str
+    set: str
+    setCode: str
+    oracleCardUid: UUID
+    uid: UUID
+    collectorNumber: str
+    lang: str
+    qty: int
 
 
 class ArchidektHTMLParser(html.parser.HTMLParser):
@@ -330,18 +364,22 @@ class ArchidektDownloader(DecklistDownloader):
         buffer = StringIO()
         writer = csv.writer(buffer, ScryfallCSVParser.Dialect)
         writer.writerow(["scryfall_id", "count", "lang", "name", "set_code", "collector_number"])
-        encoded = json_str.encode("utf-8")
-        # The cards are stored in a map, which looks like it uses some base64 keys of unknown origin/meaning
-        # (e.g. "7ToxQpQbV") and card dicts as values.
-        # We are interested in the map values, so access the map items via ijson.kvitems() and throw the keys away
-        deck_items: JSONKeyValueType = ijson.kvitems(
-            encoded, "props.pageProps.redux.deck.cardMap", use_float=True)
+        deck_items = ArchidektDownloader._extract_cards_list(json_str)
         writer.writerows(
             # The data does not contain a card language, so hard-code English
             (card["uid"], card["qty"], "en", card["name"], card["setCode"], card["collectorNumber"])
-            for _, card in deck_items
+            for card in deck_items
         )
         return buffer.getvalue()
+
+    @staticmethod
+    def _extract_cards_list(json_str: str | bytes) -> Iterable[ArchidektCardType]:
+        # The cards are stored in a map at path props.pageProps.redux.deck.cardMap,
+        # which looks like it uses some base64 keys of unknown origin/meaning (e.g. "7ToxQpQbV")
+        # and ArchidektCardType dicts as values.
+        parsed = json.loads(json_str)
+        card_map: dict[str, ArchidektCardType] = parsed["props"]["pageProps"]["redux"]["deck"]["cardMap"]
+        return card_map.values()
 
 
 class MtgDecksNetDownloader(DecklistDownloader):
@@ -360,6 +398,40 @@ class MtgDecksNetDownloader(DecklistDownloader):
         return deck_list
 
 
+class TCGPlayerCardDataType(TypedDict):
+    displayName: str
+    name: str
+    scryfallImageURL: str
+    set: str
+    setName: str
+    object: Literal["card"]
+    oracleID: UUID
+    locale: str
+
+
+class TCGPlayerSubdeckEntry(TypedDict):
+    cardID: int
+    quantity: int
+
+
+class TCGPlayerDeckType(TypedDict):
+    format: str
+    name: str
+    subDecks: dict[str, list[TCGPlayerSubdeckEntry]]
+
+
+class TCGPlayerResultType(TypedDict):
+    id: int
+    deck: TCGPlayerDeckType
+    imageURL: str
+    cards: dict[str, TCGPlayerCardDataType]
+    canonicalURL: str
+
+
+class TCGPlayerResponseType(TypedDict):
+    result: TCGPlayerResultType
+
+
 class TCGPlayerDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
         r"https://infinite\.tcgplayer\.com/magic-the-gathering/deck/[^/]+/(?P<deck_id>\d+).*?"
@@ -372,7 +444,7 @@ class TCGPlayerDownloader(DecklistDownloader):
         deck_id = match.group("deck_id")
         # cards enables inclusion of card data (in the form of a mapping from internal card id to card data).
         # subDecks enables inclusion of mainboard/sideboard as a tuple stream (internal card id, quantity).
-        # stats enables irrelevant, additional card meta-data, like pricing and such, and is disabled.
+        # stats enables irrelevant, additional card metadata, like pricing and such, and is disabled.
         return f"https://infinite-api.tcgplayer.com/deck/magic/{deck_id}/?subDecks=true&cards=true&stats=false"
 
     def post_process(self, data: bytes) -> str:
@@ -384,29 +456,31 @@ class TCGPlayerDownloader(DecklistDownloader):
           an image URL containing the Scryfall-id, the internal_card_id also used in result.deck.subDecks
           and some other fields.
         """
-        card_counts = self._gather_card_counts(data)
+        response: TCGPlayerResponseType = json.loads(data)
+        card_counts = self._gather_card_counts(response)
         buffer = StringIO()
         scryfall_id_re = re.compile(r"(?P<scryfall_id>[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12})")
         writer = csv.writer(buffer, ScryfallCSVParser.Dialect)
         writer.writerow(["scryfall_id", "count", "lang", "name", "set_code", "collector_number"])
-        items: JSONKeyValueType = ijson.kvitems(data, "result.cards")
+        items = response["result"]["cards"]
         # The data contains a URL to an image hosted on scryfall that contains the scryfall id
-        # The data does not contain a card language, so hard-code English
         writer.writerows(
             (scryfall_id_re.search(card_data["scryfallImageURL"])["scryfall_id"], card_counts[card_id],
-             "en", card_data["name"], card_data["set"].lower(), "")
-            for card_id, card_data in items
+             card_data["locale"], card_data["name"], card_data["set"].lower(), "")
+            for card_id, card_data in items.items()
         )
         return buffer.getvalue()
 
     @staticmethod
-    def _gather_card_counts(data: bytes) -> Counter[str]:
-        items: JSONKeyValueType = ijson.kvitems(data, "result.deck.subDecks")
+    def _gather_card_counts(response: TCGPlayerResponseType) -> Counter[str]:
+        subdecks = response["result"]["deck"]["subDecks"]
+        counts: Iterable[TCGPlayerSubdeckEntry] = itertools.chain.from_iterable(
+            subdecks.values()
+        )  # Ignore the board type "maindeck"/"sideboard"
         result = Counter()
-        for _, counts in items:  # Ignore the board type "maindeck"/"sideboard"
-            for card in counts:  # type: dict[str, int]
-                # card IDs are supplied as integers, but used elsewhere as strings. So convert them to strings
-                result[str(card["cardID"])] += card["quantity"]
+        for entry in counts:
+            # card IDs are supplied as integers, but used elsewhere as strings. So convert them to strings
+            result[str(entry["cardID"])] += entry["quantity"]
         return result
 
 
@@ -427,6 +501,25 @@ class CubeCobraDownloader(DecklistDownloader):
         return f"https://cubecobra.com/cube/download/xmage/{cube_name}"
 
 
+class ManaboxCardDataType(TypedDict):
+    cvId: int
+    collectorNumber: str
+    scryfallId: str
+    name: str
+    setId: str
+    setName: str
+    quantity: int
+
+
+class ManaboxDeckDataType(TypedDict):
+    """Stripped-down response from the ManaBox API."""
+    id: UUID
+    name: str
+    colors: str
+    editDataUTC: int
+    cards: list[ManaboxCardDataType]
+
+
 class ManaboxDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
         r"https://(www\.)?manabox\.app/decks/(?P<deck_id>[a-zA-Z0-9_-]{22})/?.*"
@@ -440,7 +533,8 @@ class ManaboxDownloader(DecklistDownloader):
         return f"https://cloud.manabox.app/decks/{deck_id}"
 
     def post_process(self, data: bytes) -> str:
-        cards: Iterable[dict[str, Any]] = ijson.items(data, "cards.item")
+        response: ManaboxDeckDataType = json.loads(data)
+        cards = response["cards"]
         buffer = io.StringIO()
         writer = csv.writer(buffer, self.PARSER_CLASS.Dialect)
         writer.writerow(("scryfall_id", "count", "lang", "name", "set_code", "collector_number"))

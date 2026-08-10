@@ -12,8 +12,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-
+import json
 import random
 import re
 import socket
@@ -22,7 +21,6 @@ import ssl
 import urllib.parse
 import urllib.error
 
-import ijson
 from PySide6.QtCore import QObject, Signal
 
 from mtg_proxy_printer.argument_parser import Namespace
@@ -35,7 +33,7 @@ from mtg_proxy_printer.natsort import natural_sorted, str_less_than
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import OptStr
+from mtg_proxy_printer.units_and_sizes import OptStr, UpdateCheckAPIDataType
 
 logger = get_logger(__name__)
 del get_logger
@@ -160,19 +158,19 @@ class ApplicationUpdateCheckTask(DownloaderBase):
             try:
                 if tags := self._read_available_application_versions_from_mirror(mirror):
                     break
-            except (urllib.error.URLError, socket.timeout, ijson.IncompleteJSONError) as e:
+            except (urllib.error.URLError, socket.timeout, json.JSONDecodeError) as e:
                 logger.warning(f"Failed to read update from mirror {mirror}. Reason: {e}")
                 continue
         return tags
 
     def _read_available_application_versions_from_mirror(self, mirror):
-        data, _ = self.read_from_url(
+        items: UpdateCheckAPIDataType = self.read_json_from_url(
             f"{mirror}/json/tag/list/",
             self.tr("Application update check: ", "Progress bar label text"))
-        items = ijson.items(data, "payload.tags.item", use_float=True)
+        tags = items["payload"]["tags"]
         matches = filter(
             None,
-            map(VERSION_TAG_MATCHER.fullmatch, items)
+            map(VERSION_TAG_MATCHER.fullmatch, tags)
         )
         return natural_sorted((match["version"] for match in matches), reverse=True)
 
