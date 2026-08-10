@@ -29,7 +29,6 @@ import platform
 import re
 from typing import Type, Counter, TypedDict, Union, Literal
 
-import ijson
 import itertools
 from PySide6.QtGui import QValidator
 
@@ -238,6 +237,20 @@ class TappedOutDownloader(DecklistDownloader):
         return f"https://tappedout.net/mtg-decks/{name}/?fmt=csv"
 
 
+class MoxfieldCardType(TypedDict):
+    scryfall_id: UUID
+    set: str
+    set_name: str
+    cn: str
+    lang: str
+    name: str
+
+
+class MoxfieldCardContainerType(TypedDict):
+    quantity: int
+    card:MoxfieldCardType
+
+
 class MoxfieldDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
         r"https://(www\.)?moxfield\.com/decks/(?P<moxfield_id>[-\w_]+)/?"
@@ -248,10 +261,13 @@ class MoxfieldDownloader(DecklistDownloader):
     @staticmethod
     def post_process(data: bytes) -> str:
         cards = []
+        response = json.loads(data)
+        boards = response["boards"]
         for board in (
                 "mainboard", "sideboard", "commanders", "companions", "signatureSpells",
                 "attractions", "stickers", "contraptions", "planes", "schemes"):
-            cards += MoxfieldDownloader._read_board(data, f"boards.{board}.cards")
+            if boards[board]["count"]:
+                cards += MoxfieldDownloader._read_board(boards[board])
         buffer = StringIO(newline="")
         writer = csv.writer(buffer, MoxfieldDownloader.PARSER_CLASS.Dialect)
         writer.writerow(("count", "scryfall_id", "lang", "name", "set_code", "collector_number"))
@@ -259,9 +275,12 @@ class MoxfieldDownloader(DecklistDownloader):
         return buffer.getvalue()
 
     @staticmethod
-    def _read_board(data: bytes, board: str) -> list[tuple[str, str, str, str, str, str]]:
+    def _read_board(
+            data: dict[str, MoxfieldCardContainerType]
+    ) -> list[tuple[str, str, str, str, str, str]]:
+        card_containers = data["cards"]
         result = []
-        for entry in next(ijson.items(data, board)).values():
+        for entry in card_containers.values():
             card = entry["card"]
             result.append(
                 (str(entry["quantity"]), card["scryfall_id"], card["lang"], card["name"], card["set"], card["cn"]))
