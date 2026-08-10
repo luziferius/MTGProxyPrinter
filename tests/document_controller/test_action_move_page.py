@@ -31,6 +31,8 @@ from tests.document_controller.helpers import append_new_card_in_page
 
 @pytest.fixture()
 def document_with_pages(document: Document) -> Document:
+    """Creates a new document with 4 pages. Each page holds a single Card named using the page number.
+    In initial order, joining all card names together in document order gives "0123"."""
     ActionNewPage(count=3).apply(document)
     for number in range(document.rowCount()):
         append_new_card_in_page(document.pages[number], f"{number}")
@@ -38,9 +40,18 @@ def document_with_pages(document: Document) -> Document:
 
 
 def _card_name_on_page(document: Document, page: int) -> str:
+    """Returns the first card name on the given page. Used as a test helper"""
     page_index = document.index(page, 0)
     card_index = document.index(0, PageColumns.CardName, page_index)
     return document.data(card_index, Qt.ItemDataRole.EditRole)
+
+
+def current_page_order(document: Document) -> str:
+    """Returns the current page order as a string of joined page numbers, e.g. 0123 or 3210"""
+    return "".join(
+        _card_name_on_page(document, page)
+        for page in range(document.rowCount())
+    )
 
 
 def validate_qt_model_move_signal_parameter(
@@ -74,43 +85,43 @@ def test___init___initializes_values(source_page: int, target_page: int):
     )
 
 
-def generate_test_cases_for_move_tests():
-    yield 0, 0, "0123"
-    yield 0, 1, "0123"
-    yield 0, 2, "1023"
-    yield 0, 3, "1203"
-    yield 0, 4, "1230"
+test_cases_for_move_tests: list[tuple[int, int, str]] = [
+    (0, 0, "0123"),
+    (0, 1, "0123"),
+    (0, 2, "1023"),
+    (0, 3, "1203"),
+    (0, 4, "1230"),
 
-    yield 1, 0, "1023"
-    yield 1, 1, "0123"
-    yield 1, 2, "0123"
-    yield 1, 3, "0213"
-    yield 1, 4, "0231"
+    (1, 0, "1023"),
+    (1, 1, "0123"),
+    (1, 2, "0123"),
+    (1, 3, "0213"),
+    (1, 4, "0231"),
 
-    yield 2, 0, "2013"
-    yield 2, 1, "0213"
-    yield 2, 2, "0123"
-    yield 2, 3, "0123"
-    yield 2, 4, "0132"
+    (2, 0, "2013"),
+    (2, 1, "0213"),
+    (2, 2, "0123"),
+    (2, 3, "0123"),
+    (2, 4, "0132"),
 
-    yield 3, 0, "3012"
-    yield 3, 1, "0312"
-    yield 3, 2, "0132"
-    yield 3, 3, "0123"
-    yield 3, 4, "0123"
+    (3, 0, "3012"),
+    (3, 1, "0312"),
+    (3, 2, "0132"),
+    (3, 3, "0123"),
+    (3, 4, "0123"),
+]
 
 
-@pytest.mark.parametrize("source_page, target_page, expected_order", generate_test_cases_for_move_tests())
+@pytest.mark.parametrize("source_page, target_page, expected_order", test_cases_for_move_tests)
 def test_apply_moves_page(document_with_pages: Document, source_page: int, target_page: int, expected_order: str):
     action = ActionMovePage(source_page, target_page)
     assert_that(action.apply(document_with_pages), is_(same_instance(action)))
     assert_that(document_with_pages.rowCount(), is_(4))
-    pages_after_move = "".join(
-        _card_name_on_page(document_with_pages, page) for page in range(document_with_pages.rowCount()))
+    pages_after_move = current_page_order(document_with_pages)
     assert_that(pages_after_move, is_(equal_to(expected_order)))
 
 
-@pytest.mark.parametrize("source_page, target_page, expected_order", generate_test_cases_for_move_tests())
+@pytest.mark.parametrize("source_page, target_page, expected_order", test_cases_for_move_tests)
 def test_apply_emits_move_signals(
         qtbot: QtBot, document_with_pages: Document, source_page: int, target_page: int, expected_order: str):
     action = ActionMovePage(source_page, target_page)
@@ -141,28 +152,25 @@ def test_apply_outside_range_raises_exception(document_with_pages: Document, sou
     assert_that(calling(action.apply).with_args(document_with_pages), raises(IllegalStateError))
 
 
-@pytest.mark.parametrize("source_page, target_page, order_after_apply", generate_test_cases_for_move_tests())
+@pytest.mark.parametrize("source_page, target_page, order_after_apply", test_cases_for_move_tests)
 def test_undo_moves_page(
        document_with_pages: Document, source_page: int, target_page: int, order_after_apply: str):
     action = ActionMovePage(source_page, target_page)
     action.apply(document_with_pages)
-    if ("".join(_card_name_on_page(document_with_pages, page) for page in range(document_with_pages.rowCount()))
-            != order_after_apply):
+    if current_page_order(document_with_pages) != order_after_apply:
         pytest.skip("Test setup broken!")
     assert_that(action.undo(document_with_pages), is_(same_instance(action)))
     assert_that(document_with_pages.rowCount(), is_(4))
-    pages_after_move = "".join(
-        _card_name_on_page(document_with_pages, page) for page in range(document_with_pages.rowCount()))
+    pages_after_move = current_page_order(document_with_pages)
     assert_that(pages_after_move, is_(equal_to("0123")))
 
 
-@pytest.mark.parametrize("source_page, target_page, order_after_apply", generate_test_cases_for_move_tests())
+@pytest.mark.parametrize("source_page, target_page, order_after_apply", test_cases_for_move_tests)
 def test_undo_emits_move_signals(
         qtbot: QtBot, document_with_pages: Document, source_page: int, target_page: int, order_after_apply: str):
     action = ActionMovePage(source_page, target_page)
     action.apply(document_with_pages)
-    if ("".join(_card_name_on_page(document_with_pages, page) for page in range(document_with_pages.rowCount()))
-            != order_after_apply):
+    if current_page_order(document_with_pages) != order_after_apply:
         pytest.skip("Test setup broken!")
     if source_page == target_page or source_page == target_page - 1:
         with qtbot.assert_not_emitted(document_with_pages.rowsAboutToBeMoved), qtbot.assert_not_emitted(
