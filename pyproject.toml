@@ -27,14 +27,9 @@ classifiers = [
     "Topic :: Games/Entertainment :: Board Games",
     "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
 ]
-# Minimum required ijson version is 3.1 for the use_float parameter.
-# ijson adds full compatibility with Python 3.11 in version 3.2 (3.1 is really slow on Py3.11).
-# and Python 3.12 support in 3.2.1. Require newer versions on those Python versions to avoid
-# falling back to the slow pure Python backend.
 dependencies = [
     "platformdirs >= 2.6.0",
     "PySide6_Essentials >= 6.8.0",
-    "ijson >= 3.2.1",
     "Pint >= 0.24.4",
     "delegateto == 1.5",
     "PyHamcrest >= 2.0.3",
@@ -109,14 +104,8 @@ executables = [
 ]
 [tool.cxfreeze.build_exe]
 optimize = 2
-packages = [
-    # Ensure that the dynamically loaded ijson backends are discovered.
-    "ijson.backends",
-]
 excludes = [
     "distutils",
-    "ijson.benchmark",  # Ignore the benchmark script added after ijson 3.2.3
-    "ijson.dump",  # Also ignore the CSV dumping script.
     "importlib_metadata",
     "lib2to3",
     "pep517",
@@ -206,10 +195,9 @@ basepython = [
 [tool.tox.env_base.minimum_version]
 base = ["tox.tool.env_run_base"]
 description = "Runs the unit tests and integration tests using the oldest supported version of the indicated dependency"
-factors = ["platformdirs", "ijson", "pint", "pyhamcrest"]
+factors = ["platformdirs", "pint", "pyhamcrest"]
 deps = [
     {replace = "if", condition = "factor.platformdirs", then = ["platformdirs==2.6.0"], extend = true},
-    {replace = "if", condition = "factor.ijson", then = ["ijson==3.2.1"], extend = true},
     {replace = "if", condition = "factor.pint", then = ["Pint==0.24.4"], extend = true},
     {replace = "if", condition = "factor.pyhamcrest", then = ["PyHamcrest==2.0.3"], extend = true},
 ]

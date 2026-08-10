@@ -114,7 +114,6 @@ Except for Scryfall, these websites do not offer a stable, public Web API. Suppo
 These external libraries are used in the code. They can be installed from PyPI.
 
 - `platformdirs`
-- `ijson`
 - `pint`
 - `PySide6` (Only the core libraries `PySide6-Essentials` is required)
 - `delegateto`
