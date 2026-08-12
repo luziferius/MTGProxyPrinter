@@ -15,7 +15,6 @@
 
 from collections.abc import Iterable
 import itertools
-import sys
 
 import pytest
 from hamcrest import *
@@ -31,20 +30,16 @@ def powerset(*items: list[str]) -> Iterable[tuple[list[str], ...]]:
         in range(length+1)
     )
 
-
-def generate_command_lines():
-    # All command line options as lists of strings
-    subsets = powerset(
-        ["--test-exit-on-launch"],
-        ["--card-data", "/card_data.json.gz"],
-        ["/path/to/save.mtgproxies"],
-    )
-    return map(list, map(itertools.chain.from_iterable, subsets))
+# All command line options as lists of strings
+command_lines: list[list[str]] = list(map(list, map(itertools.chain.from_iterable, powerset(
+    ["--test-exit-on-launch"],
+    ["--card-data", "/card_data.json.gz"],
+    ["/path/to/save.mtgproxies"],
+))))
 
 
-@pytest.mark.parametrize("argv", generate_command_lines())
+@pytest.mark.parametrize("argv", command_lines)
 def test_argument_parser_namespace_only_contains_known_keys(argv: list[str]):
-
     args = mtg_proxy_printer.argument_parser.parse_args(argv)
     annotations = mtg_proxy_printer.argument_parser.Namespace.__annotations__
     assert_that(
@@ -52,12 +47,10 @@ def test_argument_parser_namespace_only_contains_known_keys(argv: list[str]):
     )
 
 
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires Python 3.9 or higher")
-@pytest.mark.parametrize("argv", generate_command_lines())
+@pytest.mark.parametrize("argv", command_lines)
 def test_argument_parser_namespace_matches_annotated_namespace(argv: list[str]):
     args = mtg_proxy_printer.argument_parser.parse_args(argv)
     annotations = mtg_proxy_printer.argument_parser.Namespace.__annotations__
-    # This isn't optimal for non-optional
     for key, value in args.__dict__.items():
         expected = annotations[key]
         # Cannot use hamcrest instance_of(), as that cannot handle typing.Optional and related
