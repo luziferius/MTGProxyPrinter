@@ -352,18 +352,16 @@ def test_test_case_data():
     )
 
 
-def generate_test_cases_for_test_card_import():
-    yield TestCaseData("non_english_double_faced_card")  # Chinese "Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun"
-    yield TestCaseData("split_card")  # Korean "Cut // Ribbons"
-    yield TestCaseData("english_double_faced_art_series_card")  # English art series card "Clearwater Pathway // Clearwater Pathway"
-    yield TestCaseData("regular_english_card")  # English "Fury Sliver" from Time Spiral
-    yield TestCaseData("reversible_card")  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
-    yield TestCaseData("The_Ring")
-    yield TestCaseData("Undercity")
-    yield TestCaseData("Dungeon_of_the_Mad_Mage")
-
-
-@pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
+@pytest.mark.parametrize("test_case", [
+    TestCaseData("non_english_double_faced_card"),  # Chinese "Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun"
+    TestCaseData("split_card"),  # Korean "Cut // Ribbons"
+    TestCaseData("english_double_faced_art_series_card"),  # English art series card "Clearwater Pathway // Clearwater Pathway"
+    TestCaseData("regular_english_card"),  # English "Fury Sliver" from Time Spiral
+    TestCaseData("reversible_card"),  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+    TestCaseData("The_Ring"),
+    TestCaseData("Undercity"),
+    TestCaseData("Dungeon_of_the_Mad_Mage"),
+])
 def test_card_import(card_db: CardDatabase, test_case: TestCaseData):
     fill_card_database_with_json_card(card_db, test_case.json_dict)
     assert_visible_import(card_db, test_case)
@@ -412,7 +410,7 @@ def generate_test_cases_for_test_print_hiding_filters():
     yield TestCaseData("promo_promopack"), "promo-promopack"
 
 @pytest.mark.parametrize("filter_enabled", [True, False])
-@pytest.mark.parametrize("test_case, filter_name", generate_test_cases_for_test_print_hiding_filters())
+@pytest.mark.parametrize("test_case, filter_name", list(generate_test_cases_for_test_print_hiding_filters()))
 def test_boolean_print_hiding_filters(
         card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_enabled: bool):
     fill_card_database_with_json_card(card_db, test_case.json_dict, {filter_name: str(filter_enabled)})
@@ -431,7 +429,7 @@ def generate_test_cases_for_test_set_code_filters():
     yield sliver, "", assert_visible_import
 
 
-@pytest.mark.parametrize("test_case, filter_value, expected_result", generate_test_cases_for_test_set_code_filters())
+@pytest.mark.parametrize("test_case, filter_value, expected_result", list(generate_test_cases_for_test_set_code_filters()))
 def test_set_code_filters(
         card_db: CardDatabase, test_case: TestCaseData, filter_value: str,
         expected_result: Callable[[CardDatabase, TestCaseData], None]):
