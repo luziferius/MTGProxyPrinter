@@ -120,7 +120,7 @@ def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data
     db.row_factory = None  # TODO: Determine why patch.object() doesn't properly revert during __exit__()
     sets_list_data = read_resource_text("tests.json_samples", f"all_sets_data.json").encode("utf-8")
     with patch.dict(section, settings_to_use), \
-            patch("mtg_proxy_printer.async_tasks.card_info_downloader.SetDataImportTask._read_svg", return_value=None), \
+            patch("mtg_proxy_printer.async_tasks.card_info_downloader.SetDataImportTask._download_svg", return_value=None), \
             patch("mtg_proxy_printer.async_tasks.card_info_downloader.SetDataImportTask._fetch_sets_list_from_scryfall_api", return_value=sets_list_data):
         dit.populate_database(data)
     db.row_factory = sqlite3.Row

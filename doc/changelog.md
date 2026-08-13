@@ -1,5 +1,11 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+- Optimized set symbol downloads: Avoid duplicate downloads when sets share the same symbol.
+
 # Version 0.36.0 (2026-07-31)  <a name="v0_36_0"></a>
 
 ## New features

@@ -400,15 +400,6 @@ class SetDataImportTask(DownloaderBase):
         socket.setdefaulttimeout(5)
         return response
 
-    @staticmethod
-    def _extract_file_name(uri: str) -> str:
-        # The attached cache key invalidates each day, causing the application to re-download all set icons
-        # every time the card database is updated. Thus strip the cache key and base it solely on the file name.
-        # New sets get "default.svg" until the proper icon is created, so at least the transition from temporary
-        # icon to the first proper icon works.
-        file_name = uri.rsplit("/", 1)[1].split("?", 1)[0]
-        return file_name
-
     def _fetch_icon_svgs(self, icon_uris: dict[UUID, AdditionalSetData]) -> list[tuple[str | None, bytes, str, UUID]]:
         """
         Fetches the given SVG icons. Note: The returned tuples have the set_scryfall_id at the end, because that's the
@@ -416,10 +407,15 @@ class SetDataImportTask(DownloaderBase):
         :param icon_uris: Mapping from set_scryfall_id to the SVG uri
         :returns: list with tuples [optional parent set code, SVG source code, file name, set_scryfall_id]
         """
+        # dict[svg_file_name, svg_code]. Multiple sets share the same icon svg, so download each only once.
+        svg_cache: dict[str, bytes] = {}
         result: list[tuple[str | None, bytes, str, UUID]] = []
         for set_scryfall_id, data in icon_uris.items():
             if not self.should_run: return result
-            svg = self._read_svg(data.svg_icon_uri)
+            svg = (self._read_svg_from_db(data.file_name)
+                   or svg_cache.get(data.file_name)
+                   or self._download_svg(data.svg_icon_uri))
+            svg_cache[data.file_name] = svg
             result.append((data.parent_set_code, svg, data.file_name, set_scryfall_id))
             self.advance_progress.emit()
         return result
@@ -434,7 +430,16 @@ class SetDataImportTask(DownloaderBase):
             self._db = open_database(self.carddb_path, SCHEMA_NAME)
         return self._db
 
-    def _read_svg(self, uri: str) -> bytes:
+    def _read_svg_from_db(self, file_name: str) -> bytes | None:
+        # Note: This is unlikely to ever hit. This hits, if a main set with set symbol is present in the database,
+        # and then a sub-set is added for it in the upstream database.
+        maybe_svg = self._read_optional_scalar_from_db(
+            "SELECT icon_svg FROM MTGSet WHERE icon_file_name = ?",
+            (file_name,)
+        )
+        return maybe_svg
+
+    def _download_svg(self, uri: str) -> bytes:
         svg = self.read_from_url(uri,)[0].read()
         return svg
 
