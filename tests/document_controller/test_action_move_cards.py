@@ -14,7 +14,7 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Optional, Sequence
+from typing import Optional
 
 import pytest
 from hamcrest import *
@@ -373,7 +373,8 @@ def test___total_moved_cards(indices: IntList):
 
 
 def _create_applied_action(
-        source: int, cards_to_move: list[int], target_page: int, target_row: int = None) -> ActionMoveCardsBetweenPages:
+        source: int, cards_to_move: list[int],
+        target_page: int, target_row: int | None = None) -> ActionMoveCardsBetweenPages:
     action = ActionMoveCardsBetweenPages(source, cards_to_move, target_page, target_row)
     action._already_applied = True
     return action
@@ -666,7 +667,8 @@ def generate_test_cases_for_card_moves_between_pages():
 
 @pytest.mark.parametrize(
     "source, cards_to_move, target_page, target_row, expected",
-    generate_test_cases_for_card_moves_between_pages())
+    list(generate_test_cases_for_card_moves_between_pages())
+)
 def test_ActionMoveCardsBetweenPages_apply(
         document_with_cards: Document,
         source: int, cards_to_move: list[int], target_page: int, target_row: int | None,
@@ -679,7 +681,8 @@ def test_ActionMoveCardsBetweenPages_apply(
 
 @pytest.mark.parametrize(
     "source, cards_to_move, target_page, target_row, expected",
-    generate_test_cases_for_card_moves_between_pages())
+    list(generate_test_cases_for_card_moves_between_pages())
+)
 def test_ActionMoveCardsBetweenPages_undo(
         document_with_cards: Document,
         source: int, cards_to_move: list[int], target_page: int, target_row: int | None,
@@ -720,7 +723,8 @@ def generate_test_cases_for_card_moves_within_page():
 
 @pytest.mark.parametrize(
     "page, cards_to_move, target_row, expected",
-    generate_test_cases_for_card_moves_within_page())
+    list(generate_test_cases_for_card_moves_within_page())
+)
 def test_ActionMoveCardsWithinPage_apply(document_with_cards: Document, page: int, cards_to_move: list[int],
                                          target_row: int | None, expected: list[str]):
     ActionMoveCardsWithinPage(page, cards_to_move, target_row).apply(document_with_cards)
@@ -730,7 +734,8 @@ def test_ActionMoveCardsWithinPage_apply(document_with_cards: Document, page: in
 
 @pytest.mark.parametrize(
     "page, cards_to_move, target_row, after_apply",
-    generate_test_cases_for_card_moves_within_page())
+    list(generate_test_cases_for_card_moves_within_page())
+)
 def test_ActionMoveCardsWithinPage_undo(document_with_cards: Document, page: int, cards_to_move: list[int],
                                         target_row: int | None, after_apply: list[str]):
     (action := ActionMoveCardsWithinPage(page, cards_to_move, target_row)).apply(document_with_cards)

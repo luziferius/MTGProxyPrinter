@@ -25,9 +25,10 @@ Element = ElementTree.Element
 pytest.mark.skipif(
     HAS_COMPILED_RESOURCES, reason="Cannot test UI files in compiled mode, as they are unavailable"
 )
+all_ui_files = list((Path(RESOURCE_PATH_PREFIX)/"ui").rglob("*.ui"))
 
 
-@pytest.mark.parametrize("ui_file_path", (Path(RESOURCE_PATH_PREFIX)/"ui").rglob("*.ui"))
+@pytest.mark.parametrize("ui_file_path", all_ui_files)
 def test_button_icons_do_not_have_normaloff_value(ui_file_path: Path):
     """
     The Qt5 Designer program adds invalid "normaloff" attributes to set icons when loading UI files.
@@ -51,7 +52,7 @@ def _format_signal_slot_connection(item: Element) -> str:
             f"→{item.find('receiver').text}.{item.find('slot').text}")
 
 
-@pytest.mark.parametrize("ui_file_path", (Path(RESOURCE_PATH_PREFIX)/"ui").rglob("*.ui"))
+@pytest.mark.parametrize("ui_file_path", all_ui_files)
 def test_ui_files_have_no_hints(ui_file_path: Path):
     """
     Qt Designer automatically adds optional <hints> sections like these for Signal/Slot connections:

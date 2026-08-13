@@ -106,7 +106,8 @@ def generate_test_cases_for_test_set_code_filters_updates_value_in_database():
 
 @pytest.mark.parametrize(
     "test_case, filter_value, expected_set_is_hidden",
-    generate_test_cases_for_test_set_code_filters_updates_value_in_database())
+    list(generate_test_cases_for_test_set_code_filters_updates_value_in_database())
+)
 def test_set_code_filters_updates_value_in_database(
         card_db: CardDatabase, test_case: TestCaseData, filter_value: str, expected_set_is_hidden: bool):
     fill_card_database_with_json_card(card_db, test_case.json_dict)

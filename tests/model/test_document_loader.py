@@ -169,7 +169,7 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
     assert_that(total_cards, is_(2))
 
 
-@pytest.mark.parametrize("data", chain(
+@pytest.mark.parametrize("data", list(chain(
     # Syntactically invalid
     zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(1), repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.REGULAR)),
     zip(repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.REGULAR)),
@@ -182,7 +182,7 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
     # Semantically invalid, as type "d" it means generating a DFC check card for a single sided card.
     zip(repeat(1), repeat(1), repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD]),
     zip(repeat(1), repeat(1), repeat(0), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD]),
-))
+)))
 def test_invalid_data_in_card_columns_raises_exception(
         qtbot: QtBot, loader: DocumentLoader,
         empty_save_database: sqlite3.Connection, data):
@@ -284,7 +284,7 @@ def generate_test_cases_for_test_protects_against_infinite_settings_data():
         """)
 
 
-@pytest.mark.parametrize("user_version, script", generate_test_cases_for_test_protects_against_infinite_settings_data())
+@pytest.mark.parametrize("user_version, script", list(generate_test_cases_for_test_protects_against_infinite_settings_data()))
 def test_protects_against_infinite_settings_data(
         qtbot: QtBot, loader: DocumentLoader,
         empty_save_database: sqlite3.Connection, user_version: int, script: str):

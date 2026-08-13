@@ -118,7 +118,8 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(page_scene: PageScene
     )
 
 
-@pytest.mark.parametrize("row_spacing, column_spacing", itertools.product([0*mm, 1*mm], repeat=2))
+@pytest.mark.parametrize("row_spacing", [0*mm, 1*mm])
+@pytest.mark.parametrize("column_spacing", [0*mm, 1*mm])
 def test_cut_lines_property_only_lists_line_elements(
         page_scene: PageScene, row_spacing: Quantity, column_spacing: Quantity):
     layout = page_scene.document.page_layout

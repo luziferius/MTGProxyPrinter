@@ -218,66 +218,67 @@ def card_db_with_cards(card_db: CardDatabase):
     return card_db
 
 
-def generate_test_cases_for_test_translate_card_name():
-    """Yields tuples with card data, target language and expected result."""
+test_cases_for_test_translate_card_name: list[tuple[CardIdentificationData, str, str]] = [
+    # tuples with card data, target language and expected result.
     # Same-language identity translation
-    yield CardIdentificationData("en", "Forest"), "en", "Forest"
-    yield CardIdentificationData("de", "Wald"), "de", "Wald"
-    yield CardIdentificationData("es", "Bosque"), "es", "Bosque"
+    (CardIdentificationData("en", "Forest"), "en", "Forest"),
+    (CardIdentificationData("de", "Wald"), "de", "Wald"),
+    (CardIdentificationData("es", "Bosque"), "es", "Bosque"),
     # Guess source language
-    yield CardIdentificationData(None, "Forest"), "en", "Forest"
-    yield CardIdentificationData(None, "Wald"), "en", "Forest"
-    yield CardIdentificationData(None, "Bosque"), "en", "Forest"
-    yield CardIdentificationData(None, "Bosque"), "de", "Wald"
-#     yield CardIdentificationData(None, "Forest"), "de", "Wald"  # FIXME: Currently failing edge case
+    (CardIdentificationData(None, "Forest"), "en", "Forest"),
+    (CardIdentificationData(None, "Wald"), "en", "Forest"),
+    (CardIdentificationData(None, "Bosque"), "en", "Forest"),
+    (CardIdentificationData(None, "Bosque"), "de", "Wald"),
+    # (CardIdentificationData(None, "Forest"), "de", "Wald"),  # FIXME: Currently failing edge case
     # translation with source language
-    yield CardIdentificationData("de", "Wald"), "en", "Forest"
-    yield CardIdentificationData("es", "Bosque"), "en", "Forest"
+    (CardIdentificationData("de", "Wald"), "en", "Forest"),
+    (CardIdentificationData("es", "Bosque"), "en", "Forest"),
     # wrong source language. Returns no result
-    yield CardIdentificationData("wrong_source", "Wald"), "en", None
-    yield CardIdentificationData("wrong_source", "Forest"), "de", None
-    yield CardIdentificationData("wrong_source", "Bosque"), "en", None
-    yield CardIdentificationData("wrong_source", "Bosque"), "es", None
+    (CardIdentificationData("wrong_source", "Wald"), "en", None),
+    (CardIdentificationData("wrong_source", "Forest"), "de", None),
+    (CardIdentificationData("wrong_source", "Bosque"), "en", None),
+    (CardIdentificationData("wrong_source", "Bosque"), "es", None),
     # Card with name clash. Tests majority voting
-    yield CardIdentificationData("de", "Zwang"), "en", "Duress"
-    yield CardIdentificationData(None, "Zwang"), "en", "Duress"
+    (CardIdentificationData("de", "Zwang"), "en", "Duress"),
+    (CardIdentificationData(None, "Zwang"), "en", "Duress"),
     # Card with name clash. Tests using context information yields the expected name
-    yield CardIdentificationData("de", "Zwang", scryfall_id="51c6ec30-afb2-41e6-895b-92e070aa86f3"), "en", "Duress"
-    yield CardIdentificationData(None, "Zwang", scryfall_id="51c6ec30-afb2-41e6-895b-92e070aa86f3"), "en", "Duress"
-    yield CardIdentificationData("de", "Zwang", scryfall_id="93054b80-fd1f-4200-8d33-2e826a181db0"), "en", "Coercion"
-    yield CardIdentificationData(None, "Zwang", scryfall_id="93054b80-fd1f-4200-8d33-2e826a181db0"), "en", "Coercion"
-    yield CardIdentificationData("de", "Zwang", "7ed"), "en", "Duress"
-    yield CardIdentificationData(None, "Zwang", "7ed"), "en", "Duress"
-    yield CardIdentificationData("de", "Zwang", "6ed"), "en", "Coercion"
-    yield CardIdentificationData(None, "Zwang", "6ed"), "en", "Coercion"
+    (CardIdentificationData("de", "Zwang", scryfall_id="51c6ec30-afb2-41e6-895b-92e070aa86f3"), "en", "Duress"),
+    (CardIdentificationData(None, "Zwang", scryfall_id="51c6ec30-afb2-41e6-895b-92e070aa86f3"), "en", "Duress"),
+    (CardIdentificationData("de", "Zwang", scryfall_id="93054b80-fd1f-4200-8d33-2e826a181db0"), "en", "Coercion"),
+    (CardIdentificationData(None, "Zwang", scryfall_id="93054b80-fd1f-4200-8d33-2e826a181db0"), "en", "Coercion"),
+    (CardIdentificationData("de", "Zwang", "7ed"), "en", "Duress"),
+    (CardIdentificationData(None, "Zwang", "7ed"), "en", "Duress"),
+    (CardIdentificationData("de", "Zwang", "6ed"), "en", "Coercion"),
+    (CardIdentificationData(None, "Zwang", "6ed"), "en", "Coercion"),
     # Card with updated, localized name. Tests that all names can be a source name.
-    yield CardIdentificationData("de", "Baumvolk der Eisenwurzler"), "en", "Ironroot Treefolk"
-    yield CardIdentificationData(None, "Baumvolk der Eisenwurzler"), "en", "Ironroot Treefolk"
-    yield CardIdentificationData("de", "Ehernen-Wald Baumvolk"), "en", "Ironroot Treefolk"
-    yield CardIdentificationData(None, "Ehernen-Wald Baumvolk"), "en", "Ironroot Treefolk"
-    yield CardIdentificationData("de", "Baumvolk des Ehernen-Waldes"), "en", "Ironroot Treefolk"
-    yield CardIdentificationData(None, "Baumvolk des Ehernen-Waldes"), "en", "Ironroot Treefolk"
+    (CardIdentificationData("de", "Baumvolk der Eisenwurzler"), "en", "Ironroot Treefolk"),
+    (CardIdentificationData(None, "Baumvolk der Eisenwurzler"), "en", "Ironroot Treefolk"),
+    (CardIdentificationData("de", "Ehernen-Wald Baumvolk"), "en", "Ironroot Treefolk"),
+    (CardIdentificationData(None, "Ehernen-Wald Baumvolk"), "en", "Ironroot Treefolk"),
+    (CardIdentificationData("de", "Baumvolk des Ehernen-Waldes"), "en", "Ironroot Treefolk"),
+    (CardIdentificationData(None, "Baumvolk des Ehernen-Waldes"), "en", "Ironroot Treefolk"),
     # Card with updated, localized name. Tests returning the newest name without context information
-    yield CardIdentificationData("en", "Ironroot Treefolk"), "de", "Baumvolk der Eisenwurzler"
-    yield CardIdentificationData(None, "Ironroot Treefolk"), "de", "Baumvolk der Eisenwurzler"
+    (CardIdentificationData("en", "Ironroot Treefolk"), "de", "Baumvolk der Eisenwurzler"),
+    (CardIdentificationData(None, "Ironroot Treefolk"), "de", "Baumvolk der Eisenwurzler"),
     # Card with updated, localized name. Tests returning the correct name for the source set with context information
-    yield CardIdentificationData("en", "Ironroot Treefolk", "5ed"), "de", "Baumvolk der Eisenwurzler"
-    yield CardIdentificationData(None, "Ironroot Treefolk", "5ed"), "de", "Baumvolk der Eisenwurzler"
-    yield CardIdentificationData("en", "Ironroot Treefolk", "4ed"), "de", "Ehernen-Wald Baumvolk"
-    yield CardIdentificationData(None, "Ironroot Treefolk", "4ed"), "de", "Ehernen-Wald Baumvolk"
-    yield CardIdentificationData("en", "Ironroot Treefolk", "3ed"), "de", "Baumvolk des Ehernen-Waldes"
-    yield CardIdentificationData(None, "Ironroot Treefolk", "3ed"), "de", "Baumvolk des Ehernen-Waldes"
-    yield CardIdentificationData("en", "Ironroot Treefolk", scryfall_id="6bdbba38-b4c9-4c14-b869-669b39390e4e"), "de", "Baumvolk der Eisenwurzler"
-    yield CardIdentificationData(None, "Ironroot Treefolk", scryfall_id="6bdbba38-b4c9-4c14-b869-669b39390e4e"), "de", "Baumvolk der Eisenwurzler"
-    yield CardIdentificationData("en", "Ironroot Treefolk", scryfall_id="c6c93c85-5263-4770-b937-704e57912478"), "de", "Ehernen-Wald Baumvolk"
-    yield CardIdentificationData(None, "Ironroot Treefolk", scryfall_id="c6c93c85-5263-4770-b937-704e57912478"), "de", "Ehernen-Wald Baumvolk"
-    yield CardIdentificationData("en", "Ironroot Treefolk", scryfall_id="6e6cfaae-ea9e-4c54-858e-381f8bf441a9"), "de", "Baumvolk des Ehernen-Waldes"
-    yield CardIdentificationData(None, "Ironroot Treefolk", scryfall_id="6e6cfaae-ea9e-4c54-858e-381f8bf441a9"), "de", "Baumvolk des Ehernen-Waldes"
+    (CardIdentificationData("en", "Ironroot Treefolk", "5ed"), "de", "Baumvolk der Eisenwurzler"),
+    (CardIdentificationData(None, "Ironroot Treefolk", "5ed"), "de", "Baumvolk der Eisenwurzler"),
+    (CardIdentificationData("en", "Ironroot Treefolk", "4ed"), "de", "Ehernen-Wald Baumvolk"),
+    (CardIdentificationData(None, "Ironroot Treefolk", "4ed"), "de", "Ehernen-Wald Baumvolk"),
+    (CardIdentificationData("en", "Ironroot Treefolk", "3ed"), "de", "Baumvolk des Ehernen-Waldes"),
+    (CardIdentificationData(None, "Ironroot Treefolk", "3ed"), "de", "Baumvolk des Ehernen-Waldes"),
+    (CardIdentificationData("en", "Ironroot Treefolk", scryfall_id="6bdbba38-b4c9-4c14-b869-669b39390e4e"), "de", "Baumvolk der Eisenwurzler"),
+    (CardIdentificationData(None, "Ironroot Treefolk", scryfall_id="6bdbba38-b4c9-4c14-b869-669b39390e4e"), "de", "Baumvolk der Eisenwurzler"),
+    (CardIdentificationData("en", "Ironroot Treefolk", scryfall_id="c6c93c85-5263-4770-b937-704e57912478"), "de", "Ehernen-Wald Baumvolk"),
+    (CardIdentificationData(None, "Ironroot Treefolk", scryfall_id="c6c93c85-5263-4770-b937-704e57912478"), "de", "Ehernen-Wald Baumvolk"),
+    (CardIdentificationData("en", "Ironroot Treefolk", scryfall_id="6e6cfaae-ea9e-4c54-858e-381f8bf441a9"), "de", "Baumvolk des Ehernen-Waldes"),
+    (CardIdentificationData(None, "Ironroot Treefolk", scryfall_id="6e6cfaae-ea9e-4c54-858e-381f8bf441a9"), "de", "Baumvolk des Ehernen-Waldes"),
     # double-faced art series card. Same name on both sides
-    yield CardIdentificationData("en", "Clearwater Pathway"), "en", "Clearwater Pathway"
+    (CardIdentificationData("en", "Clearwater Pathway"), "en", "Clearwater Pathway"),
+]
 
     
-@pytest.mark.parametrize("card_data, target_language, expected", generate_test_cases_for_test_translate_card_name())
+@pytest.mark.parametrize("card_data, target_language, expected", test_cases_for_test_translate_card_name)
 def test_translate_card_name(
         card_db_with_cards: CardDatabase, card_data: CardIdentificationData, target_language: str, expected: str | None):
     result = card_db_with_cards.translate_card_names([card_data], target_language)
@@ -408,7 +409,7 @@ def generate_test_cases_for_test_get_cards_from_data():
     ]
 
 
-@pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_cards_from_data())
+@pytest.mark.parametrize("card_data, expected", list(generate_test_cases_for_test_get_cards_from_data()))
 def test_get_cards_from_data(
         card_db_with_cards: CardDatabase,
         card_data: CardIdentificationData, expected: CardList):
@@ -474,7 +475,7 @@ def generate_test_cases_for_test_get_card_with_scryfall_id() -> \
     yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), case.as_card()
 
 
-@pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_card_with_scryfall_id())
+@pytest.mark.parametrize("card_data, expected", list(generate_test_cases_for_test_get_card_with_scryfall_id()))
 def test_get_card_with_scryfall_id(
         card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card | None):
     assert card_data.scryfall_id is not None and card_data.is_front is not None
@@ -569,7 +570,7 @@ def generate_test_cases_for_test__translate_card():
         yield CardIdentificationData(card_1.language, scryfall_id=card_2.scryfall_id, is_front=True), card_1.as_card()
 
 
-@pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test__translate_card())
+@pytest.mark.parametrize("card_data, expected", list(generate_test_cases_for_test__translate_card()))
 def test__translate_card(card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card):
     is_front = card_data.is_front is None or card_data.is_front
     assert card_data.scryfall_id is not None
@@ -606,7 +607,7 @@ def generate_test_cases_for_test_get_opposing_face() -> \
         yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=False), case.as_card(1)
 
 
-@pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_opposing_face())
+@pytest.mark.parametrize("card_data, expected", list(generate_test_cases_for_test_get_opposing_face()))
 def test_get_opposing_face(
         card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card | None):
     result = card_db_with_cards.get_opposing_face(card_data)
@@ -992,7 +993,8 @@ dt_from_iso = datetime.datetime.fromisoformat
     # A major set, together with its token set. The card_db parametrized with PRAGMA reverse_unordered_selects = on/off
     # validates that arbitrary orders result in stable and expected output.
     (["Flowerfoot_Swordmaster_card", "Flowerfoot_Swordmaster_token"],
-     [MTGSet("blb", "Bloomburrow", dt_from_iso("2024-08-02"), False, 0, None, None), MTGSet("tblb", "Bloomburrow Tokens", dt_from_iso("2024-08-02"), False, 0, "blb", None)]),
+     [MTGSet("blb", "Bloomburrow", dt_from_iso("2024-08-02"), False, 0, None, None),
+      MTGSet("tblb", "Bloomburrow Tokens", dt_from_iso("2024-08-02"), False, 0, "blb", None)]),
 ))
 def test_get_all_sets(card_db: CardDatabase, jsons: list[str], expected: list[MTGSet]):
     # Note: The SVG set symbol data is not present in test databases, thus comparing against None is valid.
