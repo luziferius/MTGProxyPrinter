@@ -366,14 +366,14 @@ def generate_test_cases_for_test_custom_re_parser_accepts_valid_re():
             for r in range(1, len(iterable) + 1))
         return (frozenset.union(*groups_) for groups_ in powerset_without_empty)
 
-    def generate_re(groups_: frozenset[str]):
+    def generate_re(groups_: frozenset[str]) -> str:
         return " ".join(fr"(?P<{group_name}>.+)" for group_name in groups_)
 
     for groups in flattened_powerset_without_empty(GenericRegularExpressionDeckParser.IDENTIFYING_GROUP_COMBINATIONS):
         yield generate_re(groups)
 
 
-@pytest.mark.parametrize("valid_re", generate_test_cases_for_test_custom_re_parser_accepts_valid_re())
+@pytest.mark.parametrize("valid_re", list(generate_test_cases_for_test_custom_re_parser_accepts_valid_re()))
 def test_custom_re_parser_accepts_valid_re(qtbot: QtBot, document: Document, valid_re: str):
     wizard = create_and_show_wizard(qtbot, document, ["regular_english_card", "regular_english_card_reprint"])
     deck_list = "Fury Sliver"
