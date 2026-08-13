@@ -140,16 +140,18 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> Generator[Url
     yield ManaboxDownloader, "https://www.manabox.app/decks/xa1hXTCXQoiNkmp_TPwW8w/"
 
 
-@pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
-def test_re_matcher_matches_acceptable_url(downloader, url: str):
+tests_for_test_re_matcher_matches_acceptable_url = list(generate_tests_for_test_re_matcher_matches_acceptable_url())
+
+@pytest.mark.parametrize("downloader, url", tests_for_test_re_matcher_matches_acceptable_url)
+def test_re_matcher_matches_acceptable_url(downloader: type[DecklistDownloader], url: str):
     assert_that(
         downloader.DECKLIST_PATH_RE.match(url),
         is_(not_none())
     )
 
 
-@pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
-def test_IsIdentifyingDeckUrlValidator_validate(downloader, url: str):
+@pytest.mark.parametrize("downloader, url", tests_for_test_re_matcher_matches_acceptable_url)
+def test_IsIdentifyingDeckUrlValidator_validate(downloader: type[DecklistDownloader], url: str):
     validator = IsIdentifyingDeckUrlValidator()
     assert_that(
         validator.validate(url),
@@ -250,15 +252,18 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> Generator[U
     yield ManaboxDownloader, "https://manabox.app/"
 
 
-@pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
-def test_re_matcher_rejects_unacceptable_url(downloader, url: str):
+tests_for_test_re_matcher_rejects_unacceptable_url = list(generate_tests_for_test_re_matcher_rejects_unacceptable_url())
+
+
+@pytest.mark.parametrize("downloader, url", tests_for_test_re_matcher_rejects_unacceptable_url)
+def test_re_matcher_rejects_unacceptable_url(downloader: type[DecklistDownloader], url: str):
     assert_that(
         downloader.DECKLIST_PATH_RE.match(url),
         is_(none())
     )
 
 
-@pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
+@pytest.mark.parametrize("downloader, url", tests_for_test_re_matcher_rejects_unacceptable_url)
 def test_IsIdentifyingDeckUrlValidator_validate_returns_Intermediate_or_Invalid_on_unacceptable_urls(
         downloader, url: str):
     validator = IsIdentifyingDeckUrlValidator()
@@ -298,9 +303,10 @@ def generate_test_cases_for_test_deck_list_download() \
     yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/1lb", "1 [MBS:2] Ardent Recruit"
     yield ManaboxDownloader, "https://manabox.app/decks/xa1hXTCXQoiNkmp_TPwW8w/", "Air Elemental"
 
+test_cases_for_test_deck_list_download = list(generate_test_cases_for_test_deck_list_download())
 
 @pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")
-@pytest.mark.parametrize("downloader_class, url, expected", generate_test_cases_for_test_deck_list_download())
+@pytest.mark.parametrize("downloader_class, url, expected", test_cases_for_test_deck_list_download)
 def test_deck_list_download(downloader_class: type[DecklistDownloader], url: str, expected: str):
     downloader = downloader_class()
     result = downloader.download(url)
