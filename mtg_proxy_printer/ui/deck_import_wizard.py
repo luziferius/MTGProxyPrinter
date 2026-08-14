@@ -22,7 +22,7 @@ import urllib.parse
 
 from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, \
     QSize, QUrl
-from PySide6.QtGui import QValidator, QIcon, QDesktopServices
+from PySide6.QtGui import QValidator, QIcon, QDesktopServices, QAction
 from PySide6.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
 from mtg_proxy_printer.async_tasks.image_downloader import BatchDownloadTask
@@ -484,6 +484,7 @@ class SummaryPage(QWizardPage):
         self.registerField("should_replace_document", self.ui.should_replace_document)
         ui.should_replace_document.toggled[bool].connect(
             self._update_accept_button_on_replace_document_option_toggled)
+        self._actions = self._setup_parsed_cards_table_context_menu_actions()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _create_sort_model(self, source_model: CardListModel) -> NaturallySortedSortFilterProxyModel:
@@ -491,6 +492,16 @@ class SummaryPage(QWizardPage):
         proxy_model.setSourceModel(source_model)
         proxy_model.setSortRole(Qt.ItemDataRole.EditRole)
         return proxy_model
+
+    def _setup_parsed_cards_table_context_menu_actions(self):
+        delete_action = QAction(
+            QIcon.fromTheme("edit-delete"),
+            self.tr("Remove selected", "Context menu entry, display text"),
+            self)
+        delete_action.triggered.connect(self._remove_selected_cards)
+        actions = [delete_action]
+        self.ui.parsed_cards_table.addActions(actions)
+        return actions
 
     @Slot(int)
     def _update_accept_button_on_oversized_card_count_changed(self, oversized_cards: int):

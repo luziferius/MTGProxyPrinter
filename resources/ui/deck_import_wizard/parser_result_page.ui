@@ -41,6 +41,9 @@ If unchecked, append the cards found below to the document.</string>
        <verstretch>65</verstretch>
       </sizepolicy>
      </property>
+     <property name="contextMenuPolicy">
+      <enum>Qt::ContextMenuPolicy::ActionsContextMenu</enum>
+     </property>
      <property name="sizeAdjustPolicy">
       <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContents</enum>
      </property>

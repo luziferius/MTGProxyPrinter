@@ -32,7 +32,6 @@ ItemDataRole = Qt.ItemDataRole
 class CardListTableView(QTableView):
     """
     This table view shows a CardListModel, and sets up all item delegates used for proper display and validation.
-
     """
     changed_selection_is_empty = Signal(bool)
 
