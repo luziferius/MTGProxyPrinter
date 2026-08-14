@@ -13,7 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import abc
+import typing
 
 from PySide6.QtCore import QRunnable, QObject, Signal, Slot
 
@@ -24,6 +24,7 @@ del get_logger
 __all__ = [
     "AsyncTaskRunner",
     "AsyncTask",
+    "cancelable",
 ]
 
 """
@@ -59,16 +60,29 @@ __all__ = [
   - Locking can use the normal progress signals. When `is_locking` is True, simply connect the begin_progress and 
     finish_progress signals to the lock/unlock methods. The task dispatch method can handle those connections
 
-
 """
 
 
+class TaskCanceled(BaseException):
+    pass
+
+
+def cancelable(func: typing.Callable):
+    def is_cancelable(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except TaskCanceled:
+            return None
+    is_cancelable.__doc__ = func.__doc__
+
+    return is_cancelable
+
+
 class AsyncTask(QObject):
-    # TODO: Introduce a "blocking UI" flag. A blocking task disables most of the GUI
     """
     Base class for asynchronous tasks with progress reporting.
     """
-
+    cancelable = cancelable
     task_begins = Signal(int, str)  # Carries the expected work steps and a UI display string
     set_progress = Signal(int)  # Progress is set to the value carried by the signal
     advance_progress = Signal()  # Progress advances by exactly one step
@@ -90,6 +104,7 @@ class AsyncTask(QObject):
         self.inner_tasks: list[AsyncTask] = []
         self._running = False
         self._ui_hint = ""
+        self._should_run = True  # calling cancel() sets this to False
         self.task_begins.connect(self._on_task_begins)
         self.task_completed.connect(self._on_task_completed)
 
@@ -123,20 +138,25 @@ class AsyncTask(QObject):
 
     @property
     def can_cancel(self) -> bool:
-        return False
+        return self.run.__func__.__name__ == "is_cancelable"
 
     @Slot()
     def cancel(self):
-        msg = f"cancel() called on task {self.__class__.__name__} with {self.can_cancel=}"
-        logger.critical(msg)
-        raise NotImplementedError(msg)
+        msg = f"Cancel task {self.__class__.__name__} with {self.can_cancel=}"
+        logger.info(msg)
+        self._should_run = False
 
-    @abc.abstractmethod
     def run(self):
-        pass
+        """Base run() implementation. Does nothing and must be overridden."""
+        logger.critical("Base class run() called. Nothing to do!")
+
+    def raise_if_canceled(self):
+        """Raises TaskCanceled, if _should_run is False"""
+        if not self._should_run:
+            raise TaskCanceled()
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}. Running: {self._running}, Processing task: '{self._ui_hint}'"
+        return f"{self.__class__.__name__}. Running: {self._running}, canceled: {not self._should_run}, Processing task: '{self._ui_hint}'"
 
 
 class AsyncTaskRunner(QRunnable):
