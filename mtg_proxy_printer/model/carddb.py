@@ -418,20 +418,20 @@ class CardDatabase(QObject):
         """
         query = cached_dedent("""\
         WITH RECURSIVE   -- find_related_cards()
-          source_oracle_id (card_id) AS (
+          source_card_ids (card_id) AS (
             SELECT card_id
             FROM Card
             WHERE oracle_id = ?),
           related_oracle_ids(related_id) AS (
             SELECT related_id
               FROM RelatedCards
-              JOIN source_oracle_id USING (card_id)
+              JOIN source_card_ids USING (card_id)
             UNION  -- Deduplicate to break infinite recursion on cross-referenced cards
             SELECT RelatedCards.related_id
               FROM RelatedCards
               JOIN related_oracle_ids ON RelatedCards.card_id = related_oracle_ids.related_id
               -- Do not include the initial input card in the output dataset
-              WHERE RelatedCards.related_id NOT IN (SELECT source_oracle_id.card_id FROM source_oracle_id)
+              WHERE RelatedCards.related_id NOT IN (SELECT source_card_ids.card_id FROM source_card_ids)
         )
         SELECT oracle_id
           FROM Card
@@ -459,6 +459,36 @@ class CardDatabase(QObject):
                 if found.is_dfc:
                     cards.append(self.get_opposing_face(found))
         return cards
+
+    def find_created_token(self, cards: list[Card]):
+        """\
+         -- TODO: This should not recurse through card chains, only token chains.
+         -- Given relationship "Card A -> Partner With Card B -> Create Token C", input card A should not emit output token C.
+         WITH RECURSIVE
+          source_card_ids (card_id) AS (
+            SELECT card_id
+            FROM Card
+            WHERE oracle_id = '3088b09b-1dce-4fc9-99de-2ca9c752eb12'),
+          related_oracle_ids(related_id) AS (
+            SELECT RelatedCards.related_id
+              FROM RelatedCards
+              INNER JOIN source_card_ids USING (card_id)
+            UNION  -- Deduplicate to break infinite recursion on cross-referenced cards
+            SELECT RelatedCards.related_id
+              FROM RelatedCards
+              INNER JOIN related_oracle_ids ON RelatedCards.card_id = related_oracle_ids.related_id
+              -- Do not include the initial input card in the output dataset
+              WHERE RelatedCards.related_id NOT IN (SELECT source_card_ids.card_id FROM source_card_ids)),
+          related_cards_with_referred_by_count(related_id, oracle_id, referred_by_count, is_evergreen_token) AS (
+            SELECT related_id, oracle_id, count() AS referred_by_count, count() > 50 AS is_evergreen_token
+            FROM related_oracle_ids
+            INNER JOIN RelatedCards USING (related_id)
+            INNER JOIN Card ON related_id = Card.card_id
+            WHERE is_card IS FALSE
+            GROUP BY related_id
+          )
+        select * from related_cards_with_referred_by_count"""
+
 
     def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> tuple[list[str], int]:
         """
@@ -795,7 +825,7 @@ class CardDatabase(QObject):
 
     def get_available_sets_for_card(self, card: Card) -> list[MTGSet]:
         """
-        Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
+        Returns a list of MTG sets the card with the given card is printed in, ordered by release date from old to new.
         """
         query = cached_dedent("""\
         SELECT set_code, set_name, icon_svg, max(preference_score) as preference_score -- get_available_sets_for_card()
@@ -818,6 +848,7 @@ class CardDatabase(QObject):
         return result
 
     def get_available_collector_numbers_for_card_in_set(self, card: Card) -> list[str]:
+        """Returns the naturally sorted list of collector numbers of all printings of the given card within it's set."""
         query = cached_dedent("""\
         SELECT collector_number
           FROM MTGSet
