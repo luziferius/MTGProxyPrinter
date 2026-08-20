@@ -472,7 +472,7 @@ class CardDatabase(QObject):
         """))
         db.executemany(
             "INSERT OR IGNORE INTO SourceCards (oracle_id) VALUES (?) -- find_created_token()",
-            (card.oracle_id, for card in cards))
+            ((card.oracle_id,) for card in cards))
         result = self._get_cards_from_data(cached_dedent("""\
         WITH RECURSIVE -- find_created_token()
           source_card_ids (card_id) AS (
