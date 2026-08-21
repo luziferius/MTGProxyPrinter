@@ -391,6 +391,7 @@ class CardDatabase(QObject):
         return self._get_cards_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
 
     def _get_cards_from_data(self, query: LiteralString, parameters = ()) -> CardList:
+        """Returns a list of cards from the given SQL query and parameters"""
         cursor = self.db.execute(query, parameters)
         result = [
             Card(

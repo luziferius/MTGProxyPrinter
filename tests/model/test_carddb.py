@@ -788,6 +788,36 @@ def test_find_related_printings(card_db: CardDatabase, source_id: str, expected_
         f"Found cards do not match {expected_cards_names}"
     )
 
+@pytest.mark.parametrize("source_ids, expected_cards_names", [
+    (["2c6e5b25-b721-45ee-894a-697de1310b8c"], ["Food"]),  # Bake into a Pie
+    (["4f24504e-b397-4b98-b8e8-8166457f7a2e"], ["Food"]),  # The Underworld Cookbook
+    (["37e32ba6-108a-421f-9dad-3d03f7ebe239"], []),  # Food token
+    # Asmoranomardicadaistinaculdacar does not directly create a Food
+#    (["d99a9a7d-d9ca-4c11-80ab-e39d5943a315"], []),
+
+])
+def test_find_created_token(card_db: CardDatabase, source_ids: list[str], expected_cards_names: list[str]):
+    fill_card_database_with_json_cards(card_db, [
+        "The_Underworld_Cookbook",
+        "Food_Token",
+        "Food_Token_2",
+        "Asmoranomardicadaistinaculdacar",
+        "Asmoranomardicadaistinaculdacar_2",
+        "Bake_into_a_Pie",
+    ])
+    source_cards = [card_db.get_card_with_scryfall_id(source_id, True) for source_id in source_ids]
+    assert source_cards and all(card is not None for card in source_cards), "Setup failed"
+    related = card_db.find_created_token(source_cards)
+    if expected_cards_names:
+        assert_that(related, only_contains(instance_of(Card)))
+        assert_that(
+            related, contains_inanyorder(
+                *[has_property("name", equal_to(expected)) for expected in expected_cards_names]
+            ),
+            f"Found cards do not match {expected_cards_names}"
+        )
+    else:
+        assert_that(related, is_(empty()))
 
 def test_get_all_cards_from_image_cache(card_db: CardDatabase):
     fill_card_database_with_json_cards(card_db, ["regular_english_card", "oversized_card"],
