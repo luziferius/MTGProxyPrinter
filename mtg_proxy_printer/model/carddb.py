@@ -363,7 +363,6 @@ class CardDatabase(QObject):
             parameters=', '.join("?"*len(columns)),
             order_by_terms=", ".join(order_by_terms)
         )
-
         return self._get_cards_from_data(query, parameters)
 
     def get_replacement_card_for_unknown_printing(
@@ -462,7 +461,10 @@ class CardDatabase(QObject):
         return cards
 
     def find_created_token(self, cards: list[Card]):
-        """Finds all created tokens of the given cards."""
+        """
+        Finds all created tokens of the given cards.
+        Any tokens present in the input set are skipped
+        """
         # Implementation note: To avoid running O(n) queries and post-processing de-duplication, gather the input
         # data first into a de-duplicating temporary table. The recursive CTE then builds the whole result in one pass
         db = self.db
@@ -482,13 +484,13 @@ class CardDatabase(QObject):
             FROM Card
             INNER JOIN SourceCards USING (oracle_id)),
           related_oracle_ids(related_id) AS (
-            -- Walk the RelatedCards relation, recursively gathering all related cards and tokens
+            -- Walk the RelatedCards relation, recursively gathering all related tokens
             SELECT RelatedCards.related_id
               FROM RelatedCards
               INNER JOIN source_card_ids USING (card_id)
               INNER JOIN Card ON RelatedCards.related_id = Card.card_id
               WHERE is_card IS FALSE 
-              -- Do not include the initial input card in the output dataset, if it is present there
+              -- Do not include the found token in the output dataset, if it is in the input data set
                 AND RelatedCards.related_id NOT IN (SELECT source_card_ids.card_id FROM source_card_ids)
             UNION  -- Deduplicate to break infinite recursion on cross-referenced cards
             SELECT RelatedCards.related_id
@@ -496,7 +498,7 @@ class CardDatabase(QObject):
               INNER JOIN related_oracle_ids ON RelatedCards.card_id = related_oracle_ids.related_id
               INNER JOIN Card ON RelatedCards.related_id = Card.card_id
               WHERE is_card IS FALSE
-              -- Do not include the initial input card in the output dataset, if it is present there
+              -- Do not include the found token in the output dataset, if it is in the input data set
                 AND RelatedCards.related_id NOT IN (SELECT source_card_ids.card_id FROM source_card_ids)),
           related_token_with_referred_by_count(card_id, referred_by_count, is_evergreen_token) AS (
             -- Walk the RelatedCards relation backwards, counting the fan-in of each related card,
