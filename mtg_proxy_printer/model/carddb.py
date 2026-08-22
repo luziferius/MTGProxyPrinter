@@ -486,12 +486,18 @@ class CardDatabase(QObject):
             SELECT RelatedCards.related_id
               FROM RelatedCards
               INNER JOIN source_card_ids USING (card_id)
+              INNER JOIN Card ON RelatedCards.related_id = Card.card_id
+              WHERE is_card IS FALSE 
+              -- Do not include the initial input card in the output dataset, if it is present there
+                AND RelatedCards.related_id NOT IN (SELECT source_card_ids.card_id FROM source_card_ids)
             UNION  -- Deduplicate to break infinite recursion on cross-referenced cards
             SELECT RelatedCards.related_id
               FROM RelatedCards
               INNER JOIN related_oracle_ids ON RelatedCards.card_id = related_oracle_ids.related_id
-              -- Do not include the initial input card in the output dataset
-              WHERE RelatedCards.related_id NOT IN (SELECT source_card_ids.card_id FROM source_card_ids)),
+              INNER JOIN Card ON RelatedCards.related_id = Card.card_id
+              WHERE is_card IS FALSE
+              -- Do not include the initial input card in the output dataset, if it is present there
+                AND RelatedCards.related_id NOT IN (SELECT source_card_ids.card_id FROM source_card_ids)),
           related_token_with_referred_by_count(card_id, referred_by_count, is_evergreen_token) AS (
             -- Walk the RelatedCards relation backwards, counting the fan-in of each related card,
             -- and filter down to non-card entries

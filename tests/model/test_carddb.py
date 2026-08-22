@@ -793,7 +793,9 @@ def test_find_related_printings(card_db: CardDatabase, source_id: str, expected_
     (["4f24504e-b397-4b98-b8e8-8166457f7a2e"], ["Food"]),  # The Underworld Cookbook
     (["37e32ba6-108a-421f-9dad-3d03f7ebe239"], []),  # Food token
     # Asmoranomardicadaistinaculdacar does not directly create a Food
-#    (["d99a9a7d-d9ca-4c11-80ab-e39d5943a315"], []),
+    (["d99a9a7d-d9ca-4c11-80ab-e39d5943a315"], []),
+    # The Underworld Cookbook and a Food as input. Do not output additional Food.
+    (["4f24504e-b397-4b98-b8e8-8166457f7a2e", "37e32ba6-108a-421f-9dad-3d03f7ebe239"], []),
 
 ])
 def test_find_created_token(card_db: CardDatabase, source_ids: list[str], expected_cards_names: list[str]):
