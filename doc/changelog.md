@@ -5,6 +5,8 @@
 ## Fixed issues
 
 - Optimized set symbol downloads: Avoid duplicate downloads when sets share the same symbol.
+- Fixed the related cards search for cards referencing game markers (Dungeons, The Ring, Emblems, etc.) that create token.
+  These tokens are now found as intended.
 
 # Version 0.36.0 (2026-07-31)  <a name="v0_36_0"></a>
 

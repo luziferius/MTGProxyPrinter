@@ -14,7 +14,6 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import abc
-import time
 from collections.abc import Generator, Sequence
 import functools
 import gzip
@@ -870,18 +869,19 @@ class DatabaseImportTask(AsyncTask):
 
 
 def _get_related_cards(card: CardDataType):
-    if card["layout"].endswith("token"):
+    if (source_card_type := card.get("type_line", "")).startswith("Token"):
         # Tokens are never sources, as that would pull all cards creating that token
         return
-    card_id = card["id"]
-    is_dungeon = card.get("type_line") == "Dungeon"
+    source_card_id = card["id"]
+    source_is_game_marker = any(type_ in source_card_type for type_ in ("Dungeon", "Emblem", "Card"))
     for related_card in card.get("all_parts", []):
         related_id = related_card["id"]
-        related_is_token = related_card["component"].endswith("token")
-        # No self reference allowed. And the implication is_dungeon ⇒ related_is_token must be True.
-        # I.e. If the source is a Dungeon, then it may link with tokens only, and nothing else.
-        if card_id != related_id and (not is_dungeon or related_is_token):
-            yield RelatedPrintingData(card_id, related_id)
+        if source_card_id == related_id:  # No self reference allowed.
+            continue
+        related_is_token = related_card["type_line"].startswith("Token")
+        if source_is_game_marker and not related_is_token:
+            continue  # Game markers may only reference tokens, and not the cards creating them
+        yield RelatedPrintingData(source_card_id, related_id)
 
 
 def _get_printing_filter_data(card: CardDataType, active_filters: list[str]):
@@ -892,7 +892,7 @@ def _get_printing_filter_data(card: CardDataType, active_filters: list[str]):
     # The API documentation states the type_line is mandatory, but reversible cards miss it in the parent Card.
     # Performance note: Converting into sets and computing if they are not disjoint is more expensive than this.
     type_line = card.get("type_line") or " // ".join(face["type_line"] for face in card.get("card_faces", ()))
-    is_token = any(("Dungeon" in type_line, "Token" in type_line, "Emblem" in type_line))
+    is_token = any(t in type_line for t in ("Dungeon", "Token", "Emblem"))
     active_filters.clear()
     filter_applies = active_filters.append
     # Racism filter

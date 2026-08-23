@@ -611,6 +611,17 @@ def test_updates_ignores_changed_value_on_re_import(
         # Nothing else here:
         # The Skeleton must not link to the Dungeon, and the Dungeon must not link to the Zombie Ogre
     ]),
+    ([
+        "Explore_the_Underdark", "Undercity", "Undercity_Treasure_Token"
+    ], [
+        (1, 2),  # Explore the Underdark has Take the Initiative
+        (2, 3),  # The Undercity dungeon can create a Treasure token
+    ]),
+    ([
+        "The_Ring", "Elrond_Lord_of_Rivendell",
+    ], [
+        (2, 1),  # Elrond has "The Ring tempts you". The Ring must not have any back references
+    ]),
 ])
 def test_related_printings(
         card_db: CardDatabase,
