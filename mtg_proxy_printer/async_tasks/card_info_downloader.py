@@ -164,11 +164,10 @@ class StreamTask(CardInfoDownloadTaskBase):
     _queue_depth = 5
     _batch_size = 5000
 
-    def __init__(self, source: str | Path | None = None, json_path: str = ""):
+    def __init__(self, source: str | Path | None = None):
         super().__init__()
         self.open_file: GzipFile | MeteredSeekableHTTPFile | None = None
         self.source = source
-        self.json_path = json_path
         self.queue: CardDataQueue = queue.Queue(self._queue_depth)
 
     def _enqueue_stream(self, data: CardStream):
@@ -209,12 +208,12 @@ class FileStreamTask(StreamTask):
 
     def run(self):
         try:
-            data = self.read_json_card_data_from(self.source, self.json_path)
+            data = self.read_json_card_data_from(self.source)
             self._enqueue_stream(data)
         except queue.ShutDown:
             return
 
-    def read_json_card_data_from(self, file_path: Path, json_path: str = "") -> CardStream:
+    def read_json_card_data_from(self, file_path: Path) -> CardStream:
         file_size = file_path.stat().st_size
         raw_file = file_path.open("rb")
         with self._wrap_in_metered_file(raw_file, file_size) as file:
