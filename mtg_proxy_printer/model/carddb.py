@@ -29,6 +29,7 @@ from typing import NamedTuple, TypeVar, Literal, Any, LiteralString
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QObject, Signal, Slot
 
+from mtg_proxy_printer import settings
 from mtg_proxy_printer.model.card import MTGSet, Card, CheckCard, OptionalCard, CardList, CustomCard
 from mtg_proxy_printer.model.imagedb_files import CacheContent, ImageQuality
 import mtg_proxy_printer.app_dirs
@@ -470,19 +471,20 @@ class CardDatabase(QObject):
         db = self.db
         db.execute(cached_dedent("""\
         CREATE TEMPORARY TABLE IF NOT EXISTS SourceCards ( -- find_created_token()
-          oracle_id TEXT NOT NULL UNIQUE
+          oracle_id TEXT NOT NULL PRIMARY KEY
         )
         """))
         db.executemany(
-            "INSERT OR IGNORE INTO SourceCards (oracle_id) VALUES (?) -- find_created_token()",
+            "INSERT OR IGNORE INTO temp.SourceCards (oracle_id) VALUES (?) -- find_created_token()",
             ((card.oracle_id,) for card in cards))
+        preferred_language = settings.settings["cards"]["preferred-language"],
         result = self._get_cards_from_data(cached_dedent("""\
         WITH RECURSIVE -- find_created_token()
           source_card_ids (card_id) AS (
             -- Map textual oracle_id to numerical card_id, filter down to the input card set via INNER JOIN
             SELECT card_id
-            FROM Card
-            INNER JOIN SourceCards USING (oracle_id)),
+              FROM Card
+              INNER JOIN temp.SourceCards USING (oracle_id)),
           related_oracle_ids(related_id) AS (
             -- Walk the RelatedCards relation, recursively gathering all related tokens
             SELECT RelatedCards.related_id
@@ -510,12 +512,12 @@ class CardDatabase(QObject):
             WHERE is_card IS FALSE
             GROUP BY related_id
           )
-        SELECT *, max(preference_score)
+        SELECT *, max(preference_score), max(language = ?)
           FROM related_token_with_referred_by_count
           JOIN AllPrintings USING (card_id)
           GROUP BY card_id
-        """))
-        db.execute("DELETE FROM SourceCards -- find_created_token()")
+        """), preferred_language)
+        db.execute("DELETE FROM temp.SourceCards -- find_created_token()")
         return result
 
     def find_collector_numbers_matching(self, card_name: str, set_code: str, language: str) -> tuple[list[str], int]:
