@@ -577,11 +577,15 @@ class Document(QAbstractItemModel):
         )
 
     def find_relevant_index_ranges(self, to_find: AnyCardType, column: PageColumns):
-        """Finds all indices relevant for the given card."""
+        """
+        Finds all indices relevant for the given card. This is used when editing custom cards.
+        When a card is changed in one location, all UI elements showing it need to update. When the name is updated,
+        also the Page list needs updating its summary view.
+        """
         # TODO: This runs in O(n)
         for page_row, page in enumerate(self.pages):
             instance_rows = to_list_of_ranges(
-                # Use is to find exact same instances
+                # Use "is" to find exact same instances
                 (row for row, container in enumerate(page) if container.card is to_find)
             )
             if instance_rows:
