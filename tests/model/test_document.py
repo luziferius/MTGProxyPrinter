@@ -479,3 +479,10 @@ def test_document__data_card_logs_error_on_invalid_index_column(document_light, 
     with unittest.mock.patch("mtg_proxy_printer.model.document.logger.error") as logger_mock:
         assert_that(document_light._data_card(index), is_(None))
         logger_mock.assert_called_once()
+
+@pytest.mark.parametrize("size", list(CardSizes))
+def test_get_empty_card_for_size(document: Document, size: CardSize):
+    card = document.get_empty_card_for_size(size)
+    assert_that(card, is_(not_none()))
+    assert_that(card.size, is_(equal_to(size)))
+    assert_that(card.image_file.size(), is_(equal_to(size.as_qsize_px())))

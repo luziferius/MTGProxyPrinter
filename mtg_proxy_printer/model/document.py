@@ -24,8 +24,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
-    QPersistentModelIndex, QMimeData
+from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, QPersistentModelIndex, QMimeData
 
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.image_downloader import SingleDownloadTask, SingleActions
@@ -513,7 +512,7 @@ class Document(QAbstractItemModel):
         name = self.tr(
             "Empty Placeholder",
             "Card name of the blank placeholder that can be added to keep slots on a page free.")
-        card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, size, 0, False, pixmap)
+        card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, size, False, pixmap)
         return card
 
     def get_card_indices_of_type(self, page_type: PageType):
