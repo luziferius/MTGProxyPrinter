@@ -15,6 +15,8 @@
 
 
 import atexit
+import collections
+import typing
 from collections import defaultdict
 from collections.abc import Sequence
 import dataclasses
@@ -461,13 +463,17 @@ class CardDatabase(QObject):
                     cards.append(self.get_opposing_face(found))
         return cards
 
-    def find_created_token(self, cards: list[Card]):
+    def find_created_token(self, cards: llections.abc.Iterable[Card]):
         """
         Finds all created tokens of the given cards.
-        Any tokens present in the input set are skipped
+        Any tokens present in the input set are skippremoved from the output.
+
         """
-        # Implementation note: To avoid running O(n) queries and post-processing de-duplication, gather the input
-        # data first into a de-duplicating temporary table. The recursive CTE then builds the whole result in one pass
+        # Implementation note: To avoid running O(n) queries, and perfost-processming
+        # filtering plus de-duplication in post, gather the input
+        # data first into a de-duplicating temporary table.
+        # The recursive CTE then builds the whole result in one pass within reasonable time,
+        # even with ~200 input cards.
         db = self.db
         db.execute(cached_dedent("""\
         CREATE TEMPORARY TABLE IF NOT EXISTS SourceCards ( -- find_created_token()
