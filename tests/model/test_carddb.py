@@ -834,6 +834,53 @@ def test_find_created_token(card_db: CardDatabase, source_ids: list[str], expect
     else:
         assert_that(related, is_(empty()))
 
+
+@pytest.mark.parametrize("source_scryfall_ids, expected_cards_names", [
+    ([], []),  # Empty input set works
+    (["2c6e5b25-b721-45ee-894a-697de1310b8c"], ["Food"]),  # Bake into a Pie
+    (["4f24504e-b397-4b98-b8e8-8166457f7a2e"], ["Food"]),  # The Underworld Cookbook
+    (["37e32ba6-108a-421f-9dad-3d03f7ebe239"], []),  # Food token itself
+    # Asmoranomardicadaistinaculdacar references Food, and the Underworld Cookbook, which cryeates Foods,
+    # but it itself does not create Food tokens
+    (["d99a9a7d-d9ca-4c11-80ab-e39d5943a315"], []),
+    # Both The Underworld Cookbook and a Food token as input. Do not output additional Food.
+    (["4f24504e-b397-4b98-b8e8-8166457f7a2e", "37e32ba6-108a-421f-9dad-3d03f7ebe239"], []),
+    # The Undercity finds the Treasure token created by it
+    (["2c65185b-6cf0-451d-985e-56aa45d9a57d"], ["Treasure"]),
+    # Explore the Underdark finds the Undercity and Initiative markers via Initiative and the Treasure token created by the dungeon
+    (["0cbf06f5-d1c7-474c-8f09-72f5ad0c8120"], ["Undercity", "Treasure"]),
+    # Explore the Underdark and Treasure, only find the Initiative and the Dungeon
+    (["0cbf06f5-d1c7-474c-8f09-72f5ad0c8120", "770b988d-4f31-4746-8c23-4ed8d9a6b393"], ["Undercity"]),
+])
+def test_find_created_token(card_db: CardDatabase, source_scryfall_ids: list[str], expected_cards_names: list[str]):
+    fill_card_database_with_json_cards(card_db, [
+        # Card → Token, Card → Card → Token
+        "The_Underworld_Cookbook",
+        "Food_Token",
+        "Food_Token_2",
+        "Asmoranomardicadaistinaculdacar",
+        "Asmoranomardicadaistinaculdacar_2",
+        "Bake_into_a_Pie",
+        # Game marker → Token, Card → Game marker → Token
+        "Explore_the_Underdark", # Initiative
+        "Undercity", # The Undercity dungeon entered by the Initiative plus "The Initiative" game marker
+        "Undercity_Treasure_Token", # Created by the Undercity
+    ])
+    source_cards = [card_db.get_card_with_scryfall_id(source_id, True) for source_id in source_scryfall_ids]
+    assert (source_cards or not source_scryfall_ids) and all(card is not None for card in source_cards), "Setup failed"
+    related = card_db.find_created_token(source_cards)
+    if expected_cards_names:
+        assert_that(related, only_contains(instance_of(Card)))
+        assert_that(
+            related, contains_inanyorder(
+                *[has_property("name", equal_to(expected)) for expected in expected_cards_names]
+            ),
+            f"Found cards do not match {expected_cards_names}"
+        )
+    else:
+        assert_that(related, is_(empty()))
+
+
 def test_get_all_cards_from_image_cache(card_db: CardDatabase):
     fill_card_database_with_json_cards(card_db, ["regular_english_card", "oversized_card"],
                                        {"oversized-cards": str(True)})
@@ -859,7 +906,7 @@ def test_get_all_cards_from_image_cache(card_db: CardDatabase):
 @pytest.mark.parametrize("json_name, scryfall_id, expected", [
     ("regular_english_card", "0000579f-7b35-4ed3-b44c-db2a538066fe", False),
     ("english_double_faced_card", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),
-
+    ("Undercity", "2c65185b-6cf0-451d-985e-56aa45d9a57d", True),  # The Initiative + Dungeon
 ])
 def test_is_dfc(card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
     fill_card_database_with_json_card(card_db, json_name)
