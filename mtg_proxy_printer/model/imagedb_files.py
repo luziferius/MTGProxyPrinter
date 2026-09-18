@@ -21,13 +21,15 @@ while decouple them from introducing a hard dependency on the actual ImageDataba
 import dataclasses
 import enum
 import pathlib
+import typing
 
-from PySide6.QtCore import Qt
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.card import Card
 
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
 __all__ = [
@@ -41,6 +43,14 @@ class ImageQuality(enum.IntFlag):
     low_resolution = 1
     high_resolution = enum.auto()
     custom_card = enum.auto()
+
+    @classmethod
+    def of_card(cls, card: "Card"):
+        if card.highres_image:
+            return ImageQuality.high_resolution
+        else:
+            return ImageQuality.low_resolution
+        # TODO: This does not yet handle custom image overrides for official cards.
 
 
 @dataclasses.dataclass(frozen=True)

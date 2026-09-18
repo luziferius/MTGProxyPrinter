@@ -547,11 +547,8 @@ class Document(QAbstractItemModel):
 
     def _get_page_content_as_image_keys(self, page: Page) -> Iterable[ImageKey]:
         image_db = self.image_db
-        # TODO: This does not handle custom image cards. Introduce ImageQuality.of_card(card),
-        #  which handles all possible combinations internally
         return (
-            ImageKey(card.scryfall_id, card.is_front,
-                     ImageQuality.high_resolution if card.highres_image else ImageQuality.low_resolution)
+            ImageKey(card.scryfall_id, card.is_front, ImageQuality.of_card(card))
             for container in page
             if not (card := container.card).is_custom_card
                and not isinstance(card, CheckCard)
