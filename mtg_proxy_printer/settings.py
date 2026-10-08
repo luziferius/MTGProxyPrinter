@@ -608,7 +608,7 @@ def _validate_string_is_in_set(section: SectionProxy, defaults: SectionProxy, va
 
 
 def _validate_color(section: SectionProxy, defaults: SectionProxy, key: str):
-    if not QColor.isValidColorName(section.get(key)):
+    if not QColor.isValidColorName(section.get(key) or ""):
         _restore_default(section, defaults, key)
 
 

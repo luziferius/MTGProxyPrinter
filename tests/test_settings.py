@@ -68,7 +68,7 @@ def test_section_has_get_quantity(default_settings: ConfigParser):
     ((10*x+1, 10, 10*x) for x in (range(10))),
     ((10*x-1, 10, 10*x) for x in (range(10))),
 )))
-def test_round_to_nearest_multiple(value: Real, multiple: Real, expected: Real):
+def test_round_to_nearest_multiple(value: float | int, multiple: int, expected: float):
     assert_that(
         mtg_proxy_printer.settings.round_to_nearest_multiple(value, multiple),
         is_(close_to(expected, 0.0001))

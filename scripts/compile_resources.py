@@ -48,7 +48,7 @@ class Namespace(NamedTuple):
     command: Callable[[], None]
 
 
-def parse_args(args: list[str] = None)-> Namespace:
+def parse_args(args: list[str] | None = None)-> Namespace:
     parser = argparse.ArgumentParser(
         description="Compile Qt resources into an importable module. "
                     "Compilation must be run during the packaging process"
