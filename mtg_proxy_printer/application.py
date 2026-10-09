@@ -43,7 +43,6 @@ import mtg_proxy_printer.async_tasks.card_info_downloader
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
-import mtg_proxy_printer.progress_meter
 from mtg_proxy_printer.async_tasks.base import AsyncTask, AsyncTaskRunner
 from mtg_proxy_printer.logger import get_logger
 
