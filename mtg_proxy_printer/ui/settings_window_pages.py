@@ -20,10 +20,10 @@ import pathlib
 import typing
 from abc import abstractmethod
 
-from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt
-from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon, QColor
+from PySide6.QtCore import Signal, Slot, QUrl, QStandardPaths, QStringListModel, Qt, QModelIndex
+from PySide6.QtGui import QDesktopServices, QStandardItem, QIcon, QColor, QPainter
 from PySide6.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QLineEdit, QDoubleSpinBox, \
-    QColorDialog, QPushButton, QHeaderView
+    QColorDialog, QPushButton, QHeaderView, QStyledItemDelegate, QStyleOptionViewItem
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
@@ -485,6 +485,14 @@ class GeneralSettingsPage(Page):
         return widgets_with_settings
 
 
+class HeaderBoldingDelegate(QStyledItemDelegate):
+    """Headers in the printing_filter_view on the PrintingPreferencesPage should be bold."""
+    def paint(self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex, /) -> None:
+        if index.data(IsHeaderRole):
+            option.font.setBold(True)
+        return super().paint(painter, option, index)
+
+
 class PrintingPreferencesPage(Page):
     request_run_async_task = Signal(AsyncTask)
 
@@ -507,6 +515,8 @@ class PrintingPreferencesPage(Page):
         ui.setupUi(self)
         self.card_db = None
         ui.printing_filter_view.setModel(self.printing_filter_model)
+        self.header_highlight_delegate = HeaderBoldingDelegate(self)
+        ui.printing_filter_view.setItemDelegateForColumn(self.printing_filter_model.ModelColumns.name, self.header_highlight_delegate)
         ui.set_filter_view.setModel(self.set_filter_proxy_model)
         for column in range(len(MTGSetTreeModel.ModelColumns)-1):  # Last column width is set explicitly
             ui.set_filter_view.resizeColumnToContents(column)

@@ -18,7 +18,6 @@ import dataclasses
 import enum
 
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject
-from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication
 
 from mtg_proxy_printer.model.carddb import CardDatabase
@@ -90,11 +89,11 @@ class ModelRow:
         return False
 
     @classmethod
-    def create_header(cls, header_font: QFont, ui_text: str, tooltip: str | None = None) -> "ModelRow":
+    def create_header(cls, ui_text: str, tooltip: str | None = None) -> "ModelRow":
         """Create a centered, text-only header item for the PrintingFilterModel"""
         return cls(
             MC({ItemFlagsRole: TextItemFlags, DisplayRole: ui_text, ToolTipRole: tooltip, IsHeaderRole: True,
-                ItemDataRole.TextAlignmentRole: Qt.AlignmentFlag.AlignCenter, ItemDataRole.FontRole: header_font}),
+                ItemDataRole.TextAlignmentRole: Qt.AlignmentFlag.AlignCenter}),
             MC({ItemFlagsRole: EmptyCellFlags}),
             MC({ItemFlagsRole: EmptyCellFlags}),
             MC({ItemFlagsRole: EmptyCellFlags}),
@@ -159,16 +158,12 @@ class PrintingFilterModel(QAbstractTableModel):
 
     def _create_items(self) -> ModelRows:
         format_ban_tooltip = self.tr("Hide cards banned in the {format} format", "Tooltip text")
-        # TODO: This hard-codes the font. A system-wide style change should update the font with the new default
-        header_font = QApplication.font()
-        header_font.setBold(True)
         weight_tooltip = self.tr(
             "High values encourage choosing this kind of card, negative values discourage choosing it.",
             "Preference weight column tooltip text")
         return [
             # ------------ General filters ------------
             ModelRow.create_header(
-                header_font,
                 self.tr("General card filters", "Display text. Printing filter section header"),
                 None),
             ModelRow.create_item(
@@ -241,7 +236,6 @@ class PrintingFilterModel(QAbstractTableModel):
 
             # ------------ Frame/border style ------------
             ModelRow.create_header(
-                header_font,
                 self.tr("Frame and border style", "Display text. Printing filter section header")),
             ModelRow.create_item(
                 self.tr("Full-art cards", "Display text"),
@@ -285,7 +279,6 @@ class PrintingFilterModel(QAbstractTableModel):
 
             # ------------  Non-traditional cards ------------
             ModelRow.create_header(
-                header_font,
                 self.tr("Non-traditional cards", "Display text. Printing filter section header")),
             ModelRow.create_item(
                 self.tr("Oversized cards",
@@ -311,7 +304,6 @@ class PrintingFilterModel(QAbstractTableModel):
 
             # ------------  Format bans ------------
             ModelRow.create_header(
-                header_font,
                 self.tr("Format bans: Hide cards banned in specific formats",
                         "Display text. Section header above MTG format ban filters")),
             ModelRow.create_format_item(
