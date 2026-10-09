@@ -6,6 +6,7 @@
 
 - Fixed crash when trying to add blank spots to the document, or when loading a document containing them.
 - Optimized set symbol downloads: Avoid duplicate downloads when sets share the same symbol.
+- The printing preferences and hiding settings now consistently handle system-wide font changes.
 
 # Version 0.36.0 (2026-07-31)  <a name="v0_36_0"></a>
 
