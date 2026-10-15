@@ -25,6 +25,7 @@ from PySide6.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLi
 from pint.registry import Unit, Quantity
 
 from mtg_proxy_printer.settings import settings, DEFAULT_SETTINGS
+from mtg_proxy_printer.registration_profile_ids import RegistrationProfileId
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, \
@@ -93,11 +94,23 @@ class PageConfigWidget(QGroupBox):
         ui.cut_marker_style.currentIndexChanged.connect(self._on_cut_marker_style_changed)
         ui.cut_marker_style.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 
-        ui.print_registration_marks_style.addItem(self.tr("Disabled", "A print/cut registration marker style"), "None")
-        ui.print_registration_marks_style.addItem(self.tr("Bullseye", "A print/cut registration marker style"), "Bullseye")
+        ui.print_registration_marks_style.addItem(
+            self.tr("Disabled", "A print/cut registration marker style"), RegistrationProfileId.NONE.value)
+        ui.print_registration_marks_style.addItem(
+            self.tr("Bullseye", "A print/cut registration marker style"), RegistrationProfileId.BULLSEYE.value)
         ui.print_registration_marks_style.addItem(
             self.tr("Silhouette cutter (Cameo-compatible)",
-                    "A print/cut registration marker style"), "Cut marker")
+                    "A print/cut registration marker style"), RegistrationProfileId.SILHOUETTE.value)
+        ui.print_registration_marks_style.addItem(
+            self.tr("Siser Page Marks (experimental)", "A print/cut registration marker style"),
+            RegistrationProfileId.SISER.value)
+        ui.print_registration_marks_style.setToolTip(self.tr(
+            'Experimental Leonardo 1.1.31 Page Marks for Letter portrait and A4 landscape.\n'
+            'Registration marks are added without adjusting your layout.\n'
+            'Keep marks visible and unobstructed for reliable registration.\n'
+            'Printer corrections and compatibility rotations affect the whole printed page.\n'
+            'Export does not certify cutter compatibility or alignment.\n'
+            'Read Application > Siser Print & Cut Guide for the tested workflows.'))
         ui.print_registration_marks_style.currentIndexChanged.connect(self._on_print_registration_marks_style_changed)
         ui.print_registration_marks_style.currentIndexChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
 

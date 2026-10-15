@@ -143,32 +143,21 @@ class PageLayoutSettings:
             distance_to_mm(self.margin_left), distance_to_mm(self.margin_top),
             distance_to_mm(self.margin_right), distance_to_mm(self.margin_bottom)) \
             if render_mode.IMPLICIT_MARGINS in render_mode else QMarginsF(0, 0, 0, 0)
+        width, height = distance_to_mm(self.page_width), distance_to_mm(self.page_height)
         landscape_workaround = mtg_proxy_printer.settings.settings["printer"].getboolean(
             "landscape-compatibility-workaround")
+        if width > height and landscape_workaround:
+            width, height = height, width
         if self.paper_size == "Custom":
-            logger.debug(
-                f"Creating custom QPageLayout for a custom paper size of {self.page_width}mm×{self.page_height}mm")
-            orientation = QPageLayout.Orientation.Portrait \
-                if self.page_width < self.page_height or landscape_workaround \
-                else QPageLayout.Orientation.Landscape
-            page_size = QPageSize(
-                QSizeF(*sorted([distance_to_mm(self.page_width), distance_to_mm(self.page_height)])),
-                QPageSize.Unit.Millimeter,
-            )
-            layout = QPageLayout(
-                page_size,
-                orientation,
-                margins,
-                QPageLayout.Unit.Millimeter,
-            )
+            page_size = QPageSize(QSizeF(*sorted((width, height))), QPageSize.Unit.Millimeter,
+                                 "", QPageSize.SizeMatchPolicy.ExactMatch)
         else:
-            logger.debug(
-                f"Creating QPageLayout for paper size {self.paper_size} and orientation {self.paper_orientation}")
-            layout = QPageLayout(
-                QPageSize(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size]),
-                mtg_proxy_printer.units_and_sizes.PageSizeManager.PageOrientation[self.paper_orientation],
-                margins,
-            )
+            page_size = QPageSize(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size])
+        intrinsic = page_size.size(QPageSize.Unit.Millimeter)
+        # Portrait means intrinsic orientation, including landscape-defined named sizes.
+        orientation = QPageLayout.Orientation.Portrait if (width > height) == (intrinsic.width() > intrinsic.height()) \
+            else QPageLayout.Orientation.Landscape
+        layout = QPageLayout(page_size, orientation, margins, QPageLayout.Unit.Millimeter)
         return layout
 
     def to_save_file_data(self):
