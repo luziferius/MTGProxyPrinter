@@ -36,7 +36,7 @@ class DownloaderBase(AsyncTask):
     def read_from_url(self, url: str, ui_hint: str = ""):
         """
         Reads a given URL and returns a file-like object that can and should be used as a context manager.
-        GZip-Streams are implicitly decompressed.
+        GZip-Streams and GZip files are implicitly decompressed.
         :param url: URL to fetch
         :param ui_hint: Display text shown in the UI next to the progress bar. If empty, no progress bar is shown at all
         """
