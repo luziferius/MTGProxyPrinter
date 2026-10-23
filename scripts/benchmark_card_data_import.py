@@ -35,8 +35,8 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.async_tasks.base import AsyncTaskRunner
 SetDataImportTask.run = MagicMock()
 
-@dataclasses.dataclass()
-class Namespace:
+
+class Namespace(argparse._Namespace):
     """Mock argparse Namespace used for type hinting."""
     database_path: Path
     card_data: Path
@@ -50,7 +50,7 @@ def parse_args() -> Namespace:
         help="Path to the test database. Beware: Any file at that location will be deleted without prompt!")
     parser.add_argument(
         "card_data", type=Path,
-        help="'All cards' bulk data export from the Scryfall API. May be plain-text JSON or GZIP compressed JSON.")
+        help="'All cards' bulk data export from the Scryfall API (or a compatible substitute). May be plain-text JSONL or GZIP compressed JSONL.")
     parser.add_argument(
         "-k", "--keep", action="store_true",
         help="Re-use an existing database, performing an in-place card data update, "
