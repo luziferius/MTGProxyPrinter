@@ -99,6 +99,11 @@ class ImageDownloadTask(mtg_proxy_printer.async_tasks.downloader_base.Downloader
             or self._load_from_disk(image_path, card.name) \
             or self._download_from_scryfall(card, image_path, progress_container) \
             or blank
+        if pixmap.size() != blank.size():
+            logger.debug(f'Image size of "{card.name}" {pixmap.size().toTuple()} '
+                         f'does not match expected size {blank.size().toTuple()}')
+            pixmap = pixmap.scaled(
+                blank.size(), Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
         if pixmap is not blank:
             self._remove_outdated_low_resolution_image(card)
             self.image_obtained.emit(key, pixmap)

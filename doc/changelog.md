@@ -7,6 +7,8 @@
 - Fixed crash when trying to add blank spots to the document, or when loading a document containing them.
 - Optimized set symbol downloads: Avoid duplicate downloads when sets share the same symbol.
 - The printing preferences and hiding settings now consistently handle system-wide font changes.
+- Fixed DFC check cards for cards in newer sets not generating correctly. Newer sets use slightly different image size that is 
+  one pixel smaller (744x1040) compared to the previous (745x1040) size, which threw off the logic generating them.
 
 # Version 0.36.0 (2026-07-31)  <a name="v0_36_0"></a>
 
