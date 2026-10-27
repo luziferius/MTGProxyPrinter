@@ -152,7 +152,7 @@ license_file = "resources/gpl-3.0.rtf"
 
 [tool.tox]
 requires = ["tox>=4.41"]
-env_list = ["unit_tests", "test_cx_freeze_build-cx_8_6"]
+env_list = ["unit_tests", "test_cx_freeze_build-cx_8_7"]
 
 
 [tool.tox.env_run_base]
@@ -230,7 +230,7 @@ commands_post = [
 base = ["tool.tox.env_pkg_base"]
 description = "Build the application with cx_Freeze and verify it can launch and reach the Qt event loop."
 labels = ["tests"]
-factors = [{ prefix = "cx_8_", start = 5, stop = 6 },]
+factors = [{ prefix = "cx_8_", start = 5, stop = 7 },]
 allowlist_externals = [
     { replace = "if", condition = "factor.win32", then = ["{tox_root}{/}scripts{/}clean_windows_build.bat"], extend = true},
     "{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter",
@@ -238,7 +238,9 @@ allowlist_externals = [
 deps = [
     {replace = "if", condition = "factor.cx_8_5", then = ["cx_Freeze>=8.5,<8.6"], extend = true},
     {replace = "if", condition = "factor.cx_8_6", then = ["cx_Freeze>=8.6,<8.7"], extend = true},
+    {replace = "if", condition = "factor.cx_8_7", then = ["cx_Freeze>=8.7,<8.8"], extend = true},
 ]
+
 commands = [
     ["cxfreeze", "build", "--build-exe", "build{/}bundle_test"],
     { replace = "if", condition = "factor.win32", then = [["{tox_root}{/}scripts{/}clean_windows_build.bat", "build{/}bundle_test"]], extend = true},
