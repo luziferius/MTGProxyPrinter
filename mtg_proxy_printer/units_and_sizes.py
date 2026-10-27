@@ -27,7 +27,6 @@ from pint import UnitRegistry, Context
 from PySide6.QtCore import QSize, QObject, Qt
 from PySide6.QtGui import QPageSize, QPageLayout, QColor
 import pint.facets.context.objects
-import pint
 
 import mtg_proxy_printer.natsort
 
@@ -36,12 +35,12 @@ Unit = pint.facets.plain.PlainUnit
 
 
 class ToDots(pint.facets.context.objects.Transformation):
-    def __call__(self, _: pint.UnitRegistry, value: Quantity, **kwargs: Any) -> Quantity:
+    def __call__(self, ureg: UnitRegistry, value: Quantity, **kwargs: Any) -> Quantity:
         return value*RESOLUTION
 
 
 class ToLength(pint.facets.context.objects.Transformation):
-    def __call__(self, _: pint.UnitRegistry, value: Quantity, **kwargs: Any) -> Quantity:
+    def __call__(self, ureg: UnitRegistry, value: Quantity, **kwargs: Any) -> Quantity:
         return value/RESOLUTION
 
 
@@ -83,6 +82,7 @@ StrDict = dict[str, str]
 T = TypeVar("T")
 PageSizeId = QPageSize.PageSizeId
 mm: Unit = unit_registry.mm
+pixel: Unit = unit_registry.pixel
 CheckState = Qt.CheckState
 
 BooleanToCheckStateMap = {
@@ -94,15 +94,15 @@ CheckStateToBooleanStrMap = {value: str(key) for key, value in BooleanToCheckSta
 
 
 class SectionProxy(configparser.SectionProxy):
-    def get_quantity(self, option: str, fallback: Quantity = None, *, raw=False, vars=None) -> Quantity:
+    def get_quantity(self, option: str, fallback: Quantity | None = None, *, raw=False, vars=None) -> Quantity:
         raw_value = self.get(option, fallback, raw=raw, vars=vars)
         return unit_registry.parse_expression(raw_value)
 
-    def get_color(self, option: str, fallback: QColor = None, *, raw=False, vars=None) -> QColor:
+    def get_color(self, option: str, fallback: QColor | None = None, *, raw=False, vars=None) -> QColor:
         raw_value = self.get(option, fallback, raw=raw, vars=vars)
         return QColor(raw_value)
 
-    def get_check_state(self, option: str, fallback: CheckState = None, *, raw=False, vars=None):
+    def get_check_state(self, option: str, fallback: CheckState | None = None, *, raw=False, vars=None):
         return BooleanToCheckStateMap[self.getboolean(option, raw=raw, vars=vars, fallback=fallback)]
 
     def set_check_state(self, option: str, value: CheckState):
@@ -113,15 +113,15 @@ class ConfigParser(configparser.ConfigParser):
 
     __getitem__: Callable[[str], SectionProxy]  # Type hint that [] returns a SectionProxy having get_quantity()
 
-    def get_quantity(self, section: str, option: str, fallback: Quantity = None, *, raw=False, vars=None) -> Quantity:
+    def get_quantity(self, section: str, option: str, fallback: Quantity | None = None, *, raw=False, vars=None) -> Quantity:
         raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
         return unit_registry.parse_expression(raw_value)
 
-    def get_color(self, section: str, option: str, fallback: QColor = None, *, raw=False, vars=None) -> QColor:
+    def get_color(self, section: str, option: str, fallback: QColor | None = None, *, raw=False, vars=None) -> QColor:
         raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
         return QColor(raw_value)
 
-    def get_check_state(self, section: str, option: str, fallback: CheckState = None, *, raw=False, vars=None):
+    def get_check_state(self, section: str, option: str, fallback: CheckState | None = None, *, raw=False, vars=None):
         return BooleanToCheckStateMap[self.getboolean(section, option, raw=raw, vars=vars, fallback=fallback)]
 
     def set_check_state(self, section: str, option: str, value: CheckState):
@@ -157,13 +157,15 @@ class CardSize(NamedTuple):
         return QSize(round(self.width.magnitude), round(self.height.magnitude))
 
     def to_save_data(self):
-        return f"{self.width.magnitude:.0f}x{self.height.magnitude:.0f}"
+        width: float = self.width.magnitude
+        height: float = self.height.magnitude
+        return f"{width:.0f}x{height:.0f}"
 
 
 @enum.unique
 class CardSizes(CardSize, enum.Enum):
-    REGULAR = CardSize(unit_registry("745 pixel"), unit_registry("1040 pixel"))
-    OVERSIZED = CardSize(unit_registry("1040 pixel"), unit_registry("1490 pixel"))
+    REGULAR = CardSize(745*pixel, 1040*pixel)
+    OVERSIZED = CardSize(1040*pixel, 1490*pixel)
 
     @classmethod
     def for_page_type(cls, page_type: "PageType") -> CardSize:
