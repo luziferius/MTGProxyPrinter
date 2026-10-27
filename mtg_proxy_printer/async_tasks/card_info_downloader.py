@@ -201,7 +201,14 @@ class StreamTask(CardInfoDownloadTaskBase):
         logger.debug(f"{self.__class__.__name__}: entering cancel()")
         if self.open_file is not None:
             self.open_file.close()
-        self.queue.shutdown(True)
+        try:
+            self.queue.shutdown(True)  # Available on Python 3.13+
+        except AttributeError:  # Python 3.11/3.12 compatibility workaround.
+            try:
+                while True:
+                    self.queue.get_nowait()
+            except queue.Empty:
+                pass
         logger.debug(f"{self.__class__.__name__}: Cancel completed")
 
 
