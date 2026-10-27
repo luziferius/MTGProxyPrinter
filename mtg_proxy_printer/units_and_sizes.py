@@ -31,7 +31,6 @@ import pint
 
 import mtg_proxy_printer.natsort
 
-QuantityT = pint.facets.plain.QuantityT
 Quantity = pint.facets.plain.PlainQuantity
 Unit = pint.facets.plain.PlainUnit
 
