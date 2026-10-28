@@ -173,7 +173,7 @@ pass_env = [
 [tool.tox.env_base.python]
 base = ["tox.tool.env_run_base"]
 factors = [
-    { prefix = "3.", start = 11, stop = 14 },
+    { prefix = "3.", start = 11, stop = 15 },
 ]
 
 [tool.tox.env_base.qt]
