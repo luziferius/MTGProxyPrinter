@@ -152,6 +152,9 @@ excludes = [
     "PySide6.support",
     "PySide6.translations.qtwebengine_locales",
     "PySide6.typesystems",
+    "tarfile",
+    "subprocess",
+    "_ast_unparse",
 ]
 [tool.cxfreeze.bdist_msi]
 # The GUID upgrade_code token is used by Windows to identify the application being installed.
