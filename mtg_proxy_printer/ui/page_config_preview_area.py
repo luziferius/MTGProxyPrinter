@@ -13,9 +13,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
 import enum
-from unittest.mock import MagicMock
 
 from PySide6.QtCore import Slot, QPersistentModelIndex
 from PySide6.QtGui import QColorConstants, QPainter, QPixmap
@@ -23,6 +21,8 @@ from PySide6.QtWidgets import QWidget
 
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from mtg_proxy_printer.model.document_page import PageType
@@ -62,7 +62,7 @@ class PageConfigPreviewArea(QWidget):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigPreviewArea()
         ui.setupUi(self)
-        self.document = Document(MagicMock(), MagicMock())
+        self.document = Document(CardDatabase.main_instance, ImageDatabase())
         self.regular_card = self._create_card(CardSizes.REGULAR, "Regular-size placeholder")
         self.oversized_card = self._create_card(CardSizes.OVERSIZED, "Oversized placeholder")
         ActionNewPage().apply(self.document)

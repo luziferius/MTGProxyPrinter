@@ -28,7 +28,6 @@ from hamcrest import *
 
 from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader, CardType
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
-from mtg_proxy_printer.model.imagedb_files import ImageKey, ImageQuality
 from tests.helpers import quantity_close_to, populate_image_db_cache
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes
 from mtg_proxy_printer.model.card import CheckCard
