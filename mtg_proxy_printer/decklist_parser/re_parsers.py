@@ -152,13 +152,12 @@ class GenericRegularExpressionDeckParser(ParserBase):
             language = "en"
         return language
 
-    @staticmethod
-    def _match_name(match_dict: MatchType) -> str | None:
+    def _match_name(self, match_dict: MatchType) -> str | None:
         name = match_dict.get("name")
-        if name and "//" in name:
-            # Many sources combine both names of split- or flip-cards as "Front // Back" or rarely "Front//Back".
-            # If so, simply remove all but the first name, as the back, if any, will be added later.
-            name = name.split("//")[0].rstrip()
+        if name:
+            # Many sources combine both names of multi-faced cards as "Front // Back" or rarely "Front//Back".
+            # For double-faced cards, only the front is kept, as the back, if any, will be added later.
+            name = self._normalize_multi_face_name(name)
         return name
 
     def line_splitter(self, deck_list: str) -> Generator[str, None, None]:

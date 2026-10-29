@@ -124,13 +124,7 @@ class ParserBase(QObject):
     def guess_printing(self, card_data: CardIdentificationData) -> Card | None:
         logger.info(f"Guessing card printing for {card_data}")
         if card_data.name:
-            card_data.name = card_data.name.strip()
-            # Some sources use single forward slashes to separate faces of multi-faced cards.
-            card_data.name = card_data.name.replace(" / ", " // ")
-            if "//" in card_data.name:
-                # If this is a split card, try to identify one half
-                card_data.name = card_data.name.split("//")[0 if card_data.is_front else 1].strip()
-                logger.debug(f"Card seems to be a split card. Using this part of the name: {card_data.name}")
+            card_data.name = self._normalize_multi_face_name(card_data.name.strip(), card_data.is_front)
         if self.card_db.is_valid_and_unique_card(card_data):
             logger.debug("Card is uniquely identified after post-processing the name")
             return self.card_db.get_cards_from_data(card_data)[0]
@@ -165,6 +159,25 @@ class ParserBase(QObject):
             )
             return self._determine_best_match(possible_matches)
         return None
+
+    def _normalize_multi_face_name(self, name: str, is_front: bool | None = None) -> str:
+        """
+        Normalizes names of multi-faced cards. Many sources combine both names as "Front // Back",
+        some use "Front//Back" or "Front / Back".
+        Cards with a single image, like split cards, Adventures, Rooms or flip cards, are stored using the combined
+        "Front // Back" name, so keep that, if it is a known card name. Double-faced cards store the name of each face
+        individually, so use the name of the requested face for those. Defaults to the front face.
+        """
+        # Some sources use single forward slashes to separate faces of multi-faced cards.
+        name = name.replace(" / ", " // ")
+        if "//" not in name:
+            return name
+        name = " // ".join(part.strip() for part in name.split("//"))
+        if self.card_db.guess_language_from_name(name) is not None:
+            return name
+        face_name = name.split(" // ")[1 if is_front is False else 0]
+        logger.debug(f"Card seems to be a double-faced card. Using this part of the name: {face_name}")
+        return face_name
 
     def _determine_best_match(self, possible_matches: list[Card]) -> Card:
         if self.print_guessing_prefer_already_downloaded and \
