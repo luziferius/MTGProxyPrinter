@@ -40,6 +40,8 @@ import mtg_proxy_printer.async_tasks.card_info_downloader
 from mtg_proxy_printer.document_controller.save_document import ActionSaveDocument
 from mtg_proxy_printer.async_tasks.document_loader import CardType
 from mtg_proxy_printer.model.card import Card, MTGSet
+from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.model.imagedb_files import ImageQuality, ImageKey
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict, Quantity, CardSize, CardSizes
@@ -124,6 +126,16 @@ def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data
             patch("mtg_proxy_printer.async_tasks.card_info_downloader.SetDataImportTask._fetch_sets_list_from_scryfall_api", return_value=sets_list_data):
         dit.populate_database(data)
     db.row_factory = sqlite3.Row
+
+
+def populate_image_db_cache(
+        image_db: ImageDatabase, *scryfall_ids: str, is_front: bool = True,
+        size: CardSize = CardSizes.REGULAR, quality: ImageQuality = ImageQuality.high_resolution):
+    """Fill the ImageDatabase in-memory cache for the given scryfall ids, and given size and quality with blanks."""
+    blank = image_db.get_blank(size)
+    for scryfall_id in scryfall_ids:
+        key = ImageKey(scryfall_id, is_front, quality)
+        image_db.loaded_images[key] = blank
 
 
 def update_database_printing_filters(

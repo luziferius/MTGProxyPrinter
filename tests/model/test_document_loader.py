@@ -28,7 +28,8 @@ from hamcrest import *
 
 from mtg_proxy_printer.async_tasks.document_loader import DocumentLoader, CardType
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater
-from tests.helpers import quantity_close_to
+from mtg_proxy_printer.model.imagedb_files import ImageKey, ImageQuality
+from tests.helpers import quantity_close_to, populate_image_db_cache
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, CardSizes
 from mtg_proxy_printer.model.card import CheckCard
 import mtg_proxy_printer.sqlite_helpers
@@ -109,6 +110,7 @@ def test_document_with_card_loads_correctly(
         [(1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe", CardType.REGULAR)],
         page_layout
     )
+    populate_image_db_cache(document.image_db, "0000579f-7b35-4ed3-b44c-db2a538066fe")
     with unittest.mock.patch(OPEN_DATABASE, return_value=empty_save_database) as open_database, \
             qtbot.wait_signals([loader.load_requested, document.action_applied]), \
             qtbot.assert_not_emitted(loader.loading_file_failed):
@@ -148,6 +150,8 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
         qtbot: QtBot, loader: DocumentLoader, page_layout: PageLayoutSettings,
         empty_save_database: sqlite3.Connection):
     document = loader.document
+    populate_image_db_cache(document.image_db, "0000579f-7b35-4ed3-b44c-db2a538066fe")
+    populate_image_db_cache(document.image_db, "650722b4-d72b-4745-a1a5-00a34836282b", size=CardSizes.OVERSIZED)
     create_save_database_with(
         empty_save_database,
         [(1, CardSizes.REGULAR)],
@@ -322,6 +326,8 @@ def test_cancelling_loading_does_not_crash(
 
 def test_loads_check_card(qtbot: QtBot, loader: DocumentLoader, empty_save_database: sqlite3.Connection):
     document = loader.document
+    for side in [True, False]:
+        populate_image_db_cache(document.image_db, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=side)
     create_save_database_with(
         empty_save_database,
         [(1, CardSizes.REGULAR)],
