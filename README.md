@@ -2,6 +2,12 @@
 
 Print Magic: The Gathering cards for play-testing purposes.
 
+## Siser Print & Cut
+
+See the [Siser Print & Cut Guide](resources/help/siser-print-cut.md) for the tested
+Letter and A4 workflows. The same guide is available offline in the application:
+**Application → Siser Print & Cut Guide**.
+
 (If you are reading this on [GitHub](https://github.com/luziferius/MTGProxyPrinter), 
 then you are looking at a Git mirror of the [fossil](https://fossil-scm.org)-based source repository
 located at [https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter](https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter))

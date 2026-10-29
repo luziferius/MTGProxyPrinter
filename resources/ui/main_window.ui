@@ -38,7 +38,9 @@
       <iconset theme="document-export"/>
      </property>
      <addaction name="action_print_pdf"/>
+     <addaction name="action_export_calibration"/>
      <addaction name="action_export_png"/>
+     <addaction name="action_export_cut_template"/>
      <addaction name="separator"/>
      <addaction name="action_export_card_images"/>
     </widget>
@@ -64,6 +66,7 @@
     <addaction name="action_cleanup_local_image_cache"/>
     <addaction name="separator"/>
     <addaction name="action_show_changelog"/>
+    <addaction name="action_show_siser_guide"/>
     <addaction name="action_show_about_dialog"/>
     <addaction name="separator"/>
     <addaction name="action_quit"/>
@@ -272,6 +275,14 @@
     <string>Show Changelog</string>
    </property>
   </action>
+  <action name="action_show_siser_guide">
+   <property name="icon">
+    <iconset theme="help-contents"/>
+   </property>
+   <property name="text">
+    <string>Siser Print &amp; Cut Guide</string>
+   </property>
+  </action>
   <action name="action_compact_document">
    <property name="icon">
     <iconset theme="format-align-vertical-top"/>
@@ -401,6 +412,28 @@ use this to reduce the initial deck shuffling required</string>
    </property>
    <property name="toolTip">
     <string>Export document as an image sequence</string>
+   </property>
+  </action>
+  <action name="action_export_calibration">
+   <property name="icon">
+    <iconset theme="document-export"/>
+   </property>
+   <property name="text">
+    <string>Export current page calibration sheet (PDF)…</string>
+   </property>
+   <property name="toolTip">
+    <string>Export card outlines, scale references, and the selected registration marks without card artwork.</string>
+   </property>
+  </action>
+  <action name="action_export_cut_template">
+   <property name="icon">
+    <iconset theme="document-export"/>
+   </property>
+   <property name="text">
+    <string>Export current page cut template (SVG)…</string>
+   </property>
+   <property name="toolTip">
+    <string>Export rounded regular card outlines and square oversized card outlines at the document’s paper size. Registration marks and printer corrections are not included.</string>
    </property>
   </action>
   <action name="action_export_card_images">

@@ -7,6 +7,9 @@
     <file alias="ThirdPartyLicenses.md">../doc/ThirdPartyLicenses.md</file>
     <file alias="License.md">../LICENSE.md</file>
     <file>Common_Registration_Mark.svg</file>
+    <!-- Canonical offline Siser workflow guide -->
+    <file>help/siser-print-cut.md</file>
+    <file>help/images/a4-portrait-feed.png</file>
 
     <!-- Localisations -->
     <file>translations/progress.json</file>

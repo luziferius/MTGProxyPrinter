@@ -42,13 +42,6 @@ class BleedOrientation(enum.Enum):
     VERTICAL = enum.auto()
 
 
-class CutMarkerParameters(typing.NamedTuple):
-    total_space: Quantity
-    card_size: Quantity
-    item_count: int
-    margin: Quantity
-    image_spacing: Quantity
-
 
 class BullseyeMarkItem(QGraphicsSvgItem):
     """
@@ -70,9 +63,6 @@ class BullseyeMarkItem(QGraphicsSvgItem):
         )
         super().setPos(new)
 
-    def update_visibility(self, current_style: str):
-        self.setOpacity(current_style == "Bullseye")
-
 
 class CutMarkSquareItem(QGraphicsRectItem):
     def __init__(self, parent: QGraphicsItem | None = None):
@@ -82,9 +72,6 @@ class CutMarkSquareItem(QGraphicsRectItem):
         self.setPen(PenStyle.NoPen)
         self.setBrush(QColorConstants.Black)
         logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
-
-    def update_visibility(self, current_style: str):
-        self.setOpacity(current_style == "Cut marker")
 
 
 class CutMarkAngleItem(QGraphicsPolygonItem):
@@ -112,9 +99,6 @@ class CutMarkAngleItem(QGraphicsPolygonItem):
             (pos.y()),
         )
         super().setPos(new)
-
-    def update_visibility(self, current_style: str):
-        self.setOpacity(current_style == "Cut marker")
 
 
 class CardBleedItem(QGraphicsPixmapItem):

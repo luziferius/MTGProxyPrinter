@@ -14,12 +14,10 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
-from collections.abc import Generator
 import enum
-import functools
 import itertools
 
-from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, QPoint, Signal, QObject, Slot, \
+from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, Signal, QObject, Slot, \
     QPersistentModelIndex, QModelIndex
 from PySide6.QtGui import QPen, QColorConstants, QColor, QPalette, QFontMetrics
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene
@@ -27,10 +25,12 @@ from PySide6.QtWidgets import QGraphicsItem, QGraphicsLineItem, QGraphicsSimpleT
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.page_scene.items import RenderLayers, CutMarkerParameters, NeighborsPresent, CardItem, \
-    BullseyeMarkItem, CutMarkSquareItem, CutMarkAngleItem
+from mtg_proxy_printer.model.page_geometry import PageGeometry, build_page_geometry
+from mtg_proxy_printer.page_scene.items import RenderLayers, NeighborsPresent, CardItem
+from mtg_proxy_printer.page_scene.registration_profiles import RegistrationProfile, get_registration_profile
+from mtg_proxy_printer.registration_profile_ids import RegistrationProfileId
 from mtg_proxy_printer.settings import settings
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, distance_to_rounded_px, CardSizes, CardSize, \
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, distance_to_rounded_px, \
     Quantity
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -50,6 +50,8 @@ class RenderMode(enum.Flag):
     ON_SCREEN = enum.auto()
     ON_PAPER = enum.auto()
     IMPLICIT_MARGINS = enum.auto()
+    FILE_EXPORT = enum.auto()
+    NATIVE_PRINT = enum.auto()
 
 
 def is_card_item(item: QGraphicsItem) -> bool:
@@ -78,13 +80,20 @@ class PageScene(QGraphicsScene):
         :param parent: Optional Qt parent object
         """
         self.render_mode = render_mode
+        self.print_markers: list[QGraphicsItem] = []
+        self._registration_profile: RegistrationProfile | None = None
         page_layout = document.page_layout
         super().__init__(self.get_document_page_size(page_layout), parent)
         self.document = document
         self._connect_document_signals(document)
         self.selected_page = self.document.get_current_page_index()
         self.row_count = self.column_count = 1
-        self._update_row_and_column_counts(document)
+        self.geometry: PageGeometry | None = None
+        self.full_grid_geometry: dict[PageType, PageGeometry] = {}
+        self.geometry_pending = False
+        self.geometry_unavailable_reason: str | None = None
+        self.registration_unavailable_reason: str | None = None
+        self._rebuild_full_grid_geometry()
         background_color = self.get_background_color(render_mode)
         logger.debug(f"Drawing background rectangle")
         self.background = self.addRect(0, 0, self.width(), self.height(), background_color, background_color)
@@ -94,11 +103,11 @@ class PageScene(QGraphicsScene):
         self._update_cut_marker_positions()
         self.document_title_text = self._create_text_item()
         self.page_number_text = self._create_text_item()
-        self.print_markers = self._create_print_marker_items()
-        self._update_print_markers()
+        self._refresh_actual_geometry()
         self._update_text_items(page_layout)
-        if page_layout.draw_cut_markers:
-            self.draw_cut_markers()
+        if self.geometry is not None:
+            self._draw_cards()
+            self.update_card_bleeds()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {render_mode}")
 
     def _connect_document_signals(self, document: Document):
@@ -111,13 +120,95 @@ class PageScene(QGraphicsScene):
         document.dataChanged.connect(self.on_data_changed)
         document.page_type_changed.connect(self.on_page_type_changed)
         document.page_layout_changed.connect(self.on_page_layout_changed)
+        document.action_applied.connect(self._retry_pending_geometry)
+        document.action_undone.connect(self._retry_pending_geometry)
 
-    def _update_row_and_column_counts(self, document: Document):
-        page_type = document.currently_edited_page.page_type()
-        layout = document.page_layout
-        self.column_count = layout.compute_page_column_count(page_type)
-        self.row_count = layout.compute_page_row_count(page_type)
-        self._compute_position_for_image.cache_clear()
+    def _rebuild_full_grid_geometry(self):
+        layout = self.document.page_layout
+        self.full_grid_geometry = {
+            page_type: build_page_geometry(layout, page_type, layout.compute_page_card_capacity(page_type))
+            for page_type in (PageType.REGULAR, PageType.OVERSIZED)
+        }
+
+    def _clear_card_items(self):
+        for item in self.card_items:
+            self.removeItem(item)
+
+    def _geometry_unavailable(self, reason: str):
+        self.geometry = None
+        self.geometry_pending = True
+        self.geometry_unavailable_reason = reason
+        self.row_count = self.column_count = 0
+        self._clear_card_items()
+        self.remove_cut_markers()
+        self._clear_registration_items()
+        self.document_title_text.setVisible(False)
+        self.page_number_text.setVisible(False)
+
+    def _refresh_actual_geometry(self) -> bool:
+        previous = self.geometry
+        if not self._is_valid_page_index(self.selected_page):
+            self._geometry_unavailable("No valid selected page")
+            return False
+        try:
+            geometry = build_page_geometry(
+                self.document.page_layout, self.selected_page.data(ItemDataRole.UserRole),
+                self.document.rowCount(self.selected_page),
+            )
+        except ValueError as error:
+            self._geometry_unavailable(str(error))
+            return False
+        recovering = self.geometry_pending
+        self.geometry = geometry
+        self.row_count, self.column_count = geometry.rows, geometry.columns
+        self.geometry_pending = False
+        self.geometry_unavailable_reason = None
+        grid_changed = previous is None or (
+            previous.grid_x_edges_px, previous.grid_y_edges_px
+        ) != (geometry.grid_x_edges_px, geometry.grid_y_edges_px)
+        if grid_changed:
+            self.remove_cut_markers()
+            if self.document.page_layout.draw_cut_markers:
+                self.draw_cut_markers()
+        if recovering:
+            # Deferred model notifications may have skipped insertion/replacement.
+            self._clear_card_items()
+            self._draw_cards()
+            self.update_card_bleeds()
+            self._update_text_items(self.document.page_layout)
+        self._update_print_markers()
+        return True
+
+    def _retry_pending_geometry(self, *_):
+        if self.geometry_pending:
+            if not self._is_valid_page_index(self.selected_page):
+                try:
+                    self.selected_page = self.document.get_current_page_index()
+                except ValueError:
+                    return
+            self._refresh_actual_geometry()
+
+    def require_geometry_ready(self):
+        """Fail explicit output rather than rendering stale or unavailable geometry."""
+        self._retry_pending_geometry()
+        if self.geometry is None:
+            raise RuntimeError(f"Page geometry unavailable: {self.geometry_unavailable_reason}")
+
+    def require_output_ready(self):
+        self.require_geometry_ready()
+        if self.registration_unavailable_reason:
+            raise RuntimeError(f'Registration unavailable: {self.registration_unavailable_reason}')
+
+    def render(self, *args, **kwargs):
+        self.require_output_ready()
+        return super().render(*args, **kwargs)
+
+    def _presentation_position(self, x: float, y: float) -> QPointF:
+        if RenderMode.IMPLICIT_MARGINS in self.render_mode:
+            frame = self.full_grid_geometry[PageType.REGULAR].margin_frame_px
+            x -= frame.x
+            y -= frame.y
+        return QPointF(x + self.x_offset, y)
 
     @staticmethod
     def _create_text_item(font_size: float = 40) -> QGraphicsSimpleTextItem:
@@ -127,18 +218,11 @@ class PageScene(QGraphicsScene):
         item.setFont(font)
         return item
 
-    def _create_print_marker_items(self) -> list[BullseyeMarkItem]:
-        items = [
-            BullseyeMarkItem(False, False), BullseyeMarkItem(True, False), BullseyeMarkItem(False, True),
-            CutMarkSquareItem(), CutMarkAngleItem(False), CutMarkAngleItem(True)
-        ]
-        for item in items:
-            self.addItem(item)
-        return items
-
     def get_background_color(self, render_mode: RenderMode) -> QColor:
         if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Transparent
+        if self.document.page_layout.print_registration_marks_style == RegistrationProfileId.SISER.value:
+            return QColorConstants.White
         return self.palette().color(ColorGroup.Active, ColorRole.Base)
 
     def get_cut_marker_pen(self, render_mode: RenderMode) -> QPen:
@@ -174,69 +258,70 @@ class PageScene(QGraphicsScene):
 
     @property
     def x_offset(self) -> int:
-        return 0 if RenderMode.ON_SCREEN in self.render_mode \
+        return 0 if self.render_mode & (RenderMode.ON_SCREEN | RenderMode.FILE_EXPORT | RenderMode.NATIVE_PRINT) \
             else distance_to_rounded_px(settings["printer"].get_quantity("horizontal-offset"))
 
     @property
     def card_items(self) -> list[CardItem]:
-        # Sort the items to match the document. This is important for replacing cards.
+        # Presentation order only. Model-slot identity comes from each persistent index.
         card_items = filter(is_card_item, self.items())
         return sorted(card_items, key=lambda item: tuple(reversed(item.scenePos().toTuple())))
 
     @property
     def cut_lines(self) -> list[QGraphicsLineItem]:
-        return list(filter(is_cut_line_item, self.items(SortOrder.AscendingOrder)))
+        return [item for item in self.items(SortOrder.AscendingOrder)
+                if is_cut_line_item(item) and not self._is_registration_item(item)]
 
     @property
     def text_items(self) -> list[QGraphicsSimpleTextItem]:
-        return list(filter(is_text_item, self.items(SortOrder.AscendingOrder)))
+        return [item for item in self.items(SortOrder.AscendingOrder)
+                if is_text_item(item) and not self._is_registration_item(item)]
+
+    def _is_registration_item(self, item: QGraphicsItem) -> bool:
+        # PySide6 6.11.2 parentItem() gives a parentless item Python ownership,
+        # even when its scene owns it. Avoid traversing unrelated card trees.
+        if not any(root == item or root.isAncestorOf(item) for root in self.print_markers):
+            return False
+        ancestor = item
+        while ancestor is not None:
+            if ancestor in self.print_markers:
+                return True
+            ancestor = ancestor.parentItem()
+        return False
 
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
         """Draws the canvas, when the currently selected page changes."""
         logger.debug(f"Current page changed to page {selected_page.row()}")
-        page_types: set[PageType] = {
-            self.selected_page.data(ItemDataRole.UserRole),
-            selected_page.data(ItemDataRole.UserRole)
-        }
-        self.selected_page = selected_page
-
-        if PageType.OVERSIZED in page_types and len(page_types) > 1:  # Switching to or from an oversized page
-            logger.debug("New page contains cards of different size, re-drawing cut markers")
-            self._update_row_and_column_counts(self.document)
-            self.remove_cut_markers()
-            self.draw_cut_markers()
-        for item in self.card_items:
-            self.removeItem(item)
-        if self._is_valid_page_index(selected_page):
-            self._update_page_number_text()
-            self._update_page_text_x()
-            self._update_page_text_y()
+        self.selected_page = QPersistentModelIndex(selected_page)
+        self._clear_card_items()
+        if self._refresh_actual_geometry():
+            self._update_text_items(self.document.page_layout)
             self._draw_cards()
             self.update_card_bleeds()
 
     def _update_page_text_y(self):
-        # Put the text labels below the bleed
-        y = 2 + distance_to_rounded_px(self.document.page_layout.card_bleed) + round(max(
-            self.horizontal_cut_line_locations[PageType.REGULAR][-1],
-            self.horizontal_cut_line_locations[PageType.OVERSIZED][-1]
-        ))
+        # Guide caches derive from snapshots and retain the legacy implicit-margin translation.
+        y_edges = [edge for page_type in (PageType.REGULAR, PageType.OVERSIZED)
+                   for edge in self.horizontal_cut_line_locations[page_type][-1:]]
+        if not y_edges:
+            self.document_title_text.setVisible(False)
+            self.page_number_text.setVisible(False)
+            return
+        y = 2 + distance_to_rounded_px(self.document.page_layout.card_bleed) + round(max(y_edges))
         for item in self.text_items:
             item.setY(y)
 
     def _update_page_text_x(self):
-        try:
-            # This may throw a KeyError on MIXED pages
-            title_x = round(self.vertical_cut_line_locations[PageType.REGULAR][0])
-            page_number_x = round(self.vertical_cut_line_locations[PageType.REGULAR][-1])
-        except KeyError:
-            title_x = 0
-            page_number_x = self.width()
-        self.document_title_text.setX(title_x)
+        edges = self.vertical_cut_line_locations[PageType.REGULAR]
+        if not edges:
+            self.document_title_text.setVisible(False)
+            self.page_number_text.setVisible(False)
+            return
+        self.document_title_text.setX(round(edges[0]))
         font_metrics = QFontMetrics(self.page_number_text.font())
         text_width = font_metrics.horizontalAdvance(self.page_number_text.text())
-        page_number_x -= text_width + 2
-        self.page_number_text.setX(page_number_x + self.x_offset)
+        self.page_number_text.setX(round(edges[-1]) - text_width - 2 + self.x_offset)
 
     def _update_page_number_text(self):
         if self.page_number_text not in self.text_items:
@@ -247,25 +332,56 @@ class PageScene(QGraphicsScene):
         self.page_number_text.setText(f"{page}/{total_pages}")
 
     def _update_print_markers(self):
-        layout = self.document.page_layout
-        current_style = layout.print_registration_marks_style
+        background_color = self.get_background_color(self.render_mode)
+        self.background.setPen(background_color)
+        self.background.setBrush(background_color)
+        if self.geometry is None:
+            self._clear_registration_items()
+            return
+        profile = get_registration_profile(self.document.page_layout.print_registration_marks_style)
+        try:
+            if profile is not self._registration_profile:
+                self._clear_registration_items()
+                self._registration_profile = profile
+                self.print_markers = profile.create_items()
+                for item in self.print_markers:
+                    self.addItem(item)
+            profile.place_items(self.print_markers, self.geometry, legacy_x_offset_px=self.x_offset)
+        except (ValueError, RuntimeError) as error:
+            if profile.profile_id != RegistrationProfileId.SISER:
+                raise
+            self._clear_registration_items()
+            self.registration_unavailable_reason = str(error)
+            return
+        self.registration_unavailable_reason = None
+        self._restore_registration_stacking()
 
-        top = distance_to_rounded_px(layout.margin_top)
-        bottom = distance_to_rounded_px(layout.page_height)-distance_to_rounded_px(layout.margin_bottom)
+    def _clear_registration_items(self):
+        for item in self.print_markers:
+            self.removeItem(item)
+        self.print_markers.clear()
+        self._registration_profile = None
+        self.registration_unavailable_reason = None
 
-        left = distance_to_rounded_px(layout.margin_left) + self.x_offset
-        right = distance_to_rounded_px(layout.page_width) - distance_to_rounded_px(layout.margin_right) + self.x_offset
-
-        positions = [QPoint(left, top), QPoint(right, top), QPoint(left, bottom)]
-        for item, position in zip(self.print_markers, itertools.cycle(positions)):
-            item.update_visibility(current_style)
-            item.setPos(position)
+    def _restore_registration_stacking(self):
+        guides = self.cut_lines
+        for root in self.print_markers:
+            parent = root.parentItem()
+            if parent is None:
+                root.scene()  # Restore PySide scene ownership without another C++ insertion.
+            for guide in guides:
+                guide_parent = guide.parentItem()
+                if guide_parent is None:
+                    guide.scene()
+                if parent == guide_parent and root.zValue() == guide.zValue():
+                    root.stackBefore(guide)
+                    break
 
     @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
         logger.info("Applying new document settings …")
         new_page_size = self.get_document_page_size(new_page_layout)
-        self._update_row_and_column_counts(self.document)
+        self._rebuild_full_grid_geometry()
         old_size = self.sceneRect()
         size_changed = old_size != new_page_size
         if size_changed:
@@ -273,15 +389,13 @@ class PageScene(QGraphicsScene):
             self.setSceneRect(new_page_size)
             self.background.setRect(new_page_size)
         self._update_cut_marker_positions()
+        self._refresh_actual_geometry()
         self.remove_cut_markers()
-        if new_page_layout.draw_cut_markers:
+        if new_page_layout.draw_cut_markers and self.geometry is not None:
             self.draw_cut_markers()
-        self._compute_position_for_image.cache_clear()
         self.update_card_positions()
         self.update_card_bleeds()
         self._update_text_items(new_page_layout)
-        self._update_print_markers()
-
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
             # in the available space or is now too small, so emit a notification to allow the display widget to adjust.
@@ -295,6 +409,9 @@ class PageScene(QGraphicsScene):
         self._update_text_visibility(self.page_number_text, page_layout.draw_page_numbers)
         self._update_page_text_x()
         self._update_page_text_y()
+        visible = self.geometry is not None and bool(self.full_grid_geometry[PageType.REGULAR].grid_x_edges_px)
+        self.document_title_text.setVisible(visible)
+        self.page_number_text.setVisible(visible)
 
     def _format_document_title(self, title: str) -> str:
         page_layout = self.document.page_layout
@@ -337,6 +454,9 @@ class PageScene(QGraphicsScene):
 
     def get_document_page_size(self, page_layout: PageLayoutSettings) -> QRectF:
         without_margins = RenderMode.IMPLICIT_MARGINS in self.render_mode
+        if not without_margins:
+            nominal = build_page_geometry(page_layout, PageType.UNDETERMINED, 0)
+            return QRectF(0, 0, nominal.scene_width_px, nominal.scene_height_px)
         vertical_margins = (page_layout.margin_top + page_layout.margin_bottom) if without_margins else ZERO_WIDTH
         horizontal_margins = (page_layout.margin_left + page_layout.margin_right) if without_margins else ZERO_WIDTH
 
@@ -361,57 +481,59 @@ class PageScene(QGraphicsScene):
             self.draw_card(document.index(row, PageColumns.Image, parent), page_type)
 
     def draw_card(self, index: QModelIndex, page_type: PageType):
-        position = self._compute_position_for_image(index.row(), page_type)
-        if index.data(ItemDataRole.DisplayRole) is not None:  # Card has a QPixmap set
+        if self.geometry is None or not index.isValid():
+            return
+        if any(item.index == index for item in self.card_items):
+            return
+        if index.data(ItemDataRole.DisplayRole) is not None:
+            placement = self.geometry.placements[index.row()]
             card_item = CardItem(index, self.document)
             self.addItem(card_item)
-            card_item.setPos(position)
+            card_item.setPos(self._presentation_position(placement.trim_px.x, placement.trim_px.y))
 
     def update_card_positions(self):
-        page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
+        if self.geometry is None:
+            return
         for card in self.card_items:
-            card.setPos(self._compute_position_for_image(card.index.row(), page_type))
+            if card.index.isValid():
+                trim = self.geometry.placements[card.index.row()].trim_px
+                card.setPos(self._presentation_position(trim.x, trim.y))
 
     def _is_valid_page_index(self, index: QModelIndex | QPersistentModelIndex):
-        return index.isValid() and not index.parent().isValid() and index.row() < self.document.rowCount()
+        return (index.isValid() and index.model() == self.document
+                and not index.parent().isValid() and index.row() < self.document.rowCount())
 
     @Slot(QModelIndex)
     def on_page_type_changed(self, page: QModelIndex):
-        if page.row() == self.selected_page.row():
-            self._update_row_and_column_counts(self.document)
+        if page == self.selected_page and self._refresh_actual_geometry():
             self.update_card_positions()
-            if self.document.page_layout.draw_cut_markers:
-                self.remove_cut_markers()
-                self.draw_cut_markers()
+            self.update_card_bleeds()
+            self._update_text_items(self.document.page_layout)
 
     @Slot(QModelIndex, QModelIndex, list)
     def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: list[ItemDataRole]):
         parent = top_left.parent()
-        if not parent.isValid() or parent.row() != self.selected_page.row() or ItemDataRole.DisplayRole not in roles:
-            # Ignore all events not regarding the currently shown page
+        if parent != self.selected_page or (roles and ItemDataRole.DisplayRole not in roles):
             return
-        card_items = self.card_items
-
-        # Editing custom cards only changes single columns other than the Image column.
-        # So multiple columns edited means the card was replaced and all affected rows needs to be replaced
-        if top_left.column() < bottom_right.column():
-            page_type: PageType = parent.data(ItemDataRole.UserRole)
-            for row in range(top_left.row(), bottom_right.row()+1):
-                logger.debug(f"Card {row} on the current page was replaced, replacing image.")
-                current_item = card_items[row]
-                self.draw_card(top_left.siblingAtRow(row), page_type)
-                self.removeItem(current_item)
-        # Editing the Image column only happens when the custom card corner style was toggled.
-        elif top_left.column() == PageColumns.Image:
-            for row in range(top_left.row(), bottom_right.row()+1):
-                index = top_left.siblingAtRow(row)
-                logger.debug(f"Update pixmap for custom card on {row=} on the current page")
-                current_item = card_items[row]
-                current_item.card_pixmap_item.setPixmap(index.data(ItemDataRole.DisplayRole))
+        if not (top_left.column() <= PageColumns.Image <= bottom_right.column()):
+            return
+        if not self._refresh_actual_geometry():
+            return
+        # Resolve by persistent model slot, including holes left by missing pixmaps.
+        for row in range(top_left.row(), bottom_right.row() + 1):
+            index = self.document.index(row, PageColumns.Image, parent)
+            for item in self.card_items:
+                if item.index == index:
+                    self.removeItem(item)
+            self.draw_card(index, self.geometry.page_type)
+        self.update_card_positions()
+        self.update_card_bleeds()
 
     @Slot(QModelIndex, int, int)
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
-        if self._is_valid_page_index(parent) and parent.row() == self.selected_page.row():
+        if self._is_valid_page_index(parent) and parent == self.selected_page:
+            if not self._refresh_actual_geometry():
+                return
             inserted_cards = last-first+1
             needs_reorder = first + inserted_cards < self.document.rowCount(parent)
             page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
@@ -426,12 +548,14 @@ class PageScene(QGraphicsScene):
         elif not parent.isValid():
             # Page inserted. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
+            self._retry_pending_geometry()
 
     @Slot(QModelIndex, int, int)
     def on_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
         if not parent.isValid() and first <= self.selected_page.row() <= last:
             logger.debug("About to delete the currently shown page. Removing the held index.")
             self.selected_page = QPersistentModelIndex()
+            self._geometry_unavailable("Selected page is being removed")
         elif parent.isValid() and parent.row() == self.selected_page.row():
             # Remove the cards now, as the model indices are still valid and point to the correct cards
             logger.debug(f"Removing cards {first} to {last} from the current page.")
@@ -446,7 +570,10 @@ class PageScene(QGraphicsScene):
         if not parent.isValid():
             # Page removed. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
-        if parent.isValid() and parent.row() == self.selected_page.row():
+            self._retry_pending_geometry()
+        if parent.isValid() and parent == self.selected_page:
+            if not self._refresh_actual_geometry():
+                return
             self.update_card_positions()
             self.update_card_bleeds()
 
@@ -476,79 +603,33 @@ class PageScene(QGraphicsScene):
             self.on_rows_inserted(destination, row, row + end - start)
         elif source_page_row == current_page_row:
             logger.debug("Card move affects the current page, updating positions.")
-            self.update_card_positions()
+            if self._refresh_actual_geometry():
+                self.update_card_positions()
+                self.update_card_bleeds()
         # Remaining cases are card moves happening "off-screen", so nothing has to be done on them.
 
-    @functools.cache
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
-        """Returns the page-absolute position of the top-left pixel of the given image."""
-        page_layout: PageLayoutSettings = self.document.page_layout
-        page_width = distance_to_rounded_px(page_layout.page_width)
-        page_height = distance_to_rounded_px(page_layout.page_height)
-
-        left_margin = distance_to_rounded_px(page_layout.margin_left)
-        top_margin = distance_to_rounded_px(page_layout.margin_top)
-
-        card_size = CardSizes.for_page_type(page_type).as_qsize_px()
-        image_height: int = card_size.height()
-        image_width: int = card_size.width()
-
-        column_spacing = distance_to_rounded_px(page_layout.column_spacing)
-        row_spacing = distance_to_rounded_px(page_layout.row_spacing)
-
-        row, column = divmod(index_row, self.column_count)
-
-        # Excessively large margins may shift the page content off-center. Clamp the borders to the non-negative range
-        # to avoid clipping images off
-        left_border = max(
-            page_width - image_width * self.column_count - column_spacing * (self.column_count - 1),
-            0
-        ) / 2
-        top_border = max(
-            page_height - image_height * self.row_count - row_spacing * (self.row_count - 1),
-            0
-        ) / 2
-
-        left_border = max(left_border, left_margin)
-        top_border = max(top_border, top_margin)
-        if RenderMode.IMPLICIT_MARGINS in self.render_mode:
-            left_border -= left_margin
-            top_border -= top_margin
-
-        x = left_border + (image_width + column_spacing) * column + self.x_offset
-        y = top_border + (image_height + row_spacing) * row
-        return QPointF(
-            x,
-            y,
-        )
+        """Compatibility query for any full-capacity slot, not actual occupancy."""
+        if page_type == PageType.UNDETERMINED:
+            page_type = PageType.REGULAR
+        trim = self.full_grid_geometry[page_type].placements[index_row].trim_px
+        return self._presentation_position(trim.x, trim.y)
 
     def update_card_bleeds(self):
-        full_bleed = self.document.page_layout.card_bleed
-        full_bleed_px = distance_to_rounded_px(full_bleed)
-        inner_bleed_h_px = distance_to_rounded_px(min(self.document.page_layout.row_spacing/2, full_bleed))
-        inner_bleed_v_px = distance_to_rounded_px(min(self.document.page_layout.column_spacing/2, full_bleed))
+        if self.geometry is None:
+            return
         for item in self.card_items:
-            neighbors = self._has_neighbors(item)
-            item.bleeds.update_bleeds(
-                inner_bleed_h_px if neighbors.top else full_bleed_px,
-                inner_bleed_h_px if neighbors.bottom else full_bleed_px,
-                inner_bleed_v_px if neighbors.left else full_bleed_px,
-                inner_bleed_v_px if neighbors.right else full_bleed_px,
-            )
+            if item.index.isValid():
+                bleed = self.geometry.placements[item.index.row()].bleed_px
+                item.bleeds.update_bleeds(top=bleed.top, bottom=bleed.bottom, left=bleed.left, right=bleed.right)
 
     def _has_neighbors(self, item: CardItem) -> NeighborsPresent:
-        index_row = item.index.row()
-        cards_on_page = self.document.rowCount(self.selected_page)
-        return NeighborsPresent(
-            # There is a card above, iff the card's row > 1, i.e. there are at least column_count cards before it
-            index_row >= self.column_count,
-            # There is a card below, iff there are at least column_count more cards on the page
-            index_row + self.column_count < cards_on_page,
-            # There is a card on the left, iff the row modulo column_count is non-zero
-            index_row % self.column_count > 0,
-            # There is a card on the right, iff there is an additional card, and this is not on the right-most column.
-            index_row % self.column_count + 1 != self.column_count and index_row + 1 < cards_on_page
-        )
+        """Compatibility only: adjacency cannot be inferred from bleed size."""
+        placement = self.geometry.placements[item.index.row()]
+        occupied = {(p.row, p.column) for p in self.geometry.placements}
+        row, column = placement.row, placement.column
+        return NeighborsPresent((row - 1, column) in occupied, (row + 1, column) in occupied,
+                                (row, column - 1) in occupied, (row, column + 1) in occupied)
 
     def remove_cut_markers(self):
         for line in self.cut_lines:
@@ -556,58 +637,27 @@ class PageScene(QGraphicsScene):
 
     def draw_cut_markers(self):
         """Draws the optional cut markers that extend to the paper border"""
-        page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
-        if page_type == PageType.MIXED:
-            logger.warning("Not drawing cut markers for page with mixed image sizes")
+        if self.geometry is None:
             return
+        page_type = self.geometry.page_type
         pen = self.get_cut_marker_pen(self.render_mode)
         logger.info(f"Drawing cut markers")
         layer = RenderLayers.CUT_LINES_ABOVE \
             if self.document.page_layout.cut_marker_draw_above_cards else RenderLayers.CUT_LINES_BELOW
         self._draw_vertical_markers(pen, page_type, layer)
         self._draw_horizontal_markers(pen, page_type, layer)
+        self._restore_registration_stacking()
 
     def _update_cut_marker_positions(self):
-        logger.debug("Updating cut marker positions")
         self.vertical_cut_line_locations.clear()
         self.horizontal_cut_line_locations.clear()
-        page_layout: PageLayoutSettings = self.document.page_layout
+        frame = self.full_grid_geometry[PageType.REGULAR].margin_frame_px
+        left = frame.x if RenderMode.IMPLICIT_MARGINS in self.render_mode else 0
+        top = frame.y if RenderMode.IMPLICIT_MARGINS in self.render_mode else 0
         for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
-            card_size: CardSize = CardSizes.for_page_type(page_type)
-            self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
-                page_layout.page_height,
-                card_size.height, page_layout.compute_page_row_count(page_type),
-                page_layout.margin_top, page_layout.row_spacing)
-            )
-            self.vertical_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
-                page_layout.page_width,
-                card_size.width, page_layout.compute_page_column_count(page_type),
-                page_layout.margin_left, page_layout.column_spacing
-            ))
-
-    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> Generator[float, None, None]:
-        spacing = distance_to_rounded_px(parameters.image_spacing)
-        card_size: int = round(parameters.card_size.magnitude)
-        # Excessively large margins may shift the page content off-center. Clamp the border to the non-negative range
-        # to avoid placing marker lines out of the drawing range
-        border = (
-            distance_to_rounded_px(parameters.total_space)
-            - card_size * parameters.item_count
-            - spacing * (parameters.item_count - 1)
-        ) / 2
-        margin = distance_to_rounded_px(parameters.margin)
-        border = max(border, margin)
-        if RenderMode.IMPLICIT_MARGINS in self.render_mode:
-            border -= margin
-
-        # Without spacing, draw a line top/left of each row/column.
-        # To also draw a line below/right of the last row/column, add a virtual row/column if spacing is zero.
-        # With positive spacing, draw a line left/right/above/below *each* row/column.
-        for item in range(parameters.item_count + (not spacing)):
-            pixel_position: float = border + item*(spacing+card_size)
-            yield pixel_position
-            if parameters.image_spacing:
-                yield pixel_position + card_size
+            geometry = self.full_grid_geometry[PageType.REGULAR if page_type == PageType.UNDETERMINED else page_type]
+            self.vertical_cut_line_locations[page_type] = [edge - left for edge in geometry.grid_x_edges_px]
+            self.horizontal_cut_line_locations[page_type] = [edge - top for edge in geometry.grid_y_edges_px]
 
     def _draw_vertical_markers(self, pen: QPen, page_type: PageType, layer: RenderLayers):
         offset = self.x_offset

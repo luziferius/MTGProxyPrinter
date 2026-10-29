@@ -30,6 +30,7 @@ from PySide6.QtPrintSupport import QPrinterInfo
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
+from mtg_proxy_printer.registration_profile_ids import RegistrationProfileId
 from mtg_proxy_printer.units_and_sizes import \
     CardSizes, ConfigParser, SectionProxy, unit_registry, T, Quantity, Unit, PageSizeManager, is_acceptable_page_size
 StandardLocation = QStandardPaths.StandardLocation
@@ -201,7 +202,7 @@ VALID_CUT_MARKER_STYLES: defaultdict[str, PenStyle] = defaultdict(PenStyle, {
     "Dashes": PenStyle.DashLine,
 })
 VALID_PRINT_REGISTRATION_MARKS_STYLES: set[str] = {
-    "None", "Bullseye", "Cut marker"
+    profile_id.value for profile_id in RegistrationProfileId
 }
 DEFAULT_MARGINS = 5*mm
 DEFAULT_SETTINGS["documents"] = {

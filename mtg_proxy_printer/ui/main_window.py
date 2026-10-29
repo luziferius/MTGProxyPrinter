@@ -35,16 +35,24 @@ from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.page_geometry import build_page_geometry
+from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.registration_profile_ids import RegistrationProfileId
+from mtg_proxy_printer.cut_template_svg import serialize_cut_template_svg
+from mtg_proxy_printer.calibration import render_calibration_pdf
+from mtg_proxy_printer.siser_registration import require_artwork_output_supported
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.custom_card_import_dialog import CustomCardImportDialog
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
-    AboutDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog, SavePNGDialog, ExportCardImagesDialog
+    AboutDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog, SavePNGDialog, ExportCardImagesDialog, \
+    SaveCutTemplateDialog, SaveCalibrationPDFDialog
 from mtg_proxy_printer.ui.common import show_wizard_or_dialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.ui.progress_bar import ProgressBarManager
+from mtg_proxy_printer.ui.siser_guide_dialog import SiserGuideDialog
 
 try:
     from mtg_proxy_printer.ui.generated.main_window import Ui_MainWindow
@@ -99,7 +107,20 @@ class MainWindow(QMainWindow):
         self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
         self.current_dialog: QDialog | None = None
+        self.siser_guide_dialog: SiserGuideDialog | None = None
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @Slot()
+    def on_action_show_siser_guide_triggered(self):
+        if self.siser_guide_dialog is None:
+            try:
+                self.siser_guide_dialog = SiserGuideDialog(self)
+            except RuntimeError as error:
+                self.on_error_occurred(str(error))
+                return
+        self.siser_guide_dialog.show()
+        self.siser_guide_dialog.raise_()
+        self.siser_guide_dialog.activateWindow()
 
     def update_language_model(self):
         available_languages = CardDatabase.main_instance.get_all_languages()
@@ -203,6 +224,8 @@ class MainWindow(QMainWindow):
             ui.action_print_pdf,
             ui.action_print_preview,
             ui.action_export_png,
+            ui.action_export_cut_template,
+            ui.action_export_calibration,
             ui.action_show_settings,
             ui.action_add_custom_cards,
             ui.action_download_missing_card_images,
@@ -275,13 +298,22 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def on_action_print_triggered(self):
+        if not self._artwork_output_allowed():
+            return
         logger.info(f"User prints the current document.")
         action_str = self.tr(
             "printing",
             "This is passed as the {action} when asking the user about compacting the document if that can save pages")
-        if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
+        if (self.document.page_layout.print_registration_marks_style != RegistrationProfileId.SISER.value
+                and self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel):
             return
-        self.current_dialog = dialog = PrintDialog(self.document, self)
+        try:
+            dialog = PrintDialog(self.document, self)
+        except RuntimeError as error:
+            self.on_error_occurred(str(error))
+            return
+        self.current_dialog = dialog
+        dialog.error_occurred.connect(self.on_error_occurred)
         dialog.request_run_async_task.connect(self.request_run_async_task)
         dialog.finished.connect(self.on_dialog_finished)
         # Use the QDialog base class open() method, because QPrintDialog.open() performs additional, unwanted actions.
@@ -289,23 +321,35 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def on_action_print_preview_triggered(self):
+        if not self._artwork_output_allowed():
+            return
         logger.info(f"User views the print preview.")
         action_str = self.tr(
             "printing",
             "This is passed as the {action} when asking the user about compacting the document if that can save pages")
-        if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
+        if (self.document.page_layout.print_registration_marks_style != RegistrationProfileId.SISER.value
+                and self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel):
             return
-        self.current_dialog = dialog = PrintPreviewDialog(self.document, self)
+        try:
+            dialog = PrintPreviewDialog(self.document, self)
+        except RuntimeError as error:
+            self.on_error_occurred(str(error))
+            return
+        self.current_dialog = dialog
+        dialog.error_occurred.connect(self.on_error_occurred)
         dialog.finished.connect(self.on_dialog_finished)
         self.missing_images_manager.obtain_missing_images(dialog.open)
 
     @Slot()
     def on_action_print_pdf_triggered(self):
+        if not self._artwork_output_allowed():
+            return
         logger.info(f"User prints the current document to PDF.")
         action_str = self.tr(
             "exporting as a PDF",
             "This is passed as the {action} when asking the user about compacting the document if that can save pages")
-        if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
+        if (self.document.page_layout.print_registration_marks_style != RegistrationProfileId.SISER.value
+                and self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel):
             return
         self.current_dialog = dialog = SavePDFDialog(self, self.document)
         dialog.request_run_async_task.connect(self.request_run_async_task)
@@ -314,16 +358,69 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def on_action_export_png_triggered(self):
+        if not self._artwork_output_allowed():
+            return
         logger.info(f"User exports the current document to a sequence of PNG images.")
         action_str = self.tr(
             "exporting as a PNG image sequence",
             "This is passed as the {action} when asking the user about compacting the document if that can save pages")
-        if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
+        if (self.document.page_layout.print_registration_marks_style != RegistrationProfileId.SISER.value
+                and self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel):
             return
         self.current_dialog = dialog = SavePNGDialog(self, self.document)
         dialog.request_run_async_task.connect(self.request_run_async_task)
         dialog.finished.connect(self.on_dialog_finished)
         self.missing_images_manager.obtain_missing_images(dialog.open)
+
+    def _artwork_output_allowed(self) -> bool:
+        if UI_LOCK_SEMAPHORE or self.current_dialog is not None:
+            return False
+        try:
+            geometry = build_page_geometry(self.document.page_layout, PageType.UNDETERMINED, 0)
+            require_artwork_output_supported(self.document.page_layout.print_registration_marks_style, geometry)
+        except (ValueError, RuntimeError) as error:
+            self.on_error_occurred(str(error))
+            return False
+        return True
+
+    @Slot()
+    def on_action_export_calibration_triggered(self):
+        if UI_LOCK_SEMAPHORE or self.current_dialog is not None:
+            return
+        document = self.document
+        try:
+            page = document.currently_edited_page
+            page_number = document.get_current_page_index().row() + 1
+            source_path = document.save_file_path
+            registration_style = document.page_layout.print_registration_marks_style
+            geometry = build_page_geometry(document.page_layout, page.page_type(), len(page))
+            pdf_bytes = render_calibration_pdf(geometry, registration_style)
+        except (ValueError, RuntimeError) as error:
+            self.on_error_occurred(str(error))
+            return
+        self.current_dialog = dialog = SaveCalibrationPDFDialog(self, pdf_bytes, source_path, page_number)
+        dialog.error_occurred.connect(self.on_error_occurred)
+        dialog.finished.connect(self.on_dialog_finished)
+        dialog.open()
+
+    @Slot()
+    def on_action_export_cut_template_triggered(self):
+        if UI_LOCK_SEMAPHORE or self.current_dialog is not None:
+            return
+        document = self.document
+        try:
+            page = document.currently_edited_page
+            page_number = document.get_current_page_index().row() + 1
+            source_path = document.save_file_path
+            geometry = build_page_geometry(document.page_layout, page.page_type(), len(page))
+            svg_bytes = serialize_cut_template_svg(geometry).encode("utf-8")
+        except ValueError as error:
+            self.on_error_occurred(str(error))
+            return
+        self.current_dialog = dialog = SaveCutTemplateDialog(self, svg_bytes, source_path, page_number)
+        dialog.error_occurred.connect(self.on_error_occurred)
+        dialog.finished.connect(self.on_dialog_finished)
+        dialog.open()
 
     @Slot()
     def on_action_export_card_images_triggered(self):
