@@ -21,7 +21,10 @@ if "%1%"=="" (
 
 pushd lib
 
+
 pushd PySide6
+
+del /Q /S qml pyside6qml.abi3.dll
 
 :: Don't need the executables, like Qt6 Designer, etc.
 :: Delete all typing stubs
@@ -33,7 +36,8 @@ del Qt*Qml* Qt*Quick* Qt*RemoteObjects* Qt*Sensors* Qt*Sql* Qt*Test* Qt*WebChann
 del Qt*Bluetooth* Qt*Charts* Qt*Concurrent* Qt*DataVisualization* Qt*Graphs* Qt*HttpServer*
 del Qt*Nfc* Qt*Positioning* Qt*Scxml* Qt*SerialBus* Qt*SerialPort* Qt*ShaderTools*
 del Qt*StateMachine* Qt*Test* Qt*TextToSpeech* Qt*Web* Qt*3D*
-del Qt*Help* Qt*Multimedia* Qt*Xml*
+del Qt*Help* Qt*Multimedia* Qt*Xml* Qt*Lottie*
+
 
 :: Unused audio/video codec DLLs
 del avformat-*.dll avutil-*.dll swresample-*.dll swscale-*.dll

@@ -110,12 +110,24 @@ excludes = [
     "lib2to3",
     "pep517",
     "pint.testsuite",  # Ignore the internal test suite
+    "flexcache.testsuite",
+    "flexparser.testsuite",
     "pydoc_data",
     "pytest",
     "sqlite3.test",  # Ignore the internal test suite
     "tkinter",
     "toml",
     "ctypes.test",  # Empty package with readme and download scripts
+    "asyncio",
+    "unittest",
+    "xmlrpc",
+    "multiprocessing",
+    "concurrent",
+    "platformdirs.android",
+    "platformdirs.ios",
+    "platformdirs.macos",
+    "platformdirs.unix",
+    "sysconfig",
     # Unused PySide6 components
     "PySide6.glue",
     "PySide6.include",
