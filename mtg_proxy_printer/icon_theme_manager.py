@@ -136,16 +136,13 @@ def _recolor_svg(data: bytes, colors: ColorSchemeCurrentColors) -> bytes:
     Recolor the given SVG icon by replacing currentColor with an explicit value
     based on the CSS class and the current palette.
     """
-    if not _CURRENT_COLOR.search(data.decode("utf-8")):
-        return data
-
     root = ET.fromstring(data)
     for path in root.findall(".//{http://www.w3.org/2000/svg}path"):
         if (short_name := path.get("class", "").removeprefix("ColorScheme-")) in colors:
-            color = colors[short_name]
-            path_style = path.get("style", "")
-            path_style = path_style.replace("fill:currentColor", f"fill:{color}")
-            path.set("style", path_style)
+            path_style = path.get("style")
+            if path_style:
+                path_style = path_style.replace("fill:currentColor", f"fill:{colors[short_name]}")
+                path.set("style", path_style)
 
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
