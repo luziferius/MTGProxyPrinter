@@ -44,6 +44,7 @@ import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
 from mtg_proxy_printer.async_tasks.base import AsyncTask, AsyncTaskRunner
+from mtg_proxy_printer.icon_theme_manager import PaletteIconTheme
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -271,13 +272,18 @@ class Application(QApplication):
                 "No native icon theme support, no system theme set, or icon theme override setting enabled, "
                 "defaulting to internal icons."
             )
+            internal_theme_name = "breeze"
+            theme_search_paths = QIcon.themeSearchPaths()
             if not mtg_proxy_printer.ui.common.HAS_COMPILED_RESOURCES:
                 # If the compiled resources are available, the default search path ":/icons" is sufficient. Only append
                 # the resources directory file system path, if directly running from the source distribution.
-                theme_search_paths = QIcon.themeSearchPaths()
-                theme_search_paths.append(mtg_proxy_printer.ui.common.ICON_PATH_PREFIX)
-                QIcon.setThemeSearchPaths(theme_search_paths)
-            QIcon.setThemeName("breeze")
+                icon_path = mtg_proxy_printer.ui.common.ICON_PATH_PREFIX
+                theme_search_paths.append(icon_path)
+                source_theme = f"{icon_path}/{internal_theme_name}"
+            else:
+                source_theme = f":/icons/{internal_theme_name}"
+            QIcon.setThemeSearchPaths(theme_search_paths)
+            self.palette_icon_theme = PaletteIconTheme(self, source_theme)
         else:
             logger.debug(f"Using system-provided icon theme '{fallback_icon_theme}'")
 
