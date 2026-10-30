@@ -140,39 +140,13 @@ def _recolor_svg(data: bytes, colors: ColorSchemeCurrentColors) -> bytes:
         return data
 
     root = ET.fromstring(data)
+    for path in root.findall(".//{http://www.w3.org/2000/svg}path"):
+        if (short_name := path.get("class", "").removeprefix("ColorScheme-")) in colors:
+            color = colors[short_name]
+            path_style = path.get("style", "")
+            path_style = path_style.replace("fill:currentColor", f"fill:{color}")
+            path.set("style", path_style)
 
-    def visit(element: ET.Element, inherited_color: str) -> None:
-        current_color = inherited_color
-
-        # Breeze icons normally use one semantic class per element.
-        for class_name in element.get("class", "").split():
-            short_name = class_name.removeprefix("ColorScheme-")
-            if short_name in colors:
-                current_color = colors[short_name]
-
-        explicit_color = element.get("color")
-        style_color = _STYLE_COLOR.search(element.get("style", ""))
-        if style_color:
-            explicit_color = style_color.group(1).strip()
-
-        if explicit_color:
-            parsed = QColor(explicit_color)
-            if parsed.isValid():
-                current_color = parsed.name()
-
-        # Resolve paint values explicitly rather than depending on Qt SVG's
-        # support for CSS currentColor.
-        for attribute, value in tuple(element.attrib.items()):
-            if _CURRENT_COLOR.search(value):
-                element.set(
-                    attribute,
-                    _CURRENT_COLOR.sub(current_color, value),
-                )
-
-        for child in element:
-            visit(child, current_color)
-
-    visit(root, colors["Text"])
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
