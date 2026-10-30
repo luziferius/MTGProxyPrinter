@@ -62,6 +62,16 @@ __all__ = [
 ]
 
 
+class SilentBytes(bytes):
+    """
+    Non-chatty bytes subclass. For use with long bytes that may be logged. Avoids dumping set icon SVGs into the log
+    """
+    def __str__(self) -> str:
+        return "b'<snip…>'"
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
 @dataclasses.dataclass
 class CardIdentificationData:
     language: str | None = None
@@ -394,7 +404,8 @@ class CardDatabase(QObject):
         cursor = self.db.execute(query, parameters)
         result = [
             Card(
-                name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"]),
+                name=row["face_name"],
+                set=MTGSet(row["set_code"], row["set_name"],svg_icon=SilentBytes(row["icon_svg"])),
                 collector_number=row["collector_number"], language=row["language"],
                 scryfall_id=row["scryfall_id"], is_front=row["is_front"],  oracle_id=row["oracle_id"],
                 image_uri=row["png_image_uri"], highres_image=row["is_highres_image"],
@@ -518,7 +529,7 @@ class CardDatabase(QObject):
         ''')
         parameters: ParameterList = [language, card_name, is_front]
         db_result: dict[MTGSet, int] = {
-            MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"]): row["preference_score"]
+            MTGSet(row["set_code"], row["set_name"], svg_icon=SilentBytes(row["icon_svg"])): row["preference_score"]
             for row in self.db.execute(query, parameters)
         }
         result = list(db_result.keys())
@@ -546,7 +557,7 @@ class CardDatabase(QObject):
         if (row := self.db.execute(query, (scryfall_id, is_front)).fetchone()) is None:
             return None
         return Card(
-            name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"]),
+            name=row["face_name"], set=MTGSet(row["set_code"], row["set_name"], svg_icon=SilentBytes(row["icon_svg"])),
             collector_number=row["collector_number"], language=row["language"], scryfall_id=scryfall_id,
             is_front=is_front, oracle_id=row["oracle_id"], image_uri=row["png_image_uri"],
             highres_image=row["is_highres_image"], size=CardSizes.from_bool(row["is_oversized"]),
@@ -614,7 +625,7 @@ class CardDatabase(QObject):
             cache_item = CacheContent(
                 scryfall_id=row["scryfall_id"], is_front=row["is_front"],
                 image_quality=qualities[row["highres_on_disk"]], absolute_path=Path(row["absolute_path"]))
-            set_ = MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"])
+            set_ = MTGSet(row["set_code"], row["set_name"], svg_icon=SilentBytes(row["icon_svg"]))
             card = Card(
                 row["face_name"], set_,
                 row["collector_number"],
@@ -810,7 +821,7 @@ class CardDatabase(QObject):
         """)
         parameters: ParameterList = [card.oracle_id, card.language, card.set_code]
         result = [
-            MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"])
+            MTGSet(row["set_code"], row["set_name"], svg_icon=SilentBytes(row["icon_svg"]))
             for row in self.db.execute(query, parameters)
         ]
         if not result:
@@ -958,7 +969,7 @@ class CardDatabase(QObject):
         if row["similarity"] is None:
             logger.debug(f"Found no translations to {target_language} for card '{card.name}'.")
             return None
-        set_ = MTGSet(row["set_code"], row["set_name"], svg_icon=row["icon_svg"])
+        set_ = MTGSet(row["set_code"], row["set_name"], svg_icon=SilentBytes(row["icon_svg"]))
         return Card(
             name=row["face_name"], set=set_,
             collector_number=row["collector_number"], language=target_language, scryfall_id=row["scryfall_id"],
