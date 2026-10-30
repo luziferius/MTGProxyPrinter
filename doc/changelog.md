@@ -6,8 +6,8 @@
 
 - Implement app icon theme tinting on non-Linux platforms. This fixes unreadable
   icons (black on dark-gray) on Windows/Mac when using a global dark theme for applications.
-- Add ability to hide the network error message box for the duration of the current session via a checkbox on it.
-  Should make the app less annoying to use while offline.
+- The network error message box gains ability to hide itself for the current session.
+  This should make the app less annoying to use while offline.
 
 # Version 0.36.1 (2026-10-28)  <a name="v0_36_1"></a>
 
