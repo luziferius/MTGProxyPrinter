@@ -20,7 +20,7 @@ import platformdirs
 
 from mtg_proxy_printer.meta_data import PROGRAMNAME
 
-data_directories = platformdirs.PlatformDirs(PROGRAMNAME)
+data_directories: platformdirs.PlatformDirs = platformdirs.PlatformDirs(PROGRAMNAME)
 
 
 def migrate_from_old_appdirs():
