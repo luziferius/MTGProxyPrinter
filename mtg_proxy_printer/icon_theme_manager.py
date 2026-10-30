@@ -242,7 +242,7 @@ class PaletteIconTheme(QObject):
             self.theme_change_detected.emit()
         return False
 
-    @Slot
+    @Slot()
     def _refresh_after_event(self) -> None:
         try:
             self.refresh()
