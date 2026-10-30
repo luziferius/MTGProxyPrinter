@@ -94,7 +94,7 @@ def _read_theme(root: str) -> dict[str, bytes]:
             if entry.isDir():
                 visit(full_path, relative_path)
             elif entry.isFile():
-                files[relative_path] = load_file(full_path)
+                files[relative_path] = load_file(full_path, absolute=True)
 
     if not QDir(root).exists():
         raise FileNotFoundError(f"Icon theme directory does not exist: {root}")
@@ -273,7 +273,7 @@ class PaletteIconTheme(QObject):
         complete_marker = destination / ".complete"
 
         if not complete_marker.is_file():
-            for name, data in sorted(self._files.items()):
+            for name, data in self._files.items():
                 if name.lower().endswith(".svg"):
                     data = _recolor_svg(data, colors)
                 _write_atomic(destination / name, data)
