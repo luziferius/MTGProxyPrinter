@@ -213,7 +213,7 @@ class CustomCard:
     highres_image: bool = dataclasses.field(compare=False)
     size: CardSize = dataclasses.field(compare=False)
     is_dfc: bool = dataclasses.field(compare=True)
-    source_image_file: bytes | None = dataclasses.field(default=None, compare=False)
+    source_image_file: bytes = dataclasses.field(compare=False)
 
     def requested_page_type(self) -> PageType:
         return PageType.OVERSIZED if self.image_file.size() == CardSizes.OVERSIZED.as_qsize_px() else PageType.REGULAR
@@ -251,13 +251,13 @@ class CustomCard:
 
     @functools.cached_property
     def image_file(self) -> QPixmap:
-        source = QImage.fromData(self.source_image_file or b"")
+        source = QImage.fromData(self.source_image_file)
         source = post_process_image(source, self.size)
         return QPixmap(source)
 
     @functools.cached_property
     def scryfall_id(self) -> UUID:
-        hd = hashlib.md5(self.source_image_file or b"").hexdigest()  # TODO: Maybe use something else instead of md5?
+        hd = hashlib.md5(self.source_image_file).hexdigest()  # TODO: Maybe use something else instead of md5?
         return UUID(f"{hd[:8]}-{hd[8:12]}-{hd[12:16]}-{hd[16:20]}-{hd[20:]}")
 
 
