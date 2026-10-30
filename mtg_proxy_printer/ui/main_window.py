@@ -18,8 +18,8 @@ from pathlib import Path
 from functools import partial
 
 from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl, Qt
-from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, QDragEnterEvent, QDropEvent
-from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, QDialog
+from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, QDragEnterEvent, QDropEvent, QIcon
+from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, QDialog, QCheckBox
 from PySide6.QtPrintSupport import QPrintDialog
 
 from mtg_proxy_printer import BlockingQueuedConnection
@@ -81,6 +81,7 @@ class MainWindow(QMainWindow):
         super().__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         self.is_running = True
+        self._show_network_errors = True
         self.ui = ui = Ui_MainWindow()
         ui.setupUi(self)
         self.setAcceptDrops(True)
@@ -340,12 +341,20 @@ class MainWindow(QMainWindow):
 
     @Slot(str)
     def on_network_error_occurred(self, message: str):
-        QMessageBox.warning(
-            self, self.tr("Network error"),
+        if not self._show_network_errors:
+            return
+        box = QMessageBox(
+            QMessageBox.Icon.Warning,
+            self.tr("Network error"),
             self.tr(
                 "Operation failed, because a network error occurred.\n"
                 "Check your internet connection. Reported error message:\n\n{message}").format(message=message),
-            StandardButton.Ok, StandardButton.Ok)
+            StandardButton.Ok, self,)
+        dont_show_checkbox = QCheckBox("Don't show again for this session", self)
+        box.setCheckBox(dont_show_checkbox)
+        box.exec()
+        if dont_show_checkbox.isChecked():
+            self._show_network_errors = False
 
     @Slot(str)
     def on_error_occurred(self, message: str):
