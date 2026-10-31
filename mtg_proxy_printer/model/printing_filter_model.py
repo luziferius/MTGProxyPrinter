@@ -113,6 +113,21 @@ class ModelRow:
             MC({ItemFlagsRole: EmptyCellFlags, ScryfallQueryRole: f"banned:{internal_format_key}"}),
             f"banned-in-{internal_format_key}",
         )
+
+    @classmethod
+    def create_hide_item(cls, ui_text: str, tooltip: str, settings_key: str, scryfall_query: str | None) -> "ModelRow":
+        """
+        Creates a PrintingFilterModel row item for other filters without preference weights. These have binary show/hide toggles,
+        but no preference weights, because the latter does not make sense here.
+        """
+        return cls.create_item(ui_text, tooltip, None, settings_key, scryfall_query)
+        return cls(
+            MC({ItemFlagsRole: TextItemFlags, DisplayRole: ui_text, ToolTipRole: tooltip}),
+            MC({ItemFlagsRole: IsHiddenItemFlags, CheckStateRole: CheckState.Unchecked}),
+            MC({ItemFlagsRole: EmptyCellFlags}),
+            MC({ItemFlagsRole: EmptyCellFlags, ScryfallQueryRole: f"is:gamechanger"}),
+            f"commander-gamechanger",
+        )
     
     @classmethod
     def create_item(cls, ui_text: str, text_tooltip: str | None, weight_tooltip: str | None, settings_key: str, scryfall_query: str | None):
@@ -166,7 +181,7 @@ class PrintingFilterModel(QAbstractTableModel):
             ModelRow.create_header(
                 self.tr("General card filters", "Display text. Printing filter section header"),
                 None),
-            ModelRow.create_item(
+            ModelRow.create_hide_item(
                 self.tr("Cards depicting racism", "Display text"),
                 self.tr("Cards banned for depicting racism or for being culturally inappropriate.\n\n"
                         "Background: Some cards were banned by Wizards of the Coast,\n"
@@ -176,7 +191,7 @@ class PrintingFilterModel(QAbstractTableModel):
                         "These cards are banned in all sanctioned tournament formats and several\n"
                         "community formats like Commander, Oathbreaker and others.",
                         "Tooltip text"),
-                None, "cards-depicting-racism", "is:content_warning"),
+                "cards-depicting-racism", "is:content_warning"),
             ModelRow.create_item(
                 self.tr("Cards with placeholder images",
                         "Display text"),
@@ -189,7 +204,7 @@ class PrintingFilterModel(QAbstractTableModel):
                 self.tr("Cards with low-resolution images", "Display text"),
                 self.tr("Cards without high-resolution scans. They appear blurry.", "Tooltip text"),
                 weight_tooltip, "low-resolution-cards", "not:highres"),
-            ModelRow.create_item(
+            ModelRow.create_hide_item(
                 self.tr("“Funny” cards",
                         "Display text"),
                 self.tr("“Funny” cards, not legal in any constructed format.\n"
@@ -197,7 +212,7 @@ class PrintingFilterModel(QAbstractTableModel):
                         "cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),\n"
                         "some black-bordered promotional cards with non-standard back faces,\nand potentially others.",
                         "Tooltip text"),
-                None, "funny-cards", "is:funny"),
+                "funny-cards", "is:funny"),
             ModelRow.create_item(
                 self.tr("Digital-only cards or printings",
                         "Display text"),
@@ -288,19 +303,19 @@ class PrintingFilterModel(QAbstractTableModel):
                         "Planeswalker cards included in some pre-constructed Commander decks.",
                         "Tooltip text"),
                 weight_tooltip, "oversized-cards", "is:oversized"),
-            ModelRow.create_item(
+            ModelRow.create_hide_item(
                 self.tr("Tokens",
                         "Display text"),
                 self.tr("The official Tokens, used to represent permanents created by card effects.\n"
                         "Not part of deck-building. Obscure ones can be relatively rare",
                         "Tooltip text"),
-                None, "token", "is:token"),
-            ModelRow.create_item(
+                "token", "is:token"),
+            ModelRow.create_hide_item(
                 self.tr("Art Series cards",
                         "Display text"),
                 self.tr("Artwork cards that can be found in Set Boosters or Play Boosters",
                         "Tooltip text"),
-                None, "art-series-cards", "layout:art-series"),
+                "art-series-cards", "layout:art-series"),
 
             # ------------  Format bans ------------
             ModelRow.create_header(
@@ -314,6 +329,13 @@ class PrintingFilterModel(QAbstractTableModel):
                 self.tr("Commander", "Display text. Magic format name. Translations (if one exists) "
                         "should probably also include the English name like {translated name}(<english name>)"),
                 format_ban_tooltip, "commander"),
+            ModelRow.create_hide_item(
+                self.tr("Commander Game-changer cards",
+                        "Display text. Magic format name. Translations (if one exists) "
+                        "should probably also include the English name like {translated name}(<english name>)"),
+                self.tr("Very powerful and game-warping cards that require rule-0 pre-game discussions, "
+                        "and affect the Commander Bracket of the including deck"),
+                "commander-gamechanger", "is:gamechanger"),
             ModelRow.create_format_item(
                 self.tr("Historic", "Display text. Magic format name. Translations (if one exists) "
                         "should probably also include the English name like {translated name}(<english name>)"),
