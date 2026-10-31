@@ -290,6 +290,7 @@ class CardDataType(_CardPreviewFields):
     reserved: bool
     toughness: NotRequired[str]
     type_line: str
+    game_changer: NotRequired[Literal[True]]
 
     # Print fields
     artist: NotRequired[str]

@@ -113,6 +113,20 @@ class ModelRow:
             MC({ItemFlagsRole: EmptyCellFlags, ScryfallQueryRole: f"banned:{internal_format_key}"}),
             f"banned-in-{internal_format_key}",
         )
+
+    @classmethod
+    def create_gamechanger_item(cls, ui_text: str, tooltip: str) -> "ModelRow":
+        """
+        Creates a PrintingFilterModel row item for MTG format ban filters. These have binary show/hide toggles,
+        but no preference score, because the latter does not make sense here.
+        """
+        return cls(
+            MC({ItemFlagsRole: TextItemFlags, DisplayRole: ui_text, ToolTipRole: tooltip}),
+            MC({ItemFlagsRole: IsHiddenItemFlags, CheckStateRole: CheckState.Unchecked}),
+            MC({ItemFlagsRole: EmptyCellFlags}),
+            MC({ItemFlagsRole: EmptyCellFlags, ScryfallQueryRole: f"is:gamechanger"}),
+            f"commander-gamechanger",
+        )
     
     @classmethod
     def create_item(cls, ui_text: str, text_tooltip: str | None, weight_tooltip: str | None, settings_key: str, scryfall_query: str | None):
@@ -314,6 +328,12 @@ class PrintingFilterModel(QAbstractTableModel):
                 self.tr("Commander", "Display text. Magic format name. Translations (if one exists) "
                         "should probably also include the English name like {translated name}(<english name>)"),
                 format_ban_tooltip, "commander"),
+            ModelRow.create_gamechanger_item(
+                self.tr("Commander Game-changer cards",
+                        "Display text. Magic format name. Translations (if one exists) "
+                        "should probably also include the English name like {translated name}(<english name>)"),
+                self.tr("Very powerful and game-warping cards that require rule-0 pre-game discussions, "
+                        "and affect the Commander Bracket of the including deck")),
             ModelRow.create_format_item(
                 self.tr("Historic", "Display text. Magic format name. Translations (if one exists) "
                         "should probably also include the English name like {translated name}(<english name>)"),

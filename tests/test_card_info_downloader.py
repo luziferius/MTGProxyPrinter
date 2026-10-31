@@ -382,6 +382,7 @@ def generate_test_cases_for_test_print_hiding_filters():
 
     yield TestCaseData("banned_in_brawl"), "banned-in-brawl"
     yield TestCaseData("banned_in_commander"), "banned-in-commander"
+    yield TestCaseData("Commander_gamechanger"), "commander-gamechanger"
     yield TestCaseData("banned_in_historic"), "banned-in-historic"
     yield TestCaseData("banned_in_legacy"), "banned-in-legacy"
     yield TestCaseData("banned_in_modern"), "banned-in-modern"

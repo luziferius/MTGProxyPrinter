@@ -157,6 +157,7 @@ DEFAULT_SETTINGS["printing-filter"] = {
     "banned-in-pioneer": "False",
     "banned-in-standard": "False",
     "banned-in-vintage": "False",
+    "commander-gamechanger": "False",
     "white-bordered": "False",
     "gold-bordered": "False",
     "borderless": "False",
