@@ -338,6 +338,9 @@ class CardDataType(_CardPreviewFields):
     security_stamp: NotRequired[Literal["oval", "triangle", "acorn", "circle", "arena", "heart"]]
     watermark: NotRequired[str]
 
+    # Not yet listed on the API documentation
+    image_updated_at: str  # ISO date string, like "2026-07-03T03:05:34Z"
+
 
 class BulkDataType(TypedDict):
     """
