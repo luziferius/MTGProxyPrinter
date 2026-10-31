@@ -108,9 +108,7 @@ def test_action_download_card_data_is_enabled_after_network_error(main_window: M
     receiver.api_stream_task.network_error_occurred.connect(main_window.on_network_error_occurred)
     if ui.action_download_card_data.isEnabled():
         pytest.skip("Test setup failed")
-    with patch.object(
-        mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=StandardButton.Ok
-    ) as warning_box:
+    with patch("mtg_proxy_printer.ui.main_window.QMessageBox") as warning_box:
         receiver.api_stream_task.network_error_occurred.emit("Test reason")
     warning_box.assert_called_once()
     assert_that(ui.action_download_card_data.isEnabled(), is_(True))
