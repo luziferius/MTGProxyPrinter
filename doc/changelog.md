@@ -2,6 +2,10 @@
 
 # Next version (in development)
 
+## New features
+
+- Card filter for hiding Commander Game-changer cards.
+
 ## Fixed issues
 
 - Implement app icon theme tinting on non-Linux platforms. This fixes unreadable
