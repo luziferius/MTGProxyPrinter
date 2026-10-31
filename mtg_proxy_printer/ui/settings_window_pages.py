@@ -495,6 +495,7 @@ class HeaderBoldingDelegate(QStyledItemDelegate):
 
 class PrintingPreferencesPage(Page):
     request_run_async_task = Signal(AsyncTask)
+    printing_filters_updated = Signal()
 
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(
@@ -558,7 +559,9 @@ class PrintingPreferencesPage(Page):
         self.set_filter_model.save_settings(mtg_proxy_printer.settings.settings)
         filter_preference_weights = self.printing_filter_model.get_new_preference_weights()
         set_preference_weights = self.set_filter_model.get_new_preference_weights()
-        self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
+        printing_filter_updater = PrintingFilterUpdater(self.card_db)
+        printing_filter_updater.task_completed.connect(self.printing_filters_updated, QueuedConnection)
+        self.request_run_async_task.emit(printing_filter_updater)
         self.request_run_async_task.emit(PrintingPreferenceUpdater(
             self.card_db, filter_preference_weights, set_preference_weights))
 

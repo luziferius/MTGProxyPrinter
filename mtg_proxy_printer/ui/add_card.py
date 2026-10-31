@@ -66,7 +66,7 @@ class AddCardWidget(QWidget):
         self.ui = ui = ui_class()
         ui.setupUi(self)
         self.card_db: CardDatabase = CardDatabase.main_instance
-        self.card_db.card_data_updated.connect(lambda: self.card_name_filter_updated(ui.card_name_filter.text()))
+        self.card_db.card_data_updated.connect(self.refresh_card_name_list)
         self.image_db: ImageDatabase = None
         self.language_model = self._setup_language_combo_box()
         self.card_name_model, self.card_name_filter_model = self._setup_card_name_box()
@@ -138,6 +138,17 @@ class AddCardWidget(QWidget):
         )
         return model
 
+    @Slot()
+    def refresh_card_name_list(self, new_language: str | None = None):
+        """
+        Re-populate the card name model with the list of card names from the card database.
+        Called via signal as a slot when the PrintingFilterUpdater task completes completes
+        """
+        if new_language is None:
+            new_language = self.current_language
+        card_names = self.card_db.get_card_names(new_language)
+        self.card_name_model.setStringList(card_names)
+
     @Slot(QItemSelection)
     def card_name_list_selection_changed(self, current: QItemSelection):
         logger.info("Currently selected card changed.")
@@ -198,8 +209,7 @@ class AddCardWidget(QWidget):
     @Slot(str)
     def language_combo_box_changed(self, new_language: str):
         logger.info(f'Selected language changed to: "{new_language}"')
-        card_names = self.card_db.get_card_names(new_language)
-        self.card_name_model.setStringList(card_names)
+        self.refresh_card_name_list(new_language)
         self.set_name_model.set_set_data([])
         self.ui.set_name_box.setEnabled(False)
 
