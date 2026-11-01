@@ -181,9 +181,6 @@ class Application(QApplication):
             add_card_widget.on_settings_preferred_language_changed)
         main_window.ui.action_show_settings.triggered.connect(
             partial(mtg_proxy_printer.ui.common.show_wizard_or_dialog, settings_window))
-        settings_window.ui.printing_preferences_page.printing_filters_updated.connect(
-            add_card_widget.refresh_card_name_list
-        )
         return settings_window
 
     @Slot(AsyncTask)
@@ -201,7 +198,7 @@ class Application(QApplication):
                 self.main_window.on_document_loading_found_unknown_scryfall_ids, BlockingQueuedConnection)
         if task.report_progress:
             main_window.progress_bar_manager.add_task(task)
-        if isinstance(task, DatabaseImportTask):
+        if isinstance(task, (DatabaseImportTask, PrintingFilterUpdater)):
             task.task_completed.connect(self.card_db.restart_transaction, BlockingQueuedConnection)
             task.task_completed.connect(self.card_db.card_data_updated, BlockingQueuedConnection)
         logger.debug(f"Starting task {task}")

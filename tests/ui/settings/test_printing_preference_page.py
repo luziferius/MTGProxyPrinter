@@ -85,29 +85,3 @@ def test_save(qtbot: QtBot, printing_preferences_page: PrintingPreferencesPage):
     printing_filter_model.save_settings.assert_called_once_with(mtg_proxy_printer.settings.settings)
     set_filter_model.save_settings.assert_called_once_with(mtg_proxy_printer.settings.settings)
 
-
-class TaskReceiver(QObject):
-    def __init__(self, /, parent: QObject | None = None):
-        super().__init__(parent)
-        self.tasks: list[AsyncTask] = []
-
-    @Slot(AsyncTask)
-    def receive(self, task: AsyncTask):
-        self.tasks.append(task)
-
-    def get_printing_filter_task(self) -> PrintingFilterUpdater | None:
-        for item in self.tasks:
-            if isinstance(item, PrintingFilterUpdater):
-                return item
-        return None
-
-
-def test_printing_filter_updater_task_completed_signal_connection(
-        qtbot: QtBot, printing_preferences_page: PrintingPreferencesPage):
-    receiver = TaskReceiver()
-    printing_preferences_page.request_run_async_task.connect(receiver.receive)
-    printing_preferences_page.save()
-    task = receiver.get_printing_filter_task()
-    assert task is not None
-    with qtbot.wait_signal(printing_preferences_page.printing_filters_updated):
-        task.task_completed.emit()
