@@ -277,7 +277,9 @@ class PrintingPreferenceUpdater(AsyncTask):
         self.old_preference_weights = set(model.get_printing_filter_weights().items())
         self.new_set_weights = new_set_weights or self.get_updated_set_preference_weights(model)
         self.progress = 0
-        self.task_completed.connect(model.restart_transaction, QueuedConnection)
+        # Currently disabled. Whenever this runs, the PrintingFilterUpdate is scheduled after this,
+        # so that'll restart the transaction anyway.
+        # self.task_completed.connect(model.restart_transaction, QueuedConnection)
         self._db = db_connection
         self.db_connection_self_opened = db_connection is None
         self.should_abort = False

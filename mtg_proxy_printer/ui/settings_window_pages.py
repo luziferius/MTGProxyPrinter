@@ -558,9 +558,11 @@ class PrintingPreferencesPage(Page):
         self.set_filter_model.save_settings(mtg_proxy_printer.settings.settings)
         filter_preference_weights = self.printing_filter_model.get_new_preference_weights()
         set_preference_weights = self.set_filter_model.get_new_preference_weights()
-        self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
+        # Schedule the preferences updater first. With this, the PrintingFilterUpdater can restart the transaction
+        # once
         self.request_run_async_task.emit(PrintingPreferenceUpdater(
             self.card_db, filter_preference_weights, set_preference_weights))
+        self.request_run_async_task.emit(PrintingFilterUpdater(self.card_db))
 
     def highlight_differing_settings(self, settings: ConfigParser):
         self.printing_filter_model.highlight_differing_settings(settings)
