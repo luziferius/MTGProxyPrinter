@@ -47,10 +47,10 @@ class PrintingFilterUpdater(AsyncTask):
     PROGRESS_STEP_COUNT = 4
 
     def __init__(
-            self, model: "CardDatabase", db_connection: sqlite3.Connection | None = None, *,
+            self, card_db: "CardDatabase", db_connection: sqlite3.Connection | None = None, *,
             force_update_hidden_column: bool = False):
         """
-        :param model: CardDatabase instance to work on
+        :param card_db: CardDatabase instance to work on
         :param db_connection: Database connection to use. Only useful for testing. During normal operation, this class opens
           a separate connection by using the database filesystem path stored in the passed-in model.
           This doesn't work for in-memory databases used by unit tests.
@@ -62,10 +62,9 @@ class PrintingFilterUpdater(AsyncTask):
           the cached is_hidden, as the value may change for each card, even if the filters were unchanged.
         """
         super().__init__()
-        self.model = model
+        self.card_db = card_db
         self.progress = 0
-        self.ui_update_required.connect(model.restart_transaction, QueuedConnection)
-        self.ui_update_required.connect(model.card_data_updated, QueuedConnection)
+        self.ui_update_required.connect(card_db.restart_transaction, QueuedConnection)
         self.force_update_hidden_column = force_update_hidden_column
         self._db = db_connection
         self.db_connection_self_opened = db_connection is None
@@ -83,7 +82,7 @@ class PrintingFilterUpdater(AsyncTask):
         # in the thread that actually uses it.
         if self._db is None:
             logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
-            self._db = open_database(self.model.db_path, SCHEMA_NAME)
+            self._db = open_database(self.card_db.db_path, SCHEMA_NAME)
         return self._db
 
     @with_database_write_lock()
@@ -94,8 +93,6 @@ class PrintingFilterUpdater(AsyncTask):
                 self.PROGRESS_STEP_COUNT, self.tr(
                     "Processing updated printing filters:", "Progress bar label text")
             )
-
-
             self.update_ui = self.store_current_printing_filters()
             if self.should_abort:
                 self.db.rollback()

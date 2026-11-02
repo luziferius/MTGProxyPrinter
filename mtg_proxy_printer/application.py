@@ -198,8 +198,8 @@ class Application(QApplication):
                 self.main_window.on_document_loading_found_unknown_scryfall_ids, BlockingQueuedConnection)
         if task.report_progress:
             main_window.progress_bar_manager.add_task(task)
-        if isinstance(task, (DatabaseImportTask, PrintingFilterUpdater)):
-            logger.debug(f"Database-altering task received. Will enqueue read transaction restart on completion.")
+        if isinstance(task, DatabaseImportTask):
+            logger.debug(f"DatabaseImportTask received. Will enqueue read transaction restart on completion.")
             task.task_completed.connect(self.card_db.restart_transaction, BlockingQueuedConnection)
         logger.debug(f"Starting task {task}")
         QThreadPool.globalInstance().start(AsyncTaskRunner(task))
