@@ -145,17 +145,19 @@ class AddCardWidget(QWidget):
         Called via signal as a slot when the PrintingFilterUpdater task completes
         """
         logger.debug("Card database content changed. Refreshing model lists.")
+        model = self.ui.card_name_list.selectionModel()
+        currently_selected_row = rows[0].row() if (rows := model.selectedRows()) else None
         current_name = self.current_card_name
         available_card_names = self.card_db.get_card_names(new_language or self.current_language)
         self.card_name_model.setStringList(available_card_names)
-        model = self.ui.card_name_list.selectionModel()
         if current_name in available_card_names:
             # Ensure the selection moves with the new list
             assert current_name is not None  # Already guaranteed by the "in" operator. This silences the linter
             index = self.card_name_filter_model.mapFromSource(
                 self.card_name_model.index(available_card_names.index(current_name), 0)
             )
-            model.select(index, SelectionFlag.ClearAndSelect)
+            if currently_selected_row != index.row():
+                model.select(index, SelectionFlag.ClearAndSelect)
         else:
             model.clearSelection()
             self.card_name_list_selection_changed(model.selection())
