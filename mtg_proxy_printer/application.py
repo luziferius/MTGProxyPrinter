@@ -199,8 +199,8 @@ class Application(QApplication):
         if task.report_progress:
             main_window.progress_bar_manager.add_task(task)
         if isinstance(task, (DatabaseImportTask, PrintingFilterUpdater)):
+            logger.debug(f"Database-altering task received. Will enqueue read transaction restart on completion.")
             task.task_completed.connect(self.card_db.restart_transaction, BlockingQueuedConnection)
-            task.task_completed.connect(self.card_db.card_data_updated, BlockingQueuedConnection)
         logger.debug(f"Starting task {task}")
         QThreadPool.globalInstance().start(AsyncTaskRunner(task))
 
