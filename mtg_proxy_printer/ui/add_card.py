@@ -148,8 +148,15 @@ class AddCardWidget(QWidget):
         current_name = self.current_card_name
         available_card_names = self.card_db.get_card_names(new_language or self.current_language)
         self.card_name_model.setStringList(available_card_names)
-        if current_name not in available_card_names:
-            model = self.ui.card_name_list.selectionModel()
+        model = self.ui.card_name_list.selectionModel()
+        if current_name in available_card_names:
+            # Ensure the selection moves with the new list
+            assert current_name is not None  # Already guaranteed by the "in" operator. This silences the linter
+            index = self.card_name_filter_model.mapFromSource(
+                self.card_name_model.index(available_card_names.index(current_name), 0)
+            )
+            model.select(index, SelectionFlag.ClearAndSelect)
+        else:
             model.clearSelection()
             self.card_name_list_selection_changed(model.selection())
         # TODO: Similar steps for sets and collector numbers
@@ -174,8 +181,8 @@ class AddCardWidget(QWidget):
             logger.debug(f'Selected: "{card_name}", language: {self.current_language}, matching {len(sets)} sets')
             self.set_name_model.set_set_data(sets)
             ui.set_name_filter.clear()
-            selection_model.select(
-                self.set_name_model.createIndex(highest_score_index, 0), SelectionFlag.ClearAndSelect)
+            index = self.set_name_filter_model.mapFromSource(self.set_name_model.index(highest_score_index, 0))
+            selection_model.select(index, SelectionFlag.ClearAndSelect)
 
     @Slot(QItemSelection)
     def set_name_list_selection_changed(self, current: QItemSelection):
