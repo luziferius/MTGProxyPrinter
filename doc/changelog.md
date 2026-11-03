@@ -12,6 +12,8 @@
   icons (black on dark-gray) on Windows/Mac when using a global dark theme for applications.
 - The network error message box gains ability to hide itself for the current session.
   This should make the app less annoying to use while offline.
+- Fixed crash caused by trying to add cards from stale data in the card search after updating
+  the printing filters in the settings.
 
 # Version 0.36.1 (2026-10-28)  <a name="v0_36_1"></a>
 

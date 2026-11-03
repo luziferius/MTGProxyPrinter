@@ -14,12 +14,14 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 from unittest.mock import patch
 
+from PySide6.QtCore import QObject, Slot
+
 import pytest
 from hamcrest import *
-
 from pytestqt.qtbot import QtBot
 
 import mtg_proxy_printer
+from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.async_tasks.printing_filter_updater import PrintingFilterUpdater, PrintingPreferenceUpdater
 from tests.hasgetter import has_getter
 from mtg_proxy_printer.model.printing_filter_model import PrintingFilterModel
@@ -68,7 +70,10 @@ def test_clear_highlight_delegates_to_models(printing_preferences_page: Printing
 
 
 def test_save(qtbot: QtBot, printing_preferences_page: PrintingPreferencesPage):
-    expected_signals = [printing_preferences_page.request_run_async_task]*2
+    expected_signals = [
+        (printing_preferences_page.request_run_async_task, "request_run_async_task"),
+        (printing_preferences_page.request_run_async_task, "request_run_async_task"),
+    ]
     expected_signal_params = [
         lambda param: isinstance(param, PrintingFilterUpdater),
         lambda param: isinstance(param, PrintingPreferenceUpdater),
@@ -79,3 +84,4 @@ def test_save(qtbot: QtBot, printing_preferences_page: PrintingPreferencesPage):
         printing_preferences_page.save()
     printing_filter_model.save_settings.assert_called_once_with(mtg_proxy_printer.settings.settings)
     set_filter_model.save_settings.assert_called_once_with(mtg_proxy_printer.settings.settings)
+

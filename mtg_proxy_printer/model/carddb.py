@@ -210,6 +210,7 @@ class CardDatabase(QObject):
         logger.info("Rolling back active read transaction")
         self.db.rollback()
         self.begin_transaction()
+        self.card_data_updated.emit()
 
     def begin_transaction(self):
         logger.info("Starting new read transaction")

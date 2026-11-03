@@ -63,10 +63,10 @@ class AddCardWidget(QWidget):
     def __init__(self, ui_class: UiTypes, parent: QWidget | None = None):
         super().__init__(parent)
         logger.debug(f"Creating {self.__class__.__name__} instance")
-        self.ui = ui = ui_class()
+        self.ui = ui = ui_class()  # type: Ui_VerticalAddCardWidget | Ui_HorizontalAddCardWidget
         ui.setupUi(self)
         self.card_db: CardDatabase = CardDatabase.main_instance
-        self.card_db.card_data_updated.connect(lambda: self.card_name_filter_updated(ui.card_name_filter.text()))
+        self.card_db.card_data_updated.connect(self.refresh_model_lists)
         self.image_db: ImageDatabase = None
         self.language_model = self._setup_language_combo_box()
         self.card_name_model, self.card_name_filter_model = self._setup_card_name_box()
@@ -138,28 +138,84 @@ class AddCardWidget(QWidget):
         )
         return model
 
+    @Slot()
+    def refresh_model_lists(self, new_language: str | None = None):
+        """
+        Re-populate the card name model with the list of card names from the card database.
+        Called via signal as a slot when the PrintingFilterUpdater task completes
+        """
+        logger.debug("Card database content changed. Refreshing model lists.")
+
+        model = self.ui.card_name_list.selectionModel()
+        currently_selected_row = rows[0].row() if (rows := model.selectedRows()) else None
+        current_name = self.current_card_name
+        available_card_names = self.card_db.get_card_names(new_language or self.current_language)
+        self.card_name_model.setStringList(available_card_names)
+        if current_name in available_card_names:
+            # Ensure the selection moves with the new list
+            assert current_name is not None  # Already guaranteed by the "in" operator. This silences the linter
+            index = self.card_name_filter_model.mapFromSource(
+                self.card_name_model.index(available_card_names.index(current_name), 0)
+            )
+            if currently_selected_row != index.row():
+                model.select(index, SelectionFlag.ClearAndSelect)
+        else:
+            model.clearSelection()
+            self.card_name_list_selection_changed(model.selection())
+            return
+
+        model = self.ui.set_name_list.selectionModel()
+        currently_selected_row = rows[0].row() if (rows := model.selectedRows()) else None
+        current_name = self.current_set_name
+        available_sets, _ = self.card_db.find_sets_matching(current_name, self.current_language)
+        # Match via name. The full set may not match because of updated set icon or release date
+        available_set_names = [set_.name for set_ in available_sets]
+        self.set_name_model.set_set_data(available_sets)
+        if current_name in available_set_names:
+            assert current_name is not None  # Already guaranteed by the "in" operator. This silences the linter
+            index = self.set_name_filter_model.mapFromSource(
+                self.set_name_model.index(available_set_names.index(current_name), 0)
+            )
+            if currently_selected_row != index.row():
+                model.select(index, SelectionFlag.ClearAndSelect)
+        else:
+            model.clearSelection()
+            self.set_name_list_selection_changed(model.selection())
+            return
+        # TODO: Similar steps for collector numbers
+
     @Slot(QItemSelection)
     def card_name_list_selection_changed(self, current: QItemSelection):
-        logger.info("Currently selected card changed.")
+        ui = self.ui
+        selection_model = ui.set_name_list.selectionModel()
         if not current.indexes():
-            self.ui.set_name_list.selectionModel().clearSelection()
+            logger.debug("Currently selected card cleared.")
+            self.set_name_model.set_set_data([])
+            selection_model.clearSelection()
+            self.set_name_list_selection_changed(selection_model.selection())
             return
+        logger.info("Currently selected card changed.")
         current_model_index = current.indexes()[0]
         valid = current_model_index.isValid()
-        self.ui.set_name_box.setEnabled(valid)
+        ui.set_name_box.setEnabled(valid)
         if valid:
             card_name = current_model_index.data(ItemDataRole.DisplayRole)
             sets, highest_score_index = self.card_db.find_sets_matching(card_name, self.current_language)
             logger.debug(f'Selected: "{card_name}", language: {self.current_language}, matching {len(sets)} sets')
             self.set_name_model.set_set_data(sets)
-            self.ui.set_name_filter.clear()
-            self.ui.set_name_list.selectionModel().select(
-                self.set_name_model.createIndex(highest_score_index, 0), SelectionFlag.ClearAndSelect)
+            ui.set_name_filter.clear()
+            index = self.set_name_filter_model.mapFromSource(self.set_name_model.index(highest_score_index, 0))
+            selection_model.select(index, SelectionFlag.ClearAndSelect)
 
     @Slot(QItemSelection)
     def set_name_list_selection_changed(self, current: QItemSelection):
+        ui = self.ui
+        selection_model = ui.collector_number_list.selectionModel()
         if not current.indexes():
-            self.ui.collector_number_list.selectionModel().clearSelection()
+            logger.debug("Currently selected set cleared.")
+            self.collector_number_model.setStringList([])
+            selection_model.clearSelection()
+            self.collector_number_list_selection_changed(selection_model.selection())
             return
         logger.debug("Currently selected set changed.")
         current_model_index = current.indexes()[0]
@@ -173,7 +229,7 @@ class AddCardWidget(QWidget):
             logger.debug(
                 f'Selected: "{mtg_set.code}", language: {self.current_language}, matching {len(collector_numbers)} prints')
             self.collector_number_model.setStringList(collector_numbers)
-            self.ui.collector_number_list.selectionModel().select(
+            selection_model.select(
                 self.collector_number_model.createIndex(highest_score_index, 0), SelectionFlag.ClearAndSelect)
 
     @Slot(QItemSelection)
@@ -198,8 +254,7 @@ class AddCardWidget(QWidget):
     @Slot(str)
     def language_combo_box_changed(self, new_language: str):
         logger.info(f'Selected language changed to: "{new_language}"')
-        card_names = self.card_db.get_card_names(new_language)
-        self.card_name_model.setStringList(card_names)
+        self.refresh_model_lists(new_language)
         self.set_name_model.set_set_data([])
         self.ui.set_name_box.setEnabled(False)
 
