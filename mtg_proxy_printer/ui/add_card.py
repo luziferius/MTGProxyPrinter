@@ -145,6 +145,7 @@ class AddCardWidget(QWidget):
         Called via signal as a slot when the PrintingFilterUpdater task completes
         """
         logger.debug("Card database content changed. Refreshing model lists.")
+
         model = self.ui.card_name_list.selectionModel()
         currently_selected_row = rows[0].row() if (rows := model.selectedRows()) else None
         current_name = self.current_card_name
@@ -161,7 +162,27 @@ class AddCardWidget(QWidget):
         else:
             model.clearSelection()
             self.card_name_list_selection_changed(model.selection())
-        # TODO: Similar steps for sets and collector numbers
+            return
+
+        model = self.ui.set_name_list.selectionModel()
+        currently_selected_row = rows[0].row() if (rows := model.selectedRows()) else None
+        current_name = self.current_set_name
+        available_sets, _ = self.card_db.find_sets_matching(current_name, self.current_language)
+        # Match via name. The full set may not match because of updated set icon or release date
+        available_set_names = [set_.name for set_ in available_sets]
+        self.set_name_model.set_set_data(available_sets)
+        if current_name in available_set_names:
+            assert current_name is not None  # Already guaranteed by the "in" operator. This silences the linter
+            index = self.set_name_filter_model.mapFromSource(
+                self.set_name_model.index(available_set_names.index(current_name), 0)
+            )
+            if currently_selected_row != index.row():
+                model.select(index, SelectionFlag.ClearAndSelect)
+        else:
+            model.clearSelection()
+            self.set_name_list_selection_changed(model.selection())
+            return
+        # TODO: Similar steps for collector numbers
 
     @Slot(QItemSelection)
     def card_name_list_selection_changed(self, current: QItemSelection):
