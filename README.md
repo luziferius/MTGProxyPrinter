@@ -214,7 +214,7 @@ Sponsored by [VGTopup](https://vgtopup.com/), a game top-up store.
 ## License
 
 
-Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
+Copyright © 2020-2026 Thomas Hess <thomas.hess@udo.edu>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -234,7 +234,7 @@ See the LICENSE file for details.
 
 ## Icon License
 
-Copyright (C) 2014 Uri Herrera <uri_herrera@nitrux.in> and others
+Copyright © 2014 Uri Herrera <uri_herrera@nitrux.in> and others
 
 The icons shipped in the directory resources/icons/ are used as a fallback if no
 system theme is present, and are sourced from Breeze icon theme created by the KDE project.
