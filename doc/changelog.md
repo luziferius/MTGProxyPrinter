@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.36.2 (2026-11-03)  <a name="v0_36_2"></a>
 
 ## New features
 
@@ -14,6 +14,10 @@
   This should make the app less annoying to use while offline.
 - Fixed crash caused by trying to add cards from stale data in the card search after updating
   the printing filters in the settings.
+
+## Other
+
+- Windows builds now ship with latest Python 3.15 and Qt 6.12
 
 # Version 0.36.1 (2026-10-28)  <a name="v0_36_1"></a>
 
