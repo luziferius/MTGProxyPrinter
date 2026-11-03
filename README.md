@@ -207,6 +207,10 @@ Before you print for the first time with a given printer or PDF viewer, enable t
 MTGProxyPrinter settings and then print or export a single empty page. If a real Magic card fits precisely into
 one cell of the printed grid, your system is set up correctly for high quality, non-scaled print-outs.
 
+## Sponsors
+
+Sponsored by [VGTopup](https://vgtopup.com/), a game top-up store.
+
 ## License
 
 
