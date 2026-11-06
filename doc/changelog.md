@@ -1,5 +1,11 @@
 # Changelog
 
+# Next version (in development)
+
+## New features
+
+- The page rendering now highlights the currently selected cards.
+
 # Version 0.36.2 (2026-11-03)  <a name="v0_36_2"></a>
 
 ## New features
