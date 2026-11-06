@@ -15,9 +15,10 @@
 
 
 import enum
+import typing
 from functools import partial
 
-from PySide6.QtCore import Qt, QEvent, Slot
+from PySide6.QtCore import Qt, QEvent, Slot, QItemSelectionModel
 from PySide6.QtWidgets import QGraphicsView, QWidget
 from PySide6.QtGui import QWheelEvent, QKeySequence, QPalette, QResizeEvent, QAction
 
@@ -54,6 +55,7 @@ class PageRenderer(QGraphicsView):
     This class displays an internally held PageScene instance on screen.
     """
     MAX_UI_ZOOM = 16.0
+    scene: typing.Callable[[], PageScene]
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent=parent)
@@ -94,10 +96,11 @@ class PageRenderer(QGraphicsView):
     def _update_background_brush(self):
         self.setBackgroundBrush(self.palette().color(QPalette.ColorGroup.Active, QPalette.ColorRole.Window))
 
-    def set_document(self, document: Document):
+    def set_document(self, document: Document, selection_model: QItemSelectionModel | None = None):
         logger.info("Document instance received, creating PageScene.")
         self.document = document
-        self.setScene(scene := PageScene(document, RenderMode.ON_SCREEN, self))
+        self.setScene(scene := PageScene(document, RenderMode.ON_SCREEN, selection_model, self))
+
         scene.scene_size_changed.connect(self.resizeEvent)
 
     def _perform_zoom_step(self, direction: ZoomDirection):

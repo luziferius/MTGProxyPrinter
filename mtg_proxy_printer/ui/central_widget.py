@@ -72,11 +72,11 @@ class CentralWidget(QWidget):
         self.document = document
         ui = self.ui
         document.current_page_changed.connect(self.on_document_current_page_changed)
-        self._setup_page_card_table_view(ui, document)
+        selection_model = self._setup_page_card_table_view(ui, document)
         document.rowsAboutToBeRemoved.connect(self.on_document_rows_about_to_be_removed)
         document.rowsInserted.connect(self.on_document_rows_inserted)
         document.rowsRemoved.connect(self.on_document_rows_removed)
-        ui.page_renderer.set_document(document)
+        ui.page_renderer.set_document(document, selection_model)
         self._setup_add_card_widget(image_db)
         self._setup_document_view(document)
         logger.debug(f"{self.__class__.__name__} setup completed")
@@ -88,6 +88,7 @@ class CentralWidget(QWidget):
         view.changed_selection_is_empty.connect(ui.delete_selected_images_button.setDisabled)
         ui.delete_selected_images_button.clicked.connect(ui.page_card_table_view.delete_selected_images)
         view.request_run_async_task.connect(self.request_run_async_task)
+        return view.selectionModel()
 
     def _setup_add_card_widget(self, image_db: ImageDatabase):
         self.ui.add_card_widget.set_databases(image_db)

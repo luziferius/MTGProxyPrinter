@@ -35,7 +35,7 @@ def renderer(document_light: Document) -> PageRenderer:
     """
     with patch(PATH_PREFIX+"PageRenderer._perform_zoom_step"):
         page_renderer = PageRenderer()
-        page_renderer.set_document(document_light)
+        page_renderer.set_document(document_light, None)
         yield page_renderer
 
 
