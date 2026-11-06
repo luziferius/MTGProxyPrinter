@@ -6,7 +6,7 @@ from PySide6.QtCore import QRect, QPoint, QPointF, QSize, QModelIndex, QPersiste
     QItemSelection, QItemSelectionModel
 from PySide6.QtGui import QPixmap, QPen, QColorConstants, QTransform, QPolygonF
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsItemGroup, QGraphicsItem, \
-    QGraphicsSimpleTextItem, QGraphicsRectItem, QGraphicsColorizeEffect
+    QGraphicsSimpleTextItem, QGraphicsRectItem, QGraphicsColorizeEffect, QApplication
 from PySide6.QtSvgWidgets import QGraphicsSvgItem
 
 from mtg_proxy_printer.model.card import AnyCardType, CardCorner
@@ -322,5 +322,9 @@ class CardItem(QGraphicsItemGroup):
 
     @Slot(QItemSelection, QItemSelection)
     def on_card_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
-        logger.debug(f"Selection changed.")
-        pass
+        if selected.contains(self.index):
+            self.hover_effect = create_highlight_effect(QApplication.palette())
+            self.setGraphicsEffect(self.hover_effect)
+        elif deselected.contains(self.index):
+            self.hover_effect = None
+            self.setGraphicsEffect(self.hover_effect)
