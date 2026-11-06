@@ -21,7 +21,7 @@ from typing import Sequence
 
 from PySide6.QtCore import QFile, QObject, QSize, QCoreApplication, Qt, QBuffer, QIODevice
 from PySide6.QtWidgets import QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit, QDialog
-from PySide6.QtGui import QIcon, QPixmap, QColor, QColorConstants
+from PySide6.QtGui import QIcon, QPixmap, QColor, QColorConstants, QPalette
 from PySide6.QtUiTools import loadUiType
 
 import mtg_proxy_printer
@@ -98,16 +98,20 @@ def show_wizard_or_dialog(wizard: QDialog | QWizard):
         wizard.show()
 
 
+def create_highlight_effect(palette: QPalette, parent: QWidget | None = None) -> QGraphicsColorizeEffect:
+    highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
+    effect = QGraphicsColorizeEffect(parent)
+    effect.setColor(highlight_color)
+    effect.setStrength(0.75)
+    return effect
+
+
 def highlight_widget(widgets: QWidget | Sequence[QWidget]) -> None:
     """Sets a visual highlight on the given widget to make it stand out"""
     if isinstance(widgets, QWidget):
         widgets = widgets,
     for widget in widgets:
-        palette = widget.palette()
-        highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
-        effect = QGraphicsColorizeEffect(widget)
-        effect.setColor(highlight_color)
-        effect.setStrength(0.75)
+        effect = create_highlight_effect(widget.palette(), widget)
         widget.setGraphicsEffect(effect)
 
 
