@@ -20,7 +20,7 @@ import functools
 import itertools
 
 from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, QPoint, Signal, QObject, Slot, \
-    QPersistentModelIndex, QModelIndex
+    QPersistentModelIndex, QModelIndex, QItemSelectionModel
 from PySide6.QtGui import QPen, QColorConstants, QColor, QPalette, QFontMetrics
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene
 
@@ -69,7 +69,7 @@ class PageScene(QGraphicsScene):
 
     scene_size_changed = Signal()
 
-    def __init__(self, document: Document, render_mode: RenderMode, parent: QObject | None = None):
+    def __init__(self, document: Document, render_mode: RenderMode, selection_model: QItemSelectionModel | None, parent: QObject | None = None):
         """
         :param document: The document instance
         :param render_mode: Specifies the render mode.
@@ -79,6 +79,7 @@ class PageScene(QGraphicsScene):
         """
         self.render_mode = render_mode
         page_layout = document.page_layout
+        self._selection_model = selection_model
         super().__init__(self.get_document_page_size(page_layout), parent)
         self.document = document
         self._connect_document_signals(document)
@@ -363,7 +364,7 @@ class PageScene(QGraphicsScene):
     def draw_card(self, index: QModelIndex, page_type: PageType):
         position = self._compute_position_for_image(index.row(), page_type)
         if index.data(ItemDataRole.DisplayRole) is not None:  # Card has a QPixmap set
-            card_item = CardItem(index, self.document)
+            card_item = CardItem(index, self.document, self._selection_model)
             self.addItem(card_item)
             card_item.setPos(position)
 

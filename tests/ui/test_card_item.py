@@ -35,7 +35,7 @@ def test_pixmap_set_in_init(document_light: Document):
     card = append_new_card_in_page(document_light.pages[0], "Card")
     card.set_image_file(document_light.image_db.get_blank(CardSizes.REGULAR))
     index = document_light.index(0, PageColumns.Image, document_light.index(0, 0))
-    card_item = CardItem(index, document_light)
+    card_item = CardItem(index, document_light, None)
 
     # Cannot compare QPixmap, have to convert both to QImage, which has operator eq (==) defined
     assert_that(
@@ -75,7 +75,7 @@ def test_corners_render_correctly_after_creation(document_light: Document, new_s
     card = append_new_card_in_page(document_light.pages[0], "Card")
     card.set_image_file(create_pixmap_with_transparent_corners(CardSizes.REGULAR.as_qsize_px()))
     index = document_light.index(0, PageColumns.Image, document_light.index(0, 0))
-    item = CardItem(index, document_light)
+    item = CardItem(index, document_light, None)
     painted_item = paint_to_new_image(item, card.image_file.size())
     expected = f"{expected_color.red(), expected_color.green(), expected_color.blue()}"
     assert_that(
@@ -96,7 +96,7 @@ def test_corner_renders_correctly_after_changing_draw_sharp_corners_option(
     card_size = CardSizes.REGULAR.as_qsize_px()
     card.set_image_file(create_pixmap_with_transparent_corners(card_size))
     index = document_light.index(0, PageColumns.Image, document_light.index(0, 0))
-    item = CardItem(index, document_light)
+    item = CardItem(index, document_light, None)
 
     document_light.page_layout.draw_sharp_corners = new_state
     document_light.page_layout_changed.emit(document_light.page_layout)

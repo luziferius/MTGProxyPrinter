@@ -66,7 +66,7 @@ class PageConfigPreviewArea(QWidget):
         self.regular_card = self._create_card(CardSizes.REGULAR, "Regular-size placeholder")
         self.oversized_card = self._create_card(CardSizes.OVERSIZED, "Oversized placeholder")
         ActionNewPage().apply(self.document)
-        ui.preview_area.set_document(self.document)
+        ui.preview_area.set_document(self.document, None)
         self.on_page_layout_changed(self.document.page_layout)
         initial_regular_cards = ui.regular_card_count.maximum()//2
         initial_oversized_cards = ui.oversized_card_count.maximum()//2

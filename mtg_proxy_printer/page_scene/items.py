@@ -2,17 +2,18 @@ import enum
 import itertools
 import typing
 
-from PySide6.QtCore import QRect, QPoint, QPointF, QSize, QModelIndex, QPersistentModelIndex, Qt, Slot
+from PySide6.QtCore import QRect, QPoint, QPointF, QSize, QModelIndex, QPersistentModelIndex, Qt, Slot, \
+    QItemSelection, QItemSelectionModel
 from PySide6.QtGui import QPixmap, QPen, QColorConstants, QTransform, QPolygonF
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsItemGroup, QGraphicsItem, \
-    QGraphicsSimpleTextItem, QGraphicsRectItem
+    QGraphicsSimpleTextItem, QGraphicsRectItem, QGraphicsColorizeEffect
 from PySide6.QtSvgWidgets import QGraphicsSvgItem
 
 from mtg_proxy_printer.model.card import AnyCardType, CardCorner
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import unit_registry, RESOLUTION, Quantity
-from mtg_proxy_printer.ui.common import RESOURCE_PATH_PREFIX
+from mtg_proxy_printer.ui.common import RESOURCE_PATH_PREFIX, create_highlight_effect
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -242,8 +243,10 @@ class CardItem(QGraphicsItemGroup):
 
     CORNER_SIZE_PX = 50
 
-    def __init__(self, index: QModelIndex, document: Document, parent: QGraphicsItem | None = None):
+    def __init__(self, index: QModelIndex, document: Document, selection_model: QItemSelectionModel | None, parent: QGraphicsItem | None = None):
         super().__init__(parent)
+        if selection_model is not None:
+            selection_model.selectionChanged.connect(self.on_card_selection_changed)
         document.page_layout_changed.connect(self.on_page_layout_changed)
         card: AnyCardType = index.data(ItemDataRole.UserRole)
         self.index = QPersistentModelIndex(index)
@@ -255,6 +258,7 @@ class CardItem(QGraphicsItemGroup):
         self.corners = self.create_corners(card, document.page_layout.draw_sharp_corners)
         self._draw_content()
         self.setZValue(RenderLayers.CARDS.value)
+        self.hover_effect: QGraphicsColorizeEffect | None = None
 
     @staticmethod
     def _create_pixmap_item(card: AnyCardType):
@@ -315,3 +319,8 @@ class CardItem(QGraphicsItemGroup):
         items = itertools.chain(self.corners, self.bleeds, [self.card_pixmap_item, self.watermark_item])
         for item in items:
             self.addToGroup(item)
+
+    @Slot(QItemSelection, QItemSelection)
+    def on_card_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
+        logger.debug(f"Selection changed.")
+        pass
