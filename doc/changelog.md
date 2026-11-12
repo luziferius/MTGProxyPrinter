@@ -5,6 +5,7 @@
 ## New features
 
 - The page rendering now highlights the currently selected cards.
+- Delete selected cards using the Delete keyboard key
 
 # Version 0.36.2 (2026-11-03)  <a name="v0_36_2"></a>
 

@@ -20,7 +20,7 @@ from pathlib import Path
 
 
 from PySide6.QtCore import QPoint, Qt, Signal, Slot, QPersistentModelIndex
-from PySide6.QtGui import QIcon, QAction
+from PySide6.QtGui import QIcon, QAction, QShortcut, QKeySequence
 from PySide6.QtWidgets import QTableView, QWidget, QMenu, QInputDialog, QFileDialog
 
 from mtg_proxy_printer.app_dirs import data_directories
@@ -38,7 +38,7 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 ItemDataRole = Qt.ItemDataRole
-
+StandardKey = QKeySequence.StandardKey
 
 class PageCardTableView(QTableView):
 
@@ -50,6 +50,7 @@ class PageCardTableView(QTableView):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.customContextMenuRequested.connect(self.page_table_context_menu_requested)
+        self._delete_shortcut = QShortcut(StandardKey.Delete, self, self.delete_selected_images)
         self._column_delegates = (
             self._setup_combo_box_item_delegate(),
             self._setup_language_delegate(),
