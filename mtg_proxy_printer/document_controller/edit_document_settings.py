@@ -62,12 +62,12 @@ class ActionEditDocumentSettings(DocumentAction):
         self.reflow_actions: ActionList = []
 
     def apply(self, document: "Document") -> Self:
-        self.old_settings = document.page_layout
+        self.old_settings = old_settings = document.page_layout
         document.page_layout = self.new_settings
-        if self.old_settings != self.new_settings:
+        if old_settings != self.new_settings:
             document.page_layout_changed.emit(self.new_settings)
-        old_capacities = self.old_settings.compute_page_card_capacity(PageType.REGULAR), \
-            self.old_settings.compute_page_card_capacity(PageType.OVERSIZED)
+        old_capacities = old_settings.compute_page_card_capacity(PageType.REGULAR), \
+            old_settings.compute_page_card_capacity(PageType.OVERSIZED)
         new_capacities = self.new_settings.compute_page_card_capacity(PageType.REGULAR), \
             self.new_settings.compute_page_card_capacity(PageType.OVERSIZED)
         if new_capacities < old_capacities:
