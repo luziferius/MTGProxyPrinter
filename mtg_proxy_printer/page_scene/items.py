@@ -4,7 +4,7 @@ import typing
 
 from PySide6.QtCore import QRect, QPoint, QPointF, QSize, QModelIndex, QPersistentModelIndex, Qt, Slot, \
     QItemSelection, QItemSelectionModel
-from PySide6.QtGui import QPixmap, QPen, QColorConstants, QTransform, QPolygonF
+from PySide6.QtGui import QPixmap, QPen, QColorConstants, QTransform, QPolygonF, QPainterPath
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsItemGroup, QGraphicsItem, \
     QGraphicsSimpleTextItem, QGraphicsRectItem, QGraphicsColorizeEffect, QApplication
 from PySide6.QtSvgWidgets import QGraphicsSvgItem
@@ -23,7 +23,7 @@ point = unit_registry.point
 degree = unit_registry.degree
 pixel = unit_registry.pixel
 PenStyle = Qt.PenStyle
-
+Element = QPainterPath.Element
 
 @enum.unique
 class RenderLayers(enum.IntEnum):
@@ -51,6 +51,14 @@ class CutMarkerParameters(typing.NamedTuple):
     image_spacing: Quantity
 
 
+def read_coords(pos: QPoint | QPointF | Element):
+    if isinstance(pos, QPoint|QPointF):
+        x, y = pos.x(), pos.y()
+    else:
+        x, y = pos.x, pos.y
+    return x, y
+
+
 class BullseyeMarkItem(QGraphicsSvgItem):
     """
     Draws a Bullseye print target. The used SVG uses centered 1 pixel wide lines on a 32 pixel base.
@@ -64,10 +72,11 @@ class BullseyeMarkItem(QGraphicsSvgItem):
         self.setScale(RESOLUTION.magnitude/100+285/256000)  # whole 96 pixel at 300DPI, resulting in ~8.1mm.
         self.setPos(QPoint(0, 0))
 
-    def setPos(self, pos: QPoint | QPointF, /):
-        new = QPointF(
-            (pos.x()*256105/256000),
-            (pos.y()*256105/256000),
+    def setPos(self, pos: QPoint | QPointF | Element, /):
+        x, y = read_coords(pos)
+        new = QPointF(  # Empirically determined magic number. The positions are somehow off without this minor scaling
+            (x*256105/256000),
+            (y*256105/256000),
         )
         super().setPos(new)
 
@@ -94,10 +103,10 @@ class CutMarkAngleItem(QGraphicsPolygonItem):
         length_px = round((18*unit_registry.mm*RESOLUTION).to("pixel", "print").magnitude)
         thickness_px = round((1*unit_registry.mm*RESOLUTION).to("pixel", "print").magnitude)
         super().__init__([  # Forms ┓
-            QPoint(0, 0), QPoint(length_px, 0),
-            QPoint(length_px, length_px), QPoint(length_px-thickness_px, length_px),
-            QPoint(length_px-thickness_px, thickness_px), QPoint(0, thickness_px),
-            QPoint(0, 0)
+            QPointF(0, 0), QPointF(length_px, 0),
+            QPointF(length_px, length_px), QPointF(length_px-thickness_px, length_px),
+            QPointF(length_px-thickness_px, thickness_px), QPointF(0, thickness_px),
+            QPointF(0, 0)
         ], parent)
         self.bottom_left = bottom_left
         self.setZValue(RenderLayers.CUT_LINES_BELOW.value)
@@ -106,11 +115,12 @@ class CutMarkAngleItem(QGraphicsPolygonItem):
         self.setRotation(180 * bottom_left)
         logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
 
-    def setPos(self, pos: QPoint | QPointF, /):
+    def setPos(self, pos: QPoint | QPointF | Element, /):
+        x, y = read_coords(pos)
         bb = self.boundingRect()
         new = QPointF(
-            (pos.x()+bb.width()-2*bb.width()*(not self.bottom_left)),
-            (pos.y()),
+            x+bb.width()-2*bb.width()*(not self.bottom_left),
+            y,
         )
         super().setPos(new)
 
@@ -154,8 +164,10 @@ class CardBleedCornerItem(QGraphicsPolygonItem):
         super().__init__()
         self.corner_length = 50 if card.is_oversized else 32
         transform = QTransform()
-        width = card.image_file.width()
-        height = card.image_file.height()
+        image = card.image_file
+        assert image is not None, f"Card {card} image must not be None!"
+        width = image.width()
+        height = image.height()
         if corner == CardCorner.TOP_RIGHT:
             transform.scale(-1, 1)
             self.setPos(width, 0)
@@ -262,7 +274,9 @@ class CardItem(QGraphicsItemGroup):
 
     @staticmethod
     def _create_pixmap_item(card: AnyCardType):
-        item = QGraphicsPixmapItem(card.image_file)
+        image = card.image_file
+        assert image is not None, f"Card {card} image must not be None!"
+        item = QGraphicsPixmapItem(image)
         item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
         return item
 
@@ -275,6 +289,7 @@ class CardItem(QGraphicsItemGroup):
 
     def create_corners(self, card: AnyCardType, draw_corners: bool) -> list[QGraphicsRectItem]:
         image = card.image_file
+        assert image is not None, f"Card {card} image must not be None!"
         card_height, card_width = image.height(), image.width()
         card_width = image.width()
         left, right = 0, card_width-self.CORNER_SIZE_PX
@@ -324,7 +339,7 @@ class CardItem(QGraphicsItemGroup):
     def on_card_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
         if selected.contains(self.index):
             self.hover_effect = create_highlight_effect(QApplication.palette())
-            self.setGraphicsEffect(self.hover_effect)
+            self.setGraphicsEffect(self.hover_effect)  # The C++ API allows None as the reset. The linter is wrong here
         elif deselected.contains(self.index):
             self.hover_effect = None
             self.setGraphicsEffect(self.hover_effect)

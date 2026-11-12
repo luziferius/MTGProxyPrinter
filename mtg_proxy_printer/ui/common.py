@@ -36,6 +36,7 @@ __all__ = [
     "ICON_PATH_PREFIX",
     "HAS_COMPILED_RESOURCES",
     "highlight_widget",
+    "create_highlight_effect",
     "BlockedSignals",
     "load_ui_from_file",
     "load_file",
