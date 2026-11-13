@@ -81,7 +81,7 @@ class BullseyeMarkItem(QGraphicsSvgItem):
         super().setPos(new)
 
     def update_visibility(self, current_style: str):
-        self.setOpacity(current_style == "Bullseye")
+        self.setVisible(current_style == "Bullseye")
 
 
 class CutMarkSquareItem(QGraphicsRectItem):
@@ -94,7 +94,7 @@ class CutMarkSquareItem(QGraphicsRectItem):
         logger.debug(f"{self.__class__.__name__}: {self.boundingRect()=}")
 
     def update_visibility(self, current_style: str):
-        self.setOpacity(current_style == "Cut marker")
+        self.setVisible(current_style == "Cut marker")
 
 
 class CutMarkAngleItem(QGraphicsPolygonItem):
@@ -125,7 +125,7 @@ class CutMarkAngleItem(QGraphicsPolygonItem):
         super().setPos(new)
 
     def update_visibility(self, current_style: str):
-        self.setOpacity(current_style == "Cut marker")
+        self.setVisible(current_style == "Cut marker")
 
 
 class CardBleedItem(QGraphicsPixmapItem):
@@ -154,7 +154,7 @@ class CardBleedItem(QGraphicsPixmapItem):
         transformation.scale(sx, sy)
         self.setTransform(transformation, False)
         # Some renderers do draw zero-width elements as faint lines, so set zero-width bleeds to be transparent
-        self.setOpacity(size_px > 0)
+        self.setVisible(size_px > 0)
 
 
 class CardBleedCornerItem(QGraphicsPolygonItem):
@@ -195,7 +195,7 @@ class CardBleedCornerItem(QGraphicsPolygonItem):
         )))
         # Some renderers do draw zero-width elements as faint lines,
         # so set zero-width bleeds to be transparent
-        self.setOpacity(h_px > 0 or v_px > 0)
+        self.setVisible(h_px > 0 or v_px > 0)
 
 
 class NeighborsPresent(typing.NamedTuple):
@@ -307,14 +307,14 @@ class CardItem(QGraphicsItemGroup):
         rect.setPos(position)
         rect.setPen(self.corner_pen)
         rect.setBrush(color)
-        rect.setOpacity(opaque)
+        rect.setVisible(opaque)
         rect.setZValue(RenderLayers.CORNERS.value)
         return rect
 
     @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
         for corner in self.corners:
-            corner.setOpacity(new_page_layout.draw_sharp_corners)
+            corner.setVisible(new_page_layout.draw_sharp_corners)
         self._update_watermark(self.watermark_item, new_page_layout)
 
     @staticmethod
