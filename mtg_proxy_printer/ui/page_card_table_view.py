@@ -107,6 +107,7 @@ class PageCardTableView(QTableView):
 
     def _create_add_check_card_actions(self, parent: QMenu, card: Card):
         other_face = CardDatabase.main_instance.get_opposing_face(card)
+        assert other_face is not None
         front, back = sorted([card, other_face], key=operator.attrgetter("is_front"), reverse=True)
         check_card = CheckCard(front, back)
         actions = [
