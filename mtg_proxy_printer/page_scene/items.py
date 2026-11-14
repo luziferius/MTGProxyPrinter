@@ -6,13 +6,13 @@ from PySide6.QtCore import QRect, QPoint, QPointF, QSize, QModelIndex, QPersiste
     QItemSelection, QItemSelectionModel
 from PySide6.QtGui import QPixmap, QPen, QColorConstants, QTransform, QPolygonF, QPainterPath
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsPolygonItem, QGraphicsItemGroup, QGraphicsItem, \
-    QGraphicsSimpleTextItem, QGraphicsRectItem, QGraphicsColorizeEffect, QApplication
+    QGraphicsSimpleTextItem, QGraphicsRectItem, QGraphicsColorizeEffect, QApplication, QGraphicsObject
 from PySide6.QtSvgWidgets import QGraphicsSvgItem
 
 from mtg_proxy_printer.model.card import AnyCardType, CardCorner
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import unit_registry, RESOLUTION, Quantity
+from mtg_proxy_printer.units_and_sizes import unit_registry, RESOLUTION, Quantity, CardSize, PageType, CardSizes
 from mtg_proxy_printer.ui.common import RESOURCE_PATH_PREFIX, create_highlight_effect
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -57,6 +57,35 @@ def read_coords(pos: QPoint | QPointF | Element):
     else:
         x, y = pos.x, pos.y
     return x, y
+
+class CutLineGridItem(QGraphicsObject):
+    """The cut helper line grid"""
+
+    def __init__(self, /, document: Document, page_type: PageType, parent: QGraphicsItem | None = None, **kwargs):
+        super().__init__(parent, **kwargs)
+        self.document = document
+        self.page_type = page_type
+        document.page_layout_changed.connect(self.on_page_layout_changed)
+
+    @Slot
+    def on_page_layout_changed(self, new_layout: PageLayoutSettings):
+        column_count = new_layout.compute_page_column_count(self.page_type)
+        row_count = new_layout.compute_page_row_count(self.page_type)
+        width = 1000
+        height = 1000
+
+    @staticmethod
+    def _compute_positions(card_size: int, spacing_size: int, count: int) -> list[int]:
+        """
+        Compute the line positions in one dimension in local coordinates.
+        Takes one of (card width, horizontal spacing, column count) or (card height, vertical spacing, row count)
+        Returns the list of pixel values in ascending order
+        """
+        lower = set(range(0, (card_size+spacing_size)*count, card_size+spacing_size))
+        upper = set(item+card_size for item in lower)
+        combined = lower.union(upper)
+        result = sorted(combined)
+        return result
 
 
 class BullseyeMarkItem(QGraphicsSvgItem):
