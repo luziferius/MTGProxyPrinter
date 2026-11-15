@@ -15,13 +15,15 @@
 
 from typing import Type
 
-from PySide6.QtCore import Signal, Slot, QItemSelectionModel, QModelIndex, QPersistentModelIndex
+from PySide6.QtCore import Signal, Slot, QItemSelectionModel, QModelIndex, QPersistentModelIndex, Qt
+from PySide6.QtGui import QShortcut, QKeySequence
 from PySide6.QtWidgets import QWidget
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.async_tasks.base import AsyncTask
 from mtg_proxy_printer.document_controller.move_page import ActionMovePage
+from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage
 from mtg_proxy_printer.model.document import Document, DocumentColumns
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 
@@ -38,7 +40,7 @@ except ModuleNotFoundError:
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
-
+StandardKey = QKeySequence.StandardKey
 
 __all__ = [
     "CentralWidget",
@@ -65,6 +67,10 @@ class CentralWidget(QWidget):
             ui.central_widget_splitter.setStretchFactor(3, 9)
         self.document: Document = None
         self._currently_edited_page: int = 0
+        self._delete_shortcut = QShortcut(
+            StandardKey.Delete, ui.document_view, lambda: self.request_run_async_task.emit(ActionRemovePage()),
+            context=Qt.ShortcutContext.WidgetShortcut
+        )
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_data(self, document: Document, image_db: ImageDatabase):

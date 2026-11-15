@@ -50,7 +50,10 @@ class PageCardTableView(QTableView):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.customContextMenuRequested.connect(self.page_table_context_menu_requested)
-        self._delete_shortcut = QShortcut(StandardKey.Delete, self, self.delete_selected_images)
+        self._delete_shortcut = QShortcut(
+            StandardKey.Delete, self, self.delete_selected_images,
+            context=Qt.ShortcutContext.WidgetShortcut
+        )
         self._column_delegates = (
             self._setup_combo_box_item_delegate(),
             self._setup_language_delegate(),
