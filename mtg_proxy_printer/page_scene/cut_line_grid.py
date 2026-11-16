@@ -56,7 +56,7 @@ class CutLineGridItem(QGraphicsObject):
         self.on_page_layout_changed(document.page_layout)
         logger.debug(f"Created {self.__class__.__name__} instance with grid for {page_type}")
 
-    @Slot
+    @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, new_layout: PageLayoutSettings):
         self._line_items.clear()
         layer = RenderLayers.CUT_LINES_ABOVE if new_layout.cut_marker_draw_above_cards else RenderLayers.CUT_LINES_BELOW
