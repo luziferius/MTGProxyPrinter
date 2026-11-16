@@ -77,7 +77,7 @@ class PageScene(QGraphicsScene):
         self._selection_model = selection_model
         super().__init__(self.get_document_page_size(page_layout), parent)
         self.document = document
-        self._cut_line_grid_regular, self._cut_line_grid_oversized = self._create_cut_line_grids(document, render_mode)
+        self._cut_line_grids = self._create_cut_line_grids(document, render_mode)
         self._connect_document_signals(document)
         self.selected_page = self.document.get_current_page_index()
         self.row_count = self.column_count = 1
@@ -119,13 +119,13 @@ class PageScene(QGraphicsScene):
         item.setFont(font)
         return item
 
-    def _create_cut_line_grids(self, document: Document, render_mode: RenderMode) -> tuple[CutLineGridItem, CutLineGridItem]:
-        items = (
-            CutLineGridItem(document, PageType.REGULAR, render_mode),
-            CutLineGridItem(document, PageType.OVERSIZED, render_mode),
-        )
-        for item in items:
-            origin_point = self._compute_grid_origin(item.page_type)
+    def _create_cut_line_grids(self, document: Document, render_mode: RenderMode) -> dict[PageType, CutLineGridItem]:
+        items = {
+            page_type: CutLineGridItem(document, page_type, render_mode)
+            for page_type in (PageType.REGULAR, PageType.OVERSIZED)
+        }
+        for page_type, item in items.items():
+            origin_point = self._compute_grid_origin(page_type)
             self.addItem(item)
             item.setPos(origin_point)
             item.on_page_layout_changed(document.page_layout)
@@ -162,10 +162,10 @@ class PageScene(QGraphicsScene):
             return QColorConstants.Black
         return self.palette().color(ColorGroup.Active, ColorRole.WindowText)
 
-    def setPalette(self, palette: QPalette) -> None:
+    def setPalette(self, palette: QPalette | Qt.GlobalColor | QColor) -> None:
         logger.info("Color palette changed, updating PageScene background and cut line colors.")
         super().setPalette(palette)
-        for item in self._cut_lines_grids:
+        for item in self._cut_line_grids.values():
             item.update_line_pen()
         background_color = self.get_background_color(self.render_mode)
         self.background.setPen(background_color)
@@ -540,8 +540,8 @@ class PageScene(QGraphicsScene):
         layout = self.document.page_layout
         # TODO: This does not account for cut or print alignment markers. If enabled, the grid needs to moved inwards
         x = distance_to_rounded_px(layout.margin_top)
-        y = distance_to_rounded_px(layout.margin_left)
-        return QPointF(10, 10)  # TODO
+        y = self.width()/2 - self._cut_line_grids[page_type].grid_width/2
+        return QPointF(x, y)
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> float | int:
         spacing = distance_to_rounded_px(parameters.image_spacing)
