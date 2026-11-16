@@ -77,7 +77,7 @@ class PageScene(QGraphicsScene):
         self._selection_model = selection_model
         super().__init__(self.get_document_page_size(page_layout), parent)
         self.document = document
-        self._cut_lines_grids = self._create_cut_line_grids(document, render_mode)
+        self._cut_line_grid_regular, self._cut_line_grid_oversized = self._create_cut_line_grids(document, render_mode)
         self._connect_document_signals(document)
         self.selected_page = self.document.get_current_page_index()
         self.row_count = self.column_count = 1
@@ -119,13 +119,13 @@ class PageScene(QGraphicsScene):
         item.setFont(font)
         return item
 
-    def _create_cut_line_grids(self, document: Document, render_mode: RenderMode) -> list[CutLineGridItem]:
-        items = [
+    def _create_cut_line_grids(self, document: Document, render_mode: RenderMode) -> tuple[CutLineGridItem, CutLineGridItem]:
+        items = (
             CutLineGridItem(document, PageType.REGULAR, render_mode),
             CutLineGridItem(document, PageType.OVERSIZED, render_mode),
-        ]
-        origin_point = self._compute_grid_origin()
+        )
         for item in items:
+            origin_point = self._compute_grid_origin(item.page_type)
             self.addItem(item)
             item.setPos(origin_point)
             item.on_page_layout_changed(document.page_layout)
