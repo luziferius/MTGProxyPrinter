@@ -75,9 +75,9 @@ class CutLineGridItem(QGraphicsItemGroup, QGraphicsObject):
         horizontal_length, vertical_length = self._get_line_lengths()
 
         for pos_x in self._compute_positions(card_size.height(), row_spacing, row_count):
-            self._draw_vertical_line(pos_x, horizontal_length, pen)
+            self._draw_horizontal_line(pos_x, horizontal_length, pen)
         for pos_y in self._compute_positions(card_size.width(), column_spacing, column_count):
-            self._draw_horizontal_line(pos_y, vertical_length, pen)
+            self._draw_vertical_line(pos_y, vertical_length, pen)
 
     def update_line_pen(self) -> None:
         """Update the line pen for all contained line items"""
