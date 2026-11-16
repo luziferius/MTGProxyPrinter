@@ -62,6 +62,8 @@ class CutLineGridItem(QGraphicsItemGroup, QGraphicsObject):
         """Updates the line grid when the page layout changes."""
         # A full re-creation isn't expensive, and much easier than trying to compute a minimal diff,
         # and updating positions.
+        for item in self._line_items:
+            item.setParentItem(None)
         self._line_items.clear()
         layer = RenderLayers.CUT_LINES_ABOVE if new_layout.cut_marker_draw_above_cards else RenderLayers.CUT_LINES_BELOW
         self.setZValue(layer.value)
@@ -109,7 +111,7 @@ class CutLineGridItem(QGraphicsItemGroup, QGraphicsObject):
         line.setX(column_px)
         self._line_items.append(line)
 
-    def _draw_horizontal_line(self, row_px: float | int, length: float| int, pen: QPen) -> None:
+    def _draw_horizontal_line(self, row_px: float | int, length: float | int, pen: QPen) -> None:
         line = QGraphicsLineItem(-length/2, 0, length, 0, self)
         line.setPen(pen)
         line.setY(row_px)
@@ -142,4 +144,3 @@ class CutLineGridItem(QGraphicsItemGroup, QGraphicsObject):
         return QPen(
             color, layout.cut_marker_width.to("point", "print").magnitude, layout.cut_marker_pen_style()
         )
-
