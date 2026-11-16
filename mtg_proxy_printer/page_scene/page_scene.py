@@ -14,7 +14,6 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
-from collections.abc import Generator
 import enum
 import functools
 import itertools
@@ -22,21 +21,21 @@ import itertools
 from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, QPoint, Signal, QObject, Slot, \
     QPersistentModelIndex, QModelIndex, QItemSelectionModel
 from PySide6.QtGui import QPen, QColorConstants, QColor, QPalette, QFontMetrics
-from PySide6.QtWidgets import QGraphicsItem, QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene
+from PySide6.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsScene
 
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
 from mtg_proxy_printer.page_scene.items import RenderLayers, CutMarkerParameters, NeighborsPresent, CardItem, \
     BullseyeMarkItem, CutMarkSquareItem, CutMarkAngleItem
+from mtg_proxy_printer.page_scene.cut_line_grid import CutLineGridItem
 from mtg_proxy_printer.settings import settings
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, distance_to_rounded_px, CardSizes, CardSize, \
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, distance_to_rounded_px, CardSizes, \
     Quantity
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-PixelCache = collections.defaultdict[PageType, list[float]]
 ItemDataRole = Qt.ItemDataRole
 ColorGroup = QPalette.ColorGroup
 ColorRole = QPalette.ColorRole
@@ -54,10 +53,6 @@ class RenderMode(enum.Flag):
 
 def is_card_item(item: QGraphicsItem) -> bool:
     return isinstance(item, CardItem)
-
-
-def is_cut_line_item(item: QGraphicsItem) -> bool:
-    return isinstance(item, QGraphicsLineItem)
 
 
 def is_text_item(item: QGraphicsItem) -> bool:
@@ -82,6 +77,7 @@ class PageScene(QGraphicsScene):
         self._selection_model = selection_model
         super().__init__(self.get_document_page_size(page_layout), parent)
         self.document = document
+        self._cut_lines_grids = self._create_cut_line_grids(document, render_mode)
         self._connect_document_signals(document)
         self.selected_page = self.document.get_current_page_index()
         self.row_count = self.column_count = 1
@@ -90,16 +86,11 @@ class PageScene(QGraphicsScene):
         logger.debug(f"Drawing background rectangle")
         self.background = self.addRect(0, 0, self.width(), self.height(), background_color, background_color)
         self.background.setZValue(RenderLayers.BACKGROUND.value)
-        self.horizontal_cut_line_locations: PixelCache = collections.defaultdict(list)
-        self.vertical_cut_line_locations: PixelCache = collections.defaultdict(list)
-        self._update_cut_marker_positions()
         self.document_title_text = self._create_text_item()
         self.page_number_text = self._create_text_item()
         self.print_markers = self._create_print_marker_items()
         self._update_print_markers()
         self._update_text_items(page_layout)
-        if page_layout.draw_cut_markers:
-            self.draw_cut_markers()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {render_mode}")
 
     def _connect_document_signals(self, document: Document):
@@ -128,7 +119,19 @@ class PageScene(QGraphicsScene):
         item.setFont(font)
         return item
 
-    def _create_print_marker_items(self) -> list[BullseyeMarkItem]:
+    def _create_cut_line_grids(self, document: Document, render_mode: RenderMode) -> list[CutLineGridItem]:
+        items = [
+            CutLineGridItem(document, PageType.REGULAR, render_mode),
+            CutLineGridItem(document, PageType.OVERSIZED, render_mode),
+        ]
+        origin_point = self._compute_grid_origin()
+        for item in items:
+            self.addItem(item)
+            item.setPos(origin_point)
+            item.on_page_layout_changed(document.page_layout)
+        return items
+
+    def _create_print_marker_items(self) -> list[BullseyeMarkItem | CutMarkAngleItem | CutMarkSquareItem]:
         items = [
             BullseyeMarkItem(False, False), BullseyeMarkItem(True, False), BullseyeMarkItem(False, True),
             CutMarkSquareItem(), CutMarkAngleItem(False), CutMarkAngleItem(True)
@@ -162,14 +165,12 @@ class PageScene(QGraphicsScene):
     def setPalette(self, palette: QPalette) -> None:
         logger.info("Color palette changed, updating PageScene background and cut line colors.")
         super().setPalette(palette)
+        for item in self._cut_lines_grids:
+            item.update_line_pen()
         background_color = self.get_background_color(self.render_mode)
         self.background.setPen(background_color)
         self.background.setBrush(background_color)
-        cut_line_color = self.get_cut_marker_pen(self.render_mode)
         text_color = self.get_text_color(self.render_mode)
-        logger.info(f"Number of cut lines: {len(self.cut_lines)}")
-        for line in self.cut_lines:
-            line.setPen(cut_line_color)
         for item in self.text_items:
             item.setBrush(text_color)
 
@@ -183,10 +184,6 @@ class PageScene(QGraphicsScene):
         # Sort the items to match the document. This is important for replacing cards.
         card_items = filter(is_card_item, self.items())
         return sorted(card_items, key=lambda item: tuple(reversed(item.scenePos().toTuple())))
-
-    @property
-    def cut_lines(self) -> list[QGraphicsLineItem]:
-        return list(filter(is_cut_line_item, self.items(SortOrder.AscendingOrder)))
 
     @property
     def text_items(self) -> list[QGraphicsSimpleTextItem]:
@@ -205,8 +202,6 @@ class PageScene(QGraphicsScene):
         if PageType.OVERSIZED in page_types and len(page_types) > 1:  # Switching to or from an oversized page
             logger.debug("New page contains cards of different size, re-drawing cut markers")
             self._update_row_and_column_counts(self.document)
-            self.remove_cut_markers()
-            self.draw_cut_markers()
         for item in self.card_items:
             self.removeItem(item)
         if self._is_valid_page_index(selected_page):
@@ -218,18 +213,15 @@ class PageScene(QGraphicsScene):
 
     def _update_page_text_y(self):
         # Put the text labels below the bleed
-        y = 2 + distance_to_rounded_px(self.document.page_layout.card_bleed) + round(max(
-            self.horizontal_cut_line_locations[PageType.REGULAR][-1],
-            self.horizontal_cut_line_locations[PageType.OVERSIZED][-1]
-        ))
+        y = self.height() - 20 - distance_to_rounded_px(self.document.page_layout.margin_bottom)
         for item in self.text_items:
             item.setY(y)
 
     def _update_page_text_x(self):
         try:
             # This may throw a KeyError on MIXED pages
-            title_x = round(self.vertical_cut_line_locations[PageType.REGULAR][0])
-            page_number_x = round(self.vertical_cut_line_locations[PageType.REGULAR][-1])
+            title_x = distance_to_rounded_px(self.document.page_layout.margin_left)
+            page_number_x = self.width() - 20 - distance_to_rounded_px(self.document.page_layout.margin_right)
         except KeyError:
             title_x = 0
             page_number_x = self.width()
@@ -273,16 +265,11 @@ class PageScene(QGraphicsScene):
             logger.debug("Page size changed. Adjusting PageScene dimensions")
             self.setSceneRect(new_page_size)
             self.background.setRect(new_page_size)
-        self._update_cut_marker_positions()
-        self.remove_cut_markers()
-        if new_page_layout.draw_cut_markers:
-            self.draw_cut_markers()
         self._compute_position_for_image.cache_clear()
         self.update_card_positions()
         self.update_card_bleeds()
         self._update_text_items(new_page_layout)
         self._update_print_markers()
-
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
             # in the available space or is now too small, so emit a notification to allow the display widget to adjust.
@@ -381,9 +368,6 @@ class PageScene(QGraphicsScene):
         if page.row() == self.selected_page.row():
             self._update_row_and_column_counts(self.document)
             self.update_card_positions()
-            if self.document.page_layout.draw_cut_markers:
-                self.remove_cut_markers()
-                self.draw_cut_markers()
 
     @Slot(QModelIndex, QModelIndex, list)
     def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: list[ItemDataRole]):
@@ -551,42 +535,15 @@ class PageScene(QGraphicsScene):
             index_row % self.column_count + 1 != self.column_count and index_row + 1 < cards_on_page
         )
 
-    def remove_cut_markers(self):
-        for line in self.cut_lines:
-            self.removeItem(line)
+    def _compute_grid_origin(self, page_type: PageType) -> QPointF:
+        """Returns the top left of the card grid or cut marker line grid."""
+        layout = self.document.page_layout
+        # TODO: This does not account for cut or print alignment markers. If enabled, the grid needs to moved inwards
+        x = distance_to_rounded_px(layout.margin_top)
+        y = distance_to_rounded_px(layout.margin_left)
+        return QPointF(10, 10)  # TODO
 
-    def draw_cut_markers(self):
-        """Draws the optional cut markers that extend to the paper border"""
-        page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
-        if page_type == PageType.MIXED:
-            logger.warning("Not drawing cut markers for page with mixed image sizes")
-            return
-        pen = self.get_cut_marker_pen(self.render_mode)
-        logger.info(f"Drawing cut markers")
-        layer = RenderLayers.CUT_LINES_ABOVE \
-            if self.document.page_layout.cut_marker_draw_above_cards else RenderLayers.CUT_LINES_BELOW
-        self._draw_vertical_markers(pen, page_type, layer)
-        self._draw_horizontal_markers(pen, page_type, layer)
-
-    def _update_cut_marker_positions(self):
-        logger.debug("Updating cut marker positions")
-        self.vertical_cut_line_locations.clear()
-        self.horizontal_cut_line_locations.clear()
-        page_layout: PageLayoutSettings = self.document.page_layout
-        for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
-            card_size: CardSize = CardSizes.for_page_type(page_type)
-            self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
-                page_layout.page_height,
-                card_size.height, page_layout.compute_page_row_count(page_type),
-                page_layout.margin_top, page_layout.row_spacing)
-            )
-            self.vertical_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
-                page_layout.page_width,
-                card_size.width, page_layout.compute_page_column_count(page_type),
-                page_layout.margin_left, page_layout.column_spacing
-            ))
-
-    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> Generator[float, None, None]:
+    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> float | int:
         spacing = distance_to_rounded_px(parameters.image_spacing)
         card_size: int = round(parameters.card_size.magnitude)
         # Excessively large margins may shift the page content off-center. Clamp the border to the non-negative range
@@ -600,33 +557,4 @@ class PageScene(QGraphicsScene):
         border = max(border, margin)
         if RenderMode.IMPLICIT_MARGINS in self.render_mode:
             border -= margin
-
-        # Without spacing, draw a line top/left of each row/column.
-        # To also draw a line below/right of the last row/column, add a virtual row/column if spacing is zero.
-        # With positive spacing, draw a line left/right/above/below *each* row/column.
-        for item in range(parameters.item_count + (not spacing)):
-            pixel_position: float = border + item*(spacing+card_size)
-            yield pixel_position
-            if parameters.image_spacing:
-                yield pixel_position + card_size
-
-    def _draw_vertical_markers(self, pen: QPen, page_type: PageType, layer: RenderLayers):
-        offset = self.x_offset
-        for column_px in self.vertical_cut_line_locations[page_type]:
-            self._draw_vertical_line(column_px + offset, pen, layer)
-        logger.debug(f"Vertical cut markers drawn")
-
-    def _draw_horizontal_markers(self, pen: QPen, page_type: PageType, layer: RenderLayers):
-        for row_px in self.horizontal_cut_line_locations[page_type]:
-            self._draw_horizontal_line(row_px, pen, layer)
-        logger.debug(f"Horizontal cut markers drawn")
-
-    def _draw_vertical_line(self, column_px: float, pen: QPen, layer: RenderLayers):
-        line = self.addLine(0, 0, 0, self.height(), pen)
-        line.setX(column_px)
-        line.setZValue(layer.value)
-
-    def _draw_horizontal_line(self, row_px: float, pen: QPen, layer: RenderLayers):
-        line = self.addLine(0, 0, self.width(), 0, pen)
-        line.setY(row_px)
-        line.setZValue(layer.value)
+        return border

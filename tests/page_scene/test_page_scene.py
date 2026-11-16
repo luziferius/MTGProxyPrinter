@@ -104,41 +104,8 @@ def test_cut_lines_not_drawn_when_disabled_and_page_empty(page_scene: PageScene)
     assert_that(
         page_scene.items(), not_(has_items(instance_of(QGraphicsLineItem)))
     )
-    assert_that(page_scene.cut_lines, is_(empty()))
-
-
-@pytest.mark.parametrize("size", CardSizes)
-def test_cut_lines_not_drawn_when_disabled_and_page_filled(page_scene: PageScene, size: CardSize):
-    document = page_scene.document
-    document.page_layout.cut_marker_style = "None"
-    document.page_layout_changed.emit(document.page_layout)
-    document.apply(ActionAddCard(create_card_with_pixmap("Card", size)))
-    assert_that(
-        page_scene.items(), not_(has_items(instance_of(QGraphicsLineItem)))
-    )
-
-
-@pytest.mark.parametrize("row_spacing", [0*mm, 1*mm])
-@pytest.mark.parametrize("column_spacing", [0*mm, 1*mm])
-def test_cut_lines_property_only_lists_line_elements(
-        page_scene: PageScene, row_spacing: Quantity, column_spacing: Quantity):
-    layout = page_scene.document.page_layout
-    layout.row_spacing = row_spacing
-    layout.column_spacing = column_spacing
-    layout.cut_marker_style = "Solid"
-    page_scene.document.page_layout_changed.emit(layout)
-    assert_that(
-        page_scene.cut_lines, all_of(
-            only_contains(instance_of(QGraphicsLineItem)),
-            is_not(empty()),
-        ),
-        "cut_lines must only contain QGraphicsLineItem instances"
-    )
-    assert_that(
-        page_scene.cut_lines,
-        only_contains(*page_scene.items()),
-        "cut_lines mut not contain lines not present in the PageScene"
-    )
+    for grid in page_scene._cut_lines_grids:
+        assert_that(grid.isVisible(), is_(False))
 
 
 @pytest.mark.parametrize("cut_marker_style", ["Solid", "Dots", "Dashes"])
@@ -153,22 +120,12 @@ def test_cut_lines_bounding_rects_cross_entire_page(
     layout.cut_marker_style = cut_marker_style
     page_scene.document.page_layout_changed.emit(layout)
     page_width, page_height = page_scene.width(), page_scene.height()
-    for index, line in enumerate(page_scene.cut_lines):
-        rect = line.boundingRect()
+    for index, grid in enumerate(page_scene._cut_lines_grids):
+        rect = grid.boundingRect()
         assert_that(rect, any_of(
             has_getters(width=0, height=close_to_(page_height)),
             has_getters(width=close_to_(page_width), height=0),
-        ), f"Unexpected cut line bounding box at {index=}, {line.boundingRect()=}")
-    '''
-    assert_that(
-        page_scene.cut_lines,
-        only_contains(
-            has_getter("boundingRect", has_getters(width=1, height=close_to_(page_height+1))),
-            has_getter("boundingRect", has_getters(width=close_to_(page_width+1), height=1)),
-        ),
-        "Unexpected cut line bounding boxes"
-    )
-    '''
+        ), f"Unexpected cut line bounding box at {index=}, {grid.boundingRect()=}")
 
 
 @pytest.mark.parametrize("page_type, spacing, margins, flags, expected_y", [
@@ -233,20 +190,7 @@ def test_horizontal_cut_line_locations_when_enabled(
     if page_type is not PageType.UNDETERMINED:
         card_size = CardSizes.for_page_type(page_type)
         document.apply(ActionAddCard(create_card_with_pixmap("Card", card_size)))
-
-    assert_that(
-        page_scene.horizontal_cut_line_locations[page_type],
-        contains_inanyorder(*map(close_to_, expected_y)),
-        f"Wrong values in {page_scene.horizontal_cut_line_locations[page_type]=}, "
-        f"{RenderMode.IMPLICIT_MARGINS in page_scene.render_mode=}"
-    )
-    assert_that(
-        page_scene.cut_lines,
-        only_contains(
-            has_getters(x=greater_than_or_equal_to(0), y=0),
-            *[has_getters(x=0, y=close_to_(y)) for y in expected_y]
-        )
-    )
+    pytest.fail("Needs new validation code")
 
 
 @pytest.mark.parametrize("page_type, spacing, margins, flags, expected_x", [
@@ -310,20 +254,8 @@ def test_vertical_cut_line_locations_when_enabled(
     if page_type is not PageType.UNDETERMINED:
         card_size = CardSizes.for_page_type(page_type)
         document.apply(ActionAddCard(create_card_with_pixmap("Card", card_size)))
+    pytest.fail("Needs new validation code")
 
-    assert_that(
-        page_scene.vertical_cut_line_locations[page_type],
-        contains_inanyorder(*map(close_to_, expected_x)),
-        f"Wrong values in {page_scene.vertical_cut_line_locations[page_type]=}, "
-        f"{RenderMode.IMPLICIT_MARGINS in page_scene.render_mode=}"
-    )
-    assert_that(
-        page_scene.cut_lines,
-        only_contains(
-            has_getters(x=0, y=greater_than_or_equal_to(0)),
-            *[has_getters(x=close_to_(x), y=0) for x in expected_x]
-        )
-    )
 
 
 @pytest.mark.parametrize("page_type, spacing, margin, flags, expected_x", [
