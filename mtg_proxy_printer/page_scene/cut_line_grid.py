@@ -14,8 +14,8 @@
 #  along with this program. If not, see <http://www.gnu.org/licenses/>.
 import typing
 
-from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QGraphicsObject, QGraphicsItem, QGraphicsLineItem
+from PySide6.QtCore import Slot, QPersistentModelIndex, Qt
+from PySide6.QtWidgets import QGraphicsObject, QGraphicsItem, QGraphicsLineItem, QApplication, QGraphicsItemGroup
 from PySide6.QtGui import QPen, QPalette, QColorConstants
 
 if typing.TYPE_CHECKING:
@@ -29,7 +29,7 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-
+ItemDataRole = Qt.ItemDataRole
 ColorGroup = QPalette.ColorGroup
 ColorRole = QPalette.ColorRole
 __all__ = [
@@ -37,7 +37,7 @@ __all__ = [
 ]
 
 
-class CutLineGridItem(QGraphicsObject):
+class CutLineGridItem(QGraphicsItemGroup, QGraphicsObject):
     """
     The cut helper line grid.
     Origin (0,0) is the top left corner of the top left slot.
@@ -52,15 +52,20 @@ class CutLineGridItem(QGraphicsObject):
         self.document = document
         self.render_mode = render_mode
         document.page_layout_changed.connect(self.on_page_layout_changed)
+        document.current_page_changed.connect(self.on_current_page_changed)
         self._line_items: list[QGraphicsLineItem] = []
-        self.on_page_layout_changed(document.page_layout)
         logger.debug(f"Created {self.__class__.__name__} instance with grid for {page_type}")
 
     @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, new_layout: PageLayoutSettings):
+        """Updates the line grid when the page layout changes."""
+        # A full re-creation isn't expensive, and much easier than trying to compute a minimal diff,
+        # and updating positions.
         self._line_items.clear()
         layer = RenderLayers.CUT_LINES_ABOVE if new_layout.cut_marker_draw_above_cards else RenderLayers.CUT_LINES_BELOW
         self.setZValue(layer.value)
+        # Use opacity == 0 to fully hide the grid if cut markers are disabled
+        self.setOpacity(new_layout.draw_cut_markers)
         card_size = CardSizes.for_page_type(self.page_type).as_qsize_px()
         row_spacing = distance_to_rounded_px(new_layout.row_spacing)
         column_spacing = distance_to_rounded_px(new_layout.column_spacing)
@@ -73,6 +78,16 @@ class CutLineGridItem(QGraphicsObject):
             self._draw_vertical_line(pos_x, horizontal_length, pen)
         for pos_y in self._compute_positions(card_size.width(), column_spacing, column_count):
             self._draw_horizontal_line(pos_y, vertical_length, pen)
+
+    @Slot(QPersistentModelIndex)
+    def on_current_page_changed(self, selected_page: QPersistentModelIndex):
+        """Updates the cut line visibility, when the currently selected page changes."""
+        current_page_type: PageType = selected_page.data(ItemDataRole.UserRole)
+        this_grid_applies_to_new_page = (
+            (current_page_type == self.page_type) or
+            (current_page_type == PageType.UNDETERMINED and self.page_type == PageType.REGULAR)
+        )
+        self.setVisible(this_grid_applies_to_new_page)
 
     def _get_line_lengths(self) -> tuple[float, float]:
         scene = self.scene()
@@ -106,10 +121,12 @@ class CutLineGridItem(QGraphicsObject):
     def get_cut_marker_pen(self, layout: PageLayoutSettings) -> QPen:
         # TODO: Move helper constructs into a separate module, obsoleting this circular import workaround
         from mtg_proxy_printer.page_scene.page_scene import RenderMode
+        scene = self.scene()
+        palette = QApplication.palette() if scene is None else scene.palette()
         if (RenderMode.ON_PAPER not in self.render_mode
                 and layout.cut_marker_color == QColorConstants.Black):
             # Rendering on screen with the default black supports using a color scheme override for dark mode rendering
-            color = self.scene().palette().color(ColorGroup.Active, ColorRole.WindowText)
+            color = palette.color(ColorGroup.Active, ColorRole.WindowText)
         else:
             color = layout.cut_marker_color
         return QPen(
