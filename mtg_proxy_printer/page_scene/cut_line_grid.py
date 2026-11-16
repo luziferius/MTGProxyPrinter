@@ -54,6 +54,7 @@ class CutLineGridItem(QGraphicsItemGroup, QGraphicsObject):
         document.page_layout_changed.connect(self.on_page_layout_changed)
         document.current_page_changed.connect(self.on_current_page_changed)
         self._line_items: list[QGraphicsLineItem] = []
+        self.grid_width = self.grid_height = 0  # type: int
         logger.debug(f"Created {self.__class__.__name__} instance with grid for {page_type}")
 
     @Slot(PageLayoutSettings)
@@ -73,11 +74,14 @@ class CutLineGridItem(QGraphicsItemGroup, QGraphicsObject):
         column_count = new_layout.compute_page_column_count(self.page_type)
         row_count = new_layout.compute_page_row_count(self.page_type)
         horizontal_length, vertical_length = self._get_line_lengths()
-
-        for pos_x in self._compute_positions(card_size.height(), row_spacing, row_count):
+        x_positions = self._compute_positions(card_size.height(), row_spacing, row_count)
+        y_positions = self._compute_positions(card_size.width(), column_spacing, column_count)
+        for pos_x in x_positions:
             self._draw_horizontal_line(pos_x, horizontal_length, pen)
-        for pos_y in self._compute_positions(card_size.width(), column_spacing, column_count):
+        for pos_y in y_positions:
             self._draw_vertical_line(pos_y, vertical_length, pen)
+        self.grid_width = y_positions[-1]
+        self.grid_height = x_positions[-1]
 
     def update_line_pen(self) -> None:
         """Update the line pen for all contained line items"""
