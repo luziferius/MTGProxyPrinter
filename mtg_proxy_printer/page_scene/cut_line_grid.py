@@ -79,6 +79,12 @@ class CutLineGridItem(QGraphicsItemGroup, QGraphicsObject):
         for pos_y in self._compute_positions(card_size.width(), column_spacing, column_count):
             self._draw_horizontal_line(pos_y, vertical_length, pen)
 
+    def update_line_pen(self) -> None:
+        """Update the line pen for all contained line items"""
+        pen = self.get_cut_marker_pen(self.document.page_layout)
+        for item in self._line_items:
+            item.setPen(pen)
+
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
         """Updates the cut line visibility, when the currently selected page changes."""
