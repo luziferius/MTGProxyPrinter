@@ -124,11 +124,11 @@ class PageScene(QGraphicsScene):
             page_type: CutLineGridItem(document, page_type, render_mode)
             for page_type in (PageType.REGULAR, PageType.OVERSIZED)
         }
-        for page_type, item in items.items():
-            origin_point = self._compute_grid_origin(page_type)
+        for item in items.values():
             self.addItem(item)
-            item.setPos(origin_point)
             item.on_page_layout_changed(document.page_layout)
+            origin_point = self._compute_grid_origin(item)
+            item.setPos(origin_point)
         return items
 
     def _create_print_marker_items(self) -> list[BullseyeMarkItem | CutMarkAngleItem | CutMarkSquareItem]:
@@ -267,6 +267,7 @@ class PageScene(QGraphicsScene):
             self.background.setRect(new_page_size)
         self._compute_position_for_image.cache_clear()
         self.update_card_positions()
+        self.update_cut_line_grid_positions()
         self.update_card_bleeds()
         self._update_text_items(new_page_layout)
         self._update_print_markers()
@@ -359,6 +360,11 @@ class PageScene(QGraphicsScene):
         page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
         for card in self.card_items:
             card.setPos(self._compute_position_for_image(card.index.row(), page_type))
+
+    def update_cut_line_grid_positions(self):
+        for grid in self._cut_line_grids.values():
+            origin = self._compute_grid_origin(grid)
+            grid.setPos(origin)
 
     def _is_valid_page_index(self, index: QModelIndex | QPersistentModelIndex):
         return index.isValid() and not index.parent().isValid() and index.row() < self.document.rowCount()
@@ -535,12 +541,12 @@ class PageScene(QGraphicsScene):
             index_row % self.column_count + 1 != self.column_count and index_row + 1 < cards_on_page
         )
 
-    def _compute_grid_origin(self, page_type: PageType) -> QPointF:
+    def _compute_grid_origin(self, grid: CutLineGridItem) -> QPointF:
         """Returns the top left of the card grid or cut marker line grid."""
         layout = self.document.page_layout
         # TODO: This does not account for cut or print alignment markers. If enabled, the grid needs to moved inwards
-        x = distance_to_rounded_px(layout.margin_top)
-        y = self.width()/2 - self._cut_line_grids[page_type].grid_width/2
+        x = self.width()/2 - grid.grid_width/2
+        y = distance_to_rounded_px(layout.margin_top)
         return QPointF(x, y)
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> float | int:
