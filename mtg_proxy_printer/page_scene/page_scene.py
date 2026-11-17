@@ -546,7 +546,7 @@ class PageScene(QGraphicsScene):
         layout = self.document.page_layout
         # TODO: This does not account for cut or print alignment markers. If enabled, the grid needs to moved inwards
         x = self.width()/2 - grid.grid_width/2
-        y = distance_to_rounded_px(layout.margin_top)
+        y = 0 if RenderMode.IMPLICIT_MARGINS in self.render_mode else distance_to_rounded_px(layout.margin_top)
         return QPointF(x, y)
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> float | int:
