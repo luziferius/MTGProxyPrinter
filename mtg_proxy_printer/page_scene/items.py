@@ -59,14 +59,6 @@ class BleedOrientation(enum.Enum):
     VERTICAL = enum.auto()
 
 
-class CutMarkerParameters(typing.NamedTuple):
-    total_space: Quantity
-    card_size: Quantity
-    item_count: int
-    margin: Quantity
-    image_spacing: Quantity
-
-
 def read_coords(pos: QPoint | QPointF | Element):
     if isinstance(pos, QPoint|QPointF):
         x, y = pos.x(), pos.y()

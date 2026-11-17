@@ -26,7 +26,7 @@ from PySide6.QtWidgets import QGraphicsItem, QGraphicsSimpleTextItem, QGraphicsS
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import PageColumns
 from mtg_proxy_printer.model.page_layout import PageLayoutSettings
-from mtg_proxy_printer.page_scene.items import RenderLayers, CutMarkerParameters, NeighborsPresent, CardItem, \
+from mtg_proxy_printer.page_scene.items import RenderLayers, NeighborsPresent, CardItem, \
     BullseyeMarkItem, CutMarkSquareItem, CutMarkAngleItem
 from mtg_proxy_printer.page_scene.cut_line_grid import CutLineGridItem
 from mtg_proxy_printer.settings import settings
@@ -144,18 +144,6 @@ class PageScene(QGraphicsScene):
         if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Transparent
         return self.palette().color(ColorGroup.Active, ColorRole.Base)
-
-    def get_cut_marker_pen(self, render_mode: RenderMode) -> QPen:
-        layout = self.document.page_layout
-        if (RenderMode.ON_PAPER not in render_mode
-                and layout.cut_marker_color == QColorConstants.Black):
-            # Rendering on screen with the default black supports using a color scheme override for dark mode rendering
-            color = self.palette().color(ColorGroup.Active, ColorRole.WindowText)
-        else:
-            color = layout.cut_marker_color
-        return QPen(
-            color, layout.cut_marker_width.to("point", "print").magnitude, layout.cut_marker_pen_style()
-        )
 
     def get_text_color(self, render_mode: RenderMode) -> QColor:
         if RenderMode.ON_PAPER in render_mode:
@@ -548,19 +536,3 @@ class PageScene(QGraphicsScene):
         x = self.width()/2 - grid.grid_width/2
         y = 0 if RenderMode.IMPLICIT_MARGINS in self.render_mode else distance_to_rounded_px(layout.margin_top)
         return QPointF(x, y)
-
-    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> float | int:
-        spacing = distance_to_rounded_px(parameters.image_spacing)
-        card_size: int = round(parameters.card_size.magnitude)
-        # Excessively large margins may shift the page content off-center. Clamp the border to the non-negative range
-        # to avoid placing marker lines out of the drawing range
-        border = (
-            distance_to_rounded_px(parameters.total_space)
-            - card_size * parameters.item_count
-            - spacing * (parameters.item_count - 1)
-        ) / 2
-        margin = distance_to_rounded_px(parameters.margin)
-        border = max(border, margin)
-        if RenderMode.IMPLICIT_MARGINS in self.render_mode:
-            border -= margin
-        return border
