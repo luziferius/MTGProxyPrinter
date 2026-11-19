@@ -36,7 +36,7 @@ from mtg_proxy_printer.async_tasks.base import AsyncTaskRunner
 SetDataImportTask.run = MagicMock()
 
 
-class Namespace(argparse._Namespace):
+class Namespace(argparse.Namespace):
     """Mock argparse Namespace used for type hinting."""
     database_path: Path
     card_data: Path
