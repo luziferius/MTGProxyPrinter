@@ -142,3 +142,61 @@ def test_print_guessing_prefers_highres_image_over_newest_printing_with_lowres_i
             has_length(1)
         )
     )
+
+
+@pytest.mark.parametrize("deck", [
+    "절단 // 띠",
+    "절단//띠",
+    "절단 / 띠",
+])
+@pytest.mark.parametrize("print_guessing", [True, False])
+def test_card_with_multiple_names_on_single_face_is_matched_by_full_name(
+        card_db: CardDatabase, image_db: ImageDatabase, print_guessing: bool, deck: str):
+    """Split cards, Adventures, Rooms, etc. are stored using the combined "Front // Back" name"""
+    fill_card_database_with_json_cards(card_db, ["split_card"])
+    parser = GenericRegularExpressionDeckParser(card_db, image_db, r"(?P<name>.+)")
+    result_deck, unidentified = parser.parse_deck(deck, print_guessing, False)
+    assert_that(unidentified, is_(empty()))
+    assert_that(
+        result_deck,
+        all_of(
+            has_key(
+                has_properties(
+                    language="ko",
+                    name="절단 // 띠",
+                    scryfall_id="00031562-3818-49f9-b45c-ab28a521284c",
+                    is_front=True
+                )),
+            has_value(1),
+            has_length(1)
+        )
+    )
+
+
+@pytest.mark.parametrize("deck", [
+    "Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun",
+    "Growing Rites of Itlimoc//Itlimoc, Cradle of the Sun",
+    "Growing Rites of Itlimoc / Itlimoc, Cradle of the Sun",
+])
+@pytest.mark.parametrize("print_guessing", [True, False])
+def test_double_faced_card_is_matched_by_front_face_name(
+        card_db: CardDatabase, image_db: ImageDatabase, print_guessing: bool, deck: str):
+    fill_card_database_with_json_cards(card_db, ["english_double_faced_card"])
+    parser = GenericRegularExpressionDeckParser(card_db, image_db, r"(?P<name>.+)")
+    parser.add_opposing_face = False
+    result_deck, unidentified = parser.parse_deck(deck, print_guessing, False)
+    assert_that(unidentified, is_(empty()))
+    assert_that(
+        result_deck,
+        all_of(
+            has_key(
+                has_properties(
+                    language="en",
+                    name="Growing Rites of Itlimoc",
+                    scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d",
+                    is_front=True
+                )),
+            has_value(1),
+            has_length(1)
+        )
+    )
