@@ -176,7 +176,7 @@ commands = [
 ]
 pass_env = [
     "QT_PLATFORM_PLUGIN",
-    { replace = "if", condition = "factor.linux", then = [
+    { replace = "if", condition = "sys_platform == 'linux'", then = [
         "XDG_RUNTIME_DIR", "DISPLAY", "WAYLAND_DISPLAY",
     ], extend = true}
 ]
@@ -222,7 +222,7 @@ dependency_groups = ["package"]
 package = "deps-only"
 pass_env = [
     "QT_QPA_PLATFORM",
-    { replace = "if", condition = "factor.linux", then = [
+    { replace = "if", condition = "env.OS != 'Windows_NT'", then = [
         "XDG_RUNTIME_DIR", "DISPLAY", "WAYLAND_DISPLAY",
     ], extend = true}
 ]
@@ -230,7 +230,7 @@ commands_pre = [
     ["python", "{tox_root}{/}scripts{/}update_translations.py", "compile"],
     ["python", "{tox_root}{/}scripts{/}compile_ui_files.py", "--purge-existing", "generate_importable_modules"],
     ["python", "{tox_root}{/}scripts{/}compile_resources.py", "compile"],
-    { replace = "if", condition = "factor.win32", then = [
+    { replace = "if", condition = "env.OS == 'Windows_NT'", then = [
         ["python", "{tox_root}{/}scripts{/}generate_windows_icon.py"],
     ], extend=true },
 ]
@@ -246,7 +246,7 @@ description = "Build the application with cx_Freeze and verify it can launch and
 labels = ["tests"]
 factors = [{ prefix = "cx_8_", start = 5, stop = 7 },]
 allowlist_externals = [
-    { replace = "if", condition = "factor.win32", then = ["{tox_root}{/}scripts{/}clean_windows_build.bat"], extend = true},
+    { replace = "if", condition = "env.OS == 'Windows_NT'", then = ["{tox_root}{/}scripts{/}clean_windows_build.bat"], extend = true},
     "{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter",
 ]
 deps = [
@@ -257,7 +257,7 @@ deps = [
 
 commands = [
     ["cxfreeze", "build", "--build-exe", "build{/}bundle_test"],
-    { replace = "if", condition = "factor.win32", then = [["{tox_root}{/}scripts{/}clean_windows_build.bat", "build{/}bundle_test"]], extend = true},
+    { replace = "if", condition = "env.OS == 'Windows_NT'", then = [["{tox_root}{/}scripts{/}clean_windows_build.bat", "build{/}bundle_test"]], extend = true},
     ["{tox_root}{/}build{/}bundle_test{/}MTGProxyPrinter", "--test-exit-on-launch"],
 ]
 
@@ -274,11 +274,11 @@ commands = [
 base = ["tool.tox.env_pkg_base"]
 description = "Creates a stand-alone build via cx_Freeze, and (on Windows only) also the MSI installer package."
 allowlist_externals = [
-    { replace = "if", condition = "factor.win32", then = ["{tox_root}{/}scripts{/}clean_windows_build.bat"], extend = true},
+    { replace = "if", condition = "env.OS == 'Windows_NT'", then = ["{tox_root}{/}scripts{/}clean_windows_build.bat"], extend = true},
 ]
 commands = [
     ["cxfreeze", "build"],
-    { replace = "if", condition = "factor.win32", then = [
+    { replace = "if", condition = "env.OS == 'Windows_NT'", then = [
         ["{tox_root}{/}scripts{/}clean_windows_build.bat"],
         ["cxfreeze", "bdist_msi", "--skip-build"],
     ], extend = true },
