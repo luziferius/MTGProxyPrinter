@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.36.3 (2026-11-19)  <a name="v0_36_3"></a>
 
 ## New, minor features
 

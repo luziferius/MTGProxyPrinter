@@ -234,4 +234,4 @@ print(settings.config_file_path); settings.write_settings_to_file()"
     """
     from mtg_proxy_printer.meta_data import __version__
     expected_config = SETTINGS_FILES_DIRECTORY/f"settings-v{__version__}.ini"
-    assert_that(expected_config.is_file(), is_(True))
+    assert_that(expected_config.is_file(), is_(True), f"Sample settings file for version {__version__} missing.")
