@@ -123,10 +123,6 @@ excludes = [
     "xmlrpc",
     "multiprocessing",
     "concurrent",
-    "platformdirs.android",
-    "platformdirs.ios",
-    "platformdirs.macos",
-    "platformdirs.unix",
     "sysconfig",
     # Unused PySide6 components
     "PySide6.glue",
@@ -185,14 +181,17 @@ pass_env = [
     ], extend = true}
 ]
 
+[tool.tox.env.unit_tests]
+base = ["tool.tox.env_run_base"]
+
 [tool.tox.env_base.python]
-base = ["tox.tool.env_run_base"]
+base = ["tool.tox.env_run_base"]
 factors = [
     { prefix = "3.", start = 11, stop = 15 },
 ]
 
 [tool.tox.env_base.qt]
-base = ["tox.tool.env_run_base"]
+base = ["tool.tex.env_run_base"]
 factors = [
     { prefix = "Qt6_", start = 8, stop = 12 },
 ]
@@ -203,13 +202,13 @@ deps = [
     {replace = "if", condition = "factor.Qt6_11", then = ["PySide6-Essentials>=6.11,<6.12"], extend = true},
     {replace = "if", condition = "factor.Qt6_12", then = ["PySide6-Essentials>=6.12,<6.13"], extend = true},
 ]
-basepython = [
+base_python = [
     {replace = "if", condition = "factor.Qt6_8", then = "3.12"},
     {replace = "if", condition = "factor.Qt6_9", then = "3.12"},
 ]
 
 [tool.tox.env_base.minimum_version]
-base = ["tox.tool.env_run_base"]
+base = ["tool.tox.env_run_base"]
 description = "Runs the unit tests and integration tests using the oldest supported version of the indicated dependency"
 factors = ["platformdirs", "pint", "pyhamcrest"]
 deps = [
@@ -222,7 +221,7 @@ deps = [
 dependency_groups = ["package"]
 package = "deps-only"
 pass_env = [
-    "QT_PLATFORM_PLUGIN",
+    "QT_QPA_PLATFORM",
     { replace = "if", condition = "factor.linux", then = [
         "XDG_RUNTIME_DIR", "DISPLAY", "WAYLAND_DISPLAY",
     ], extend = true}
@@ -241,7 +240,7 @@ commands_post = [
     ["python", "-c", "__import__('shutil').rmtree('MTGProxyPrinter.egg-info', ignore_errors=True)"],
 ]
 
-[tool.tox.env_pkg_base.test_cx_freeze_build]
+[tool.tox.env.test_cx_freeze_build]
 base = ["tool.tox.env_pkg_base"]
 description = "Build the application with cx_Freeze and verify it can launch and reach the Qt event loop."
 labels = ["tests"]

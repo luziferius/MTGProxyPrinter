@@ -65,6 +65,12 @@ popd
 del shiboken6\shiboken6*.lib
 del email\architecture.rst
 
+pushd platformdirs
+:: Unused platformdirs modules
+del /Q /S android ios macos unix
+::leave platformdirs
+popd
+
 :: leave lib
 popd
 ::leave build directory
