@@ -2,10 +2,14 @@
 
 # Next version (in development)
 
-## New features
+## New, minor features
 
 - The page rendering now highlights the currently selected cards.
 - Delete selected cards using the Delete keyboard key
+
+## Fixed issues
+
+- Fix card data update failure that started occurring roughly November 16th: Fixes "Error while parsing card at position 7529: FOREIGN KEY constraint failed"
 
 # Version 0.36.2 (2026-11-03)  <a name="v0_36_2"></a>
 

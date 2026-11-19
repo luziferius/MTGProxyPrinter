@@ -681,9 +681,9 @@ class DatabaseImportTask(AsyncTask):
             or card["set_type"] == "token")
         english_name = card["name"]
         card_id = self._insert_or_update_card(oracle_id, is_card, english_name)
-        set_code = card["set"]
-        if (set_id := self.set_code_cache.get(set_code)) is None:
-            self.set_code_cache[set_code] = set_id = self._insert_or_update_set(card)
+        scryfall_set_id = card["set_id"]
+        if (set_id := self.set_code_cache.get(scryfall_set_id)) is None:
+            self.set_code_cache[scryfall_set_id] = set_id = self._insert_or_update_set(card)
         printing_id = self._insert_or_update_printing(card, card_id, set_id)
         _get_printing_filter_data(card, self._printing_filter_dict)
         self._insert_or_update_printing_filters(printing_id, self._printing_filter_dict)
@@ -751,34 +751,30 @@ class DatabaseImportTask(AsyncTask):
 
     def _insert_or_update_set(self, card: CardDataType) -> int:
         db = self.db
-        set_code = card["set"]
         query = cached_dedent("""\
-        SELECT set_ID, ( -- _insert_or_update_set()
+        SELECT set_id, ( -- _insert_or_update_set()
           set_name <> ?
           OR release_date > unixepoch(?, 'utc')
-          OR set_scryfall_id <> ?
+          OR set_code <> ?
         ) AS needs_update
-        FROM MTGSet WHERE set_code = ?
+        FROM MTGSet WHERE set_scryfall_id = ?
         """)
-        parameters = [card["set_name"], card["released_at"], card["set_id"], set_code]
+        parameters = [card["set_name"], card["released_at"], card["set"], card["set_id"]]
         match db.execute(query, parameters).fetchone():
             case set_id, 0:
                 return set_id  # Already present and nothing changed
             case None:
                 return db.execute(cached_dedent("""\
                 INSERT INTO MTGSet  -- _insert_or_update_set()
-                       (set_name, release_date,        set_scryfall_id, set_code)
-                VALUES (?,        unixepoch(?, 'utc'), ?,               ?)
-                ON CONFLICT (set_scryfall_id) DO UPDATE 
-                  SET set_code = excluded.set_code 
-                  WHERE set_scryfall_id = excluded.set_scryfall_id
+                       (set_name, release_date,        set_code, set_scryfall_id)
+                VALUES (?,        unixepoch(?, 'utc'), ?,        ?)
                 """), parameters).lastrowid or 0
             case set_id, 1:
-                parameters[-1] = set_id
+                parameters = [card["set_name"], card["released_at"], card["set"], card["set_id"], set_id]
                 db.execute(cached_dedent("""\
                 UPDATE MTGSet -- _insert_or_update_set()
-                  SET (set_name, release_date,        set_scryfall_id)
-                    = (?,        unixepoch(?, 'utc'), ?)
+                  SET (set_name, release_date,        set_code, set_scryfall_id)
+                    = (?,        unixepoch(?, 'utc'), ?,        ?)
                   WHERE set_id = ?
                 """), parameters)
                 return set_id
