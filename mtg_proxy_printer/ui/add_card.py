@@ -66,7 +66,8 @@ class AddCardWidget(QWidget):
         self.ui = ui = ui_class()  # type: Ui_VerticalAddCardWidget | Ui_HorizontalAddCardWidget
         ui.setupUi(self)
         self.card_db: CardDatabase = CardDatabase.main_instance
-        self.card_db.card_data_updated.connect(self.refresh_model_lists)
+        if self.card_db is not None:  # The database is None if --test-exit-on-launch is passed
+            self.card_db.card_data_updated.connect(self.refresh_model_lists)
         self.image_db: ImageDatabase = None
         self.language_model = self._setup_language_combo_box()
         self.card_name_model, self.card_name_filter_model = self._setup_card_name_box()
@@ -262,6 +263,8 @@ class AddCardWidget(QWidget):
         logger.debug("About to set the image database")
         self.image_db = image_db
         preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
+        if self.card_db is None:  # The database is None if --test-exit-on-launch is passed
+            return
         languages = self.card_db.get_all_languages()
         if not languages:
             languages = [preferred_language]

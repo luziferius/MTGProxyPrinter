@@ -267,8 +267,9 @@ class AboutDialog(QDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def populate_card_database_update_timestamp_label(self):
-        CardDatabase.main_instance.card_data_updated.connect(self.on_card_database_updated)
-        self.on_card_database_updated()
+        if (card_db := CardDatabase.main_instance) is not None:  # --test-exit-on-launch skips opening the card db
+            card_db.card_data_updated.connect(self.on_card_database_updated)
+            self.on_card_database_updated()
 
     @Slot()
     def on_card_database_updated(self):
