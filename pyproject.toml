@@ -176,7 +176,7 @@ commands = [
 ]
 pass_env = [
     "QT_PLATFORM_PLUGIN",
-    { replace = "if", condition = "sys_platform == 'linux'", then = [
+    { replace = "if", condition = "env.OS == 'Windows_NT'", then = [
         "XDG_RUNTIME_DIR", "DISPLAY", "WAYLAND_DISPLAY",
     ], extend = true}
 ]
@@ -191,7 +191,7 @@ factors = [
 ]
 
 [tool.tox.env_base.qt]
-base = ["tool.tex.env_run_base"]
+base = ["tool.tox.env_run_base"]
 factors = [
     { prefix = "Qt6_", start = 8, stop = 12 },
 ]
@@ -203,8 +203,8 @@ deps = [
     {replace = "if", condition = "factor.Qt6_12", then = ["PySide6-Essentials>=6.12,<6.13"], extend = true},
 ]
 base_python = [
-    {replace = "if", condition = "factor.Qt6_8", then = "3.12"},
-    {replace = "if", condition = "factor.Qt6_9", then = "3.12"},
+    {replace = "if", condition = "factor.Qt6_8", then = "3.12", extend = true},
+    {replace = "if", condition = "factor.Qt6_9", then = "3.12", extend = true},
 ]
 
 [tool.tox.env_base.minimum_version]
@@ -240,7 +240,7 @@ commands_post = [
     ["python", "-c", "__import__('shutil').rmtree('MTGProxyPrinter.egg-info', ignore_errors=True)"],
 ]
 
-[tool.tox.env.test_cx_freeze_build]
+[tool.tox.env_base.test_cx_freeze_build]
 base = ["tool.tox.env_pkg_base"]
 description = "Build the application with cx_Freeze and verify it can launch and reach the Qt event loop."
 labels = ["tests"]
