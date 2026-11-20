@@ -1,10 +1,10 @@
 # Changelog
 
-# Version 0.36.4 (TBD, soon)  <a name="v0_36_4"></a>
+# Version 0.36.4 (2026-11-20)  <a name="v0_36_4"></a>
 
 ## Fixed issues
 
-- Fixed crashes when trying to print, and export to PDF or PNG.
+- Fixed crashes when trying to print, or export to PDF or PNG.
 
 # Version 0.36.3 (2026-11-19)  <a name="v0_36_3"></a>
 
