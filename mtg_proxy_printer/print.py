@@ -79,7 +79,7 @@ class PNGRenderer(AsyncTask):
         page_size = document.page_layout.to_page_layout(RenderMode.ON_PAPER).pageSize().sizePixels(
             round(RESOLUTION.magnitude))
         pool = QThreadPool(self, maxThreadCount=PNGEncoderThreadLimit)
-        scene = PageScene(document, RenderMode.ON_PAPER, self)
+        scene = PageScene(document, RenderMode.ON_PAPER, parent=self)
         dots_per_meter = round(RESOLUTION.to("pixel/meter").magnitude)
         background_color = settings["export"].get_color("png-background-color")
         number_width = len(str(page_count))
@@ -199,7 +199,7 @@ class PDFPrinter(QPdfWriter):
         self.setPageSize(self._to_page_size(document.page_layout))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
-        self.scene = PageScene(document, RenderMode.ON_PAPER, self)
+        self.scene = PageScene(document, RenderMode.ON_PAPER, parent=self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _to_page_size(self, layout: PageLayoutSettings) -> QPageSize:
@@ -251,7 +251,7 @@ class Renderer(QObject):
         self.render_mode = RenderMode.ON_PAPER
         if not settings["printer"].getboolean("borderless-printing"):
             self.render_mode |= RenderMode.IMPLICIT_MARGINS
-        self.scene = PageScene(document, self.render_mode, self)
+        self.scene = PageScene(document, self.render_mode, parent=self)
 
     @Slot(QPrinter)
     def print_document(self, printer: QPrinter):

@@ -79,6 +79,7 @@ class PageScene(QGraphicsScene):
         """
         self.render_mode = render_mode
         page_layout = document.page_layout
+        assert selection_model is None or isinstance(selection_model, QItemSelectionModel)
         self._selection_model = selection_model
         super().__init__(self.get_document_page_size(page_layout), parent)
         self.document = document
