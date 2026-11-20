@@ -225,11 +225,7 @@ def test_migration_test_verifies_against_default_settings_from_latest_version():
 
     1-liner to write the current default config to a settings file in the tests directory:
 
-python -c "from pathlib import Path; import mtg_proxy_printer; from mtg_proxy_printer import settings; from \
-mtg_proxy_printer import __version__; settings.settings = settings.DEFAULT_SETTINGS; \
-settings.config_file_path = Path(mtg_proxy_printer.__file__).parent.parent / \
-f'tests/settings_files/settings-v{__version__}.ini';
-print(settings.config_file_path); settings.write_settings_to_file()"
+python -c "from pathlib import Path; import mtg_proxy_printer; from mtg_proxy_printer import settings; from mtg_proxy_printer import __version__; settings.settings = settings.DEFAULT_SETTINGS; settings.config_file_path = Path(mtg_proxy_printer.__file__).parent.parent / f'tests/settings_files/settings-v{__version__}.ini'; print(settings.config_file_path); settings.write_settings_to_file()"
 
     """
     from mtg_proxy_printer.meta_data import __version__
