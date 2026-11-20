@@ -184,6 +184,10 @@ pass_env = [
 [tool.tox.env.unit_tests]
 base = ["env_run_base"]
 
+[tool.tox.env.network_unit_tests]
+base = ["env_run_base"]
+set_env = {MTGPROXYPRINTER_RUN_NETWORK_TESTS = "1" }
+
 [tool.tox.env_base.python]
 base = ["env_run_base"]
 factors = [
